@@ -1,8 +1,7 @@
-# $Id: Makefile.PL,v 1.2 2002-03-06 08:31:41 pajas Exp $
+# $Id: Makefile.PL,v 1.3 2002-03-08 18:01:20 pajas Exp $
 
 use strict;
 
-use File::Find;
 use ExtUtils::MakeMaker;
 
 $| = 1;
@@ -28,7 +27,7 @@ WriteMakefile(
 
 sub MY::postamble {
 '
-recompile-xml:
+xml:
 	tools/gen_grammar.pl src/xsh_grammar.xml > lib/XML/XSH/Grammar.pm
 	tools/gen_help.pl src/xsh_grammar.xml > lib/XML/XSH/Help.pm
 	tools/gen_completions.pl src/xsh_grammar.xml > lib/XML/XSH/CompletionList.pm
