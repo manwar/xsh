@@ -4,9 +4,9 @@
 if ("$xsh_grammar_file" = "") $xsh_grammar_file="src/xsh_grammar.xml";
 if ("$db_stylesheet" = "") {
   # weired things happen in XML::LibXML/LibXSLT with new stylesheets!
-  $db_stylesheet="http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl";
+#  $db_stylesheet="http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl";
 
-#  perl { ($db_stylesheet)=split(/\n/,`locate html/docbook.xsl`); };
+  perl { ($db_stylesheet)=split(/\n/,`locate html/docbook.xsl`); };
   echo "Using DocBook XML stylesheet: $db_stylesheet"
 }
 if ("$db_stylesheet" = "") {
