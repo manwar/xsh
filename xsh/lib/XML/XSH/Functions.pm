@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.58 2003-06-04 15:33:53 pajas Exp $
+# $Id: Functions.pm,v 1.59 2003-08-05 08:18:12 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -28,7 +28,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.7';
-  $REVISION='$Revision: 1.58 $';
+  $REVISION='$Revision: 1.59 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -2994,6 +2994,18 @@ sub call {
     return $result;
   } else {
     die "ERROR: $name not defined\n";
+  }
+}
+
+
+sub undef_sub {
+  my ($name)=@_;
+  if (exists($_defs{$name})) {
+    delete $_defs{$name};
+  } else {
+    foreach (keys %_defs) {
+      delete $_defs{$_} if /^$name$/;
+    }
   }
 }
 
