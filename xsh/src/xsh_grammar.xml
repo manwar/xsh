@@ -4582,11 +4582,25 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
     <rule id="namespaces_command" type="command" name="namespaces"
 	    inline="yes">
       <production>
-	<selfref/>
+	<selfref sep="no"/>
 	<directive type="commit"/>
 	<ruleref ref="xpath" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::list_namespaces,@{$item[3]}]</action>
       </production>
+      <documentation sections="Information">
+	<usage>namespaces [<xref linkend="xpath"/>]</usage>
+	<shortdesc>List namespaces in current scope (or in scope of
+	  given nodes)</shortdesc>
+	<description>
+	  <para>
+	    For each node matching given <xref linkend="xpath"/> lists
+	    all namespaces that are valid in its scope in the form of
+	    <literal>xmlns:prefix="uri"</literal> declarations.
+	    If no <xref linkend="xpath"/> is given, lists namespaces
+	    in the scope of the current node.
+	  </para>
+	</description>
+      </documentation>
     </rule>
   </rules>  
 </recdescent-xml>
