@@ -1,0 +1,10 @@
+\bCVS\b
+^MANIFEST\.
+\bMakefile$
+\bMakefile.old$
+\bcompletions$
+\~$
+^blib/
+^pm_to_blib$
+^MakeMaker-\d
+.#$
