@@ -1,0 +1,49 @@
+xsh - an XML Editing Shell
+--------------------------
+Copyright (c) 2002 Petr Pajas
+
+Requirements:
+-------------
+
+o Unix/BSD/Linux/Windows+Cygwin or similar operating system
+o Perl version 5.6 (may work with earlier Perl5, but wasn't tested)
+o The following modules, available at CPAN http://www.cpan.org:
+
+  Parse::RecDescent          (>=1.80)
+  Text::Iconv                (>=1.2)
+  XML::LibXML                (>=1.31)
+  XML::LibXSLT               (>=1.31)
+  Term::ReadLine::Perl
+
+A bundle of all this modules and below mentioned libraries may be
+downloaded from author's homepage at: http://www.matfyz.cz/pajas
+
+Other Dependencies:
+-------------------
+
+Modules XML::LibXML and XML::LibXSLT require the following libraries
+available at http://www.xmlsoft.org:
+
+  libxml2
+  libxslt 
+
+and also seem to depend on the following Perl modules (avalable at
+CPAN http://www.cpan.org):
+
+  XML::SAX::Base             (>=1.00)
+  XML::SAX                   (>=0.02)
+
+Installing modules from CPAN
+----------------------------
+
+If you have a direct internet connection, you may install Perl modules
+from CPAN by typing
+
+  $ perl -MCPAN -e shell
+
+answering few initial questions and installing the modules one by one with
+
+  cpan> install <module-name>
+
+where <module-name> is one of the modules mentioned above.
+

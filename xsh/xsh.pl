@@ -17,7 +17,7 @@ use vars qw/$VERSION $REVISION $ERR $OUT $LAST_ID $LOCAL_ID $LOCAL_NODE
 require Term::ReadLine if $opt_i;
 
 $VERSION='0.5';
-$REVISION='$Revision: 1.1.1.1 $';
+$REVISION='$Revision: 1.2 $';
 $ERR='';
 $LAST_ID='';
 $OUT=\*STDOUT;
@@ -869,6 +869,8 @@ if ($opt_i) {
   print STDERR "-"x length($rev),"\n";
   print STDERR $rev;
   print STDERR "-"x length($rev),"\n\n";
+  print STDERR "Copyright (c) 2002 Petr Pajas\n";
+  print STDERR "Covered by GPL - GNU GENERAL PUBLIC LICENCE Version 2\n\n";
 }
 
 if (@string) {
