@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Mon Sep  2 17:38:12 2002
+# Fri Sep 27 10:37:06 2002
 
 
 package XML::XSH::Grammar;
@@ -172,8 +172,23 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(exec|system)\s/ <commit> expression(s)
 		{ [\&XML::XSH::Functions::sh,join(" ",@{$item[3]})] }
   	
-	  | /(call)\s/ <commit> expression
-		{ [\&XML::XSH::Functions::call,$item[3]] }
+	  | <rulevar:@args>
+	  | /(call)\s/ <commit> ID
+		{ 
+	  if (exists($XML::XSH::Functions::_defs{$item[3]})) {
+	    @args=@{ $XML::XSH::Functions::_defs{$item[3]} };
+	    shift @args;
+	    $return=1;
+          } else { 
+	    $return=undef;
+	  }
+	 }
+  	 match_typedargs[@args]
+		{ 
+	  $return=1;
+	 }
+  	
+		{ $return=[\&XML::XSH::Functions::call,$item[3],$item[5]] }
   	
 	  | /(include|\.)\s/ <commit> filename
 		{ [\&XML::XSH::Functions::include,$item[3]] }
@@ -186,14 +201,23 @@ $grammar=<<'_EO_GRAMMAR_';
 	   )(?) nodelistvariable '=' xpath
 		{ [\&XML::XSH::Functions::nodelist_assign,$item[2],$item[4]] }
   	
+	  | /(local)\s/ variable '=' xpath
+		{ [\&XML::XSH::Functions::xpath_assign_local,$item[2],$item[4]] }
+  	
+	  | /(local)\s/ nodelistvariable '=' xpath
+		{ [\&XML::XSH::Functions::nodelist_assign_local,$item[2],$item[4]] }
+  	
 	  | variable
 		{ [\&XML::XSH::Functions::print_var,$item[1]] }
   	
 	  | /(variables|vars|var)/
 		{ [\&XML::XSH::Functions::variables] }
   	
-	  | /(print|echo)\s/ <commit> expression(s?)
-		{ [\&XML::XSH::Functions::echo,@{$item[3]}] }
+	  | /(print|echo)\s/ expression(s)
+		{ [\&XML::XSH::Functions::echo,@{$item[2]}] }
+  	
+	  | /(print|echo)/
+		{ [\&XML::XSH::Functions::echo] }
   	
 	  | /(create|new)\s/ <commit> expression expression
 		{ [\&XML::XSH::Functions::create_doc,@item[3,4]] }
@@ -205,7 +229,7 @@ $grammar=<<'_EO_GRAMMAR_';
 		{ [\&XML::XSH::Functions::set_local_xpath,[$item[3],"/"]] }
   	
 	  | /(if)\s/ <commit> condition command
-		{ [\&XML::XSH::Functions::if_statement,$item[3],[$item[4]]] }
+		{ [\&XML::XSH::Functions::if_statement,[$item[3],[$item[4]]]] }
   	
 	  | /(unless)\s/ <commit> condition command
 		{ [\&XML::XSH::Functions::unless_statement,$item[3],[$item[4]]] }
@@ -216,8 +240,10 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(foreach|for)\s/ <commit> condition command
 		{ [\&XML::XSH::Functions::foreach_statement,$item[3],[$item[4]]] }
   	
-	  | /(def|define)\s/ <commit> ID block
-		{ [\&XML::XSH::Functions::def,$item[3],$item[4]] }
+	  | /(def|define)\s/ <commit> ID typedvariable(s?) block
+		{ 
+	  &XML::XSH::Functions::def($item[3],$item[5],$item[4]);
+	 }
   	
 	  | /(process-xinclude|process_xinclude|process-xincludes|process_xincludes|xinclude|xincludes|load_xincludes|load-xincludes|load_xinclude|load-xinclude)/ <commit> optional_expression(?)
 		{ [\&XML::XSH::Functions::process_xinclude,@{$item[3]}] }
@@ -301,7 +327,8 @@ $grammar=<<'_EO_GRAMMAR_';
 		{ 
 	  local $_=$item[1];
 	  s/^\'|\'$//g;
-	  s/\\([^\$])/$1/g;
+	  s{(\\)(.|\n)|([\$])}{ ($3 eq "\$") ? "\\\$" : (($2 eq "\\")
+	  ? "\\\\" : (($2 eq "'") ? "'" : ( ($2 eq "\$") ? "\\\\\\$2" : "\\\\$2"))) }eg;
 	  $_;
 	 }
   	
@@ -311,7 +338,6 @@ $grammar=<<'_EO_GRAMMAR_';
 		{ 
 	  local $_=$item[1];
 	  s/^\"|\"$//g;
-	  s/\\(.)/$1/g;
 	  $_;
 	 }
   	
@@ -434,6 +460,11 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 
   nodelistvariable:
+	    '%' <skip:""> ID
+		{ $item[3] }
+  	
+
+  loosenodelistvariable:
 	    '%' <skip:""> id_or_var
 		{ $item[3] }
   	
@@ -484,14 +515,19 @@ $grammar=<<'_EO_GRAMMAR_';
 	    <perl_codeblock>
 	  | xpath
 
+  elsif_block:
+	    /(elsif)\s/ <commit> condition block
+		{ [$item[3],$item[4]] }
+  	
+
   else_block:
 	    /(else)\s/ <commit> block
-		{ $item[3] }
+		{ [undef,$item[3]] }
   	
 
   if:
-	    /(if)\s/ <commit> condition block else_block(?)
-		{ [\&XML::XSH::Functions::if_statement,$item[3],$item[4],@{$item[5]}] }
+	    /(if)\s/ <commit> condition block elsif_block(s?) else_block(?)
+		{ [\&XML::XSH::Functions::if_statement,[$item[3],$item[4]],@{$item[5]},@{$item[6]}] }
   	
 
   unless:
@@ -509,9 +545,31 @@ $grammar=<<'_EO_GRAMMAR_';
 		{ [\&XML::XSH::Functions::foreach_statement,$item[3],$item[4]] }
   	
 
+  typedvariable:
+	    /[\$\%]/ <skip:""> ID
+		{ "$item[1]$item[3]" }
+  	
+
   def:
-	    /(def|define)\s/ <commit> ID block
-		{ [\&XML::XSH::Functions::def,$item[3],$item[4]] }
+	    /(def|define)\s/ <commit> ID typedvariable(s?) block
+		{ 
+	  &XML::XSH::Functions::def($item[3],$item[5],$item[4]);
+	 }
+  	
+
+  match_typedargs:
+	   
+		{ (@arg and $arg[0]=~m/^%/) ? shift(@arg) : undef }
+  	 xpath match_typedargs[@arg]
+		{ [$item[2],@{$item[3]}]; }
+  	
+	  |
+		{ (@arg and $arg[0]=~m/^\$/) ? shift(@arg) : undef }
+  	 expression match_typedargs[@arg]
+		{ [$item[2],@{$item[3]}]; }
+  	
+	  |
+		{ $return=(!@arg) ? [] : undef }
   	
 
   xslt_params:
@@ -539,8 +597,14 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /before\s/
 		{ "before" }
   	
-	  | /(to|into|as child( of)?)\s/
-		{ "as_child" }
+	  | /(in)?to\s/
+		{ "into" }
+  	
+	  | /(append(ing)?|as\s+(a\s+)child(\s+of)?)\s/
+		{ "append" }
+  	
+	  | /(prepend(ing)?|(as\s+)(the\s+)first(\s+child(\s+of)?)?)\s/
+		{ "prepend" }
   	
 	  | /(replace|instead( of)?)\s/
 		{ "replace" }

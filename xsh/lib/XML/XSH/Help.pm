@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Mon Sep  2 17:38:13 2002
+# Fri Sep 27 10:37:07 2002
 
 package XML::XSH::Help;
 use strict;
@@ -27,7 +27,7 @@ General notes:
 
 Example: Count any attributes that contain string foo in its name or value.
 
-  xsh> list //words/attribute() | grep foo | wc
+  xsh> ls //words/attribute() | grep foo | wc
 
   In order to store a command's output in a string variable, the pipeline
   redirection must take the form `xsh-command |> $variable' where
@@ -54,14 +54,15 @@ description:
 	     assign, backups, call, cd, clone, close, copy, count, create,
 	     debug, def, defs, dtd, enc, encoding, exec, exit, files, fold,
 	     foreach, help, if, include, indent, insert, keep-blanks, lcd,
-	     load-ext-dtd, locate, ls, map, move, nobackups, nodebug, open,
-	     open-HTML, open-PIPE, options, parser-completes-attributes,
-	     parser-expands-entities, parser-expands-xinclude,
-	     pedantic-parser, perl, print, process-xinclude, pwd,
-	     query-encoding, quiet, recovering, remove, run-mode, save,
-	     save-HTML, save-xinclude, saveas, select, sort, test-mode,
-	     unfold, unless, valid, validate, validation, variables,
-	     verbose, version, while, xcopy, xinsert, xmove, xslt, xupdate
+	     load-ext-dtd, local, locate, ls, map, move, nobackups,
+	     nodebug, open, open-HTML, open-PIPE, options,
+	     parser-completes-attributes, parser-expands-entities,
+	     parser-expands-xinclude, pedantic-parser, perl, print,
+	     process-xinclude, pwd, query-encoding, quiet, recovering,
+	     remove, run-mode, save, save-HTML, save-xinclude, saveas,
+	     select, sort, test-mode, unfold, unless, valid, validate,
+	     validation, variables, verbose, version, while, xcopy,
+	     xinsert, xmove, xslt, xupdate
 
 END
 
@@ -76,11 +77,11 @@ description:
 Example:     Count paragraphs in each chapter
 
              $i=0;
-             foreach //chapter {
-             $c=./para;
-             $i=$i+1;
-             print "$c paragraphs in chapter no.$i";
-             }
+        foreach //chapter {
+          $c=./para;
+          $i=$i+1;
+          print "$c paragraphs in chapter no.$i";
+        }
 
 END
 
@@ -163,8 +164,10 @@ description:
 Example:     Open a document and count all sections containing a subsection
 	     in it
 
-             xsh> open v = mydocument.xml;
-             xsh> count v://section[subsection];
+             xsh scratch:/> open v = mydocument1.xml;
+        xsh v:/> open k = mydocument2.xml;
+        xsh k:/> count //section[subsection]; # searches k
+        xsh k:/> count v://section[subsection]; # searches v
 
 END
 
@@ -172,12 +175,36 @@ END
 $HELP{'if'}=[<<'END'];
 usage:       if <xpath>|<perl-code> <command>
              if <xpath>|<perl-code>
-	  <command-block> [ else <command-block> ]
+	  <command-block> [ elsif <command-block> ]* [ else <command-block> ]
              
 description:
 	     Execute <command-block> if the given <xpath> or <perl-code>
 	     expression evaluates to a non-emtpty node-list, true
-	     boolean-value, non-zero number or non-empty literal.
+	     boolean-value, non-zero number or non-empty literal. If the
+	     first test fails, check all possibly following `elsif'
+	     conditions and execute the corresponding <command-block> for
+	     the first one of them which is true. If none of them succeeds,
+	     execute the `else' <command-block> (if any).
+
+Example:     Display node type
+
+             def node_type %n {
+          foreach (%n) {
+            if ( . = self::* ) { # XPath trick to check if . is an element
+              echo 'element';
+            } elsif ( . = ../@* ) { # XPath trick to check if . is an attribute
+              echo 'attribute';
+            } elsif ( . = ../processing-instruction() ) {
+              echo 'pi';
+                 } elsif ( . = ../text() ) {
+              echo 'text';
+                 } elsif ( . = ../comment() ) {
+                   echo 'comment'
+            } else { # well, this should not happen, but anyway, ...
+                   echo 'unknown-type';
+                 }
+               }
+        }
 
 END
 
@@ -205,7 +232,7 @@ description:
 Example:     The commands have the same results
 
              xsh> while /table/row remove /table/row[1];
-             xsh> remove /table/row;
+        xsh> remove /table/row;
 
 END
 
@@ -243,13 +270,80 @@ END
 $HELP{'for'}=$HELP{'foreach'};
 
 $HELP{'def'}=[<<'END'];
-usage:       def <id> <command-block>
+usage:       def <id> [$<id> | %<id>]*
+	  <command-block>
              
 aliases:     define
 
 description:
-	     Define a new XSH routine named <id>. The <command-block> may
-	     be later invoked using the `<call> <id>' command.
+	     Define a new XSH subroutine named <id>. The subroutine may
+	     require zero or more parameters of nodelist or string type.
+	     These are declared as a whitespace-separated list of (so
+	     called) parametric variables (of nodelist or string type). The
+	     body of the subroutine is specified as a <command-block>.
+	     Note, that all subroutine declarations are processed during
+	     the parsing and not at run-time, so it does not matter where
+	     the subroutine is defined.
+
+	     The routine can be later invoked using the <call> command
+	     followed by the routine name and parameters. Nodelist
+	     parameters have to be given as an XPath expressions, and are
+	     evaluated just before the subroutine's body is executed.
+	     String variables must be given as a (string) <expression>.
+	     Resulting node-lists/strings are stored into the parametric
+	     variables before the body is executed. These variables are
+	     local to the subroutine's call tree (see also the <local>
+	     command). If there is a global variable using the same name as
+	     some parametric variable, the original value of the global
+	     variable is replaced with the value of the parametric variable
+	     for the time of the subroutine's run-time.
+
+
+             def l3 %v {
+          ls %v 3; # list given nodes upto depth 3
+        }
+        call l3 //chapter;
+
+Example:     Commenting and un-commenting pieces of document
+
+             def comment
+    %n      # nodes to move to comments
+    $mark   # maybe some handy mark to recognize such comments
+  {
+  echo "MARK: $mark\n";
+
+  foreach %n {
+    if ( . = ../@* ) {
+      echo "Warning: attribute nodes are not supported!";
+    } else {
+      echo "Commenting out:";
+      ls .;
+      local $node = "";
+      ls . |> $node;
+      add comment "$mark$node" replace .;
+    }
+  }
+}
+
+def uncomment %n $mark {
+  foreach %n {
+    if (. = ../comment()) { # is this node a comment node
+      local $string = substring-after(.,"$mark");
+      add chunk $string replace .;
+    } else {
+      echo "Warning: Ignoring non-comment node:";
+      ls . 0;
+    }
+  }
+}
+
+
+# comment out all chapters with no paragraphs
+call comment //chapter[not(para)] "COMMENT-NOPARA";
+
+# uncomment all comments (may not always be valid!)
+$mark="COMMENT-NOPARA";
+call uncomment //comment()[starts-with(.,"$mark")] $mark;
 
 END
 
@@ -273,46 +367,71 @@ description:
 Example:     String expressions
 
              xsh> $a=string(chapter/title)
-             xsh> $b="hallo world"
+        xsh> $b="hallo world"
 
 Example:     Arithmetic expressions
 
              xsh> $a=5*100
-             xsh> $a
-             $a=500
-             xsh> $a=(($a+5) div 10)
-             xsh> $a
-             $a=50.5
+        xsh> $a
+        $a=500
+        xsh> $a=(($a+5) div 10)
+        xsh> $a
+        $a=50.5
 
 Example:     Counting nodes
 
              xsh> $a=//chapter
-             xsh> $a
-             $a=10
-             xsh> %chapters=//chapter
-             xsh> $a=%chapters
-             xsh> $a
-             $a=10
+        xsh> $a
+        $a=10
+        xsh> %chapters=//chapter
+        xsh> $a=%chapters
+        xsh> $a
+        $a=10
 
 Example:     Some caveats of counting node-lists
 
              xsh> ls ./creature
-             <creature race='hobbit' name="Bilbo"/>
+            <creature race='hobbit' name="Bilbo"/>
 
-             ## WRONG (@name results in a singleton node-list) !!!
-             xsh> $name=@name
-             xsh> $name
-             $a=1
+        ## WRONG (@name results in a singleton node-list) !!!
+        xsh> $name=@name
+        xsh> $name
+        $a=1
 
-             ## CORRECT (use string() function)
-             xsh> $name=string(@name)
-             xsh> $name
-             $a=Biblo
+        ## CORRECT (use string() function)
+        xsh> $name=string(@name)
+        xsh> $name
+        $a=Biblo
 
 	     In the other two cases (where percent sign appears) find all
 	     nodes matching the given <xpath> and store the resulting
 	     node-list in the variable named %<id>. The variable may be
 	     later used instead of an XPath expression.
+
+END
+
+
+$HELP{'local'}=[<<'END'];
+usage:       local $<id>=<xpath>
+             local %<id>=<xpath>
+             
+description:
+	     This command acts in a very similar way as <assign> does,
+	     except that the variable assignment is done temporarily and
+	     lasts only for the rest of the nearest enclosing
+	     <command-block>. At the end of the enclosing block or
+	     subroutine the original value is restored.
+
+	     Note, that the variable itself is not lexically is still
+	     global in the sense that it is still visible to any subroutine
+	     called subsequently from within the same block. A local just
+	     gives temporary values to global (meaning package) variables.
+	     Unlike C's `auto' or Perl's `my' declarations it does not
+	     create a local variable. This is known as dynamic scoping.
+	     Lexical scoping is not implemented in XSH, at least so far.
+
+	     To sum up for Perl programmers: `local' in XSH works exactly
+	     the same as `local' in Perl.
 
 END
 
@@ -338,7 +457,8 @@ $HELP{'defs'}=[<<'END'];
 usage:       defs
              
 description:
-	     List names of all defined XSH routines.
+	     List names and parametric variables for all defined XSH
+	     routines.
 
 END
 
@@ -357,11 +477,14 @@ END
 $HELP{'.'}=$HELP{'include'};
 
 $HELP{'call'}=[<<'END'];
-usage:       call <id>
+usage:       call <id> [<xpath> | <expression>]*
              
 description:
 	     Call an XSH subroutine named <id> previously created using
-	     def.
+	     def. If the subroutine requires some paramters, these have to
+	     be specified after the <id>. Node-list parameters have to be
+	     provided as <xpath> expressions. String variables are have to
+	     be provided as string <expression>.
 
 END
 
@@ -390,8 +513,8 @@ Example:     Count words in "hallo wold" string, then print name of your
 	     machine's operating system.
 
              exec echo hallo world;                 # prints hallo world
-             exec "echo hallo word | wc"; # counts words in hallo world
-             exec uname;                            # prints operating system name
+        exec "echo hallo word | wc"; # counts words in hallo world
+        exec uname;                            # prints operating system name
 
 END
 
@@ -568,12 +691,8 @@ description:
 	     as in any expression argument.
 
 	     The <location> argument should be one of: `after', `before',
-	     `into' and `replace'. You may use `into' location also to
-	     attach an attribute to an element or to append some data to a
-	     text, cdata or comment node. Note also, that `after' and
-	     `before' locations may be used to append or prepend a string
-	     to a value of an existing attribute. In that case, attribute
-	     name is ignored.
+	     `into', `replace', `append' or `prepend'. See documentation of
+	     the <location> argument type for more detail.
 
 	     The namespace <expression> is only valid for elements and
 	     attributes and must evaluate to the namespace URI. In that
@@ -583,10 +702,10 @@ description:
 Example:     Append a new Hobbit element to the list of middle-earth
 	     creatures and name him Bilbo.
 
-             xsh> xadd element "<creature race='hobbit' manner='good'> \
-               into /middle-earth/creatures
-             xsh> xadd attribute "name='Bilbo'" \
-               into /middle-earth/creatures/creature[@race='hobbit'][last()]
+             xsh> xadd element "<creature race='hobbit' manner='good'>" \
+        into /middle-earth/creatures
+        xsh> xadd attribute "name='Bilbo'" \
+        into /middle-earth/creatures/creature[@race='hobbit'][last()]
 
 END
 
@@ -602,9 +721,9 @@ description:
 
 
              add element hobbit into //middle-earth/creatures;
-             add attribute 'name="Bilbo"' into //middle-earth/creatures/hobbit[last()];
-             add chunk '<hobbit name="Frodo">A small guy from <place>Shire</place>.</hobbit>' 
-             into //middle-earth/creatures;
+        add attribute 'name="Bilbo"' into //middle-earth/creatures/hobbit[last()];
+        add chunk '<hobbit name="Frodo">A small guy from <place>Shire</place>.</hobbit>' 
+          into //middle-earth/creatures;
 
 END
 
@@ -613,8 +732,15 @@ $HELP{'location'}=[<<'END'];
 Location argument type
 
 description:
-	     One of: after, before, into/to/as child/as child of,
-	     replace/instead/instead of.
+	     One of: after, before, (in)to/as child (of), (as) first (child
+	     (of)), append(ing), prepend(ing), replace/instead (of)?.
+
+	     This argument is required by all commands allow inserting
+	     nodes to a document at a destination given by an XPath
+	     expression. The semantics for location argument values depends
+	     types of both the source node and the target node.
+
+	     TO BE DOCUMENTED!
 
 END
 
@@ -659,7 +785,7 @@ END
 $HELP{'dup'}=$HELP{'clone'};
 
 $HELP{'ls'}=[<<'END'];
-usage:       list <xpath> [<expression>]
+usage:       ls <xpath> [<expression>]
              
 aliases:     list
 
@@ -714,10 +840,10 @@ description:
 
 
              xsh> $i="foo";
-             xsh> eval { echo "$i-bar\n"; } # prints foo-bar
-             xsh> eval 'echo "\$i-bar\n";'  # exactly the same as above
-             xsh> eval 'echo "$i-bar\n";'   # prints foo-bar too, but $i is
-             # interpolated by XSH. Perl actually evaluates echo "foo-bar\n";
+        xsh> eval { echo "$i-bar\n"; } # prints foo-bar
+        xsh> eval 'echo "\$i-bar\n";'  # exactly the same as above
+        xsh> eval 'echo "$i-bar\n";'   # prints foo-bar too, but $i is
+            # interpolated by XSH. Perl actually evaluates echo "foo-bar\n";
 
 END
 
@@ -785,8 +911,8 @@ description:
 Example:     Sort creatures by name
 
              xsh> %c=//creatures
-             xsh> sort { $a=string(@name) }{ $b=string(@name) }{ $a cmp $b } %c
-             xsh> ls %c/@name
+        xsh> sort { $a=string(@name) }{ $b=string(@name) }{ $a cmp $b } %c
+        xsh> ls %c/@name
 
 END
 
@@ -840,12 +966,12 @@ description:
 
 
              xsh> a=mydoc1.xml       # opens and selects a
-             xsh> list /             # lists a
-             xsh> b=mydoc2.xml       # opens and selects b
-             xsh> list /             # lists b
-             xsh> list a:/           # lists and selects a
-             xsh> select b           # does nothing except selecting b
-             xsh> list /             # lists b
+        xsh> ls /               # lists a
+        xsh> b=mydoc2.xml       # opens and selects b
+        xsh> ls /               # lists b
+        xsh> ls a:/             # lists and selects a
+        xsh> select b           # does nothing except selecting b
+        xsh> ls /               # lists b
 
 END
 
@@ -863,15 +989,15 @@ description:
 
              xsh> open x=mydoc.xml # open a document
 
-             # quote file name if it contains whitespace
-             xsh> open y="document with a long name with spaces.xml"
+        # quote file name if it contains whitespace
+        xsh> open y="document with a long name with spaces.xml"
 
-             # you may omit the word open (I'm clever enough to find out).
-             xsh> z=mybook.xml
+        # you may omit the word open (I'm clever enough to find out).
+        xsh> z=mybook.xml
 
-             # use z: prefix to identify the document opened with the
-             # previous comand in an XPath expression.
-             xsh> list z://chapter/title
+        # use z: prefix to identify the document opened with the
+        # previous comand in an XPath expression.
+        xsh> ls z://chapter/title
 
 END
 
@@ -916,18 +1042,18 @@ description:
 
 
              xsh> create t1 root
-             xsh> ls /
-             <?xml version="1.0" encoding="utf-8"?>
-             <root/>
+        xsh> ls /
+        <?xml version="1.0" encoding="utf-8"?>
+        <root/>
 
-             xsh> create t2 "<root id='r0'>Just a <b>test</b></root>"
-             xsh> ls /
-             <?xml version="1.0" encoding="utf-8"?>
-             <root id='r0'>Just a <b>test</b></root>
-             xsh> files
-             scratch = new_document.xml
-             t1 = new_document1.xml
-             t2 = new_document2.xml
+        xsh> create t2 "<root id='r0'>Just a <b>test</b></root>"
+        xsh> ls /
+        <?xml version="1.0" encoding="utf-8"?>
+        <root id='r0'>Just a <b>test</b></root>
+        xsh> files
+        scratch = new_document.xml
+        t1 = new_document1.xml
+        t2 = new_document2.xml
 
 END
 
@@ -1380,12 +1506,12 @@ description:
 
 
              xsh> fold //chapter 1
-             xsh> ls //chapter[1] fold
-             <chapter id="intro" xsh:fold="1">
-             <title>...</title>
-             <para>...</para>
-             <para>...</para>
-             </chapter>
+        xsh> ls //chapter[1] fold
+        <chapter id="intro" xsh:fold="1">
+          <title>...</title>
+          <para>...</para>
+          <para>...</para>
+        </chapter>
 
 END
 

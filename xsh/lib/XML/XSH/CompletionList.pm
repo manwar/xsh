@@ -56,6 +56,7 @@ load-xincludes
 load_ext_dtd
 load_xinclude
 load_xincludes
+local
 locate
 ls
 map
