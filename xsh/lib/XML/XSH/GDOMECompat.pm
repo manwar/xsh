@@ -1,4 +1,4 @@
-# $Id: GDOMECompat.pm,v 1.4 2002-08-30 17:10:37 pajas Exp $
+# $Id: GDOMECompat.pm,v 1.5 2002-09-27 08:38:51 pajas Exp $
 
 package XML::XSH::GDOMECompat;
 
@@ -169,7 +169,7 @@ sub is_document {
   return $node->nodeType == DOCUMENT_NODE;
 }
 
-sub is_document {
+sub is_document_fragment {
   my ($class,$node)=@_;
   return $node->nodeType == DOCUMENT_FRAGMENT_NODE;
 }

@@ -1,4 +1,4 @@
-# $Id: LibXMLCompat.pm,v 1.4 2002-08-30 17:10:37 pajas Exp $
+# $Id: LibXMLCompat.pm,v 1.5 2002-09-27 08:38:51 pajas Exp $
 
 package XML::XSH::LibXMLCompat;
 
@@ -17,7 +17,7 @@ sub version {
 sub toStringUTF8 {
   my ($class,$node,$mode)=@_;
   if ($class->is_document($node)) {
-    return encodeToUTF8($node->getEncoding(),$node->toString($mode));
+    return XML::LibXML::encodeToUTF8($node->getEncoding(),$node->toString($mode));
   } else {
     return $node->can('toString') ? $node->toString($mode) : $node->to_literal();
   }
@@ -108,75 +108,75 @@ sub parse_file {
 
 sub is_xinclude_start {
   my ($class,$node)=@_;
-  return $node->nodeType == XML_XINCLUDE_START();
+  return $node->nodeType == XML::LibXML::XML_XINCLUDE_START();
 }
 
 sub is_xinclude_end {
   my ($class,$node)=@_;
-  return $node->nodeType == XML_XINCLUDE_END();
+  return $node->nodeType == XML::LibXML::XML_XINCLUDE_END();
 }
 
 sub is_element {
   my ($class,$node)=@_;
-  return $node->nodeType == XML_ELEMENT_NODE();
+  return $node->nodeType == XML::LibXML::XML_ELEMENT_NODE();
 }
 
 sub is_attribute {
   my ($class,$node)=@_;
-  return $node->nodeType == XML_ATTRIBUTE_NODE();
+  return $node->nodeType == XML::LibXML::XML_ATTRIBUTE_NODE();
 }
 
 sub is_text {
   my ($class,$node)=@_;
-  return $node->nodeType == XML_TEXT_NODE();
+  return $node->nodeType == XML::LibXML::XML_TEXT_NODE();
 }
 
 sub is_text_or_cdata {
   my ($class,$node)=@_;
-  return $node->nodeType == XML_TEXT_NODE() || $node->nodeType == XML_CDATA_SECTION_NODE();
+  return $node->nodeType == XML::LibXML::XML_TEXT_NODE() || $node->nodeType == XML::LibXML::XML_CDATA_SECTION_NODE();
 }
 
 sub is_cdata_section {
   my ($class,$node)=@_;
-  return $node->nodeType == XML_CDATA_SECTION_NODE();
+  return $node->nodeType == XML::LibXML::XML_CDATA_SECTION_NODE();
 }
 
 
 sub is_pi {
   my ($class,$node)=@_;
-  return $node->nodeType == XML_PI_NODE();
+  return $node->nodeType == XML::LibXML::XML_PI_NODE();
 }
 
 sub is_entity {
   my ($class,$node)=@_;
-  return $node->nodeType == XML_ENTITY_NODE();
+  return $node->nodeType == XML::LibXML::XML_ENTITY_NODE();
 }
 
 sub is_document {
   my ($class,$node)=@_;
-  return $node->nodeType == XML_DOCUMENT_NODE();
+  return $node->nodeType == XML::LibXML::XML_DOCUMENT_NODE();
 }
 
 sub is_document_fragment {
   my ($class,$node)=@_;
-  return $node->nodeType == XML_DOCUMENT_FRAG_NODE();
+  return $node->nodeType == XML::LibXML::XML_DOCUMENT_FRAG_NODE();
 }
 
 sub is_comment {
   my ($class,$node)=@_;
-  return $node->nodeType == XML_COMMENT_NODE;
+  return $node->nodeType == XML::LibXML::XML_COMMENT_NODE();
 }
 
 sub is_namespace {
   my ($class,$node)=@_;
-  return $node->nodeType == XML_NAMESPACE_DECL;
+  return $node->nodeType == XML::LibXML::XML_NAMESPACE_DECL();
 }
 
 sub get_dtd {
   my ($class,$doc,$quiet)=@_;
   my $dtd;
   foreach ($doc->childNodes()) {
-    if ($_->nodeType == XML_DTD_NODE()) {
+    if ($_->nodeType == XML::LibXML::XML_DTD_NODE()) {
       if ($_->hasChildNodes()) {
 	$dtd=$_;
       } elsif (get_load_ext_dtd()) {
