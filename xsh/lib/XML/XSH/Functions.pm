@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.11 2002-04-17 13:15:01 pajas Exp $
+# $Id: Functions.pm,v 1.12 2002-04-17 13:49:42 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -845,28 +845,19 @@ sub insert_node {
       }
     }
   } else {
-    __debug("xxxx 1\n");
     my $copy=$node->cloneNode(1);
-    __debug("xxxx 2\n");
 #    $copy->setOwnerDocument($dest_doc);
     $dest_doc->importNode($copy);
-    __debug("xxxx 3\n");
     if ($where eq 'after') {
-      __debug("xxxx 4\n");
       $dest->parentNode()->insertAfter($copy,$dest);
     } elsif ($where eq 'as_child') {
-      __debug("xxxx 5\n");
       $dest->appendChild($copy);
     } elsif ($where eq 'replace') {
-      __debug("xxxx 6\n");
       $dest->parentNode()->insertBefore($copy,$dest);
-      __debug("xxxx 7\n");
       remove_node($dest);
     } else {
-      __debug("xxxx 8\n");
       $dest->parentNode()->insertBefore($copy,$dest);
     }
-    __debug("xxxx 9\n");
   }
   return 1;
 }
