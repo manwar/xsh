@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 1.7 2003-03-12 13:57:15 pajas Exp $
+# $Id: Completion.pm,v 1.8 2003-05-06 13:46:31 pajas Exp $
 
 package XML::XSH::Completion;
 
@@ -18,8 +18,21 @@ sub cpl {
     return grep { index($_,$1)==0 } XML::XSH::Functions::defs;
   } elsif ($line=~/^\s*help\s+(\S*)$|[;}]\s*help\s+(\S*)$/) {
     return grep { index($_,$1)==0 } keys %XML::XSH::Help::HELP;
-  } else {
+  } elsif (substr($line,0,$pos)=~
+	   /(?:^|;)\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?([a-zA-Z0-9_]*)$/) {
+    return grep { index($_,$word)==0 } XML::XSH::Functions::docs;
+  } elsif (substr($line,0,$pos)=~
+	   /(?:^|;)\s*(?:open(?:\s+|_|-)(?:(?:html|xml|docbook|HTML|XML|DOCBOOK)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?)?[a-zA-Z0-9_]+\s*=\s*(\S*)$/
+	   ||
+	   substr($line,0,$pos)=~
+	   /(?:^|;)\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?[a-zA-Z0-9_]+\s+(\S*)$/
+	  ) {
+    $readline::rl_completer_terminator_character='';
     return eval { map { s:\@$::; $_ } readline::rl_filename_list($_[0]); };
+  } else { # XPath completion
+#    print "\nW:$word\nL:$line\nP:$pos\n";
+    $readline::rl_completer_terminator_character='';
+    return XML::XSH::Functions::xpath_complete($line,$word,$pos);
   }
 }
 
@@ -42,8 +55,8 @@ sub gnu_cpl {
       };
     }
 
-    # find longest common match. Can anybody show me how to peruse
-    # T::R::Gnu to have this done automatically? Seems expensive.
+    # find longest common match. Can anybody show me how to persuade
+    # T::R::Gnu to do this automatically? Seems expensive.
     return () unless @perlret;
     my($newtext) = $text;
     for (my $i = length($text)+1;;$i++) {
