@@ -84,6 +84,7 @@ sub new {
       <ruleref ref="nodebug"/>
       <ruleref ref="version"/>
       <ruleref ref="validation"/>
+      <ruleref ref="recovering"/>
       <ruleref ref="parser_expands_entities"/>
       <ruleref ref="keep_blanks"/>
       <ruleref ref="pedantic_parser"/>
@@ -93,6 +94,7 @@ sub new {
       <ruleref ref="load_ext_dtd"/>
       <ruleref ref="encoding"/>
       <ruleref ref="query_encoding"/>
+      <ruleref ref="options_command"/>
       <ruleref ref="copy_command"/>
       <ruleref ref="xcopy_command"/>
       <ruleref ref="move_command"/>
@@ -917,6 +919,28 @@ sub new {
 	<action>[\&amp;XML::XSH::Functions::print_var,$item[1]]</action>
       </production>
     </rule>
+    <rule id="options_command" type="command" name="options"
+    inline="yes">
+      <aliases>
+	<alias name="flags"/>
+      </aliases>
+      <production>
+	<selfref/>
+	<directive type="commit"></directive>
+	<action>[\&amp;XML::XSH::Functions::list_flags]</action>
+      </production>
+      <documentation>
+	<usage>options</usage>
+	<description>
+	  <para>List current values of all XSH flags and options (such as
+	  validation flag or query-encoding).</para>
+	  <example>
+	    <title>Store current settings in your .xshrc</title>
+	    <code>xsh> options | cat > ~/.xshrc</code>
+	  </example>
+	</description>
+      </documentation>
+    </rule>
     <rule id="list_defs_command" type="command" name="defs"
     inline="yes">
       <production>
@@ -1340,13 +1364,14 @@ sub new {
     </rule>
     <rule id="nodetype" name="node-type">
       <production>
-	<regexp>element|attribute|attributes|text|cdata|pi|comment|chunk</regexp>
+	<regexp>element|attribute|attributes|text|cdata|pi|comment|chunk|entity_reference</regexp>
       </production>
       <documentation>
 	<title>Node-type argument type</title>
 	<description>
 	  <para>
-	    One of: element, attribute, text, cdata, comment, chunk.  A
+	    One of: element, attribute, text, cdata, comment, chunk
+	    and (EXPERIMENTALLY!) entity_reference.  A
 	    chunk is a character string which forms a well-balanced
 	    peace of XML.
 	  </para>
@@ -2357,6 +2382,32 @@ sub new {
 	    <xref linkend="expression"/> is non-zero or off otherwise.
 	    Defaults to on.
 	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="recovering" type="command" name="recovering"
+    inline="yes">
+      <production>
+	<selfref/>
+	<directive type="commit"></directive>
+	<ruleref ref="expression"/>
+	<action>[\&amp;XML::XSH::Functions::set_recovering,$item[3]]</action>
+      </production>
+      <documentation>
+	<usage>recovering <xref linkend="expression"/></usage>
+	<description>
+	  <para>
+	    Turn on recovering parser mode if the
+	    <xref linkend="expression"/> is non-zero or off otherwise.
+	    Defaults to off. Note, that the in the recovering mode,
+            validation is not performed by the parser even if
+	    the validation flag is on and that recovering mode flag
+            only influences parsing of XML documents (not HTML).
+	  </para>
+	  <para>The recover mode helps to efficiently recover
+	  documents that are almost well-formed. This for example
+	  includes documents without a close tag for the document
+	  element (or any other element inside the document).</para>
 	</description>
       </documentation>
     </rule>
