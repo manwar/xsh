@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.46 2003-03-28 14:41:47 pajas Exp $
+# $Id: Functions.pm,v 1.47 2003-04-14 13:12:24 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -7,12 +7,13 @@ no warnings;
 
 use XML::XSH::Help;
 use XML::XSH::Iterators;
+use XML::LibXML::XPathContext;
 use IO::File;
 
 use Exporter;
 use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCAL_NODE
             $_xml_module $_sigint
-            $_xsh $_parser %_nodelist @stored_variables
+            $_xsh $_xpc $_parser %_nodelist @stored_variables
             $_newdoc $SIGSEGV_SAFE
             $TRAP_SIGINT $TRAP_SIGPIPE $_die_on_err $_on_exit
             %_doc %_files %_defs %_chr
@@ -26,7 +27,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.7';
-  $REVISION='$Revision: 1.46 $';
+  $REVISION='$Revision: 1.47 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -136,6 +137,7 @@ sub xsh_init {
   set_validation(0);
   set_keep_blanks(1);
 
+  xpc_init();
   if (eval { require XML::XSH::Parser; }) {
     $_xsh=XML::XSH::Parser->new();
   } else {
@@ -181,6 +183,49 @@ sub get_indent		     { $INDENT }
 sub get_backups		     { $BACKUPS }
 sub get_cdonopen	     { $SWITCH_TO_NEW_DOCUMENTS }
 
+# initialize global XPathContext
+sub xpc_init {
+  $_xpc = XML::LibXML::XPathContext->new();
+  $_xpc->registerVarLookupFunc(\&xpath_var_lookup,undef);
+  $_xpc->registerFunction('doc',
+			  sub {
+			    die "Wrong number of arguments for function doc(id)!" if (@_!=1);
+			    my ($id)=literal_value($_[0]);
+			    die "Wrong number of arguments for function doc(id)!" if (@_!=1);
+			    die "Document does not exist!" unless (exists($_doc{$id}));
+			    return $_doc{$id};
+			  });
+  $_xpc->registerFunction('matches',
+			  sub {
+			    die "Wrong number of arguments for function matches(string,regexp)!" if (@_!=2);
+			    my ($string,$regexp)=@_;
+			    $regexp=literal_value($regexp);
+			    use utf8;
+			    my $ret=literal_value($string)=~m{$regexp} ?
+			      XML::LibXML::Boolean->True : XML::LibXML::Boolean->False;
+			    $ret;
+			  });
+  $_xpc->registerFunction('grep',
+			  sub {
+			    die "Wrong number of arguments for function grep(list,regexp)!" if (@_!=2);
+			    my ($nodelist,$regexp)=@_;
+			    die "1st argument must be a node-list in grep(list,regexp)!" 
+			      unless (ref($nodelist) and $nodelist->isa('XML::LibXML::NodeList'));
+			    use utf8; 
+			    [grep { $_->to_literal=~m{$regexp} } @$nodelist];
+			  });
+  $_xpc->registerFunction('same',
+			  sub {
+			    die "Wrong number of arguments for function same(node,node)!" if (@_!=2);
+			    my ($nodea,$nodeb)=@_;
+			    die "1st argument must be a node in grep(list,regexp)!" 
+			      unless (ref($nodea) and $nodea->isa('XML::LibXML::NodeList'));
+			    die "2nd argument must be a node in grep(list,regexp)!" 
+			      unless (ref($nodeb) and $nodeb->isa('XML::LibXML::NodeList'));
+			    return XML::LibXML::Boolean->new($nodea->size() && $nodeb->size() &&
+							     $nodea->[0]->isSameNode($nodea->[0]));
+			  });
+}
 
 sub list_flags {
   print "validation ".(get_validation() or "0").";\n";
@@ -280,6 +325,20 @@ sub print_version {
 sub files {
   out(map { "$_ = $_files{$_}\n" } sort keys %_files);
   return 1;
+}
+
+sub xpath_var_lookup {
+  my ($data,$name,$ns)=@_;
+  no strict;
+  if ($ns eq "") {
+    if ($name=~/^_\.(.*)$/ and exists($_nodelist{$1})) {
+      return $_nodelist{$1}[1];
+    } elsif (defined(${"XML::XSH::Map::$name"})) {
+      return ${"XML::XSH::Map::$name"};
+    } else {
+      die "Undefined nodelist variable $name\n";
+    }
+  }
 }
 
 # return a value of the given XSH string or nodelist variable
@@ -675,6 +734,10 @@ sub _undef {
   return 1;
 }
 
+sub literal_value {
+  return ref($_[0]) ? $_[0]->value() : $_[0];
+}
+
 # evaluate xpath and assign the result to a variable
 sub xpath_assign {
   my ($name,$xp)=@_;
@@ -759,32 +822,33 @@ sub restore_variables {
   return 1;
 }
 
+sub _xpc_find_nodes {
+  my ($node,$query)=@_;
+  $_xpc->setContextNode($node);
+  return $_xpc->findnodes($query);
+}
+
 # findnodes wrapper which handles both xpaths and nodelist variables
 sub _find_nodes {
-  my ($context,$query)=@_;
-  if ($query=~/^\%([a-zA-Z_][a-zA-Z0-9_]*)(.*)$/) { # node-list
-    $query=$2;
+  my ($context,$q)=@_;
+  if ($q=~s/^\%([a-zA-Z_][a-zA-Z0-9_]*)(.*)$/\$_.$1$2/) { # node-list
+    my $query=$2;
     my $name=$1;
     unless (exists($_nodelist{$name})) {
       die "No such nodelist '\%$name'\n";
     }
-    if ($query ne "") {
+    if ($query =~ /\S/) {
       if ($query =~m|^\s*\[(\d+)\](.*)$|) { # index on a node-list
-	return $_nodelist{$name}->[1]->[$1+1] ?
-	  [ grep {defined($_)} $_nodelist{$name}->[1]->[$1]->findnodes('./self::*'.$2) ] : [];
-      } elsif ($query =~m|^\s*\[|) { # filter in a nodelist
-	return [ grep {defined($_)} map { ($_->findnodes('./self::*'.$query)) }
-		 @{$_nodelist{$name}->[1]}
-	       ];
+	return exists($_nodelist{$name}->[1]->[$1+1]) ?
+	  scalar(_xpc_find_nodes($_nodelist{$name}->[1]->[$1],'./self::*'.$2)) : [];
+      } else {
+	return scalar(_xpc_find_nodes($_nodelist{$name}->[0], $q));
       }
-      return [ grep {defined($_)} map { ($_->findnodes('.'.$query)) }
-	       @{$_nodelist{$name}->[1]}
-	     ];
     } else {
       return $_nodelist{$name}->[1];
     }
   } else {
-    return [ grep {defined($_)} $context->findnodes($query)];
+    return scalar(_xpc_find_nodes($context,$q));
   }
 }
 
@@ -797,6 +861,26 @@ sub find_nodes {
   }
 
   return _find_nodes(get_local_node($id),toUTF8($QUERY_ENCODING,$query));
+}
+
+sub count_xpath {
+  my ($node,$xp)=@_;
+  my $result;
+  $_xpc->setContextNode($node);
+  $result=$_xpc->find($xp);
+
+  if (ref($result)) {
+    if ($result->isa('XML::LibXML::NodeList')) {
+      return $result->size();
+    } elsif ($result->isa('XML::LibXML::Literal')) {
+      return $result->value();
+    } elsif ($result->isa('XML::LibXML::Number') or
+	     $result->isa('XML::LibXML::Boolean')) {
+      return $result->value();
+    }
+  } else {
+    return $result;
+  }
 }
 
 # assign a result of xpath search to a nodelist variable
@@ -1094,7 +1178,7 @@ sub save_xinclude_chunk {
 
   if ($parse eq 'text') {
     foreach my $node (@$nodes) {
-      $F->print(fromUTF8($enc,$node->to_literal()->value()));
+      $F->print(fromUTF8($enc,literal_value($node->to_literal)));
     }
   } else {
     my $version=$doc->can('getVersion') ? $doc->getVersion() : '1.0';
@@ -1352,8 +1436,7 @@ sub count {
   } else {
     $query=toUTF8($QUERY_ENCODING,$query);
     print STDERR "query: $query\n" if "$DEBUG";
-    $result=fromUTF8($ENCODING,$_xml_module->count_xpath(get_local_node($id),
-							  $query));
+    $result=fromUTF8($ENCODING,count_xpath(get_local_node($id), $query));
     print STDERR "result: $result" if "$DEBUG";
   }
   return $result;
@@ -1365,9 +1448,9 @@ sub eval_xpath_literal {
   my $ql=&find_nodes($xp);
   if (@$ql) {
     if (wantarray) {
-      return map { &fromUTF8($ENCODING, $_->to_literal()->value()) } @$ql;
+      return map { &fromUTF8($ENCODING, literal_value($_->to_literal)) } @$ql;
     } else {
-      return &fromUTF8($ENCODING, $ql->[0]->to_literal()->value());
+      return &fromUTF8($ENCODING, literal_value($ql->[0]->to_literal));
     }
   } else {
     return '';
@@ -2906,6 +2989,94 @@ sub load_catalog {
   return 1;
 }
 
+sub stream_process_node {
+  my ($node,$command,$input,$id)=@_;
+  set_doc($id,$_xml_module->owner_document($node),$input);
+  my $old_local=$LOCAL_NODE;
+  my $old_id=$LOCAL_ID;
+  eval {
+    foreach (1) {
+      $LOCAL_NODE=$node;
+      $LOCAL_ID=$id;
+      eval {
+	run_commands($command);
+      };
+      if (ref($@) and $@->isa('XML::XSH::Internal::LoopTerminatingException')) {
+	if ($@->label =~ /^(?:next|redo)$/ and $@->[1]>1) {
+	  $@->[1]--;
+	  die $@; # propagate to a higher level
+	}
+	if ($@->label eq 'next') {
+	  last;
+	} elsif ($@->label eq 'redo') {
+	  redo;
+	} else {
+	  die $@; # propagate
+	}
+      } elsif ($@) {
+	die $@; # propagate
+      }
+    }
+  };
+  do {
+    local $SIG{INT}=\&flagsigint;
+    delete $_doc{$id};
+    delete $_files{$id};
+    $LOCAL_NODE=$old_local;
+    $LOCAL_ID=$old_id;
+    propagate_flagsigint();
+  };
+  die $@ if $@; # propagate
+}
+
+sub stream_process {
+  my ($itype, $input, $otype, $output, $process)=@_;
+  require XML::Filter::DOMFilter::LibXML;
+  require XML::LibXML::SAX;
+  require XML::SAX::Writer;
+
+  my $out;
+  my $i=1;
+  $i++ while (exists($_doc{"_stream_$i"}));
+  if ($otype =~ /pipe/i) {
+    open $out,"| $output";
+    $out || die "Cannot open pipe to $output\n";
+  } elsif ($otype =~ /string/i) {
+    $out = $OUT;
+  } else {
+    $out = $output;
+  }
+  my $parser=XML::LibXML::SAX
+    ->new( Handler =>
+	   XML::Filter::DOMFilter::LibXML
+	   ->new(Handler => XML::SAX::Writer::XML->new( Output => $out,
+							Writer => 'XML::SAX::Writer::XMLEnc'
+						      ),
+		 XPathContext => $_xpc,
+		 Process => [
+			     map {
+			       $_->[0] => [\&stream_process_node,$_->[1],
+					   $input,"_stream_$i"] }
+			     @$process
+			    ])
+	 );
+  if ($itype =~ /pipe/i) {
+    open my $F,"$input|";
+    $F || die "Cannot open pipe to $input: $!\n";
+    $parser->parse_fh($F);
+    close $F;
+  } elsif ($itype =~ /string/i) {
+    my $xmldecl;
+    $xmldecl="<?xml version='1.0' encoding='utf-8'?>" unless $input=~/^\s*\<\?xml /;
+    $parser->parse_string($xmldecl.$input);
+  } else  { #file
+    $parser->parse_uri($input);
+  }
+  if ($otype =~ /pipe/i) {
+    close($out);
+  }
+}
+
 sub iterate {
   my ($code,$axis,$nodefilter,$filter)=@_;
 
@@ -2913,8 +3084,6 @@ sub iterate {
 
   $axis =~ s/::$//;
   $axis=~s/-/_/g;
-
-  __debug("iteration axis: $axis\n");
 
   $filter =~ s/^\[\s*((?:.|\n)*?)\s*\]$/$1/ if defined $filter;
   my $test;
@@ -2941,11 +3110,10 @@ sub iterate {
   if ($filter ne '') {
     $filter =~ s/\\/\\\\/g;
     $filter =~ s/'/\\'/g;
-    $test .= qq{ && \$_xml_module->count_xpath(\$_[0],'$filter') };
+    $test .= qq{ && count_xpath(\$_[0],'$filter') };
   }
 
   my $filter_sub = eval "sub { $test }";
-  __debug( "Filter sub: $filter_sub\nsub { $test }\n" );
   my $iterator;
   do {
     my $start=get_local_node(_id());
@@ -3002,6 +3170,31 @@ sub quit {
     &{$_on_exit->[0]}($_[0],@{$_on_exit}[1..$#$_on_exit]); # run on exit hook
   }
   exit(int($_[0]));
+}
+
+sub register_ns {
+  my ($prefix,$ns)=expand(@_);
+  $_xpc->registerNs($prefix,$ns);
+  return 1;
+}
+
+sub register_func {
+  my ($name,$code)=(expand($_[0]),$_[1]);
+  my $sub;
+  if ($code =~ /^\s*{/) {
+    $sub=eval("package XML::XSH::Map; no strict; sub $code");
+  } elsif ($code =~/^\s*([A-Za-z_][A-Za-z_0-9]*(::[A-Za-z_][A-Za-z_0-9]*)*)\s*$/) {
+    if ($2 ne "") {
+      $sub=\&{"$1"};
+    } else {
+      $sub=\&{"XML::XSH::Map::$1"};
+    }
+  } else {
+    $sub=eval("package XML::XSH::Map; no strict; sub { $code }");
+  }
+  die $@ if $@;
+  $_xpc->registerFunction($name, $sub);
+  return 1;
 }
 
 #######################################################################
@@ -3163,6 +3356,18 @@ sub value {
 
 sub close {
   $_[0]->[0]=undef;
+}
+
+package XML::SAX::Writer::XMLEnc;
+use base qw(XML::SAX::Writer::XML);
+
+sub xml_decl {
+  my ($self,$data) = @_;
+  if ($data->{Encoding}) {
+    $self->{EncodeTo}=$data->{Encoding};
+    $self->setConverter();
+  }
+  $self->SUPER::xml_decl($data);
 }
 
 1;

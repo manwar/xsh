@@ -1,4 +1,4 @@
-# $Id: LibXMLCompat.pm,v 1.9 2003-03-12 14:01:45 pajas Exp $
+# $Id: LibXMLCompat.pm,v 1.10 2003-04-14 13:12:23 pajas Exp $
 
 package XML::XSH::LibXMLCompat;
 
@@ -63,25 +63,6 @@ sub set_encoding {
 sub xml_equal {
   my ($class,$a,$b)=@_;
   return $a->isSameNode($b);
-}
-
-sub count_xpath {
-  my ($class,$node,$xp)=@_;
-  my $result;
-  $result=$node->find($xp);
-
-  if (ref($result)) {
-    if ($result->isa('XML::LibXML::NodeList')) {
-      return $result->size();
-    } elsif ($result->isa('XML::LibXML::Literal')) {
-      return $result->value();
-    } elsif ($result->isa('XML::LibXML::Number') or
-	     $result->isa('XML::LibXML::Boolean')) {
-      return $result->value();
-    }
-  } else {
-    return $result;
-  }
 }
 
 sub doc_process_xinclude {
