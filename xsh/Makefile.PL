@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 2.1 2004-12-02 19:26:35 pajas Exp $
+# $Id: Makefile.PL,v 2.2 2004-12-04 10:35:28 pajas Exp $
 
 use strict;
 
@@ -34,8 +34,9 @@ sub MY::postamble {
 return <<'EOF';
 cvs:    xml
 	rm -f Makefile
-	echo "Please, re-run 'perl Makefile.PL' and 'make'"
-	echo
+	@echo
+	@echo "Please, re-run 'perl Makefile.PL' and 'make'"
+	@echo
 
 xml:
 	$(PERL) tools/gen_grammar.pl src/xsh_grammar.xml > lib/XML/XSH2/Grammar.pm
