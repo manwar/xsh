@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.18 2002-07-15 17:48:48 pajas Exp $
+# $Id: Functions.pm,v 1.19 2002-08-26 14:39:17 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -14,8 +14,9 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $OUT $LOCAL_ID $LOCAL_NODE
             $_xsh $_parser $_encoding $_qencoding %_nodelist
             $_quiet $_debug $_test $_newdoc $_indent $_backups $SIGSEGV_SAFE $TRAP_SIGINT
             %_doc %_files %_defs
-	    $VALIDATION $EXPAND_ENTITIES $KEEP_BLANKS $PEDANTIC_PARSER
-	    $LOAD_EXT_DTD $COMPLETE_ATTRIBUTES $EXPAND_XINCLUDE
+	    $VALIDATION $RECOVERING $EXPAND_ENTITIES $KEEP_BLANKS
+	    $PEDANTIC_PARSER $LOAD_EXT_DTD $COMPLETE_ATTRIBUTES
+	    $EXPAND_XINCLUDE $_on_exit
 	  /;
 
 BEGIN {
@@ -87,7 +88,8 @@ EOF
   return $_xsh;
 }
 
-sub set_validation	     { $VALIDATION=$_[0]; return 1; }
+sub set_validation	     { $VALIDATION=$_[0]; 1; }
+sub set_recovering	     { $RECOVERING=$_[0]; 1; }
 sub set_expand_entities	     { $EXPAND_ENTITIES=$_[0]; 1; }
 sub set_keep_blanks	     { $KEEP_BLANKS=$_[0]; 1; }
 sub set_pedantic_parser	     { $PEDANTIC_PARSER=$_[0]; 1; }
@@ -99,6 +101,7 @@ sub set_backups		     { $_backups=$_[0]; 1; }
 
 
 sub get_validation	     { $VALIDATION }
+sub get_recovering	     { $RECOVERING }
 sub get_expand_entities	     { $EXPAND_ENTITIES }
 sub get_keep_blanks	     { $KEEP_BLANKS }
 sub get_pedantic_parser	     { $PEDANTIC_PARSER }
@@ -108,6 +111,23 @@ sub get_expand_xinclude	     { $EXPAND_XINCLUDE }
 sub get_indent		     { $_indent }
 sub get_backups		     { $_backups }
 
+sub list_flags {
+  print "validation ".(get_validation() or "0").";\n";
+  print "recovering ".(get_recovering() or "0").";\n";
+  print "parser_expands_entities ".(get_expand_entities() or "0").";\n";
+  print "parser_expands_xinclude ".(get_expand_xinclude() or "0").";\n";
+  print "keep_blanks ".(get_keep_blanks() or "0").";\n";
+  print "pedantic_parser ".(get_pedantic_parser() or "0").";\n";
+  print "load_ext_dtd ".(get_load_ext_dtd() or "0").";\n";
+  print "complete_attributes ".(get_complete_attributes() or "0").";\n";
+  print "indent ".(get_indent() or "0").";\n";
+  print ((get_backups() ? "backups" : "nobackups"),";\n");
+  print (($_quiet ? "quiet" : "verbose"),";\n");
+  print (($_debug ? "debug" : "nodebug"),";\n");
+  print (($_test ? "run-mode" : "test-mode"),";\n");
+  print "encoding '$_encoding';\n";
+  print "query-encoding '$_qencoding';\n";
+}
 
 sub toUTF8 {
   # encode/decode from UTF8 returns undef if string not marked as utf8
@@ -337,7 +357,12 @@ sub node_address {
     return "@".$node->getName();
   }
   if ($node->parentNode) {
-    my @children=$node->parentNode->findnodes("./$name");
+    my @children;
+    if ($_xml_module->is_element($node)) {
+      @children=$node->parentNode->findnodes("./*[name()='$name']");
+    } else {
+      @children=$node->parentNode->findnodes("./$name");
+    }
     if (@children == 1 and $_xml_module->xml_equal($node,$children[0])) {
       return "$name";
     }
@@ -832,17 +857,26 @@ sub end_tag {
 
 # convert a subtree to an XML string to the given depth
 sub to_string {
-  my ($node,$depth)=@_;
+  my ($node,$depth,$folding)=@_;
   my $result;
+#  __debug("$folding\n");
   if ($node) {
-    if ($depth<0) {
+    if ($depth<0 and !$folding) {
       $result=ref($node) ? $_xml_module->toStringUTF8($node) : $node;
-    } elsif ($depth>0) {
+    } elsif (ref($node) and $_xml_module->is_element($node)
+      and ($depth==0 or $folding and
+	   $node->hasAttributeNS($XML::XSH::xshNS,'fold') and
+	   $node->getAttributeNS($XML::XSH::xshNS,'fold') != 0
+	  ))
+    {
+      $result=start_tag($node).
+	($node->hasChildNodes() ? "...".end_tag($node) : "");
+    } elsif ($depth>0 or $folding) {
       if (!ref($node)) {
 	$result=$node;
       } elsif ($_xml_module->is_element($node)) {
 	$result= start_tag($node).
-	  join("",map { to_string($_,$depth-1) } $node->childNodes).
+	  join("",map { to_string($_,$depth-1,$folding) } $node->childNodes).
 	    end_tag($node);
       } elsif ($_xml_module->is_document($node)) {
 	if ($node->can('getVersion') and $node->can('getEncoding')) {
@@ -851,17 +885,12 @@ sub to_string {
 	      '" encoding="'.$node->getEncoding().'"?>'."\n";
 	}
 	$result.=
-	  join("\n",map { to_string($_,$depth-1) } $node->childNodes);
+	  join("\n",map { to_string($_,$depth-1,$folding) } $node->childNodes);
       } else {
 	$result=$_xml_module->toStringUTF8($node);
       }
     } else {
-      if (ref($node) and $_xml_module->is_element($node)) {
-	$result=start_tag($node).
-	  ($node->hasChildNodes() ? "...".end_tag($node) : "");
-      } else {
-	$result = ref($node) ? $_xml_module->toStringUTF8($node) : $node;
-      }
+      $result = ref($node) ? $_xml_module->toStringUTF8($node) : $node;
     }
   }
   return $result;
@@ -869,16 +898,21 @@ sub to_string {
 
 # list nodes matching given XPath argument to a given depth
 sub list {
-  my ($xp,$depth)=@_;
+  my ($xp,$depth,$folding)=@_;
   my ($id,$query,$doc)=_xpath($xp);
-
+  $folding = 1;
   print STDERR "listing $query from $id=$_files{$id}\n\n" if "$_debug";
   return 0 unless ref($doc);
   eval {
     local $SIG{INT}=\&sigint;
     my $ql=find_nodes($xp);
     foreach (@$ql) {
-      $OUT->print(fromUTF8($_encoding,to_string($_,$depth)),"\n");
+      print STDERR "checking for folding\n" if "$_debug";
+      my $fold=$folding &&
+	$_->findvalue("count(.//\@*[local-name()='fold' and namespace-uri()='$XML::XSH::xshNS'])");
+      print STDERR "checking for folding\n" if "$_debug";
+      $OUT->print(fromUTF8($_encoding,to_string($_,$depth,$fold
+					       )),"\n");
     }
     print STDERR "\nFound ",scalar(@$ql)," node(s).\n" unless "$_quiet";
   };
@@ -1002,12 +1036,19 @@ sub perlmap {
   return _check_err($@);
 }
 
-sub setAttNS {
+sub set_attr_ns {
   my ($node,$ns,$name,$value)=@_;
   if ($ns eq "") {
     $node->setAttribute($name,$value);
   } else {
     $node->setAttributeNS("$ns",$name,$value);
+  }
+}
+
+# return NS prefix used in the given name
+sub name_prefix {
+  if ($_[0]=~/^([^:]+):/) {
+    return $1;
   }
 }
 
@@ -1023,22 +1064,39 @@ sub insert_node {
       and $_xml_module->is_attribute($dest)) {
     my $val=$node->getData();
     $val=~s/^\s+|\s+$//g;
-    setAttNS($dest->ownerElement()->setAttributeNS,"$ns",$dest->getName(),$val);
+    set_attr_ns($dest->ownerElement(),$dest->namespaceURI(),$dest->getName(),$val);
   } elsif ($_xml_module->is_attribute($node)) {
     if ($_xml_module->is_attribute($dest)) {
       my ($name,$value);
       if ($where eq 'replace') {
-	setAttNS($dest->ownerElement(),"$ns",$node->getName(),$node->getValue());
+	# -- prepare NS
+	$ns=$node->namespaceURI() if ($ns eq "");
+	if ($ns eq "" and name_prefix($node->getName) ne "") {
+	  $ns=$dest->lookupNamespaceURI(name_prefix($node->getName))
+	}
+	# --
+	set_attr_ns($dest->ownerElement(),"$ns",$node->getName(),$node->getValue());
 	remove_node($dest);
-      } elsif ($where eq 'after') {
-	setAttNS($dest->ownerElement(),"$ns",$dest->getName(),$dest->getValue().$node->getValue());
-      } elsif ($where eq "as_child") {
-	setAttNS($dest->ownerElement(),"$ns",$dest->getName(),$node->getValue());
-      } else { #before
-	setAttNS($dest->ownerElement(),"$ns",$dest->getName(),$node->getValue().$dest->getValue());
+      } else {
+	# -- prepare NS
+	$ns=$dest->namespaceURI(); # given value of $ns is ignored here
+	# --
+	if ($where eq 'after') {
+	  set_attr_ns($dest->ownerElement(),"$ns",$dest->getName(),$dest->getValue().$node->getValue());
+	} elsif ($where eq "as_child") {
+	  set_attr_ns($dest->ownerElement(),"$ns",$dest->getName(),$node->getValue());
+	} else { #before
+	  set_attr_ns($dest->ownerElement(),"$ns",$dest->getName(),$node->getValue().$dest->getValue());
+	}
       }
     } elsif ($_xml_module->is_element($dest)) {
-      setAttNS($dest,"$ns",$node->getName(),$node->getValue());
+      # -- prepare NS
+      $ns=$node->namespaceURI() if ($ns eq "");
+      if ($ns eq "" and name_prefix($node->getName) ne "") {
+	$ns=$dest->lookupNamespaceURI(name_prefix($node->getName))
+      }
+      # --
+      set_attr_ns($dest,"$ns",$node->getName(),$node->getValue());
     } elsif ($_xml_module->is_text($dest)          ||
 	     $_xml_module->is_cdata_section($dest) ||
 	     $_xml_module->is_comment($dest)       ||
@@ -1053,7 +1111,19 @@ sub insert_node {
     }
   } else {
 #    my $copy=$node->cloneNode(1);
-    my $copy=$_xml_module->clone_node($dest_doc,$node);
+    my $copy;
+    if ($_xml_module->is_element($node) and !$node->hasChildNodes) {
+      # -- prepare NS
+      $ns=$node->namespaceURI() if ($ns eq "");
+      if ($ns eq "" and name_prefix($node->getName) ne "") {
+	$ns=$dest->lookupNamespaceURI(name_prefix($node->getName));
+      }
+      # --
+      $copy=new_element($dest_doc,$node->getName(),$ns,
+		  [map { [$_->nodeName(),$_->nodeValue()] } $node->attributes]);
+    } else {
+      $copy=$_xml_module->clone_node($dest_doc,$node);
+    }
     if ($where eq 'after') {
       $dest->parentNode()->insertAfter($copy,$dest);
     } elsif ($where eq 'as_child') {
@@ -1089,20 +1159,17 @@ sub copy {
   }
   eval {
     local $SIG{INT}=\&sigint;
-    my $ns;
     if ($all_to_all) {
       my $to=($where eq 'replace' ? 'before' : $where);
       foreach my $tp (@$tl) {
 	foreach my $fp (@$fl) {
-	  $ns=$fp->getNamespaceURI();
-	  insert_node($fp,$tp,$tdoc,$to,$ns);
+	  insert_node($fp,$tp,$tdoc,$to);
 	}
 	remove_node($tp) if $where eq 'replace';
       }
     } else {
       while (ref(my $fp=shift @$fl) and ref(my $tp=shift @$tl)) {
-	$ns=$fp->getNamespaceURI();
-	insert_node($fp,$tp,$tdoc,$where,$ns);
+	insert_node($fp,$tp,$tdoc,$where);
       }
     }
   };
@@ -1136,6 +1203,31 @@ sub create_attributes {
   return @ret;
 }
 
+sub new_element {
+  my ($doc,$name,$ns,$attrs)=@_;
+  my $el;
+  my $prefix;
+  if ($ns ne "" and $name=~/^([^>]+):(.*)$/) {
+    $prefix=$1;
+    print STDERR "NS: $ns\n" if $_debug;
+    print STDERR "Name: $name\n" if $_debug;
+    $el=$doc->createElementNS($ns,$name);
+  } else {
+    $el=$doc->createElement($name);
+  }
+  if (ref($attrs)) {
+    foreach (@$attrs) {
+      if ($ns ne "" and ($_->[0]=~/^${prefix}:/)) {
+	print STDERR "NS: $ns\n" if $_debug;
+	$el->setAttributeNS($ns,$_->[0],$_->[1]);
+      } else {
+	$el->setAttribute($_->[0],$_->[1]); # what about other namespaces?
+      }
+    }
+  }
+  return $el;
+}
+
 # create nodes from their textual representation
 sub create_nodes {
   my ($type,$exp,$doc,$ns)=@_;
@@ -1158,9 +1250,10 @@ sub create_nodes {
       print STDERR "attributes=$2\n" if $_debug;
       my ($elt,$att)=($1,$2);
       my $el;
-      if ($ns ne "" and $elt=~/:/) {
+      if ($ns ne "" and $elt=~/^([^>]+):(.*)$/) {
 	print STDERR "NS: $ns\n" if $_debug;
-	$el=$doc->createElementNS($ns,$elt)
+	print STDERR "Name: $elt\n" if $_debug;
+	$el=$doc->createElementNS($ns,$elt);
       } else {
 	$el=$doc->createElement($elt);
       }
@@ -1183,6 +1276,9 @@ sub create_nodes {
   } elsif ($type eq 'text') {
     push @nodes,$doc->createTextNode($exp);
     print STDERR "text=$exp\n" if $_debug;
+  } elsif ($type eq 'entity_reference') {
+    push @nodes,$doc->createEntityReference($exp);
+    print STDERR "entity_reference=$exp\n" if $_debug;
   } elsif ($type eq 'cdata') {
     push @nodes,$doc->createCDATASection($exp);
     print STDERR "cdata=$exp\n" if $_debug;
@@ -1233,7 +1329,7 @@ sub insert {
 	  }
 	} else {
 	  foreach my $node (@nodes) {
-	    insert_node($node,$tp,$tdoc,$to,$ns);
+	    insert_node($node,$tp,$tdoc,$to);
 	  }
 	}
 	remove_node($tp) if $where eq 'replace';
@@ -1247,7 +1343,7 @@ sub insert {
 	}
       } else {
 	foreach my $node (@nodes) {
-	  insert_node($node,$tl->[0],$tdoc,$where,$ns) if ref($tl->[0]);
+	  insert_node($node,$tl->[0],$tdoc,$where) if ref($tl->[0]);
 	}
       }
     }
@@ -1290,7 +1386,7 @@ sub validate_doc {
   local $SIG{INT}=\&sigint;
   eval {
     if ($doc->can('validate')) {
-      print STDERR $doc->validate();
+      $doc->validate();
     } else {
       print STDERR "Vaidation not supported by ",ref($doc),"\n";
     }
@@ -1443,11 +1539,13 @@ sub print_eval {
   return 1;
 }
 
-# change current node
+# change current directory
 sub cd {
   unless (chdir $_[0]) {
     print STDERR "Can't change directory to $_[0]\n";
     return 0;
+  } else {
+    print "$_[0]\n" unless "$_quiet";
   }
   return 1;
 }
@@ -1596,6 +1694,11 @@ sub xslt {
   eval {
     my %params;
     %params=map { @$_ } @$params if ref($params);
+    if ($_debug) {
+      print STDERR map { "$_ -> $params{$_} " } keys %params;
+      print STDERR "\n";
+    }
+
     local $SIG{INT}=\&sigint;
     if (-f $stylefile) {
       require XML::LibXSLT;
@@ -1708,6 +1811,9 @@ sub help {
 
 # quit
 sub quit {
+  if (ref($_on_exit)) {
+    &{$_on_exit->[0]}($_[0],@{$_on_exit}[1..$#$_on_exit]); # run on exit hook
+  }
   exit(int($_[0]));
 }
 
