@@ -1,4 +1,4 @@
-# $Id: LibXMLCompat.pm,v 1.10 2003-04-14 13:12:23 pajas Exp $
+# $Id: LibXMLCompat.pm,v 1.11 2003-04-16 14:55:42 pajas Exp $
 
 package XML::XSH::LibXMLCompat;
 
@@ -330,6 +330,19 @@ sub subtree_iterator {
 
     return $node;
 }
+package XML::LibXML::NodeList;
+
+use overload 
+		'""' => \&value,
+                'bool' => \&to_boolean,
+		'fallback' => \&value;
+
+sub value {
+  my $self = CORE::shift;
+  my $result = join('', grep {defined $_} map { $_->string_value } @$self);
+  return $result;
+}
+
 
 1;
 
