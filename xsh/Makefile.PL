@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 1.15 2003-08-07 13:44:56 pajas Exp $
+# $Id: Makefile.PL,v 1.16 2003-08-11 14:17:48 pajas Exp $
 
 use strict;
 
@@ -29,7 +29,8 @@ WriteMakefile(
 );
 
 sub MY::postamble {
-'
+
+return <<'EOF';
 xml:
 	tools/gen_grammar.pl src/xsh_grammar.xml > lib/XML/XSH/Grammar.pm
 	tools/gen_help.pl src/xsh_grammar.xml > lib/XML/XSH/Help.pm
@@ -41,6 +42,14 @@ docs: all
 	pod2html --noindex --title "xsh - XML Editing Shell" < xsh > doc/xsh.html
 	./xsh < tools/gen_reference.xsh
 	./xsh < tools/gen_doc.xsh
-'
+
+winppd: ppd XML-XSH.tar.gz
+	perl -i~ -pe 's/OS NAME=".*"/OS NAME="MSWin32"/; s/ARCHITECTURE NAME=".*"/ARCHITECTURE NAME="MSWin32-x86-multi-thread"/; s/CODEBASE HREF=".*"/CODEBASE HREF="XML-XSH.tar.gz"/;' XML-XSH.ppd
+
+XML-XSH.tar.gz: all
+	tar czf XML-XSH.tar.gz blib/
+
+EOF
+
 }
 
