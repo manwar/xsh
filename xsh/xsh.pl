@@ -25,7 +25,7 @@ use vars qw/$VERSION $REVISION $ERR $OUT $LAST_ID $LOCAL_ID $LOCAL_NODE
 require Term::ReadLine if $opt_i;
 
 $VERSION='0.5';
-$REVISION='$Revision: 1.5 $';
+$REVISION='$Revision: 1.6 $';
 $ERR='';
 $LAST_ID='';
 $OUT=\*STDOUT;
@@ -881,8 +881,8 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
 
   exp_part: STRING | single_quoted_string | double_quoted_string
 
-  expressions : expression expressions
-              | expression
+  expressions : expression expressions { [$item[1],@{$item[2]}] }
+              | expression             { [$item[1]] }
 
   expression: exp_part <skip:""> expression  { "$item[1]$item[3]" }
             | exp_part { $item[1] }
@@ -926,7 +926,7 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
             | clone_command | count_command | eval_command | save_command
             | files_command | xslt_command | insert_command | help_command
             | exec_command  | call_command | include_command | assign_command
-            | print_var_command | var_command
+            | print_var_command | var_command | print_command
             | compound)
             { [$item[1]] }
 
@@ -952,7 +952,7 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
                | /\?|help/ { [\&main::help]; }
 
   exec_command : /exec\s|system\s/ expressions
-               { [\&main::sh,$item[2]] }
+               { [\&main::sh,join(" ",@{$item[2]})] }
 
   xslt_command : xslt_alias ID filename ID /params|parameters\s/ paramlist
                { [\&main::xslt,@item[2,3,4,6]]; }
@@ -1009,8 +1009,8 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
 
   prune_command : /rm\s|remove\s|prune\s|delete\s|del\s/ xpath  { [\&main::prune,$item[2]]; }
 
-  print_command : /print|echo/ {  [\&main::echo]; }
-                  /print|echo/ expressions { [\&main::echo,@item[2..$#item]]; }
+  print_command : /print\s|echo\s/ expressions { [\&main::echo,@{$item[2]}]; }
+                | /print|echo/ {  [\&main::echo]; }
 
   map_command : /map\s|sed\s/ (<perl_codeblock>|perl_expression) xpath
 				       { [\&main::perlmap,@item[3,2]]; }
@@ -1130,8 +1130,10 @@ if ($opt_i) {
       $l=~s/\\+\s*$//;
       $l .= $term->readline('> ');
     }
-    $_xsh->startrule($l);
-    $term->addhistory($l) if /\S/;
+    if ($l=~/\S/) {
+      $_xsh->startrule($l);
+      $term->addhistory($l);
+    }
   }
 } elsif ($string eq "") {
   $_xsh->startrule(join "",<STDIN>);
