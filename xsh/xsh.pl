@@ -23,7 +23,7 @@ require Term::ReadLine if $opt_i;
 BEGIN {
   getopts('cqdhViE:e:');
   $VERSION='0.9';
-  $REVISION='$Revision: 1.15 $';
+  $REVISION='$Revision: 1.16 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -78,15 +78,17 @@ my $l;
 
 if ($opt_i) {
   $SIG{INT}=sub {  print STDERR "\nCtrl-C pressed. Type exit to quit.\n"; };
-  my $rev=$REVISION;
-  $rev=~s/\s*\$//g;
-  $rev=" xsh - XML Editing Shell version $VERSION ($rev)\n";
-  print STDERR "-"x length($rev),"\n";
-  print STDERR $rev;
-  print STDERR "-"x length($rev),"\n\n";
-  print STDERR "Copyright (c) 2002 Petr Pajas.\n";
-  print STDERR "This is free software, you may use it and distribute it under\n";
-  print STDERR "either the GNU GPL Version 2, or under the Perl Artistic License.\n";
+  unless ($opt_q) {
+    my $rev=$REVISION;
+    $rev=~s/\s*\$//g;
+    $rev=" xsh - XML Editing Shell version $VERSION ($rev)\n";
+    print STDERR "-"x length($rev),"\n";
+    print STDERR $rev;
+    print STDERR "-"x length($rev),"\n\n";
+    print STDERR "Copyright (c) 2002 Petr Pajas.\n";
+    print STDERR "This is free software, you may use it and distribute it under\n";
+    print STDERR "either the GNU GPL Version 2, or under the Perl Artistic License.\n";
+  }
 }
 
 if ($string) {
@@ -99,8 +101,10 @@ if ($opt_i) {
   my $term;
   $term = new Term::ReadLine 'xsh';
   xsh_set_output($term->OUT) if ($term->OUT);
-  print STDERR "Using terminal type: ",$term->ReadLine,"\n" unless "$opt_q";
-  print STDERR "Hint: Type `help' or `help | less' to get more help.\n";
+  unless ("$opt_q") {
+    print STDERR "Using terminal type: ",$term->ReadLine,"\n";
+      print STDERR "Hint: Type `help' or `help | less' to get more help.\n";
+  }
   while (defined ($l = $term->readline('xsh> '))) {
     while ($l=~/\\+\s*$/) {
       $l=~s/\\+\s*$//;
