@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.35 2002-11-01 16:34:59 pajas Exp $
+# $Id: Functions.pm,v 1.36 2002-11-01 17:37:34 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -2579,7 +2579,7 @@ sub count {
   return &XML::XSH::Functions::count([$1,$2]);
 }
 
-sub xpath {
+sub xml_list {
   my ($xp)=@_;
   $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):(?!:))?((?:.|\n)*)$/;
   my ($id,$query,$doc)=&XML::XSH::Functions::_xpath([$1,$2]);

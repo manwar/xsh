@@ -19,9 +19,9 @@ insert chunk "<z u='v'>zzz</z>" into t:/test;
 
 $expect='<test><x n="1">abc</x><x n="2"/><x n="3"/><z u="v">zzz</z></test>';
 
-if { xpath('t:/test') ne $expect } {
+if { xml_list('t:/test') ne $expect } {
   perl { die "Resulting XML does not match what was expected:\n<RESULT>".
-              xpath('t:/test').
+              xml_list('t:/test').
              "</RESULT>\nversus\n".
              "<EXPECTED>$expect</EXPECTED>\n"
        }

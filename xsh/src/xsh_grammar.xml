@@ -541,7 +541,7 @@
 	  <literal>string()</literal> function. In other words,
 	  <literal>literal('doc:expression')</literal> returns the same
 	  value as <literal>count('doc:string(expression)')</literal>.
-	  The third function, named <literal>xpath</literal>, returns
+	  The third function, named <literal>xml_list</literal>, returns
 	  the result of the XPath search as a XML string which is
 	  equivallent to the output of a <xref
 	  linkend="list_command"/> on the same XPath expression
