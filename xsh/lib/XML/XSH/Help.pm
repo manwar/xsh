@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Aug 30 19:09:22 2002
+# Mon Sep  2 17:38:13 2002
 
 package XML::XSH::Help;
 use strict;
@@ -9,23 +9,59 @@ use vars qw($HELP %HELP);
 $HELP=<<'END';
 General notes:
 
+  XSH acts as a command interpreter. Individual commands must be separated
+  with a semicolon. Each command may be followed by a pipeline redirection
+  to capture the command's output. In the interactive shell, backslash may
+  be used at the end of line to indicate that the command follows on the
+  next line.
+
+  A pipeline redirections may be used either to feed the command's output
+  to a unix command or to store it in a XSH string variable.
+
+  In the first case, the syntax is `xsh-command | shell-command ;' where
+  `xsh-command' is any XSH command and `shell-command' is any command (or
+  code) recognized by the default shell interpreter of the operating system
+  (i.e. on UNIX systems by `sh' or `csh', on Windows systems by `cmd').
+  Brackets may be used to join more shell commands (may depend on which
+  shell is used).
+
+Example: Count any attributes that contain string foo in its name or value.
+
+  xsh> list //words/attribute() | grep foo | wc
+
+  In order to store a command's output in a string variable, the pipeline
+  redirection must take the form `xsh-command |> $variable' where
+  `xsh-command' is any XSH command and `$variable' is any valid name for a
+  string <variable>variable.
+
+Example: Store the number of all words in a variable named count.
+
+  xsh> count //words |> $count
+
+  `<help> command' gives a list of all XSH commands.
+
+  `<help> type' gives a list of all argument types.
+
+  `<help>' followed by a command or type name gives more information on the
+  particular command or argument type.
+
 END
 
 $HELP{'command'}=[<<'END'];
 List of XSH commands
 
 description:
-	     assign, backups, call, cd, clone, close, complete-attributes,
-	     copy, count, create, debug, def, defs, dtd, enc, encoding,
-	     eval, exec, exit, files, foreach, help, if, include, indent,
-	     insert, keep-blanks, lcd, load-ext-dtd, locate, ls, map, move,
-	     nobackups, nodebug, open, open-HTML, open-PIPE, options,
+	     assign, backups, call, cd, clone, close, copy, count, create,
+	     debug, def, defs, dtd, enc, encoding, exec, exit, files, fold,
+	     foreach, help, if, include, indent, insert, keep-blanks, lcd,
+	     load-ext-dtd, locate, ls, map, move, nobackups, nodebug, open,
+	     open-HTML, open-PIPE, options, parser-completes-attributes,
 	     parser-expands-entities, parser-expands-xinclude,
-	     pedantic-parser, print, process-xinclude, pwd, query-encoding,
-	     quiet, recovering, remove, run-mode, save, save-HTML,
-	     save-xinclude, saveas, select, sort, test-mode, unless, valid,
-	     validate, validation, variables, verbose, version, while,
-	     xcopy, xinsert, xmove, xslt, xupdate
+	     pedantic-parser, perl, print, process-xinclude, pwd,
+	     query-encoding, quiet, recovering, remove, run-mode, save,
+	     save-HTML, save-xinclude, saveas, select, sort, test-mode,
+	     unfold, unless, valid, validate, validation, variables,
+	     verbose, version, while, xcopy, xinsert, xmove, xslt, xupdate
 
 END
 
@@ -70,14 +106,14 @@ description:
 	     enclosing a part of the string into single quotes '...' or
 	     double quotes "...". Quoting characters are removed from the
 	     string so they must be quoted themselves if they are a part of
-	     the expression: \\, \' or "'", \" or '"'.
+	     the expression: \\, \' or " ' ", \" or ' " '.
 
-	     Variable interpolation is performed on expressions, which
-	     means that any substrings of the forms $id or ${id} where $ is
+	     Variable interpolation is performed on expressions. That means
+	     that any substrings of the forms $id or ${id} where $ is
 	     unquoted and id is an identifier are substituted with the
 	     value of the variable named $id.
 
-	     XPath interpolation is performed on expressions, which means
+	     XPath interpolation is performed on expressions. That means
 	     that any substring enclosed in between ${{ and }} is evaluated
 	     in the same way as in the count command and the result of the
 	     evaluation is substituted in its place.
@@ -189,9 +225,9 @@ description:
 
 	     If the first argument is a <perl-code>, it is evaluated and
 	     the resulting perl-list is iterated setting the variable $__
-	     to be each element of the list in turn. It works much like
-	     perl's foreach, except that the variable used consists of two
-	     underscores.
+	     (note that there are two underscores!) to be each element of
+	     the list in turn. It works much like perl's foreach, except
+	     that the variable used consists of two underscores.
 
 Example:     Move all employee elements in a company element into a staff
 	     subelement of the same company
@@ -213,23 +249,65 @@ aliases:     define
 
 description:
 	     Define a new XSH routine named <id>. The <command-block> may
-	     be later invoked using the `call <id>' command.
+	     be later invoked using the `<call> <id>' command.
 
 END
 
 $HELP{'define'}=$HELP{'def'};
 
 $HELP{'assign'}=[<<'END'];
-usage:       assign $<id>=<expression>
-             $<id>=<expression>
+usage:       assign $<id>=<xpath>
+             $<id>=<xpath>
              assign %<id>=<xpath>
              %<id>=<xpath>
              
 description:
 	     In the first two cases (where dollar sign appears) store the
-	     result of interpolation of the <expression> in a variable
-	     named $<id>. The variable may be later used in other
-	     expressions or even in perl-code as $<id> or ${<id>}.
+	     result of evaluation of the <xpath> in a variable named $<id>.
+	     In this case, <xpath> is evaluated in a simmilar way as in the
+	     case of the <count>: if it results in a literal value this
+	     value is used. If it results in a node-list, number of nodes
+	     occuring in that node-list is used. Use the `string()' XPath
+	     function to obtain a literal values in these cases.
+
+Example:     String expressions
+
+             xsh> $a=string(chapter/title)
+             xsh> $b="hallo world"
+
+Example:     Arithmetic expressions
+
+             xsh> $a=5*100
+             xsh> $a
+             $a=500
+             xsh> $a=(($a+5) div 10)
+             xsh> $a
+             $a=50.5
+
+Example:     Counting nodes
+
+             xsh> $a=//chapter
+             xsh> $a
+             $a=10
+             xsh> %chapters=//chapter
+             xsh> $a=%chapters
+             xsh> $a
+             $a=10
+
+Example:     Some caveats of counting node-lists
+
+             xsh> ls ./creature
+             <creature race='hobbit' name="Bilbo"/>
+
+             ## WRONG (@name results in a singleton node-list) !!!
+             xsh> $name=@name
+             xsh> $name
+             $a=1
+
+             ## CORRECT (use string() function)
+             xsh> $name=string(@name)
+             xsh> $name
+             $a=Biblo
 
 	     In the other two cases (where percent sign appears) find all
 	     nodes matching the given <xpath> and store the resulting
@@ -311,9 +389,9 @@ description:
 Example:     Count words in "hallo wold" string, then print name of your
 	     machine's operating system.
 
-             exec echo hallo world       # prints hallo world
-             exec "echo hallo word | wc" # counts words in hallo world
-             exec uname;                 # prints operating system name
+             exec echo hallo world;                 # prints hallo world
+             exec "echo hallo word | wc"; # counts words in hallo world
+             exec uname;                            # prints operating system name
 
 END
 
@@ -525,8 +603,8 @@ description:
 
              add element hobbit into //middle-earth/creatures;
              add attribute 'name="Bilbo"' into //middle-earth/creatures/hobbit[last()];
-             add chunk '<hobbit name="Frodo">A small guy from <place>Shire</place>.</hobbit>' \
-               into //middle-earth/creatures;
+             add chunk '<hobbit name="Frodo">A small guy from <place>Shire</place>.</hobbit>' 
+             into //middle-earth/creatures;
 
 END
 
@@ -587,10 +665,15 @@ aliases:     list
 
 description:
 	     List the XML representation of all nodes matching <xpath>. The
-	     optional expression argument may be provided to specify the
+	     optional <expression> argument may be provided to specify the
 	     depth of XML tree listing. If negative, the tree will be
-	     listed to arbitrary depth. Unless in quiet mode, this command
-	     prints number of nodes matched on stderr.
+	     listed to unlimited depth. If the <expression> results in the
+	     word `fold', elements marked with the <fold> command are
+	     folded, i.e. listed only to a certain depth (this feature is
+	     still EXPERIMENTAL!).
+
+	     Unless in quiet mode, this command prints also number of nodes
+	     matched on stderr.
 
 	     If the <xpath> parameter is omitted, current context node is
 	     listed to the depth of 1.
@@ -621,40 +704,35 @@ Perl-code argument type
 description:
 	     A block of perl code enclosed in curly brackets or an
 	     expression which interpolates to a perl expression. Variables
-	     defined in XSH are visible in perl code as well. Since XSH
-	     redirects output to the terminal, you cannot simply use perl
-	     print function for output if you want to filter the result
-	     with a shell command. Instead use predefined perl routine
-	     `echo ...' which is equivalent to `print $::OUT ...'. The
-	     $::OUT perl-variable stores the referenc to the terminal file
-	     handle.
+	     defined in XSH are visible in perl code as well. Since, in the
+	     interactive mode, XSH redirects output to the terminal, you
+	     cannot simply use perl print function for output if you want
+	     to filter the result with a shell command. Instead use
+	     predefined perl routine `echo ...' which is equivalent to
+	     `print $::OUT ...'. The $::OUT perl-variable stores the
+	     referenc to the terminal file handle.
 
 
-             $i="foo";
-
-             eval { echo "$i-bar\n"; } # prints foo-bar
-
-             eval 'echo "\$i-bar\n";'  # exactly the same as above
-
-             eval 'echo "$i-bar\n";'   # prints foo-bar too, but $i is
-             # interpolated by XSH, so perl
-             # actually evaluates
-             #  echo "foo-bar\n";
+             xsh> $i="foo";
+             xsh> eval { echo "$i-bar\n"; } # prints foo-bar
+             xsh> eval 'echo "\$i-bar\n";'  # exactly the same as above
+             xsh> eval 'echo "$i-bar\n";'   # prints foo-bar too, but $i is
+             # interpolated by XSH. Perl actually evaluates echo "foo-bar\n";
 
 END
 
 
-$HELP{'eval'}=[<<'END'];
+$HELP{'perl'}=[<<'END'];
 usage:       eval <perl-code>
              
-aliases:     perl
+aliases:     eval
 
 description:
 	     Evaluate the given perl expression and print the return value.
 
 END
 
-$HELP{'perl'}=$HELP{'eval'};
+$HELP{'eval'}=$HELP{'perl'};
 
 $HELP{'remove'}=[<<'END'];
 usage:       remove <xpath>
@@ -915,9 +993,6 @@ description:
 	     More over, this command may be used to split the document to
 	     new fragments included back by means of XInclude, since all
 	     non-empty fragments containded within
-
-	     <xi:include xmlns:xi='http://www.w3.org/2001/XInclude'
-	     href='output-file'><xi:include/>
 
 	     elements are saved to separate files too, leaving only empty
 	     xi:include element in the root file.
@@ -1191,10 +1266,10 @@ END
 
 $HELP{'pedantic_parser'}=$HELP{'pedantic-parser'};
 
-$HELP{'complete-attributes'}=[<<'END'];
-usage:       complete_attributes <expression>
+$HELP{'parser-completes-attributes'}=[<<'END'];
+usage:       parser-completes-attributes <expression>
              
-aliases:     complete_attributes
+aliases:     complete_attributes complete-attributes parser_completes_attributes
 
 description:
 	     If the expression is non-zero, this command allows XML parser
@@ -1203,7 +1278,9 @@ description:
 
 END
 
-$HELP{'complete_attributes'}=$HELP{'complete-attributes'};
+$HELP{'complete_attributes'}=$HELP{'parser-completes-attributes'};
+$HELP{'complete-attributes'}=$HELP{'parser-completes-attributes'};
+$HELP{'parser_completes_attributes'}=$HELP{'parser-completes-attributes'};
 
 $HELP{'indent'}=[<<'END'];
 usage:       indent <expression>
@@ -1285,6 +1362,43 @@ usage:       nobackups
              
 description:
 	     Disable creating backup files on save.
+
+END
+
+
+$HELP{'fold'}=[<<'END'];
+usage:       fold <xpath> [<expression>]
+             
+description:
+	     This feature is still EXPERIMENTAL! Fold command may be used
+	     to mark elements matching the <xpath> with a `xsh:fold'
+	     attribute from the `http://xsh.sourceforge.net/xsh/'
+	     namespace. When listing the DOM tree using `<ls> <xpath>
+	     fold', elements marked in this way are folded to the depth
+	     given by the <expression> (default depth is 0 = fold
+	     immediately).
+
+
+             xsh> fold //chapter 1
+             xsh> ls //chapter[1] fold
+             <chapter id="intro" xsh:fold="1">
+             <title>...</title>
+             <para>...</para>
+             <para>...</para>
+             </chapter>
+
+END
+
+
+$HELP{'unfold'}=[<<'END'];
+usage:       unfold <xpath>
+             
+description:
+	     This feature is still EXPERIMENTAL! Unfold command removes
+	     `xsh:fold' attributes from all elements matching given <xpath>
+	     created by previous usage of <fold>. Be aware, that
+	     `xmlns:xsh' namespace declaration may still be present in the
+	     document even when all elements are unfolded.
 
 END
 

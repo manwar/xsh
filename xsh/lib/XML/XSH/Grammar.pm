@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Aug 30 19:09:21 2002
+# Mon Sep  2 17:38:12 2002
 
 
 package XML::XSH::Grammar;
@@ -55,7 +55,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(pedantic-parser|pedantic_parser)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_pedantic_parser,$item[3]] }
   	
-	  | /(complete-attributes|complete_attributes)\s/ <commit> expression
+	  | /(parser-completes-attributes|complete_attributes|complete-attributes|parser_completes_attributes)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_complete_attributes,$item[3]] }
   	
 	  | /(indent)\s/ <commit> expression
@@ -139,14 +139,14 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(count|print_value|get)\s/ <commit> xpath
 		{ [\&XML::XSH::Functions::print_count,$item[3]] }
   	
-	  | /(eval|perl)\s/ <commit> perl_code
+	  | /(perl|eval)\s/ <commit> perl_code
 		{ [\&XML::XSH::Functions::print_eval,$item[3]] }
   	
 	  | /(saveas|save-as|save_as)\s/ <commit> expression filename encoding_param(?)
 		{ [\&XML::XSH::Functions::save_as,@item[3,4],@{$item[5]}] }
   	
 	  | /(save-xinclude|save_xinclude)\s/ <commit> expression encoding_param(?)
-		{ [\&XML::XSH::Functions::save_xinclude,@item[3],@{$item[4]}] }
+		{ [\&XML::XSH::Functions::save_xinclude,$item[3],@{$item[4]}] }
   	
 	  | /(save-HTML|save_HTML)\s/ <commit> expression filename encoding_param(?)
 		{ [\&XML::XSH::Functions::save_as_html,@item[3,4],@{$item[5]}] }
@@ -239,6 +239,12 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 	  | ID /\s*=\s*/ <commit> filename
 		{ [\&XML::XSH::Functions::open_doc,@item[1,4]] }
+  	
+	  | /(fold)\s/ xpath expression(?)
+		{ [\&XML::XSH::Functions::mark_fold,$item[2],@{$item[3]}] }
+  	
+	  | /(unfold)\s/ xpath
+		{ [\&XML::XSH::Functions::mark_unfold,$item[2]] }
   	
 
   statement:

@@ -37,6 +37,7 @@ exec
 exit
 files
 flags
+fold
 for
 foreach
 get
@@ -69,8 +70,10 @@ open-PIPE
 open_HTML
 open_PIPE
 options
+parser-completes-attributes
 parser-expands-entities
 parser-expands-xinclude
+parser_completes_attributes
 parser_expands_entities
 parser_expands_xinclude
 pedantic-parser
@@ -109,6 +112,7 @@ system
 test-mode
 test_mode
 transform
+unfold
 unless
 valid
 validate
