@@ -4416,6 +4416,158 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</see-also>
       </documentation>
     </rule>
+    <rule id="registerns_command" type="command" name="register-namespace"
+      inline="yes">
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="expression"/>
+	<ruleref ref="expression"/>
+	<action>[\&amp;XML::XSH::Functions::register_ns,
+                 $item[3],$item[4]]</action>
+      </production>
+      <documentation sections="documents">
+	<usage>register-namespace <xref linkend="expression"/> <xref linkend="expression"/></usage>
+	<shortdesc>register namespace prefix to use XPath expressions</shortdesc>
+	<description>
+	  <para>
+             Registers the first argument
+             as a prefix for the namespace given in the second argument.
+             The prefix can later be used in XPath expressions.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="registerns_xhtml_command" type="command" 
+      name="register-xhtml-namespace"
+      inline="yes">
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="expression"/>
+	<action>[\&amp;XML::XSH::Functions::register_ns,
+                 $item[3],'http://www.w3.org/1999/xhtml']</action>
+      </production>
+      <documentation sections="documents">
+	<usage>register-xhtml-namespace <xref linkend="expression"/></usage>
+	<shortdesc>register XHTML namespace prefix to use XPath expressions</shortdesc>
+	<description>
+	  <para>
+             Registers a prefix for the XHTML namespace.
+             The prefix can later be used in XPath expressions.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="registerfunc_command" type="command" 
+      name="register-function"
+      inline="yes">
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="expression"/>
+	<ruleref ref="perl_code"/>
+	<action>[\&amp;XML::XSH::Functions::register_func,
+                 $item[3],$item[4]]</action>
+      </production>
+      <documentation sections="documents">
+	<usage>register-function <xref linkend="expression"/> <xref linkend="perl_code"/></usage>
+	<shortdesc>define XPath extension function (EXPERIMENTAL)</shortdesc>
+	<description>
+	  <para>
+	    EXPERIMENTAL!
+	    Register given perl code as a new extension XPath
+	    function. XML::LibXML DOM API may be used in the perl code
+	    for object processing.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="stream_select">
+      <production>
+	<regexp>select\s</regexp>
+	<ruleref ref="xp"/>
+	<ruleref ref="block"/>
+        <action>[$item[2],$item[3]]</action>
+      </production>
+    </rule>
+    <rule id="stream_process_command" type="command" name="stream" inline="yes">
+      <production>
+        <selfref/>
+	<directive type="commit"/>
+	<regexp>input((\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?\s</regexp>
+	<ruleref ref="filename"/>
+	<regexp>output((\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?\s</regexp>
+	<ruleref ref="filename"/>
+        <ruleref ref="stream_select" rep="s"/>
+	<action>[\&amp;XML::XSH::Functions::stream_process,$item[3],$item[4],$item[5],$item[6],$item[7]]</action>
+      </production>
+      <documentation sections="flow">
+	<usage>stream input [FILE|PIPE|STRING] <xref linkend="expression"/>
+                      output [FILE|PIPE|STRING] <xref linkend="expression"/>
+                      select <xref linkend="xpath"/> <xref linkend="block"/>
+                    [ select <xref linkend="xpath"/> <xref linkend="block"/> ... ]
+                   </usage>
+	<shortdesc>process selected elements from an XML stream (EXPERIMENTAL)</shortdesc>
+	<description>
+	  <para>
+	    EXPERIMENTAL!
+	    This command provides a memory efficient (though slower)
+	    way to process selected parts of an XML document with
+	    XSH. A streaming XML parser (SAX parser) is used to parse
+	    the input. The parser has two states which will be refered
+	    to as A and B here. The initial state of the parser is
+	    A.</para>
+	  <para>In the state A, only a limited vertical portion of the
+	    DOM tree is built. All XML data other than start-tags
+	    comming from the input stream are immediatelly copied to
+	    the output stream.  If a new start-tag of an element
+	    arrives, a new node is created in the tree. All siblings
+	    of the newly created node are removed. Thus, in the state
+	    A, there is exactly one node on every level of the
+	    tree. Now all the <xref linkend="xpath"/> expressions are
+	    checked. If none matches, the parser remains in state A
+	    and copies the start-tag to the output stream. Otherwise,
+	    the first expression that matches is remembered and the
+	    parser changes its state to B.
+	  </para>
+	  <para>
+	    In state B the parser builds a complete DOM subtree of the
+	    element that was last added to the tree before the parser
+	    changed its state from A to B. No data are sent to the
+	    output at this stage. When the subtree is complete
+	    (i.e. the corresponding end-tag is encountered), the <xref
+	    linkend="block"/> of instructions following the <xref
+	    linkend="xpath"/> expression that matched is invoked with
+	    the root element of the subtree as the current context
+	    node. The commands in <xref linkend="block"/> are allowed
+	    to transform the whole element subtree or even to replace
+	    it with a different DOM subtree or subtrees. They must,
+	    however, preserve the element's parent as well as all its
+	    ancestor nodes intact. Failing to do so can result in an
+	    error or unpredictable results.
+	  </para>
+	  <para>
+	    After the subtree processing <xref linkend="block"/>
+	    returns, all subtrees that now appear in the DOM tree in
+	    the place of the original subtree are serialized to the
+	    output stream. After that, they are deleted and the parser
+	    returns to state A.
+	  </para>
+	  <para>
+	    Note that this type of processing highly limits the amount
+	    of information the XPath expressions can use. First
+	    notable fact is that elements can not be selected by their
+	    content. The only information present in the tree at the
+	    time of the XPath evaluation is the element's name,
+	    attributes and the same information for its
+	    ancestors. There is nothing known yet about possible
+	    child nodes of the element as well as of its position
+	    within its siblings.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
   </rules>  
 </recdescent-xml>
 <!-- Keep this comment at the end of the file

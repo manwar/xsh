@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Wed Mar 12 16:01:19 2003
+# Mon Apr 14 15:21:22 2003
 
 
 package XML::XSH::Grammar;
@@ -702,6 +702,11 @@ $grammar=<<'_EO_GRAMMAR_';
   xpstep:
 	    xplocationstep <skip:""> xpfilter(?)
 		{ [ @{$item[1]}, @{$item[3]}] }
+  	
+
+  stream_select:
+	    /select\s/ xp block
+		{ [$item[2],$item[3]] }
   	
 
 

@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Wed Mar 12 16:01:19 2003
+# Mon Apr 14 15:21:22 2003
 
 package XML::XSH::Help;
 use strict;
@@ -75,10 +75,12 @@ Help items:
     normalize, open, options, parser-completes-attributes,
     parser-expands-entities, parser-expands-xinclude, pedantic-parser,
     perl, prev, print, process-xinclude, pwd, query-encoding, quiet,
-    recovering, redo, remove, rename, return, run-mode, save, select, sort,
-    strip-whitespace, switch-to-new-documents, test-mode, throw, try,
-    unfold, unless, valid, validate, validation, variables, verbose,
-    version, while, xcopy, xinsert, xmove, xslt, xupdate
+    recovering, redo, register-function, register-namespace,
+    register-xhtml-namespace, remove, rename, return, run-mode, save,
+    select, sort, stream, strip-whitespace, switch-to-new-documents,
+    test-mode, throw, try, unfold, unless, valid, validate, validation,
+    variables, verbose, version, while, xcopy, xinsert, xmove, xslt,
+    xupdate
 
   XSH Argument Types:
 
@@ -99,10 +101,12 @@ description:
 	     options, parser-completes-attributes, parser-expands-entities,
 	     parser-expands-xinclude, pedantic-parser, perl, prev, print,
 	     process-xinclude, pwd, query-encoding, quiet, recovering,
-	     redo, remove, rename, return, run-mode, save, select, sort,
-	     strip-whitespace, switch-to-new-documents, test-mode, throw,
-	     try, unfold, unless, valid, validate, validation, variables,
-	     verbose, version, while, xcopy, xinsert, xmove, xslt, xupdate
+	     redo, register-function, register-namespace,
+	     register-xhtml-namespace, remove, rename, return, run-mode,
+	     save, select, sort, stream, strip-whitespace,
+	     switch-to-new-documents, test-mode, throw, try, unfold,
+	     unless, valid, validate, validation, variables, verbose,
+	     version, while, xcopy, xinsert, xmove, xslt, xupdate
 
 END
 
@@ -2015,6 +2019,94 @@ Example:     Using XPath
 END
 
 
+$HELP{'register-namespace'}=[<<'END'];
+usage:       register-namespace <expression> <expression>
+             
+description:
+	     Registers the first argument as a prefix for the namespace
+	     given in the second argument. The prefix can later be used in
+	     XPath expressions.
+
+END
+
+
+$HELP{'register-xhtml-namespace'}=[<<'END'];
+usage:       register-xhtml-namespace <expression>
+             
+description:
+	     Registers a prefix for the XHTML namespace. The prefix can
+	     later be used in XPath expressions.
+
+END
+
+
+$HELP{'register-function'}=[<<'END'];
+usage:       register-function <expression> <perl-code>
+             
+description:
+	     EXPERIMENTAL! Register given perl code as a new extension
+	     XPath function. XML::LibXML DOM API may be used in the perl
+	     code for object processing.
+
+END
+
+
+$HELP{'stream'}=[<<'END'];
+usage:       stream input [FILE|PIPE|STRING] <expression>
+                      output [FILE|PIPE|STRING] <expression>
+                      select <xpath> <command-block>
+                    [ select <xpath> <command-block> ... ]
+             
+description:
+	     EXPERIMENTAL! This command provides a memory efficient (though
+	     slower) way to process selected parts of an XML document with
+	     XSH. A streaming XML parser (SAX parser) is used to parse the
+	     input. The parser has two states which will be refered to as A
+	     and B here. The initial state of the parser is A.
+
+	     In the state A, only a limited vertical portion of the DOM
+	     tree is built. All XML data other than start-tags comming from
+	     the input stream are immediatelly copied to the output stream.
+	     If a new start-tag of an element arrives, a new node is
+	     created in the tree. All siblings of the newly created node
+	     are removed. Thus, in the state A, there is exactly one node
+	     on every level of the tree. Now all the <xpath> expressions
+	     are checked. If none matches, the parser remains in state A
+	     and copies the start-tag to the output stream. Otherwise, the
+	     first expression that matches is remembered and the parser
+	     changes its state to B.
+
+	     In state B the parser builds a complete DOM subtree of the
+	     element that was last added to the tree before the parser
+	     changed its state from A to B. No data are sent to the output
+	     at this stage. When the subtree is complete (i.e. the
+	     corresponding end-tag is encountered), the <command-block> of
+	     instructions following the <xpath> expression that matched is
+	     invoked with the root element of the subtree as the current
+	     context node. The commands in <command-block> are allowed to
+	     transform the whole element subtree or even to replace it with
+	     a different DOM subtree or subtrees. They must, however,
+	     preserve the element's parent as well as all its ancestor
+	     nodes intact. Failing to do so can result in an error or
+	     unpredictable results.
+
+	     After the subtree processing <command-block> returns, all
+	     subtrees that now appear in the DOM tree in the place of the
+	     original subtree are serialized to the output stream. After
+	     that, they are deleted and the parser returns to state A.
+
+	     Note that this type of processing highly limits the amount of
+	     information the XPath expressions can use. First notable fact
+	     is that elements can not be selected by their content. The
+	     only information present in the tree at the time of the XPath
+	     evaluation is the element's name, attributes and the same
+	     information for its ancestors. There is nothing known yet
+	     about possible child nodes of the element as well as of its
+	     position within its siblings.
+
+END
+
+
 $HELP{'documents'}=[<<'END'];
 Files/Documents
 ---------------
@@ -2043,7 +2135,8 @@ Example: Store XSH document DOC on a remote machine using Secure Shell
 
 Related commands:
   backups, catalog, clone, close, create, nobackups, open,
-  process-xinclude, save, select, switch-to-new-documents
+  process-xinclude, register-function, register-namespace,
+  register-xhtml-namespace, save, select, switch-to-new-documents
 
 END
 
@@ -2221,7 +2314,7 @@ Flow control
 
 Related commands:
   call, def, exit, foreach, if, include, iterate, last, next, prev, return,
-  run-mode, test-mode, throw, try, unless, while
+  run-mode, stream, test-mode, throw, try, unless, while
 
 END
 

@@ -97,6 +97,9 @@ quiet
 quit
 recovering
 redo
+register-function
+register-namespace
+register-xhtml-namespace
 remove
 rename
 return
@@ -107,6 +110,7 @@ save
 sed
 select
 sort
+stream
 strip-whitespace
 strip_whitespace
 switch-to-new-documents

@@ -3455,6 +3455,200 @@ sub Parse::RecDescent::namespace000001::shline_inter
 }
 
 # ARGS ARE: ($parser, $text; $repeating, $_noactions, \@args)
+sub Parse::RecDescent::namespace000001::stream_select
+{
+	my $thisparser = $_[0];
+	$ERRORS = 0;
+	my $thisrule = $thisparser->{"rules"}{"stream_select"};
+	
+	Parse::RecDescent::_trace(q{Trying rule: [stream_select]},
+				  Parse::RecDescent::_tracefirst($_[1]),
+				  q{stream_select})
+					if defined $::RD_TRACE;
+
+	
+	my $err_at = @{$thisparser->{errors}};
+
+	my $score;
+	my $score_return;
+	my $_tok;
+	my $return = undef;
+	my $_matched=0;
+	my $commit=0;
+	my @item = ();
+	my %item = ();
+	my $repeating =  defined($_[2]) && $_[2];
+	my $_noactions = defined($_[3]) && $_[3];
+ 	my @arg =        defined $_[4] ? @{ &{$_[4]} } : ();
+	my %arg =        ($#arg & 01) ? @arg : (@arg, undef);
+	my $text;
+	my $lastsep="";
+	my $expectation = new Parse::RecDescent::Expectation($thisrule->expected());
+	$expectation->at($_[1]);
+	
+	my $thisline;
+	tie $thisline, q{Parse::RecDescent::LineCounter}, \$text, $thisparser;
+
+	
+
+	while (!$_matched && !$commit)
+	{
+		
+		Parse::RecDescent::_trace(q{Trying production: [/select\\s/ xp block]},
+					  Parse::RecDescent::_tracefirst($_[1]),
+					  q{stream_select})
+						if defined $::RD_TRACE;
+		my $thisprod = $thisrule->{"prods"}[0];
+		$text = $_[1];
+		my $_savetext;
+		@item = (q{stream_select});
+		%item = (__RULE__ => q{stream_select});
+		my $repcount = 0;
+
+
+		Parse::RecDescent::_trace(q{Trying terminal: [/select\\s/]}, Parse::RecDescent::_tracefirst($text),
+					  q{stream_select})
+						if defined $::RD_TRACE;
+		$lastsep = "";
+		$expectation->is(q{})->at($text);
+		
+
+		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:select\s)//)
+		{
+			
+			$expectation->failed();
+			Parse::RecDescent::_trace(q{<<Didn't match terminal>>},
+						  Parse::RecDescent::_tracefirst($text))
+					if defined $::RD_TRACE;
+
+			last;
+		}
+		Parse::RecDescent::_trace(q{>>Matched terminal<< (return value: [}
+						. $& . q{])},
+						  Parse::RecDescent::_tracefirst($text))
+					if defined $::RD_TRACE;
+		push @item, $item{__PATTERN1__}=$&;
+		
+
+		Parse::RecDescent::_trace(q{Trying subrule: [xp]},
+				  Parse::RecDescent::_tracefirst($text),
+				  q{stream_select})
+					if defined $::RD_TRACE;
+		if (1) { no strict qw{refs};
+		$expectation->is(q{xp})->at($text);
+		unless (defined ($_tok = Parse::RecDescent::namespace000001::xp($thisparser,$text,$repeating,$_noactions,undef)))
+		{
+			
+			Parse::RecDescent::_trace(q{<<Didn't match subrule: [xp]>>},
+						  Parse::RecDescent::_tracefirst($text),
+						  q{stream_select})
+							if defined $::RD_TRACE;
+			$expectation->failed();
+			last;
+		}
+		Parse::RecDescent::_trace(q{>>Matched subrule: [xp]<< (return value: [}
+					. $_tok . q{]},
+					  
+					  Parse::RecDescent::_tracefirst($text),
+					  q{stream_select})
+						if defined $::RD_TRACE;
+		$item{q{xp}} = $_tok;
+		push @item, $_tok;
+		
+		}
+
+		Parse::RecDescent::_trace(q{Trying subrule: [block]},
+				  Parse::RecDescent::_tracefirst($text),
+				  q{stream_select})
+					if defined $::RD_TRACE;
+		if (1) { no strict qw{refs};
+		$expectation->is(q{block})->at($text);
+		unless (defined ($_tok = Parse::RecDescent::namespace000001::block($thisparser,$text,$repeating,$_noactions,undef)))
+		{
+			
+			Parse::RecDescent::_trace(q{<<Didn't match subrule: [block]>>},
+						  Parse::RecDescent::_tracefirst($text),
+						  q{stream_select})
+							if defined $::RD_TRACE;
+			$expectation->failed();
+			last;
+		}
+		Parse::RecDescent::_trace(q{>>Matched subrule: [block]<< (return value: [}
+					. $_tok . q{]},
+					  
+					  Parse::RecDescent::_tracefirst($text),
+					  q{stream_select})
+						if defined $::RD_TRACE;
+		$item{q{block}} = $_tok;
+		push @item, $_tok;
+		
+		}
+
+		Parse::RecDescent::_trace(q{Trying action},
+					  Parse::RecDescent::_tracefirst($text),
+					  q{stream_select})
+						if defined $::RD_TRACE;
+		
+
+		$_tok = ($_noactions) ? 0 : do { [$item[2],$item[3]] };
+		unless (defined $_tok)
+		{
+			Parse::RecDescent::_trace(q{<<Didn't match action>> (return value: [undef])})
+					if defined $::RD_TRACE;
+			last;
+		}
+		Parse::RecDescent::_trace(q{>>Matched action<< (return value: [}
+					  . $_tok . q{])}, $text)
+						if defined $::RD_TRACE;
+		push @item, $_tok;
+		$item{__ACTION1__}=$_tok;
+		
+
+
+		Parse::RecDescent::_trace(q{>>Matched production: [/select\\s/ xp block]<<},
+					  Parse::RecDescent::_tracefirst($text),
+					  q{stream_select})
+						if defined $::RD_TRACE;
+		$_matched = 1;
+		last;
+	}
+
+
+        unless ( $_matched || defined($return) || defined($score) )
+	{
+		
+
+		$_[1] = $text;	# NOT SURE THIS IS NEEDED
+		Parse::RecDescent::_trace(q{<<Didn't match rule>>},
+					 Parse::RecDescent::_tracefirst($_[1]),
+					 q{stream_select})
+					if defined $::RD_TRACE;
+		return undef;
+	}
+	if (!defined($return) && defined($score))
+	{
+		Parse::RecDescent::_trace(q{>>Accepted scored production<<}, "",
+					  q{stream_select})
+						if defined $::RD_TRACE;
+		$return = $score_return;
+	}
+	splice @{$thisparser->{errors}}, $err_at;
+	$return = $item[$#item] unless defined $return;
+	if (defined $::RD_TRACE)
+	{
+		Parse::RecDescent::_trace(q{>>Matched rule<< (return value: [} .
+					  $return . q{])}, "",
+					  q{stream_select});
+		Parse::RecDescent::_trace(q{(consumed: [} .
+					  Parse::RecDescent::_tracemax(substr($_[1],0,-length($text))) . q{])}, 
+					  Parse::RecDescent::_tracefirst($text),
+					  , q{stream_select})
+	}
+	$_[1] = $text;
+	return $return;
+}
+
+# ARGS ARE: ($parser, $text; $repeating, $_noactions, \@args)
 sub Parse::RecDescent::namespace000001::perl_code
 {
 	my $thisparser = $_[0];
@@ -26643,6 +26837,64 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                          'vars' => '',
                                                          'name' => 'shline_inter'
                                                        }, 'Parse::RecDescent::Rule' ),
+                              'stream_select' => bless( {
+                                                          'impcount' => 0,
+                                                          'line' => '695',
+                                                          'prods' => [
+                                                                       bless( {
+                                                                                'dircount' => 0,
+                                                                                'uncommit' => undef,
+                                                                                'patcount' => 1,
+                                                                                'strcount' => 0,
+                                                                                'number' => 0,
+                                                                                'error' => undef,
+                                                                                'line' => undef,
+                                                                                'items' => [
+                                                                                             bless( {
+                                                                                                      'description' => '/select\\\\s/',
+                                                                                                      'pattern' => 'select\\s',
+                                                                                                      'mod' => '',
+                                                                                                      'hashname' => '__PATTERN1__',
+                                                                                                      'lookahead' => 0,
+                                                                                                      'ldelim' => '/',
+                                                                                                      'line' => '696',
+                                                                                                      'rdelim' => '/'
+                                                                                                    }, 'Parse::RecDescent::Token' ),
+                                                                                             bless( {
+                                                                                                      'line' => '696',
+                                                                                                      'subrule' => 'xp',
+                                                                                                      'argcode' => undef,
+                                                                                                      'implicit' => undef,
+                                                                                                      'matchrule' => 0,
+                                                                                                      'lookahead' => 0
+                                                                                                    }, 'Parse::RecDescent::Subrule' ),
+                                                                                             bless( {
+                                                                                                      'line' => '696',
+                                                                                                      'subrule' => 'block',
+                                                                                                      'argcode' => undef,
+                                                                                                      'implicit' => undef,
+                                                                                                      'matchrule' => 0,
+                                                                                                      'lookahead' => 0
+                                                                                                    }, 'Parse::RecDescent::Subrule' ),
+                                                                                             bless( {
+                                                                                                      'line' => '697',
+                                                                                                      'code' => '{ [$item[2],$item[3]] }',
+                                                                                                      'hashname' => '__ACTION1__',
+                                                                                                      'lookahead' => 0
+                                                                                                    }, 'Parse::RecDescent::Action' )
+                                                                                           ],
+                                                                                'actcount' => 1
+                                                                              }, 'Parse::RecDescent::Production' )
+                                                                     ],
+                                                          'calls' => [
+                                                                       'xp',
+                                                                       'block'
+                                                                     ],
+                                                          'opcount' => 0,
+                                                          'changed' => 0,
+                                                          'vars' => '',
+                                                          'name' => 'stream_select'
+                                                        }, 'Parse::RecDescent::Rule' ),
                               'perl_code' => bless( {
                                                       'impcount' => 0,
                                                       'line' => '670',
@@ -27721,7 +27973,7 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                               }, 'Parse::RecDescent::Rule' ),
                               '_alternation_1_of_production_1_of_rule_xpintercont' => bless( {
                                                                                                'impcount' => 0,
-                                                                                               'line' => '695',
+                                                                                               'line' => '700',
                                                                                                'prods' => [
                                                                                                             bless( {
                                                                                                                      'dircount' => 0,
@@ -27733,7 +27985,7 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                                                                      'line' => undef,
                                                                                                                      'items' => [
                                                                                                                                   bless( {
-                                                                                                                                           'line' => '695',
+                                                                                                                                           'line' => '700',
                                                                                                                                            'subrule' => 'xpfilters',
                                                                                                                                            'argcode' => undef,
                                                                                                                                            'implicit' => undef,
@@ -27750,10 +28002,10 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                                                                      'strcount' => 0,
                                                                                                                      'number' => 1,
                                                                                                                      'error' => undef,
-                                                                                                                     'line' => '696',
+                                                                                                                     'line' => '701',
                                                                                                                      'items' => [
                                                                                                                                   bless( {
-                                                                                                                                           'line' => '696',
+                                                                                                                                           'line' => '701',
                                                                                                                                            'subrule' => 'xpbrackets',
                                                                                                                                            'argcode' => undef,
                                                                                                                                            'implicit' => undef,
@@ -31832,7 +32084,7 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                      }, 'Parse::RecDescent::Rule' ),
                               '_alternation_1_of_production_54_of_rule_command' => bless( {
                                                                                             'impcount' => 0,
-                                                                                            'line' => '696',
+                                                                                            'line' => '701',
                                                                                             'prods' => [
                                                                                                          bless( {
                                                                                                                   'dircount' => 0,
@@ -31850,7 +32102,7 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                                                                                         'hashname' => '__PATTERN1__',
                                                                                                                                         'lookahead' => 0,
                                                                                                                                         'ldelim' => '/',
-                                                                                                                                        'line' => '696',
+                                                                                                                                        'line' => '701',
                                                                                                                                         'rdelim' => '/'
                                                                                                                                       }, 'Parse::RecDescent::Token' )
                                                                                                                              ],
@@ -31973,7 +32225,7 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                     }, 'Parse::RecDescent::Rule' ),
                               '_alternation_1_of_production_1_of_rule_xpcont' => bless( {
                                                                                           'impcount' => 0,
-                                                                                          'line' => '695',
+                                                                                          'line' => '700',
                                                                                           'prods' => [
                                                                                                        bless( {
                                                                                                                 'dircount' => 0,
@@ -31985,7 +32237,7 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                                                                 'line' => undef,
                                                                                                                 'items' => [
                                                                                                                              bless( {
-                                                                                                                                      'line' => '695',
+                                                                                                                                      'line' => '700',
                                                                                                                                       'subrule' => 'xpfilters',
                                                                                                                                       'argcode' => undef,
                                                                                                                                       'implicit' => undef,
@@ -32002,10 +32254,10 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                                                                 'strcount' => 0,
                                                                                                                 'number' => 1,
                                                                                                                 'error' => undef,
-                                                                                                                'line' => '696',
+                                                                                                                'line' => '701',
                                                                                                                 'items' => [
                                                                                                                              bless( {
-                                                                                                                                      'line' => '696',
+                                                                                                                                      'line' => '701',
                                                                                                                                       'subrule' => 'xpbrackets',
                                                                                                                                       'argcode' => undef,
                                                                                                                                       'implicit' => undef,
@@ -32263,7 +32515,7 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                           }, 'Parse::RecDescent::Rule' ),
                               '_alternation_1_of_production_55_of_rule_command' => bless( {
                                                                                             'impcount' => 0,
-                                                                                            'line' => '696',
+                                                                                            'line' => '701',
                                                                                             'prods' => [
                                                                                                          bless( {
                                                                                                                   'dircount' => 0,
@@ -32281,7 +32533,7 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                                                                                         'hashname' => '__PATTERN1__',
                                                                                                                                         'lookahead' => 0,
                                                                                                                                         'ldelim' => '/',
-                                                                                                                                        'line' => '696',
+                                                                                                                                        'line' => '701',
                                                                                                                                         'rdelim' => '/'
                                                                                                                                       }, 'Parse::RecDescent::Token' )
                                                                                                                              ],
@@ -32830,7 +33082,7 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                }, 'Parse::RecDescent::Rule' ),
                               '_alternation_1_of_production_1_of_rule_local_var' => bless( {
                                                                                              'impcount' => 0,
-                                                                                             'line' => '696',
+                                                                                             'line' => '701',
                                                                                              'prods' => [
                                                                                                           bless( {
                                                                                                                    'dircount' => 0,
@@ -32848,7 +33100,7 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                                                                                          'hashname' => '__PATTERN1__',
                                                                                                                                          'lookahead' => 0,
                                                                                                                                          'ldelim' => '/',
-                                                                                                                                         'line' => '696',
+                                                                                                                                         'line' => '701',
                                                                                                                                          'rdelim' => '/'
                                                                                                                                        }, 'Parse::RecDescent::Token' )
                                                                                                                               ],
@@ -33008,7 +33260,7 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                    }, 'Parse::RecDescent::Rule' ),
                               '_alternation_1_of_production_3_of_rule_complex_command' => bless( {
                                                                                                    'impcount' => 0,
-                                                                                                   'line' => '695',
+                                                                                                   'line' => '700',
                                                                                                    'prods' => [
                                                                                                                 bless( {
                                                                                                                          'dircount' => 0,
@@ -33021,7 +33273,7 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                                                                          'items' => [
                                                                                                                                       bless( {
                                                                                                                                                'description' => '\';\'',
-                                                                                                                                               'line' => '695',
+                                                                                                                                               'line' => '700',
                                                                                                                                                'pattern' => ';',
                                                                                                                                                'hashname' => '__STRING1__',
                                                                                                                                                'lookahead' => 0
@@ -33036,7 +33288,7 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                                                                          'strcount' => 0,
                                                                                                                          'number' => 1,
                                                                                                                          'error' => undef,
-                                                                                                                         'line' => '696',
+                                                                                                                         'line' => '701',
                                                                                                                          'items' => [
                                                                                                                                       bless( {
                                                                                                                                                'description' => '/^\\\\s*(\\}|\\\\Z)/',
@@ -33045,7 +33297,7 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                                                                                                'hashname' => '__PATTERN1__',
                                                                                                                                                'lookahead' => 1,
                                                                                                                                                'ldelim' => '/',
-                                                                                                                                               'line' => '696',
+                                                                                                                                               'line' => '701',
                                                                                                                                                'rdelim' => '/'
                                                                                                                                              }, 'Parse::RecDescent::Token' )
                                                                                                                                     ],
