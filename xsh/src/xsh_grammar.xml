@@ -1470,7 +1470,7 @@ sub new {
 	<shortdesc>if statement</shortdesc>
 	<description>
 	  <para>
-	    Execute <xref linkend="block"/> if the given <xref
+	    Execute <xref linkend="block"/> if a given <xref
 	    linkend="xpath"/> or <xref linkend="perl_code"/>
 	    expression evaluates to a non-emtpty node-list, true
 	    boolean-value, non-zero number or non-empty literal. If
@@ -1860,7 +1860,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  </example>
 	  <para> 
 	    In the other two cases (where percent sign appears)
-	    find all nodes matching the given <xref linkend="xpath"/>
+	    find all nodes matching a given <xref linkend="xpath"/>
 	    and store the resulting node-list in the variable
 	    named %<xref linkend="ID"/>. The variable may be later used
 	    instead of an XPath expression.
@@ -2425,7 +2425,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    The namespace <xref linkend="expression"/> is only valid for
 	    elements and attributes and must evaluate to the namespace
 	    URI. In that case, the element or attribute name must have a
-	    prefix. The created node is associated with the given
+	    prefix. The created node is associated with a given
 	    namespace.
 	  </para>
 	  <example>
@@ -2710,7 +2710,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<description>
 	  <para><literal>normalize</literal> 
 	    puts all text nodes in the full depth of the sub-tree
-	      underneath each node selected by the given <xref
+	      underneath each node selected by a given <xref
 	      linkend="xpath"/>,
 	    into a "normal" form where only structure (e.g., elements,
 	    comments, processing instructions, CDATA sections, and
@@ -2765,7 +2765,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       </production>
       <documentation sections="navigation information">
 	<usage>ls <xref linkend="xpath"/> [<xref linkend="expression"/>]</usage>
-	<shortdesc>list given part of the document as XML</shortdesc>
+	<shortdesc>list a given part of a document as XML</shortdesc>
 	<description>
 	  <para>
 	    List the XML representation of all nodes matching <xref
@@ -2808,10 +2808,10 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       </production>
       <documentation sections="information">
 	<usage>count <xref linkend="xpath"/></usage>
-	<shortdesc>calculate given XPath expression and enumerate node-lists</shortdesc>
+	<shortdesc>calculate a given XPath expression and enumerate node-lists</shortdesc>
 	<description>
 	  <para>
-	    Calculate the given <xref linkend="xpath"/> expression. If
+	    Calculate a given <xref linkend="xpath"/> expression. If
 	    the result is a node-list, return number of nodes in the
 	    node-list.  If the <xref linkend="xpath"/> results in a
 	    boolean, numeric or literal value, return the value.
@@ -2874,7 +2874,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<usage>eval <xref linkend="perl_code"/></usage>
 	<shortdesc>evaluate in-line Perl code</shortdesc>
 	<description>
-	  <para>Evaluate the given perl expression.</para>
+	  <para>Evaluate a given perl expression.</para>
 	</description>
 	<see-also>
 	  <ruleref ref="count_command"/>
@@ -2923,7 +2923,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<usage>print <xref linkend="expression"/> [<xref linkend="expression"/> ...]</usage>
 	<shortdesc>print given stuff on standard console output</shortdesc>
 	<description>
-	  <para>Interpolate and print given expression(s).</para>
+	  <para>Interpolate and print a given expression(s).</para>
 	</description>
       </documentation>
     </rule>
@@ -2938,7 +2938,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       </production>
       <documentation>
 	<usage>sort <xref linkend="xpath"/>|<xref linkend="perl_code"/> <xref linkend="perl_code"/> %<xref linkend="ID"/></usage>
-	<shortdesc>sort given node-list by given criteria</shortdesc>
+	<shortdesc>sort a given node-list by given criteria</shortdesc>
 	<description>
 	  <para>
 	    EXPERIMENTAL! This command is not yet guaranteed to remain in the 
@@ -3108,7 +3108,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       </production>
       <documentation sections="documents navigation">
 	<usage>select <xref linkend="ID"/></usage>
-	<shortdesc>make given document the current one</shortdesc>
+	<shortdesc>make a given document the current one</shortdesc>
 	<description>
 	  <para>
 	    Make <xref linkend="ID"/> the document identifier to be used in the next
@@ -3197,11 +3197,11 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       </production>
       <documentation sections="documents">
 	<usage>create <xref linkend="ID"/> <xref linkend="expression"/></usage>
-	<shortdesc>make a new document from given XML fragment</shortdesc>
+	<shortdesc>make a new document from a given XML fragment</shortdesc>
 	<description>
 	  <para>
 	    Create a new document using <xref linkend="expression"/> to
-	    form the root element and associate it with the given
+	    form the root element and associate it with a given
 	    identifier.
 	  </para>
 	  <example>
@@ -3329,7 +3329,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<shortdesc>show document's DTD</shortdesc>
 	<description>
 	  <para>
-	    Print external or internal DTD for the given document.  If
+	    Print external or internal DTD for a given document.  If
 	    no document identifier is given, the current document is used.
 	  </para>
 	</description>
@@ -3420,7 +3420,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<description>
 	  <para>
 	    Exit xsh immediately, optionally with the exit-code
-	    resulting from the given expression.
+	    resulting from a given expression.
 	  </para>
 	  <para>
 	    WARNING: No files are saved on exit.
@@ -3474,7 +3474,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<shortdesc>change current context node</shortdesc>
 	<description>
 	  <para>Change current context node (and current document) to
-	    the first node matching the given <xref linkend="xpath"/>
+	    the first node matching a given <xref linkend="xpath"/>
 	    argument.
           </para>
 	</description>
@@ -3507,10 +3507,10 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       </production>
       <documentation sections="navigation information">
 	<usage>locate <xref linkend="xpath"/></usage>
-	<shortdesc>show given node location (as a cannonical XPath)</shortdesc>
+	<shortdesc>show a given node location (as a cannonical XPath)</shortdesc>
 	<description>
 	  <para>Print canonical XPaths leading to nodes matched by
-	    the <xref linkend="xpath"/> given.</para>
+	    a given <xref linkend="xpath"/>.</para>
 	</description>
 	<see-also>
 	  <ruleref ref="pwd_command"/>
@@ -4065,7 +4065,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  <para>
 	    This feature is still EXPERIMENTAL! Unfold command removes
 	    <literal>xsh:fold</literal> attributes from all elements
-	    matching given <xref linkend="xpath"/> created by previous
+	    matching a given <xref linkend="xpath"/> created by previous
 	    usage of <xref linkend="fold_command"/>.  Be aware, that
 	    <literal>xmlns:xsh</literal> namespace declaration may
 	    still be present in the document even when all elements
@@ -4290,7 +4290,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<shortdesc>use a catalog file during all parsing processes</shortdesc>
 	<description>
 	  <para>
-	    Will use given catalog file as a catalog during all parsing
+	    Will use a given catalog file as a catalog during all parsing
 	    processes. Using a catalog will significantly speed up
 	    parsing processes if many external ressources are loaded
 	    into the parsed documents (such as DTDs or XIncludes)
@@ -4340,7 +4340,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    Iterate works very much like the XPath variant of <xref
 	      linkend="foreach"/>, except that <literal>iterate</literal>
 	    evaluates the <xref linkend="block"/> as soon as 
-	    a new node matching given <xref linkend="xpath"/> 
+	    a new node matching a given <xref linkend="xpath"/> 
 	    is found. As a limitation, the <xref linkend="xpath"/>
 	    expresion used with <literal>iterate</literal>
 	    may only consist of one XPath step, i.e. it cannot
