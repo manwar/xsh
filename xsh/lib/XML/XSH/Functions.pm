@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.67 2003-08-25 12:38:07 pajas Exp $
+# $Id: Functions.pm,v 1.68 2003-08-25 12:53:11 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -31,7 +31,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8';
-  $REVISION='$Revision: 1.67 $';
+  $REVISION='$Revision: 1.68 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -150,6 +150,7 @@ sub xsh_init {
     *encodeToUTF8=*Encode::decode;
     *decodeFromUTF8=*Encode::encode;
   } else {
+    no strict 'refs';
     *encodeToUTF8=*{"$mod"."::encodeToUTF8"};
     *decodeFromUTF8=*{"$mod"."::decodeFromUTF8"};
   }
