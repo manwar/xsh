@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.75 2003-10-19 20:50:39 pajas Exp $
+# $Id: Functions.pm,v 1.76 2003-10-21 20:18:28 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -31,7 +31,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8.2';
-  $REVISION='$Revision: 1.75 $';
+  $REVISION='$Revision: 1.76 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -2104,9 +2104,12 @@ sub insert_node {
 # copy nodes matching one XPath expression to locations determined by
 # other XPath expression
 sub copy {
-  my ($fxp,$txp,$where,$all_to_all,$nodelist_var,$append_nodelist_var)=@_;
+  my ($fxp,$txp,$where,$all_to_all,$nlspec)=@_;
   my ($fid,$fq,$fdoc)=_xpath($fxp); # from xpath
   my ($tid,$tq,$tdoc)=_xpath($txp); # to xpath
+  my $nodelist_var= $nlspec ? $nlspec->[1] : undef;
+  my $append_nodelist_var = $nlspec ? 0 : $nlspec->[0];
+  my $rl;
 
   my $rl;
 
@@ -2117,8 +2120,9 @@ sub copy {
     die "No such document '$tid'!\n";
   }
   if ($nodelist_var ne "") {
-    unless (exists($_nodelist{$name}) or $append_nodelist_var) {
-      nodelist_assign($name,undef);
+    $nodelist_var =~ s/^%//;
+    unless (exists($_nodelist{$nodelist_var}) or $append_nodelist_var) {
+      nodelist_assign($nodelist_var,undef);
     }
     $rl = $_nodelist{$nodelist_var}->[1];
   }
@@ -2304,16 +2308,20 @@ sub create_nodes {
 # create new nodes from an expression and insert them to locations
 # identified by XPath
 sub insert {
-  my ($type,$exp,$xpath,$where,$ns,$to_all,$nodelist_var,$append_nodelist_var)=@_;
+  my ($type,$exp,$xpath,$where,$ns,$to_all,$nlspec)=@_;
+  my $nodelist_var= $nlspec ? $nlspec->[1] : undef;
+  my $append_nodelist_var = $nlspec ? 0 : $nlspec->[0];
 
   $exp = expand($exp);
   $ns  = expand($ns);
 
-  my ($tid,$tq,$tdoc)=_xpath($xpath); # destination(s)
 
+  my ($tid,$tq,$tdoc)=_xpath($xpath); # destination(s)
+  my $rl;
   if ($nodelist_var ne "") {
-    unless (exists($_nodelist{$name}) or $append_nodelist_var) {
-      nodelist_assign($name,undef);
+    $nodelist_var =~ s/^%//;
+    unless (exists($_nodelist{$nodelist_var}) or $append_nodelist_var) {
+      nodelist_assign($nodelist_var,undef);
     }
     $rl = $_nodelist{$nodelist_var}->[1];
   }
@@ -3056,6 +3064,18 @@ sub unless_statement {
   }
 }
 
+sub _clone_xmldoc {
+  my ($doc)=@_;
+  if (XML::LibXML::Document->can('cloneNode') ==
+      XML::LibXML::Node->can('cloneNode')) {
+    # emulated clone
+    return $_xml_module->new_parser->parse_string($doc->toString());
+  } else {
+    # native clone (if my patch ever gets into LibXML)
+    return $doc->cloneNode(1);
+  }
+}
+
 # transform a document with an XSLT stylesheet
 # and create a new document from the result
 sub xslt {
@@ -3075,12 +3095,10 @@ sub xslt {
       ($stylefile=~/^[a-z]+:/)) {
     require XML::LibXSLT;
 
-    local *SAVE;
-
     my $_xsltparser=XML::LibXSLT->new();
     my $st=$_xsltparser->parse_stylesheet_file($stylefile);
     $stylefile=~s/\..*$//;
-    my $doc=$st->transform($_doc{$id},%params);
+    my $doc=_clone_xmldoc($st->transform(_clone_xmldoc($_doc{$id}),%params));
     set_doc($newid,$doc,
 	    "$stylefile"."_transformed_".$_files{$id});
   } else {
