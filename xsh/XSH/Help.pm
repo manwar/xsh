@@ -27,11 +27,11 @@ Available commands:
   add, assign, call, cd, clone, close, complete_attributes, copy,
   count, create, debug, def, dtd, echo, enc, encoding, eval, exec,
   exit, files, foreach, help, if, include, keep_blanks, list,
-  load_ext_dtd, map, move, nodebug, open, parser_expands_entities,
-  parser_expands_xinclude, pedantic_parser, print, process_xinclude,
-  query-encoding, quiet, remove, run-mode, save, saveas, test-mode,
-  unless, valid, validate, validation, variables, verbose, version,
-  while, xadd, xcopy, xmove, xslt
+  load_ext_dtd, map, move, nodebug, open, parse,
+  parser_expands_entities, parser_expands_xinclude, pedantic_parser,
+  print, process_xinclude, query-encoding, quiet, remove, run-mode,
+  save, saveas, test-mode, unless, valid, validate, validation,
+  variables, verbose, version, while, xadd, xcopy, xmove, xslt
 
 Type help <command|type> to get more information on a given command or
 argument type.
@@ -628,7 +628,7 @@ examples:    xsh> open x=mydoc.xml # open a document
              # previous comand in an XPath expression.
              xsh> list z://chapter/title
 
-see also:    save, close, clone
+see also:    save, close, clone, parse
 H1
 'cd' => <<'H1',
 usage:       cd <expression>
@@ -790,7 +790,7 @@ examples:    xsh> create t1 root
              t1 = new_document1.xml
              t2 = new_document2.xml
 
-see also:    open, clone
+see also:    parse, open, clone
 
 H1
 'defs' => <<'H1',
