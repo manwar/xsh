@@ -2779,6 +2779,28 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</see-also>
       </documentation>
     </rule>
+    <rule id="apropos_command" type="command" name="apropos" inline="yes">
+      <command minargs="1" maxargs="1" func="apropos">
+	<param name="regexp" short="r"/>
+	<param name="fulltext" short="f"/>
+      </command>
+      <documentation sections="Information">
+	<usage>apropos [--fulltext] [--regexp] <xref linkend="exp"/></usage>
+	<shortdesc>search the documentation</shortdesc>
+	<description>
+	  <para>
+	    Print all help topics containing given expression
+	    in their short description. The
+	    <literal>--fulltext</literal> flag forces
+	    the search to be performed over the full text
+	    of help. 
+	    <literal>--fulltext</literal> indicates,
+	    that the given <xref linkend="exp"/>
+	    is a regular expression instead of a literal string.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
     <rule id="help_command" type="command" name="help" inline="yes">
       <aliases>
 	<alias name="?" regexp="\?"/>

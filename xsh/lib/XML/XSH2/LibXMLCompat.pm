@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: LibXMLCompat.pm,v 2.1 2004-12-02 19:26:37 pajas Exp $
+# $Id: LibXMLCompat.pm,v 2.2 2004-12-09 08:41:14 pajas Exp $
 
 package XML::XSH2::LibXMLCompat;
 
@@ -311,11 +311,11 @@ sub iterator {
   return $iter;
 }
 
-package XML::LibXML::Namespace;
+  package XML::LibXML::Namespace;
 
 sub parentNode {}
 
-package XML::LibXML::SubTreeIterator;
+  package XML::LibXML::SubTreeIterator;
 use strict;
 use base qw(XML::LibXML::Iterator);
 # (inheritance is not a real necessity here)

@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.2 2004-12-04 10:26:15 pajas Exp $
+# $Id: Functions.pm,v 2.3 2004-12-09 08:41:14 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.1';
-  $REVISION=q($Revision: 2.2 $);
+  $REVISION=q($Revision: 2.3 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -4640,6 +4640,30 @@ sub include {
 }
 
 # print help
+
+sub apropos {
+  my ($opts,$query)=@_;
+  $query = expand($query);
+  $opts=_ev_opts($opts);
+  if ($opts->{fulltext}) {
+    foreach my $k (sort keys %XML::XSH2::Help::HELP) {
+      if ($opts->{regexp}) {
+	out("$k\n") if ($XML::XSH2::Help::HELP{$k}->[0]=~/$query/i);
+      } else {
+	out("$k\n") if ($XML::XSH2::Help::HELP{$k}->[0]=~/\b\Q$query\E\b/i);
+      }
+    }
+  } else {
+    foreach my $k (sort keys %$XML::XSH2::Help::Apropos) {
+      if ($opts->{regexp}) {
+	out("$k\n") if (($k." - ".$XML::XSH2::Help::Apropos->{$k})=~/$query/i);
+      } else {
+	out("$k\n") if (($k." - ".$XML::XSH2::Help::Apropos->{$k})=~/\b\Q$query\E\b/i);
+      }
+    }
+  }
+}
+
 sub help {
   my ($command)=expand @_;
   if ($command) {

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_help.pl,v 2.1 2004-12-02 19:26:41 pajas Exp $
+# $Id: gen_help.pl,v 2.2 2004-12-09 08:41:13 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -38,7 +38,7 @@ print <<'PREAMB';
 
 package XML::XSH2::Help;
 use strict;
-use vars qw($HELP %HELP);
+use vars qw($HELP %HELP $Apropos);
 
 
 PREAMB
@@ -88,11 +88,16 @@ print wrap("    ","    ",
 print "END\n\n";
 
 
+my %apropos;
 foreach my $r ($rules->findnodes('./rule')) {
   next unless $r;
   my ($ruledoc)=$r->findnodes('./documentation');
   next unless $ruledoc;
   my $name=get_name($r);
+
+  my ($shortdesc)=$ruledoc->findnodes('./shortdesc');
+  $apropos{$name} = get_text($shortdesc) if ($shortdesc);
+  $apropos{$name} =~ s/\s+/ /g;
 
   print "\$HELP{'$name'}=[<<'END'];\n";
   ($title)=$ruledoc->findnodes('./title');
@@ -160,6 +165,9 @@ foreach my $sec ($dom->findnodes('/recdescent-xml/doc/section')) {
 }
 
 print "\$HELP{'commands'}=\$HELP{'command'};\n";
+
+use Data::Dumper;
+print Data::Dumper->Dump([\%apropos],[qw(Apropos)]);
 
 print "\n1;\n__END__\n\n";
 
