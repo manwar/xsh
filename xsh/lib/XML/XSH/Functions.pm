@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.9 2002-03-21 15:43:40 pajas Exp $
+# $Id: Functions.pm,v 1.10 2002-03-27 16:46:30 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -1541,8 +1541,8 @@ package XML::LibXML::Document;
 sub XML::LibXML::Document::findnodes {
     my ($self, $xpath) = @_;
     my $dom=$self->getDocumentElement();
-
-    if ($xpath!~m/^\s*\//) {
+    
+    if ($xpath!~m/^\s*\// and $xpath!~m/^\s*(?:id|key)\s*\(/) {
       $xpath='/'.$xpath;
     }
     my @nodes = $dom->findnodes($xpath);
