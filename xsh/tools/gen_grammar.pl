@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_grammar.pl,v 1.7 2002-09-12 15:34:31 pajas Exp $
+# $Id: gen_grammar.pl,v 1.8 2002-09-27 08:00:52 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -49,8 +49,8 @@ sub get_text {
   my ($node,$no_strip)=@_;
   my $text="";
   foreach ($node->childNodes()) {
-    if ($_->nodeType() == XML_TEXT_NODE ||
-	$_->nodeType() == XML_CDATA_SECTION_NODE) {
+    if ($_->nodeType() == XML::LibXML::XML_TEXT_NODE ||
+	$_->nodeType() == XML::LibXML::XML_CDATA_SECTION_NODE) {
       $text.=$_->getData();
     }
   }
@@ -85,7 +85,7 @@ sub has_sibling {
   return $value;
 #   $node=$node->nextSibling();
 #   while ($node) {
-#     return 1 if ($node->nodeType == XML_ELEMENT_NODE
+#     return 1 if ($node->nodeType == XML::LibXML::XML_ELEMENT_NODE
 # 		 and
 # 		 $node->nodeName ne 'action'
 # 		 and
@@ -101,7 +101,7 @@ sub create_rule_production {
    my $result;
   my $name;
   foreach my $item ($prod->childNodes()) {
-    next unless $item->nodeType == XML_ELEMENT_NODE;
+    next unless $item->nodeType == XML::LibXML::XML_ELEMENT_NODE;
     $name=$item->nodeName();
     if ($name eq 'lookahead') {
       $result.=' ...' . ($item->getAttribute('negative') eq 'yes' ? '!' : '');

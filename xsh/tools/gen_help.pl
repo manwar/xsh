@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_help.pl,v 1.6 2002-09-02 15:47:53 pajas Exp $
+# $Id: gen_help.pl,v 1.7 2002-09-27 08:00:52 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -118,10 +118,10 @@ sub get_text {
   my ($node,$no_strip)=@_;
   my $text="";
   foreach my $n ($node->childNodes()) {
-    if ($n->nodeType() == XML_TEXT_NODE ||
-	$n->nodeType() == XML_CDATA_SECTION_NODE) {
+    if ($n->nodeType() == XML::LibXML::XML_TEXT_NODE ||
+	$n->nodeType() == XML::LibXML::XML_CDATA_SECTION_NODE) {
       $text.=$n->getData();
-    } elsif ($n->nodeType() == XML_ELEMENT_NODE) {
+    } elsif ($n->nodeType() == XML::LibXML::XML_ELEMENT_NODE) {
       if ($n->nodeName() eq 'link') {
 	$text.="<".get_text($n,1).">";
       } elsif ($n->nodeName() eq 'xref') {
@@ -137,7 +137,7 @@ sub get_text {
 	foreach (split /\s/,$n->getAttribute('types')) {
 	  $text.=join ", ", sort map { get_name($_) } grep {defined($_)} $node->findnodes("//rules/rule[\@type='$_']");
 	}
-      } elsif ($n->nodeName eq 'tab') {
+      } elsif ($n->nodeName() eq 'tab') {
 	$text.="\t" x $n->getAttribute('count');
       } if ($n->nodeName() eq 'literal') {
 	$text.="`".get_text($n,1)."'";
@@ -154,7 +154,7 @@ sub max { ($_[0] > $_[1]) ? $_[0] : $_[1] }
 sub  print_description {
   my ($desc,$indent,$bigindent)=@_;
   foreach my $c ($desc->childNodes()) {
-    if ($c->nodeType == XML_ELEMENT_NODE) {
+    if ($c->nodeType == XML::LibXML::XML_ELEMENT_NODE) {
       if ($c->nodeName eq 'para') {
 	my $t=get_text($c);
 	$t=~s/\s+/ /g;
@@ -167,8 +167,9 @@ sub  print_description {
 	}
 	print "\n";
 	foreach (map { get_text($_) } $c->findnodes('./code')) {
-	  s/\n[ \t]+/\n$bigindent/g;
+	  s/\n[ ]+/\n$bigindent/g;
 	  s/\\\n/\\\n  /g;
+	  s/\t/  /g;
 	  print "$bigindent$_\n";
 	}
 	print "\n";
