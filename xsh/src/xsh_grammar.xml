@@ -2813,14 +2813,17 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    evaluated, each in a context of one of the nodes to
 	    compare. These <xref linkend="block"/> are supposed to
 	    prepair any variables needed for later order comparizon in
-	    the <xref linkend="perl_code"/>.  The nodes to be compared
-	    are available in %a and %b node-lists. It is the <xref linkend="perl_code"/> that is responsible for deciding
-	    which node comes first. Therefore it should return either
-	    -1, 0, or 1.
+	    the <xref linkend="perl_code"/>.  It is the <xref
+	    linkend="perl_code"/> that is responsible for deciding
+	    which node comes first by returning either -1 (the first
+	    node should come first), 0 (no precedence - e.g. the nodes
+	    gave the same value for comparizon), or 1 (the second node should come first).
 	  </para>
 	  <example>
 	    <title>Sort creatures by name</title>
-	    <code>xsh&gt; <userinput>%c=/middle-earth[1]/creatures</userinput>
+	    <code>
+	      xsh&gt; <userinput>local $a; local $b;</userinput>
+	      xsh&gt; <userinput>local %c=/middle-earth[1]/creatures</userinput>
 	      xsh&gt; <userinput>sort { $a=string(@name) }{ $b=string(@name) }{ $a cmp $b } %c</userinput>
 	      xsh&gt; <userinput>xmove %c into /middle-earth[1]</userinput># replaces the creatures</code>
 	  </example>
