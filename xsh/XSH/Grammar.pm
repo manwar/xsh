@@ -81,7 +81,7 @@ $grammar=<<'_EO_GRAMMAR_';
             | files_command | xslt_command | insert_command | help_command
             | exec_command  | call_command | include_command | assign_command
             | print_var_command | var_command | print_command
-            | create_command
+            | create_command | list_defs_command | select_command
             | option | compound)
             { [$item[1]] }
 
@@ -99,6 +99,8 @@ $grammar=<<'_EO_GRAMMAR_';
                  | /assign\s/ variable '=' xpath  { [\&XSH::Functions::xpath_assign,$item[2],$item[4]]; }
 
   print_var_command : variable { [\&XSH::Functions::print_var,$item[1]] }
+
+  list_defs_command : /defs/ { [\&XSH::Functions::list_defs] }
 
   include_command : /\.\s|include\s/ filename { [\&XSH::Functions::include,$item[2]] }
 
@@ -118,7 +120,7 @@ $grammar=<<'_EO_GRAMMAR_';
   paramlist    : param paramlist { [@{$item[1]},@{$item[2]}]; }
                | param
 
-  param        : /[^=\s]+/ '=' expression { [$item[1],$item[2]]; }
+  param        : /[^=\s]+/ '=' expression { [$item[1],$item[3]]; }
 
   xslt_alias : /transform\s|xslt?\s|xsltproc\s|process\s/
 
@@ -174,55 +176,45 @@ $grammar=<<'_EO_GRAMMAR_';
   close_command : /close\s/ ID
 				       { [\&XSH::Functions::close_doc,$item[2]]; }
 
+  select_command : /select\s/ ID       { [\&XSH::Functions::set_last_id,$item[2]]; }
+
   open_command : /open\s/ ID /\s*=\s*/ filename
-				       { XSH::Functions::set_last_id($item[2]);
-                                         [\&XSH::Functions::open_doc,@item[2,4]]; }
+				       { [\&XSH::Functions::open_doc,@item[2,4]]; }
                | ID /\s*=\s*/ filename
-				       { XSH::Functions::set_last_id($item[1]);
-                                         [\&XSH::Functions::open_doc,@item[1,3]]; }
+				       { [\&XSH::Functions::open_doc,@item[1,3]]; }
 
   create_command : /new\s|create\s/ ID expression
-				       { XSH::Functions::set_last_id($item[2]);
-                                         [\&XSH::Functions::create_doc,@item[2,3]]; }
+				       { [\&XSH::Functions::create_doc,@item[2,3]]; }
 
   save_command : /saveas\s/ ID filename /encoding\s/ expression
-                                       { XSH::Functions::set_last_id($item[2]);
-                                         [\&XSH::Functions::save_as,@item[2,3,5]]; }
+                                       { [\&XSH::Functions::save_as,@item[2,3,5]]; }
                | /saveas\s/ ID filename
-                                       { XSH::Functions::set_last_id($item[2]);
-                                         [\&XSH::Functions::save_as,@item[2,3]]; }
+                                       { [\&XSH::Functions::save_as,@item[2,3]]; }
                | /save\s/ ID /encoding\s/
-                                       { XSH::Functions::set_last_id($item[2]);
-                                         [\&XSH::Functions::save_as,$item[2],$XSH::Functions::files{$item[2]},
+                                       { [\&XSH::Functions::save_as,$item[2],$XSH::Functions::files{$item[2]},
                                                        $item[4]]; }
-               | /save\s/ ID           { XSH::Functions::set_last_id($item[2]);
-                                         [\&XSH::Functions::save_as,$item[2],$XSH::Functions::files{$item[2]}]; }
+               | /save\s/ ID           { [\&XSH::Functions::save_as,$item[2],$XSH::Functions::files{$item[2]}]; }
 
-  list_dtd_command : /dtd\s/ ID        { XSH::Functions::set_last_id($item[2]);
-                                         [\&XSH::Functions::list_dtd,$item[2]]; }
-                   | /dtd(\s|$)/       { [\&XSH::Functions::list_dtd,$XSH::Functions::LAST_ID] }
+  list_dtd_command : /dtd\s/ ID        { [\&XSH::Functions::list_dtd,$item[2]]; }
+                   | /dtd(\s|$)/       { [\&XSH::Functions::list_dtd,undef] }
 
 
-  print_enc_command: /enc\s/ ID        { XSH::Functions::set_last_id($item[2]);
-                                         [\&XSH::Functions::print_enc,$item[2]]; }
-                   | /enc(\s|$)/       { [\&XSH::Functions::print_enc,$XSH::Functions::LAST_ID] }
+  print_enc_command: /enc\s/ ID        { [\&XSH::Functions::print_enc,$item[2]]; }
+                   | /enc(\s|$)/       { [\&XSH::Functions::print_enc,undef] }
 
-  validate_command : /validate\s/ ID   { XSH::Functions::set_last_id($item[2]);
-                                         [\&XSH::Functions::validate_doc,$item[2]]; }
-                   | /validate(\s|$)/  { [\&XSH::Functions::validate_doc,$XSH::Functions::LAST_ID] }
+  validate_command : /validate\s/ ID   { [\&XSH::Functions::validate_doc,$item[2]]; }
+                   | /validate(\s|$)/  { [\&XSH::Functions::validate_doc,undef] }
 
-  valid_command : /valid\s/ ID         { XSH::Functions::set_last_id($item[2]);
-                                         [\&XSH::Functions::valid_doc,$item[2]]; }
-                | /valid(\s|$)/        { [\&XSH::Functions::valid_doc,$XSH::Functions::LAST_ID] }
+  valid_command : /valid\s/ ID         { [\&XSH::Functions::valid_doc,$item[2]]; }
+                | /valid(\s|$)/        { [\&XSH::Functions::valid_doc,undef] }
 
   exit_command : /exit\s|quit\s/ expression { [\&XSH::Functions::quit,$item[2]]; }
                | /exit|quit/           { [\&XSH::Functions::quit,0]; }
 
   filename : expression
 
-  xpath : ID ":" xp                    { XSH::Functions::set_last_id($item[1]);
-                                         [@item[1,3]] }
-        | xp                           { [$XSH::Functions::LAST_ID, $item[1]] }
+  xpath : ID ":" xp                    { [@item[1,3]] }
+        | xp                           { [undef, $item[1]] }
         | <error>
 
   xp : xpsimple <skip:""> (xpfilters|xpbracket) <skip:""> xp
@@ -230,6 +222,7 @@ $grammar=<<'_EO_GRAMMAR_';
      | xpsimple <skip:""> (xpfilters|xpbracket)
                                        { "$item[1]$item[3]"; }
      | xpsimple
+     | xpstring
 
   xpfilters : xpfilter <skip:""> xpfilters
                                        { "$item[1]$item[3]" }
@@ -245,7 +238,9 @@ $grammar=<<'_EO_GRAMMAR_';
 
   xps : /([^][()'"]|'[^']*'|"[^"]*")*/
 
-  xpsimple : /[^] [();]+/
+  xpstring : /'[^']*'|"[^"]*"/
+
+  xpsimple : /[^]"' [();]+/
            | xpbracket
 
 
