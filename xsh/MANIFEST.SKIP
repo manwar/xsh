@@ -18,3 +18,8 @@
 ^index.html$
 ^src/tests.xsh$
 ~$
+\.\d$
+\.log$
+^tmp/
+^pcc
+^compl.*\.pl$
