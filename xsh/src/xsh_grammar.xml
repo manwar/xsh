@@ -917,7 +917,7 @@ sub new {
 	    <code>
 	      $i=0;
 	      foreach //chapter {
-	      <tab/>$c=./para;
+	      <tab/>$c=count(./para);
 	      <tab/>$i=$i+1;
 	      <tab/>print &quot;$c paragraphs in chapter no.$i&quot;;
 	      }
