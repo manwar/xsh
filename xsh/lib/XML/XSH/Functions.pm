@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.60 2003-08-06 08:56:10 pajas Exp $
+# $Id: Functions.pm,v 1.61 2003-08-07 13:54:53 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -13,7 +13,7 @@ use Exporter;
 use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCAL_NODE
             $_xml_module $_sigint
             $_xsh $_xpc $_parser %_nodelist @stored_variables
-            $_newdoc $SIGSEGV_SAFE
+            $_newdoc
             $TRAP_SIGINT $TRAP_SIGPIPE $_die_on_err $_on_exit
             %_doc %_files %_defs %_chr %_ns
 	    $ENCODING $QUERY_ENCODING
@@ -23,12 +23,12 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 	    $PEDANTIC_PARSER $LOAD_EXT_DTD $PARSER_COMPLETES_ATTRIBUTES
 	    $PARSER_EXPANDS_XINCLUDE
 	    $XPATH_AXIS_COMPLETION
-	    $XPATH_COMPLETION
+	    $XPATH_COMPLETION $DEFAULT_FORMAT
 	  /;
 
 BEGIN {
   $VERSION='1.7';
-  $REVISION='$Revision: 1.60 $';
+  $REVISION='$Revision: 1.61 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -47,7 +47,9 @@ BEGIN {
 		    $PEDANTIC_PARSER
 		    $LOAD_EXT_DTD
 		    $PARSER_COMPLETES_ATTRIBUTES
-		    $PARSER_EXPANDS_XINCLUDE/;
+		    $PARSER_EXPANDS_XINCLUDE
+		    $DEFAULT_FORMAT
+		    /;
   @EXPORT_OK=(qw(&xsh_init &xsh &xsh_get_output
                 &xsh_set_output &xsh_set_parser
                 &set_quiet &set_debug &set_compile_only_mode
@@ -61,7 +63,6 @@ BEGIN {
 		  param_vars => [@PARAM_VARS]
 		 );
 
-  $SIGSEGV_SAFE=0;
   $TRAP_SIGINT=0;
   $_xml_module='XML::XSH::LibXMLCompat';
   $INDENT=1;
@@ -82,6 +83,7 @@ BEGIN {
   $PARSER_EXPANDS_XINCLUDE=0;
   $XPATH_COMPLETION=1;
   $XPATH_AXIS_COMPLETION='always'; # never / when-empty
+  $DEFAULT_FORMAT='xml';
   $_newdoc=1;
   $_die_on_err=1;
   %_nodelist=();
@@ -321,7 +323,17 @@ sub xsh_docs {
 }
 
 sub xsh_parse_string {
-  return $_xml_module->parse_string($_parser,$_[0]);
+  my $format=$_[1] || $DEFAULT_FORMAT;
+  if ($format eq 'xml') {
+    my $xmldecl;
+    $xmldecl="<?xml version='1.0' encoding='utf-8'?>" unless $_[0]=~/^\s*\<\?xml /;
+    return $_xml_module->parse_string($_parser,$xmldecl.$_[0]);
+  } elsif ($format eq 'html') {
+    return $_xml_module->parse_html_string($_parser,$_[0]);
+  } elsif ($format eq 'docbook') {
+    print "parsing SGML\n";
+    return $_xml_module->parse_sgml_string($_parser,$_[0]);
+  }
 }
 
 sub xsh_xml_parser {
@@ -531,25 +543,11 @@ sub xsh_local_id {
 # current node is not from the given document
 sub get_local_node {
   my ($id)=@_;
-  if ($SIGSEGV_SAFE) {
-    # do not allow xpath searches directly from document node
-    if ($LOCAL_NODE and $id eq $LOCAL_ID) {
-      if ($_xml_module->is_document($LOCAL_NODE)) {
-	return $LOCAL_NODE->getDocumentElement();
-      } else {
-	return $LOCAL_NODE;
-      }
-    } else {
-      $id=$LOCAL_ID if ($id eq "");
-      return $_doc{$id} ? $_doc{$id}->getDocumentElement() : undef;
-    }
+  if ($LOCAL_NODE and $id eq $LOCAL_ID) {
+    return $LOCAL_NODE;
   } else {
-    if ($LOCAL_NODE and $id eq $LOCAL_ID) {
-      return $LOCAL_NODE;
-    } else {
-      $id=$LOCAL_ID if ($id eq "");
-      return $_doc{$id} ? $_doc{$id} : undef;
-    }
+    $id=$LOCAL_ID if ($id eq "");
+    return $_doc{$id} ? $_doc{$id} : undef;
   }
 }
 
@@ -981,16 +979,13 @@ sub remove_node_from_nodelists {
 
 # create new document
 sub create_doc {
-  my ($id,$root_element)=expand @_;
+  my ($id,$root_element,$format)=expand @_;
   $id=_id($id);
   my $doc;
   $root_element="<$root_element/>" unless ($root_element=~/^\s*</);
   $root_element=toUTF8($QUERY_ENCODING,$root_element);
   $root_element=~s/^\s+//;
-  my $xmldecl;
-  $xmldecl="<?xml version='1.0' encoding='utf-8'?>" unless $root_element=~/^\s*\<\?xml /;
-
-  $doc=$_xml_module->parse_string($_parser,$xmldecl.$root_element);
+  $doc=xsh_parse_string($root_element,$format);
   set_doc($id,$doc,"new_document$_newdoc.xml");
   $_newdoc++;
 
@@ -1017,10 +1012,10 @@ sub open_doc {
   my $format;
   my $source;
   if ($_[2]=~/open(?:(?:\s*|_|-)(HTML|XML|DOCBOOK|html|xml|docbook))?(?:(?:\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?/) {
-    $format = lc($1) || 'xml';
+    $format = lc($1) || $DEFAULT_FORMAT;
     $source = lc($2) || 'file';
   } else {
-    $format='xml';
+    $format=$DEFAULT_FORMAT;
     $source='file';
   }
   $file=expand($file);
@@ -1053,16 +1048,7 @@ sub open_doc {
       $root_element="<$root_element/>" unless ($root_element=~/^\s*</);
       $root_element=toUTF8($QUERY_ENCODING,$root_element);
       $root_element=~s/^\s+//;
-      if ($format eq 'xml') {
-	my $xmldecl;
-	$xmldecl="<?xml version='1.0' encoding='utf-8'?>" unless $root_element=~/^\s*\<\?xml /;
-	$doc=$_xml_module->parse_string($_parser,$xmldecl.$root_element);
-      } elsif ($format eq 'html') {
-	$doc=$_xml_module->parse_html_string($_parser,$root_element);
-      } elsif ($format eq 'docbook') {
-	$doc=$_xml_module->parse_sgml_string($_parser,$root_element);
-	}
-
+      xsh_parse_string($root_element,$format);
       set_doc($id,$doc,"new_document$_newdoc.xml");
       $_newdoc++;
     } else  {
@@ -1097,6 +1083,9 @@ sub open_doc {
 sub close_doc {
   my ($id)=expand(@_);
   $id=_id($id);
+  unless (exists($_doc{$id})) {
+    die "No such document '$id'!\n";
+  }
   out("closing file $_files{$id}\n") unless "$QUIET";
   delete $_files{$id};
   foreach (values %_nodelist) {
@@ -1253,7 +1242,7 @@ sub save_doc {
     die "No such document '$id'!\n";
   }
 
-  my $format='xml';
+  my $format=$DEFAULT_FORMAT;
   my $target='file';
   if ($type=~/save(?:as|_as|-as)?(?:(?:\s*|_|-)(HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?(?:(?:\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?/) {
     $format = lc($1) if $1;
@@ -1317,7 +1306,7 @@ sub save_doc {
 
       $F->close() unless $target eq 'string';
     } elsif ($format eq 'docbook') {
-      print STDERR "Docbook output not yet supported!\n";
+      print STDERR "Docbook is not supported output format!\n";
     }
   }
 
@@ -1383,8 +1372,9 @@ sub to_string {
       } elsif ($_xml_module->is_document($node)) {
 	if ($node->can('getVersion') and $node->can('getEncoding')) {
 	  $result=
-	    '<?xml version="'.$node->getVersion().
-	      '" encoding="'.$node->getEncoding().'"?>'."\n";
+	    '<?xml version="'.($node->getVersion() || '1.0').'"'.
+	      ($node->getEncoding() ne "" ? ' encoding="'.$node->getEncoding().'"' : '').
+		'?>'."\n";
 	}
 	$result.=
 	  join("\n",map { to_string($_,$depth-1,$folding) } $node->childNodes);
@@ -2481,6 +2471,19 @@ sub print_enc {
   return 1;
 }
 
+sub doc_info {
+  my ($id)=expand @_;
+  ($id, my $doc)=_id($id);
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+  out("type=",$doc->nodeType,"\n");
+  out("version=",$doc->version(),"\n");
+  out("encoding=",$doc->encoding(),"\n");
+  out("standalone=",$doc->standalone(),"\n");
+  out("compression=",$doc->compression(),"\n");
+}
+
 # create an identical copy of a document
 sub clone {
   my ($id1,$id2)=@_;
@@ -3185,9 +3188,7 @@ sub stream_process {
     $parser->parse_fh($F);
     close $F;
   } elsif ($itype =~ /string/i) {
-    my $xmldecl;
-    $xmldecl="<?xml version='1.0' encoding='utf-8'?>" unless $input=~/^\s*\<\?xml /;
-    $parser->parse_string($xmldecl.$input);
+    xsh_parse_string($input);
   } else  { #file
     $parser->parse_uri($input);
   }
