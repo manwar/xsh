@@ -36,7 +36,7 @@ foreach (/test/x/@n|/test/x|/test/x/text()) {
   insert chunk '<after_chunk>a</after_chunk><after_chunk>b</after_chunk>' after .;
 }
 
-ls /test
+ls /test 2 | cat 1>&2
 
 EOF
 
