@@ -1,9 +1,9 @@
-# $Id: XSH.pm,v 1.6 2002-09-12 15:35:04 pajas Exp $
+# $Id: XSH.pm,v 1.7 2002-09-27 09:53:50 pajas Exp $
 
 package XML::XSH;
 
 use strict;
-use vars qw(@EXPORT_OK @ISA $VERSION $xshNS);
+use vars qw(@EXPORT_OK @EXPORT @ISA $VERSION $xshNS);
 
 use Exporter;
 use XML::XSH::Functions qw(:default);
@@ -12,6 +12,7 @@ use XML::XSH::Completion;
 BEGIN {
   $VERSION   = '1.1';
   @ISA       = qw(Exporter);
+  @EXPORT = qw(&xsh);
   @EXPORT_OK = @XML::XSH::Functions::EXPORT_OK;
   $xshNS = 'http://xsh.sourceforge.net/xsh/';
 }
@@ -24,19 +25,20 @@ XML::XSH - Powerfull Scripting Language/Shell for XPath-based Editing of XML
 
 =head1 SYNOPSIS
 
- use XML::XSH qw(&xsh_init &xsh);
-
- xsh_init();
-
- xsh(<<'EOXSH');
+ use XML::XSH;
+ xsh(<<'__XSH__');
 
  ... XSH Language commands ...
 
- EOXSH
+ __XSH__
 
 =head1 REQUIRES
 
 XML::LibXML, XML::XUpdate::LibXML
+
+=head1 EXPORTS
+
+xsh()
 
 =head1 DESCRIPTION
 

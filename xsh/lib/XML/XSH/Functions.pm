@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.26 2002-09-27 08:28:56 pajas Exp $
+# $Id: Functions.pm,v 1.27 2002-09-27 09:53:49 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -164,10 +164,11 @@ sub fromUTF8 {
 
 # evaluate a XSH command
 sub xsh {
+  xsh_init() unless (ref($_xsh));
   if (ref($_xsh)) {
     return ($_[0]=~/^\s*$/) ? 1 : $_xsh->startrule($_[0]);
   } else {
-    return 0;
+    die "XSH init failed!\n";
   }
 }
 
