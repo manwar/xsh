@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.30 2002-10-24 07:23:37 pajas Exp $
+# $Id: Functions.pm,v 1.31 2002-10-24 17:38:11 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -1447,6 +1447,7 @@ sub safe_insert {
     } # SOURCE: PI or Comment or DocFragment with PI's or Comments
     elsif ($_xml_module->is_pi($source) ||
 	   $_xml_module->is_comment($source) ||
+	   $_xml_module->is_entity_reference($source) ||
 	   $_xml_module->is_document_fragment($source)) {
       # placing a node into an element
       if ($where eq 'after') {
@@ -1468,7 +1469,7 @@ sub safe_insert {
       $parent->insertAfter($source,$dest);
       return 'keep';
     } elsif ($where eq 'before') {
-      $parent->insertAfter($source,$dest);
+      $parent->insertBefore($source,$dest);
       return 'keep';
     } elsif ($where eq 'replace') {
       $parent->insertBefore($source,$dest);
@@ -1491,8 +1492,7 @@ sub insert_node {
     # source: Text, CDATA, Comment, Entity
     if ($_xml_module->is_text($node)           ||
 	$_xml_module->is_cdata_section($node)  ||
-	$_xml_module->is_comment($node)        ||
-	$_xml_module->is_entity($node)) {
+	$_xml_module->is_comment($node)) {
       my $val=$node->getData();
       if ($where eq 'replace' or $where eq 'into') {
 	$val=~s/^\s+|\s+$//g;
@@ -1581,7 +1581,7 @@ sub insert_node {
 	return 1;
       }
     } else {
-    # source: Chunk, PI, Comment
+    # source: Chunk, PI, Comment, Entity
       my $copy=node_copy($node,$ns,$dest_doc,$dest);
       if ($where =~ /^(?:after|append|into)/) {
 	# rather than appendChild which does not work
@@ -1647,9 +1647,15 @@ sub insert_node {
 	 $_xml_module->is_cdata_section($dest) ||
 	 $_xml_module->is_comment($dest)       ||
 	 $_xml_module->is_pi($dest) ||
-	 $_xml_module->is_entity($node)
+	 $_xml_module->is_entity_reference($dest)
 	) {
-
+    if ($where =~ /^(?:into|append|prepend)$/ and
+	($_xml_module->is_entity_reference($dest) ||
+	 $_xml_module->is_entity_reference($node))) {
+      _err("Warning: Ignoring incompatible nodes in insert/copy/move operation:\n",
+	   ref($node)," $where ",ref($dest),"!");
+      return 1;
+    }
     if ($where eq 'into') {
       my $value=$_xml_module->is_element($node) ?
 	$node->textContent() : $node->getData();
