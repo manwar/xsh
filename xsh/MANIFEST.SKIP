@@ -12,3 +12,9 @@
 \.tar\.gz$
 ^doc/
 \.#
+\.ppd$
+^a.out$
+^test$
+^index.html$
+^src/tests.xsh$
+~$

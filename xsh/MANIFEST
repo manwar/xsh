@@ -11,10 +11,12 @@ TODO
 lib/XML/XSH.pm
 lib/XML/XSH/Completion.pm
 lib/XML/XSH/CompletionList.pm
+lib/XML/XSH/DummyXPathContext.pm
 lib/XML/XSH/Functions.pm
 lib/XML/XSH/GDOMECompat.pm
 lib/XML/XSH/Grammar.pm
 lib/XML/XSH/Help.pm
+lib/XML/XSH/Iterators.pm
 lib/XML/XSH/LibXMLCompat.pm
 lib/XML/XSH/Parser.pm
 src/recdescent.dtd
@@ -22,6 +24,7 @@ src/xsh_grammar.xml
 t/01basic.t
 t/02gdome.t
 t/03copy.t
+t/04flow.t
 tools/chunk.xsl
 tools/fo.xsl
 tools/fop.xsl
