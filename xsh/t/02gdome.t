@@ -105,8 +105,6 @@ count //root;
 count count(//br)=2;
 count //text()[contains(.,'simple')];
 
-dtd | cat 1>&2;
-
 valid;
 
 validate;
