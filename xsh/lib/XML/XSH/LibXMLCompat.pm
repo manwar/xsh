@@ -1,10 +1,10 @@
-# $Id: LibXMLCompat.pm,v 1.8 2003-01-22 15:05:05 pajas Exp $
+# $Id: LibXMLCompat.pm,v 1.9 2003-03-12 14:01:45 pajas Exp $
 
 package XML::XSH::LibXMLCompat;
 
 use strict;
 use XML::LibXML;
-
+use XML::LibXML::Iterator;
 
 sub module {
   return "XML::LibXML";
@@ -16,13 +16,19 @@ sub version {
 
 sub toStringUTF8 {
   my ($class,$node,$mode)=@_;
+  return unless $node;
+  $mode = 0 unless $mode;
   if ($class->is_document($node)) {
     return XML::LibXML::encodeToUTF8($node->getEncoding(),$node->toString($mode));
   } elsif ($class->is_namespace($node)) {
     return 'xmlns'.($node->name() ne '' ? ':' : '').
       $node->name()."='".$node->getNamespaceURI()."'";
+  } elsif ($class->is_attribute($node)) {
+    return $node->name()."='".$node->value()."'";
   } else {
-    return $node->can('toString') ? $node->toString($mode) : $node->to_literal();
+    return $node->can('toString') ?
+      $node->toString($mode) :
+      $node->to_literal();
   }
 }
 
@@ -85,14 +91,18 @@ sub doc_process_xinclude {
 
 sub init_parser {
   my ($class,$parser)=@_;
-   $parser->validation($XML::XSH::Functions::VALIDATION);
-   $parser->recover($XML::XSH::Functions::RECOVERING) if $parser->can('recover');
-   $parser->expand_entities($XML::XSH::Functions::PARSER_EXPANDS_ENTITIES);
-   $parser->keep_blanks($XML::XSH::Functions::KEEP_BLANKS);
-   $parser->pedantic_parser($XML::XSH::Functions::PEDANTIC_PARSER);
-   $parser->load_ext_dtd($XML::XSH::Functions::LOAD_EXT_DTD);
-   $parser->complete_attributes($XML::XSH::Functions::PARSER_COMPLETES_ATTRIBUTES);
-   $parser->expand_xinclude($XML::XSH::Functions::PARSER_EXPANDS_XINCLUDE);
+  $parser->validation($XML::XSH::Functions::VALIDATION);
+  $parser->recover($XML::XSH::Functions::RECOVERING) if $parser->can('recover');
+  $parser->expand_entities($XML::XSH::Functions::PARSER_EXPANDS_ENTITIES);
+  $parser->keep_blanks($XML::XSH::Functions::KEEP_BLANKS);
+  $parser->pedantic_parser($XML::XSH::Functions::PEDANTIC_PARSER);
+  $parser->load_ext_dtd($XML::XSH::Functions::LOAD_EXT_DTD);
+  $parser->complete_attributes($XML::XSH::Functions::PARSER_COMPLETES_ATTRIBUTES);
+  $parser->expand_xinclude($XML::XSH::Functions::PARSER_EXPANDS_XINCLUDE);
+#   if ($parser->can('line_numbers')) {
+#     $parser->line_numbers(1);
+#     print "parser will remember line numbers\n";
+#   }
 }
 
 sub load_catalog {
@@ -121,6 +131,13 @@ sub parse_html_fh {
   return $doc;
 }
 
+sub parse_html_string {
+  my ($class,$parser,$file)=@_;
+  $class->init_parser($parser);
+  my $doc=$parser->parse_html_string($file);
+  return $doc;
+}
+
 sub parse_sgml_file {
   my ($class,$parser,$file,$encoding)=@_;
   $class->init_parser($parser);
@@ -132,6 +149,13 @@ sub parse_sgml_fh {
   my ($class,$parser,$fh,$encoding)=@_;
   $class->init_parser($parser);
   my $doc=$parser->parse_sgml_fh($fh,$encoding);
+  return $doc;
+}
+
+sub parse_sgml_string {
+  my ($class,$parser,$fh,$encoding)=@_;
+  $class->init_parser($parser);
+  my $doc=$parser->parse_sgml_string($fh,$encoding);
   return $doc;
 }
 
@@ -269,9 +293,62 @@ sub remove_node {
   return $node->unbindNode();
 }
 
+sub iterator {
+  my ($class,$node)=@_;
+  my $iter= XML::LibXML::SubTreeIterator->new( $node );
+  $iter->iterator_function(\&XML::LibXML::SubTreeIterator::subtree_iterator);
+  return $iter;
+}
+
 package XML::LibXML::Namespace;
 
 sub parentNode {}
+
+package XML::LibXML::SubTreeIterator;
+use strict;
+use base qw(XML::LibXML::Iterator);
+# (inheritance is not a real necessity here)
+
+sub subtree_iterator {
+    my $self = shift;
+    my $dir  = shift;
+    my $node = undef;
+
+
+    if ( $dir < 0 ) {
+        return undef if $self->{CURRENT}->isSameNode( $self->{FIRST} )
+          and $self->{INDEX} <= 0;
+
+        $node = $self->{CURRENT}->previousSibling;
+        return $self->{CURRENT}->parentNode unless defined $node;
+
+        while ( $node->hasChildNodes ) {
+	  return undef if $node->isSameNode( $self->{FIRST} )
+	    and $self->{INDEX} > 0;
+            $node = $node->lastChild;
+        }
+    }
+    else {
+        return undef if $self->{CURRENT}->isSameNode( $self->{FIRST} )
+          and $self->{INDEX} > 0;
+
+        if ( $self->{CURRENT}->hasChildNodes ) {
+            $node = $self->{CURRENT}->firstChild;
+        }
+        else {
+            $node = $self->{CURRENT}->nextSibling;
+            my $pnode = $self->{CURRENT}->parentNode;
+            while ( not defined $node ) {
+                last unless defined $pnode;
+		return undef if $pnode->isSameNode( $self->{FIRST} );
+                $node = $pnode->nextSibling;
+                $pnode = $pnode->parentNode unless defined $node;
+            }
+        }
+    }
+
+    return $node;
+}
 
 1;
 
