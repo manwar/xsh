@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.38 2002-11-06 18:47:20 pajas Exp $
+# $Id: Functions.pm,v 1.39 2002-11-07 09:43:19 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -9,7 +9,7 @@ use XML::XSH::Help;
 use IO::File;
 
 use Exporter;
-use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $OUT $LOCAL_ID $LOCAL_NODE
+use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCAL_NODE
             $_xml_module $_sigint
             $_xsh $_parser $_encoding $_qencoding %_nodelist @stored_variables
             $_quiet $_debug $_test $_newdoc $_indent $_backups $_cdonopen $SIGSEGV_SAFE
@@ -22,7 +22,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $OUT $LOCAL_ID $LOCAL_NODE
 
 BEGIN {
   $VERSION='1.6';
-
+  $REVISION='$Revision: 1.39 $';
   @ISA=qw(Exporter);
   @EXPORT_OK=qw(&xsh_init &xsh &xsh_get_output
                 &xsh_set_output &xsh_set_parser
@@ -233,7 +233,7 @@ sub xsh_set_parser {
 # print version info
 sub print_version {
   out("Main program:        $::VERSION $::REVISION\n");
-  out("XML::XSH::Functions: $VERSION\n");
+  out("XML::XSH::Functions: $VERSION $REVISION\n");
   out($_xml_module->module(),"\t",$_xml_module->version(),"\n");
 #  out("XML::LibXSLT         $XML::LibXSLT::VERSION\n")
 #    if defined($XML::LibXSLT::VERSION);

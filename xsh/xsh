@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.14 2002-11-04 13:29:05 pajas Exp $
+# $Id: xsh,v 1.15 2002-11-07 09:43:00 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -29,7 +29,7 @@ require Term::ReadLine if $opt_i;
 BEGIN {
   getopts('tscqgvwdfhViTE:e:');
   $VERSION='0.9';
-   $REVISION='$Revision: 1.14 $';
+   $REVISION='$Revision: 1.15 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -57,7 +57,10 @@ if ($opt_h) {
 if ($opt_V) {
   my $rev=$REVISION;
   $rev=~s/\s*\$//g;
-  print "$XML::XSH::Functions::VERSION/$VERSION ($rev)\n";
+  my $funcrev=$XML::XSH::Functions::REVISION;
+  $funcrev=~s/\s*\$//g;
+  print "xsh $VERSION ($rev)\n";
+  print "XML::XSH::Functions $XML::XSH::Functions::VERSION ($funcrev)\n";
   exit 1;
 }
 
