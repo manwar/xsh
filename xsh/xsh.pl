@@ -1,8 +1,15 @@
 #!/usr/bin/perl
 # -*- cperl -*-
+package XSH::Map;
+
+sub echo {
+  print $::OUT @_;
+}
+
 package main;
 use strict;
 
+use IO::Handle;
 use Parse::RecDescent;
 use XML::LibXML;
 use Text::Iconv;
@@ -12,17 +19,18 @@ getopts('qdhViE:e:');
 use vars qw/$opt_q $opt_i $opt_h $opt_V $opt_E $opt_e $opt_d/;
 use vars qw/$VERSION $REVISION $ERR $OUT $LAST_ID $LOCAL_ID $LOCAL_NODE
             $HELP %HELP
-            $xsltparser $parser $encoding $qencoding %doc %files %iconv/;
+            $_xsh $_parser $_encoding $_qencoding
+            %_var %_doc %_files %_iconv %_functions/;
 
 require Term::ReadLine if $opt_i;
 
 $VERSION='0.5';
-$REVISION='$Revision: 1.3 $';
+$REVISION='$Revision: 1.4 $';
 $ERR='';
 $LAST_ID='';
 $OUT=\*STDOUT;
-$encoding='iso-8859-2';
-$qencoding='iso-8859-2';
+$_encoding='iso-8859-2';
+$_qencoding='iso-8859-2';
 
 $HELP=_help();
 %HELP=_cmd_help();
@@ -34,8 +42,23 @@ sub PARSE_ERROR		{ 2 }
 sub INCOMPLETE_COMMAND	{ 3 }
 
 sub files {
-  print $OUT map { "$_ = $files{$_}\n" } keys %files;
+  print $OUT map { "$_ = $_files{$_}\n" } sort keys %_files;
 }
+
+sub variables {
+  no strict;
+  foreach (keys %{"XSH::Map::"}) {
+    print $OUT "\$$_=",${"XSH::Map::$_"},"\n" if defined(${"XSH::Map::$_"});
+  }
+}
+
+sub print_var {
+  no strict;
+  if ($_[0]=~/^\$?(.*)/) {
+    print $OUT "\$$1=",${"XSH::Map::$1"},"\n" if defined(${"XSH::Map::$1"});
+  }
+}
+
 
 $SIG{PIPE}=sub { #print STDERR "Broken pipe\n"; 
 
@@ -49,13 +72,13 @@ sub mkconv {
   my ($from,$to)=@_;
   $from="utf-8" unless $from ne "";
   $to="utf-8" unless $to ne "";
-  if ($iconv{"$from->$to"}) {
-    return $iconv{"$from->$to"};
+  if ($_iconv{"$from->$to"}) {
+    return $_iconv{"$from->$to"};
   } else {
     my $conv;
     eval { $conv= Text::Iconv->new($from,$to); }; print STDERR "@_\n" if ($@);
     if ($conv) {
-      $iconv{"$from->$to"}=$conv;
+      $_iconv{"$from->$to"}=$conv;
       return $conv;
     } else {
       print "Sorry, Iconv cannot convert from $from to $to\n";
@@ -69,22 +92,71 @@ sub get_local_element {
   if ($LOCAL_NODE and $id eq $LOCAL_ID) {
     return $LOCAL_NODE;
   } else {
-    return $doc{$id} ? $doc{$id}->getDocumentElement() : undef;
+    return $_doc{$id} ? $_doc{$id}->getDocumentElement() : undef;
   }
+}
+
+sub _id {
+  my ($id)=@_;
+  if ($id ne "") {
+    $LAST_ID=$id;
+  } else {
+    $id=$LAST_ID;
+  }
+  return wantarray ? ($id,$_doc{$id}) : $id;
+}
+
+sub _evar {
+  my ($v)=@_;
+  no strict;
+  if ($v=~/^\$\{([a-zA-Z_-][a-zA-Z0-9_-]*)\}$/
+      or
+      $v=~/^\$([a-zA-Z_-][a-zA-Z0-9_-]*)$/
+     ) {
+    return ${"XSH::Map::$1"};
+  } else {
+    return $v;
+  }
+}
+
+sub _expand {
+  local $_=$_[0];
+  s/(\\.|\$\{[a-zA-Z_-][a-zA-Z0-9_-]*\}|\$[a-zA-Z_-][a-zA-Z0-9_-]*)/_evar($1)/eg;
+  return $_;
+}
+
+sub expand {
+  return wantarray ? (map { _expand($_) } @_) : _expand($_[0]);
+}
+
+sub _assign {
+  my ($name,$value)=@_;
+  $_var{$name}=$value;
+  no strict 'refs';
+  $name=~/^\$(.+)/;
+  ${"XSH::Map::$1"}=$value;
+  print STDERR "\$$1=",${"XSH::Map::$1"},"\n" unless "$opt_q";
+}
+
+sub xpath_assign {
+  my ($name,$xp)=@_;
+  _assign($name,count($xp));
 }
 
 sub open_doc {
   my ($id,$file)=@_;
+  $file=expand $file;
+  $id=_id($id);
   if ($id eq "" or $file eq "") {
     print STDERR "hint: open identifier=file-name\n" unless "$opt_q";
     return;
   }
   if (-f $file) {
     print STDERR "parsing $file\n" unless "$opt_q";
-    $files{$id}=$file;
+    $_files{$id}=$file;
     eval {
       local $SIG{INT}=\&sigint;
-      $doc{$id}=$parser->parse_file($file);
+      $_doc{$id}=$_parser->parse_file($file);
       print STDERR "done.\n" unless "$opt_q";
     }; print STDERR "$@\n" if ($@);
   } else {
@@ -93,17 +165,18 @@ sub open_doc {
 }
 
 sub close_doc {
-  my ($id)=@_;
-  print $OUT "closing file $files{$id}\n" unless "$opt_q";
-  delete $files{$id};
-  delete $doc{$id};
+  my ($id)=expand(@_);
+  $id=_id($id);
+  print $OUT "closing file $_files{$id}\n" unless "$opt_q";
+  delete $_files{$id};
+  delete $_doc{$id};
 }
 
 sub save_as {
-  my ($id,$file,$enc)=@_;
-  my $doc=$doc{$id};
+  my ($id,$file,$enc)= expand(@_);
+  ($id,my $doc)=_id($id);
   return unless ref($doc);
-  print STDERR "$id=$files{$id} --> $file ($enc)\n" unless "$opt_q";
+  print STDERR "$id=$_files{$id} --> $file ($enc)\n" unless "$opt_q";
   $enc=$doc->getEncoding() unless ($enc ne "");
   local *F;
   $file=~/^\s*[|>]/ ? open(F,$file) : open(F,">$file");
@@ -112,7 +185,7 @@ sub save_as {
 #      local $SIG{INT}=\&sigint;
 #      print F $doc->toString(1);
 #    }; print STDERR "$@" if ($@);
-#    print STDERR "saved $id=$files{$id} as $file in $enc encoding\n" unless "$opt_q";
+#    print STDERR "saved $id=$_files{$id} as $file in $enc encoding\n" unless "$opt_q";
 #  } else {
     eval {
       local $SIG{INT}=\&sigint;
@@ -126,25 +199,26 @@ sub save_as {
       }
       print F $t;
       close F;
-      $files{$id}=$file unless $file=~/^\s*[|>]/; # no change in case of pipe
+      $_files{$id}=$file unless $file=~/^\s*[|>]/; # no change in case of pipe
     }; 
   if ($@) {
     print STDERR "$@\n";
   } else {
-    print STDERR "saved $id=$files{$id} as $file in $enc encoding\n" unless "$opt_q";
+    print STDERR "saved $id=$_files{$id} as $file in $enc encoding\n" unless "$opt_q";
   }
 }
 
 sub list {
-  my ($id,$query)=@{$_[0]};
+  my ($id,$query)=expand(@{$_[0]});
+  ($id,my $doc)=_id($id);
   return if ($id eq "" or $query eq "");
-  print STDERR "listing $query from $id=$files{$id}\n" unless "$opt_q";
-  return unless ref($doc{$id});
+  print STDERR "listing $query from $id=$_files{$id}\n" unless "$opt_q";
+  return unless ref($doc);
   eval {
     local $SIG{INT}=\&sigint;
-    my $qconv=mkconv($qencoding,"utf-8");
+    my $qconv=mkconv($_qencoding,"utf-8");
     my @ql=get_local_element($id)->findnodes($qconv ? $qconv->convert($query) : $query);
-    my $conv=mkconv($doc{$id}->getEncoding,$encoding);
+    my $conv=mkconv($doc->getEncoding,$_encoding);
     if ($conv) {
       foreach (@ql) {
 	print $OUT $conv->convert(ref($_) ? $_->toString() : $_),"\n";
@@ -159,13 +233,18 @@ sub list {
 }
 
 sub count {
-  my ($id,$query)=@{$_[0]};
+  my ($id,$query)= expand @{$_[0]};
+  ($id,my $doc)=_id($id);
   return if ($id eq "" or $query eq "");
-  return unless ref($doc{$id});
+  unless (ref($doc)) {
+    print STDERR "No such document: $id\n";
+    return;
+  }
+  print STDERR "Query $query on $id=$_files{$id}\n" unless "$opt_q";
   my $result=undef;
   eval {
     local $SIG{INT}=\&sigint;
-    my $qconv=mkconv($qencoding,"utf-8");
+    my $qconv=mkconv($_qencoding,"utf-8");
     $result=get_local_element($id)->find($qconv ? $qconv->convert($query) : $query);
   }; print STDERR "$@\n" if ($@);
   if ($result) {
@@ -181,37 +260,43 @@ sub count {
 }
 
 sub prune {
-  my ($id,$query)=@{$_[0]};
-  return unless ref($doc{$id});
+  my ($id,$query)=expand @{$_[0]};
+  ($id, my $doc)=_id($id);
+  return unless ref($doc);
   my $i=0;
   eval {
     local $SIG{INT}=\&sigint;
-    my $qconv=mkconv($qencoding,"utf-8");
+    my $qconv=mkconv($_qencoding,"utf-8");
 
     foreach my $node (get_local_element($id)->
 		      findnodes($qconv ? $qconv->convert($query) : $query)) {
       remove_node($node);
       $i++;
     }
-    print STDERR "$i nodes removed from $id=$files{$id}\n" unless "$opt_q";
+    print STDERR "$i nodes removed from $id=$_files{$id}\n" unless "$opt_q";
   }; print STDERR "$@" if ($@);
 }
 
 sub eval_substitution {
-  my $pat;
-  ($_,$pat)=@_;
-  eval "$pat";
+  my ($pat,$inenc,$outenc);
+  ($_,$pat,$inenc,$outenc)=@_;
+
+  $_=$inenc ? $inenc->convert($_) : $_;
+
+  eval "package XSH::Map; no strict 'vars'; $pat";
+
   if ($@) {
     print STDERR "$@\n";
   }
+  $_=$outenc ? $outenc->convert($_) : $_;
   return $_;
 }
 
-sub exec_expr {
+sub perlmap {
   my ($q, $pattern)=@_;
-  my ($id,$query)=@{$q};
-  my $doc=$doc{$id};
-  print STDERR "Executing $pattern on $query in $id=$files{$id}\n" unless "$opt_q";
+  my ($id,$query)=expand @{$q};
+  ($id,my $doc)=_id($id);
+  print STDERR "Executing $pattern on $query in $id=$_files{$id}\n" unless "$opt_q";
   unless ($doc) {
     print STDERR "No such document $id\n";
     return;
@@ -220,19 +305,22 @@ sub exec_expr {
     local $SIG{INT}=\&sigint;
 
     my $sdoc=get_local_element($id);
-    my $qconv=mkconv($qencoding,"utf-8");
+    my $qconv=mkconv($_qencoding,"utf-8");
+    my $inconv=mkconv($doc->getEncoding(),$_qencoding);
+    my $outconv=mkconv($_qencoding,$doc->getEncoding());
+
     $pattern=$qconv ? $qconv->convert($pattern) : $pattern;
 
     foreach my $node ($sdoc->findnodes($qconv ? $qconv->convert($query) : $query)) {
       if ($node->nodeType eq XML_ATTRIBUTE_NODE) {
 	my $val=$node->getValue();
-	$node->setValue(eval_substitution($val,$pattern));
+	$node->setValue(eval_substitution($val,$pattern,$inconv,$outconv));
       } elsif ($node->nodeType eq XML_ELEMENT_NODE) {
 	my $val=$node->getName();
-	$node->setName(eval_substitution($val,$pattern));
+	$node->setName(eval_substitution($val,$pattern,$inconv,$outconv));
       } elsif ($node->can('setData') and $node->can('getData')) {
 	my $val=$node->getData();
-	$node->setData(eval_substitution($val,$pattern));
+	$node->setData(eval_substitution($val,$pattern,$inconv,$outconv));
       }
     }
   }; print STDERR "$@\n" if ($@);
@@ -292,24 +380,24 @@ sub insert_node {
 }
 
 sub copy {
-  my ($fid,$fq)=@{$_[0]}; # from ID, from query
-  my ($tid,$tq)=@{$_[1]}; # to ID, to query
+  my ($fid,$fq)=expand @{$_[0]}; # from ID, from query
+  my ($tid,$tq)=expand @{$_[1]}; # to ID, to query
   my ($where,$all_to_all)=($_[2],$_[3]);
 
-  my $fdoc=$doc{$fid};
-  my $tdoc=$doc{$tid};
+  ($fid,my $fdoc)=_id($fid);
+  ($tid,my $tdoc)=_id($tid);
   return unless (ref($fdoc) and ref($tdoc));
   my (@fp,@tp);
   eval {
     local $SIG{INT}=\&sigint;
-    my $qconv=mkconv($qencoding,"utf-8");
+    my $qconv=mkconv($_qencoding,"utf-8");
     $fq=$qconv ? $qconv->convert($fq) : $fq;
     $tq=$qconv ? $qconv->convert($tq) : $tq;
     @fp=get_local_element($fid)->findnodes($fq);
     @tp=get_local_element($tid)->findnodes($tq);
   } || do { print STDERR "$@\n"; return 0; };
   unless (@tp) {
-    print STDERR "No matching nodes found for $tq in $tid=$files{$tid}\n" unless "$opt_q";
+    print STDERR "No matching nodes found for $tq in $tid=$_files{$tid}\n" unless "$opt_q";
     return 0;
   }
   eval {
@@ -399,16 +487,17 @@ sub create_nodes {
 
 sub insert {
   my ($type,$exp,$xpath,$where,$to_all)=@_;
-  my ($tid,$tq)=@{$xpath}; # to ID, to query
+  $exp=expand($exp);
+  my ($exp,$tid,$tq)=expand @{$xpath}; # to ID, to query
 
-  my $tdoc=$doc{$tid};
+  ($tid,my $tdoc)=_id($tid);
   return unless ref($tdoc);
 
   my @nodes=grep {ref($_)} create_nodes($type,$exp,$tdoc);
   return unless @nodes;
   eval {
     local $SIG{INT}=\&sigint;
-    my $qconv=mkconv($qencoding,"utf-8");
+    my $qconv=mkconv($_qencoding,"utf-8");
     $tq=$qconv ? $qconv->convert($tq) : $tq;
     my @tp=get_local_element($tid)->findnodes($tq);
 
@@ -430,7 +519,7 @@ sub insert {
 }
 
 sub get_dtd {
-  my ($doc)=@_;
+  my ($doc)=expand @_;
   my $dtd;
   eval {
     local $SIG{INT}=\&sigint;
@@ -459,9 +548,8 @@ sub get_dtd {
 }
 
 sub valid_doc {
-  my ($id)=@_;
-  my $doc;
-  my $doc=$doc{$id};
+  my ($id)=expand @_;
+  ($id,my $doc)=_id($id);
   return unless $doc;
   my $dtd=get_dtd($doc);
   print STDERR "got dtd $dtd\n";
@@ -474,8 +562,8 @@ sub valid_doc {
 }
 
 sub validate_doc {
-  my ($id)=@_;
-  my $doc=$doc{$id};
+  my ($id)=expand @_;
+  ($id, my $doc)=_id($id);
   return unless $doc;
   my $dtd=get_dtd($doc);
   eval {
@@ -488,14 +576,14 @@ sub validate_doc {
 }
 
 sub list_dtd {
-  my ($id)=@_;
-  my $doc=$doc{$id};
+  my ($id)=expand @_;
+  ($id, my $doc)=_id($id);
   return unless $doc;
   my $dtd=get_dtd($doc);
   eval {
     local $SIG{INT}=\&sigint;
     if ($dtd) {
-    my $conv=mkconv($doc->getEncoding(),$encoding);
+    my $conv=mkconv($doc->getEncoding(),$_encoding);
       print $OUT ($conv ? $conv->convert($dtd->toString()) : $dtd->toString()),"\n";
     }
   };
@@ -503,8 +591,8 @@ sub list_dtd {
 }
 
 sub print_enc {
-  my ($id)=@_;
-  my $doc=$doc{$id};
+  my ($id)=expand @_;
+  ($id, my $doc)=_id($id);
   return unless $doc;
   eval {
     local $SIG{INT}=\&sigint;
@@ -515,13 +603,14 @@ sub print_enc {
 
 sub clone {
   my ($id1,$id2)=@_;
-  my $doc=$doc{$id2};
+  ($id2, my $doc)=_id(expand $id2);
+
   return if ($id2 eq "" or $id2 eq "" or !ref($doc));
-  print STDERR "duplicating $id2=$files{$id2}\n" unless "$opt_q";
-  $files{$id1}=$files{$id2};
+  print STDERR "duplicating $id2=$_files{$id2}\n" unless "$opt_q";
+  $_files{$id1}=$_files{$id2};
   eval {
     local $SIG{INT}=\&sigint;
-    $doc{$id1}=$parser->parse_string($doc->toString());
+    $_doc{$id1}=$_parser->parse_string($doc->toString());
   }; print STDERR "$@\n" if ($@);
   print STDERR "done.\n" unless "$opt_q";
 }
@@ -540,12 +629,12 @@ sub remove_node {
 sub move {
   my ($src)=@_;
   my @sourcenodes;
-  my ($id,$query)=@{$src};
-  return unless ref($doc{$id});
+  my ($id,$query)= expand @{$src};
+  return unless ref($_doc{$id});
   my $i=0;
   eval {
     local $SIG{INT}=\&sigint;
-    my $qconv=mkconv($qencoding,"utf-8");
+    my $qconv=mkconv($_qencoding,"utf-8");
     @sourcenodes=get_local_element($id)->
       findnodes($qconv ? $qconv->convert($query) : $query);
   };
@@ -564,12 +653,29 @@ sub move {
 sub sh {
   eval {
     local $SIG{INT}=\&sigint;
-    print $OUT `$_[0]`;
+    my $cmd=expand($_[0]);
+    print $OUT `$cmd`;
   }; #|| print STDERR "$@\n";
 }
 
 sub print_count {
   print $OUT count(@_),"\n";
+}
+
+sub print_eval {
+  my ($expr)=@_;
+  if ("$opt_q") {
+    eval("package XSH::Map; no strict 'vars'; $expr");
+  } else {
+    print $OUT eval("package XSH::Map; no strict 'vars'; $expr"),"\n";
+  }
+
+}
+
+sub cd {
+  unless (chdir $_[0]) {
+    print STDERR "Can't change directory to $_[0]\n";
+  }
 }
 
 sub run_commands {
@@ -603,28 +709,30 @@ sub pipe_command {
 
 sub while_statement {
   my ($xp,$command)=@_;
-  do {
+  while(count($xp)) {
     run_commands($command)
-  } while(count($xp)>1);
+  }
 }
 
 sub foreach_statement {
   my ($xp,$command)=@_;
   my ($id,$query)=@$xp;
+  return unless ref($_doc{$id});
   eval {
     local $SIG{INT}=\&sigint;
-    my $qconv=mkconv($qencoding,"utf-8");
+    my $qconv=mkconv($_qencoding,"utf-8");
     $query=$qconv ? $qconv->convert($query) : $query;
-    $LOCAL_ID=$id;
-    foreach $LOCAL_NODE ($doc{$id}->documentElement()->findnodes($query)) {
+    local $LOCAL_ID=$id;
+    local $LOCAL_NODE=$LOCAL_NODE;
+    foreach $LOCAL_NODE (get_local_element($id)->findnodes($query)) {
       run_commands($command)
     }
-  }|| print STDERR "$@\n";
+  }; print STDERR "$@\n" if ($@);
 }
 
 sub if_statement {
   my ($xp,$command)=@_;
-  run_commands($command) if (count($xp)>0);
+  run_commands($command) if (count($xp));
 }
 
 sub unless_statement {
@@ -633,9 +741,9 @@ sub unless_statement {
 }
 
 sub xslt {
-  my ($id,$stylefile,$newid,$params)=@_;
+  my ($id,$stylefile,$newid,$params)=expand @_;
   print STDERR "running xslt on @_\n";
-  return unless $doc{$id};
+  return unless $_doc{$id};
   eval {
     my %params=map { split /=/,$_,2 } split /\s+/,$params;
     local $SIG{INT}=\&sigint;
@@ -647,14 +755,14 @@ sub xslt {
       open (SAVE,">&STDERR");
       open (STDERR,">/dev/null");
 
-      my $xsltparser=XML::LibXSLT->new();
-#      unless ($xsltparser) {
-#	$xsltparser=XML::LibXSLT->new();
+      my $_xsltparser=XML::LibXSLT->new();
+#      unless ($_xsltparser) {
+#	$_xsltparser=XML::LibXSLT->new();
 #      }
-      my $st=$xsltparser->parse_stylesheet_file($stylefile);
-      $doc{$newid}=$st->transform($doc{$id},%params);
+      my $st=$_xsltparser->parse_stylesheet_file($stylefile);
+      $_doc{$newid}=$st->transform($_doc{$id},%params);
       $stylefile=~s/\..*$//;
-      $files{$newid}="$stylefile"."_transformed_".$files{$id};
+      $_files{$newid}="$stylefile"."_transformed_".$_files{$id};
 
       open (STDERR,">&SAVE");
       close SAVE;
@@ -665,8 +773,41 @@ sub xslt {
   }; print STDERR "$@\n" if ($@);
 }
 
+sub call {
+  my ($name)=expand @_;
+  if (exists $_functions{$name}) {
+    run_commands($_functions{$name});
+  } else {
+    print STDERR "ERROR: $name not defined\n";
+  }
+}
+
+sub def {
+  my ($name,$command)=@_;
+  $name=expand $name;
+  $_functions{$name}=$command;
+}
+
+sub load {
+  my ($file)=@_;
+  my $l;
+  print STDERR "loading file $file\n" unless "$opt_q";
+  local *F;
+  if (open F,"$file") {
+    return join "",<F>;
+  } else {
+    print STDERR "ERROR: couldn't open input file $file\n";
+    return undef;
+  }
+}
+
+sub include {
+  my $l=load(expand $_[0]);
+  $_xsh->startrule($l);
+}
+
 sub help {
-  my ($command)=@_;
+  my ($command)=expand @_;
   if ($command) {
     if (exists($HELP{$command})) {
       print $OUT $HELP{$command};
@@ -678,6 +819,9 @@ sub help {
   }
 }
 
+sub quit {
+  exit(int($_[0]));
+}
 
 if ($opt_h) {
   print "Usage: $0 [-q] [-e output-encoding] [-E query-encoding] <commands>\n";
@@ -700,80 +844,129 @@ $::RD_ERRORS = 1; # Make sure the parser dies when it encounters an error
 $::RD_WARN   = 1; # Enable warnings. This will warn on unused rules &c.
 $::RD_HINT   = 1; # Give out hints to help fix problems.
 
-$Parse::RecDescent::skip = '\s*';
 
 
-my $xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_'
-  STRING: /([^'"\\ ]|\\.)([^ \\]|\\.)*/
+$Parse::RecDescent::skip = '(\s|#[^\n]*)*';
+
+printflush STDERR "Plase wait, parsing grammar...";
+
+$_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
+  TOKEN: /\S+/
+
+  STRING: /([^'"\\ \t\n\r;]|\\.)+/
      { local $_=$item[1];
+       s/\\([^\$])/$1/g;
+       $_;
+     }
+
+  single_quoted_string: /\'([^\'\\]|\\\'|\\\\|\\[^\'\\])*\'/
+     { local $_=$item[1];
+       s/^\'|\'$//g;
+       s/\\([\'\\])/$1/g;
+       $_;
+     }
+
+  double_quoted_string: /\"([^\"\\]|\\.)*\"/
+     { local $_=$item[1];
+       s/^\"|\"$//g;
        s/\\(.)/$1/g;
        $_;
      }
-  QUOTEDSTRING: /\"([^\"\\]|\\.)*\"|\'([^\'\\]|\\.)*\'/
-     { local $_=$item[1];
-       s/^["']|["']$//g;
-       s/\\(.)/$1/g;
-       $_;
-     }
 
-  ID: /\w+/
+  exp_part: STRING | single_quoted_string | double_quoted_string
 
-  startrule : statement
+  expression: exp_part <skip:""> expression  { "$item[1]$item[3]" }
+            | exp_part { $item[1] }
+
+  variable: '$' <skip:""> ID { "$item[1]$item[3]" }
+
+  ID: /[a-zA-Z_][a-zA-Z0-9_]*/
+
+  startrule : statement eof
+            | <error>
+
+  eof       : /$/
 
   statement : shell
             | commands '|' cmdline { main::pipe_command($item[1],$item[3]); }
             | commands { main::run_commands($item[1]); }
-            | /quiet/ { $main::opt_q=1 }
+            | option
+            | <error:error while parsing line $thisline near $text>
+
+  shell : /!\s*/ cmdline { main::sh($item[2]); }
+  cmdline : /.*$/
+
+  option :  /quiet/ { $main::opt_q=1 }
             | /verbose/ { $main::opt_q=0 }
             | /debug/ { $main::opt_d=1 }
             | /nodebug/ { $main::opt_d=0 }
-            | /encoding\s/ expression { $main::encoding=$item[2]; }
-            | /query-encoding\s/ expression { $main::qencoding=$item[2]; }
+            | /encoding\s/ expression { $main::encoding=expand($item[2]); }
+            | /query-encoding\s/ expression { $main::qencoding=expand($item[2]); }
+
   commands : command ';' commands { [ @{$item[1]},@{$item[3]} ]; }
+           | command ';' { $item[1]; }
            | command
 
-  command_or_block : command
-                   | '{' commands '}' { $item[2]; }
+
+  block     : '{' commands '}'              { $item[2]; }
 
   command   : (copy_command | move_command | list_command | exit_command
-            | prune_command | exec_command | close_command | open_command
-            | valid_command | validate_command | list_dtd_command | print_enc_command
-            | clone_command | count_command | save_command
+            | prune_command | map_command | close_command | open_command
+            | valid_command | validate_command | list_dtd_command
+            | print_enc_command | cd_command
+            | clone_command | count_command | eval_command | save_command
             | files_command | xslt_command | insert_command | help_command
-            | exec_command
+            | exec_command  | call_command | include_command | assign_command
+            | print_var_command | var_command
             | compound)
             { [$item[1]] }
 
-  compound  : /if\s/ xpath command_or_block { [\&main::if_statement,$item[2],$item[3]] }
-            | /unless\s|if\s+!/ xpath command_or_block { [\&main::unless_statement,$item[2],$item[3]] }
-            | /while\s/ xpath command_or_block {
+  compound  : /if\s/ xpath (command|block) { [\&main::if_statement,$item[2],$item[3]] }
+            | /unless\s|if\s+!/ xpath (command|block) { [\&main::unless_statement,$item[2],$item[3]] }
+            | /while\s/ xpath (command|block) {
               [\&main::while_statement,$item[2],$item[3]];
             }
-            | /foreach\s/ xpath command_or_block {
+            | /foreach\s/ xpath (command|block) {
               [\&main::foreach_statement,$item[2],$item[3]];
             }
+            | /def\s|define\s/ ID (command|block) { [\&main::def,$item[2],$item[3]] }
 
+  assign_command : variable '=' xpath     { [\&main::xpath_assign,$item[1],$item[3]]; }
 
-  help_command : /\?|help\s/ /[a-z]*/ { [\&main::help,$item[2]]; }
+  print_var_command : variable { [\&main::print_var,$item[1]] }
+
+  include_command : /\.\s|include\s/ filename { [\&main::include,$item[2]] }
+
+  call_command : /call\s/ ID { [\&main::call,$item[2]]; }
+
+  help_command : /\?|help\s/ expression { [\&main::help,$item[2]]; }
                | /\?|help/ { [\&main::help]; }
 
   exec_command : /exec\s|system\s/ expression
                { [\&main::sh,$item[2]] }
 
-  xslt_command : xslt_alias ID filename ID /params|parameters\s/ expression
+  xslt_command : xslt_alias ID filename ID /params|parameters\s/ paramlist
                { [\&main::xslt,@item[2,3,4,6]]; }
                | xslt_alias ID filename ID
                { [\&main::xslt,@item[2,3,4]]; }
 
+  paramlist    : param paramlist
+               | param
+
+  param        : /[^=\s]+/ '=' expression
+
   xslt_alias : /transform\s|xslt?\s|xsltproc\s|process\s/
 
   files_command : 'files' { [\&main::files]; }
-  shell : /!\s*/ cmdline { main::sh($item[2]); }
 
-  cmdline : /.*$/
+  var_command   : /variables|vars|var/ { [\&main::variables]; }
+
 
   copy_command : /cp\s|copy\s/ xpath loc xpath { [\&main::copy,@item[2,4,3]]; }
                | /xcp\s|xcopy\s/ xpath loc xpath { [\&main::copy,@item[2,4,3],1]; }
+
+  cd_command : /cd\s|chdir\s/ filename { [\&main::cd,$item[2]]; }
+             | /cd|chdir/  { [\&main::cd]; }
 
   insert_command : /insert\s|add\s/ nodetype expression loc xpath
                  { [\&main::insert,@item[2,3,5,4]]; }
@@ -801,12 +994,14 @@ my $xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_'
 
   list_command : /list\s|ls\s/ xpath    { [\&main::list,$item[2]]; }
 
-  count_command : /count\s|eval\s/ xpath       { [\&main::print_count,$item[2]];}
+  count_command : /count\s|xpath\s/ xpath       { [\&main::print_count,$item[2]];}
+
+  eval_command : /eval\s|perl\s/ (<perl_codeblock>|perl_expression) { [\&main::print_eval,$item[2]];}
 
   prune_command : /rm\s|remove\s|prune\s|delete\s|del\s/ xpath  { [\&main::prune,$item[2]]; }
 
-  exec_command : /on\s|sed\s/ xpath perl_expression
-				       { [\&main::exec_expr,@item[2,3]]; }
+  map_command : /map\s|sed\s/ (<perl_codeblock>|perl_expression) xpath
+				       { [\&main::perlmap,@item[3,2]]; }
 
   close_command : /close\s/ ID
 				       { [\&main::close_doc,$item[2]]; }
@@ -848,26 +1043,51 @@ my $xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_'
                                          [\&main::valid_doc,$item[2]]; }
                 | /valid(\s|$)/        { [\&main::valid_doc,$main::LAST_ID] }
 
-  exit_command : /exit|quit/                { exit(0); }
+  exit_command : /exit|quit/ /-?[0-9]*/ { [\&main::quit,$item[2]]; }
 
   filename : expression
 
-  xpath : ID ":" expression { $main::LAST_ID=$item[1]; [@item[1,3]] }
-        | expression { [$main::LAST_ID, $item[1]] }
+  xpath : ID ":" xp                    { $main::LAST_ID=$item[1];
+                                         print STDERR "XPATH: @item\n";
+                                         [@item[1,3]] }
+        | xp                           { [$main::LAST_ID, $item[1]] }
+        | <error>
+
+  xp : xpsimple <skip:""> (xpfilters|xpbracket) <skip:""> xp
+                                       { "$item[1]$item[3]$item[5]"; }
+     | xpsimple <skip:""> (xpfilters|xpbracket)
+                                       { "$item[1]$item[3]"; }
+     | xpsimple
+
+  xpfilters : xpfilter <skip:""> xpfilters
+                                       { "$item[1]$item[3]" }
+            | xpfilter
+
+  xpfilter : "[" xpinter "]"           { "[$item[2]]"; }
+
+  xpbracket: "(" xpinter ")"           { "($item[2])"; }
+
+  xpinter : xps (xpfilters|xpbracket) <skip:""> xpinter
+                                       { "$item[1]$item[2]$item[4]"; }
+          | xps
+
+  xps : /([^][()'"]|'[^']*'|"[^"]*")*/
+
+  xpsimple : /[^] [();]+/
+           | xpbracket
+
 
   perl_expression : expression
 
-  expression : STRING | QUOTEDSTRING
-
-
 _EO_GRAMMAR_
-);
 
-$parser = XML::LibXML->new();
-$parser->load_ext_dtd(1);
-$parser->validation(1);
+print STDERR "done.\n";
 
-my @string=split /;/, join " ",@ARGV;
+$_parser = XML::LibXML->new();
+$_parser->load_ext_dtd(1);
+$_parser->validation(1);
+
+my $string=join " ",@ARGV;
 my $l;
 
 if ($opt_i) {
@@ -877,16 +1097,15 @@ if ($opt_i) {
   print STDERR "-"x length($rev),"\n";
   print STDERR $rev;
   print STDERR "-"x length($rev),"\n\n";
-  print STDERR "Copyright (c) 2002 Petr Pajas\n";
-  print STDERR "Covered by GPL - GNU GENERAL PUBLIC LICENCE Version 2\n\n";
+  print STDERR "Copyright (c) 2002 Petr Pajas.\n";
+  print STDERR "This is free software, you may use it and distribute it under\n";
+  print STDERR "either the GNU GPL Version 2, or under the Perl Artistic License.\n";
 }
 
-if (@string) {
-  foreach (@string) {
-    print "xsh> $_\n";
-    $xsh->startrule($_);
-    print "\n";
-  }
+if ($string) {
+  print "xsh> $string\n";
+  $_xsh->startrule($string);
+  print "\n";
 }
 
 if ($opt_i) {
@@ -900,20 +1119,13 @@ if ($opt_i) {
       $l=~s/\\+\s*$//;
       $l .= $term->readline('> ');
     }
-    $xsh->startrule($l);
+    $_xsh->startrule($l);
     $term->addhistory($l) if /\S/;
   }
-} elsif (!@string) {
-  while ($l=<>) {
-    chomp $l;
-    while ($l=~/\\+\s*$/) {
-      $l=~s/\\+\s*$//;
-      $l .= <>;
-      chomp $l;
-    }
-    $xsh->startrule($l);
-  }
+} elsif ($string eq "") {
+  $_xsh->startrule(join "",<STDIN>);
 }
+
 print STDERR "Good bye!\n" unless "$opt_q";
 
 sub _help {
@@ -921,7 +1133,7 @@ sub _help {
 General notes:
  - More than one command may be used on one line. In that case
    the commands must be separated by semicolon which has to be
-   preceded by whitespace.
+   preceded by white-space.
  - Any command or set of commands may be followed by a pipeline filter
    (like in a Unix shell) to process its output, so for example
 
@@ -938,15 +1150,17 @@ General notes:
 
 Parameter types:
   <command>                  - one of the commands described bellow.
-  <block>                    - a command or a block of whitespace and semicolon
-                               separated commands enclosed in '{','}' brackets.
-  <id>                       - a symbolic document identifier.
-  <xpath>                    - an XPath expression optionally prefixed with
-                               an <id> identifier followed by colon to address
+  <block>                    - a command or a block of semicolon-separated
+                               commands enclosed in curly brackets.
+  <id>                       - an identifier consisting of letters, digits
+                               and underscore starting the first character
+                               of which is a letter or underscore.
+  <xpath>                    - an XPath expression optionally preceded with
+                               <id> followed by a colon to address
                                a specific document (<id>:xpath-expression). If
                                no <id> is given, the most recently addressed or
                                opened document is used.
-  <filename>                 - a filename (if should contain spaces,
+  <filename>                 - a filename (if it should contain spaces,
                                use single- or double-quotes).
   <loc>                      - location: one of after, before, into, replace
   <type>                     - node type: one of element, attribute, text,
@@ -957,6 +1171,11 @@ Parameter types:
 Available commands:
   [open] <id>=<filename>     - Open and parse given XML document. The document
                                may be later addressed by its <id>.
+  $<id>=<xpath>              - Create a new variable named $<id> and
+                               assign the result of the <xpath> expression
+                               to it. See help on count for more detail on
+                               how XPath expressions are evaluated in these
+                               contexts.
   close <id>                 - Close document identified by <id>.
   clone <id>=<id>            - duplicate an existing document under a new
                                identifier
@@ -966,6 +1185,7 @@ Available commands:
                              - save document identified by <id> in a given file
 
   files                      - list open files and their identifiers.
+  variables                  - list all variables and their values.
 
   ! shell-command            - execute a given shell command (as ! in ftp).
                                The shell command is considered to span
@@ -1036,11 +1256,11 @@ description: Print help on a given command.
 H1
 
 'exit' => <<'H1',
-usage:       exit
+usage:       exit [<exit-code>]
 
 aliases:     exit, quit
 
-description: Exit xsh immediately (no files are saved).
+description: Exit xsh immediately with the optional exit-code (no files are saved).
 
 H1
 
@@ -1139,7 +1359,7 @@ H1
 'count' => <<'H1',
 usage:       count <xpath>
 
-aliases:     eval
+aliases:     xpath
 
 description: Calculate the given <xpath> expression. If the result
              is a node-list, return number of nodes in the node-list.
@@ -1149,9 +1369,21 @@ description: Calculate the given <xpath> expression. If the result
 WARNING:     Evaluation of <xpath> is done by XML::LibXML library. If the
              expression is not a valid XPath expression, the library may
              (but also may not) cause segmentation fault which results in
-             loss of any unsaved xsh data.
+             loss of any unsaved xsh data. I've sent a patch to the authors
+             of XML::LibXML and they approved it. Let's see if it appears
+             in the next version and when that will be released.
 
-see also:    list
+see also:    list, eval
+
+H1
+'eval' => <<'H1',
+usage:       eval <xpath>
+
+aliases:     perl
+
+description: Evaluate the given perl expression and print the return value.
+
+see also:    count
 
 H1
 'list' => <<'H1',
@@ -1181,7 +1413,7 @@ description: Load an XSLT stylesheet from <file> and use it to
 
 H1
 'on' => <<'H1',
-usage:       on <xpath> <perl-expression>
+usage:       map <perl-code> <xpath>
 
 aliases:     sed
 
@@ -1194,16 +1426,17 @@ description: Each of the nodes matching <xpath> is processed with the
              should use the same variable to store the modified data.
              If <perl-expression> should contain spaces, you must
              enclose the whole <expression> into single- or
-             double-quotes (and backslash-quote all quotes within).
+             double-quotes (and backslash-quote all quotes within)
+             or use curly braces to delimit it as a perl-code block.
 
-examples:    xsh> on //hobbit $_='halfling'
+examples:    xsh> map $_='halfling' //hobbit
              renames all hobbits to halflings
 
-             xsh> on //hobbit/@name $_=ucfirst($_)
+             xsh> map { $_=ucfirst($_) } //hobbit/@name
              capitalises all hobbit names
 
-             xsh> on //hobbit/tale/text() s/goblin/orc/gi
-             replaces all goblin with orcs in all hobbit tales.
+             xsh> on s/goblin/orc/gi //hobbit/tale/text()
+             changes goblins to orcs in all hobbit tales.
 
 H1
 'remove' => <<'H1',
@@ -1380,6 +1613,13 @@ description: List open files and their identifiers.
 
 see also:    open, close
 H1
+'variables' => <<'H1',
+usage:       var, vars
+
+description: List all defined variables and their values.
+
+see also:    files
+H1
 'saveas' => <<'H1',
 usage:       saveas <id> <filename> [encoding <enc>]
 
@@ -1440,6 +1680,17 @@ examples:    xsh> open x=mydoc.xml
              comand in an XPath expression.
 
 see also:    save, close, clone
+H1
+'cd' => <<'H1',
+usage:       cd <directory>
+
+aliases:     chdir
+
+description: Changes the working directory to <directory>, if possible.
+	     If <directory> is omitted, changes to the directory
+	     specified in HOME environment variable, if set; if not,
+             changes to the directory specified by LOGDIR environment
+             variable.
 H1
 
 
