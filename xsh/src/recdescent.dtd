@@ -6,7 +6,8 @@
 
 <!--                    Paragraph Content                          -->
 <!--                    Content allowed inside paragraphs          -->
-<!ENTITY % paracont    "#PCDATA | xref | ulink | link | typeref | emphasis">
+<!ENTITY % paracont    "#PCDATA | xref | ulink | link | typeref 
+                        | emphasis | literal">
 
 
 <!--                    RecDescent                                 -->
@@ -19,7 +20,7 @@
 <!ELEMENT  doc          (title?, shortdesc?, description?, section*) >
 
 <!--                    Section                                    -->
-<!ELEMENT  section      (title, (para | code | example)*)            >
+<!ELEMENT  section      (title, (para | code | example)*, section*)  >
 <!--         id         section identifier                         -->
 <!ATTLIST  section
              id         ID                                 #REQUIRED >
@@ -71,7 +72,7 @@
 
 <!--                    Production                                 -->
 <!--                    The rule production                        -->
-<!ELEMENT  production   (selfref | group | regexp | directive | ruleref | literal | lookahead | action)*    >
+<!ELEMENT  production   (selfref | group | regexp | directive | ruleref | string | lookahead | action)*    >
 
 <!--                    lookahead                                  -->
 <!ELEMENT  lookahead    EMPTY                                        >
@@ -103,9 +104,9 @@
              ref        IDREF                              #REQUIRED
              rep        CDATA                              #IMPLIED  >
 
-<!--                    Literal                                    -->
-<!--                    Literal value                              -->
-<!ELEMENT  literal      (#PCDATA)                                    >
+<!--                    String                                    -->
+<!--                    String value                              -->
+<!ELEMENT  string      (#PCDATA)                                    >
 
 
 
@@ -126,7 +127,7 @@
 <!ELEMENT  shortdesc    (#PCDATA | xref | link | ulink | emphasis)*             >
 
 <!ATTLIST  documentation
-             sections   CDATA                              #IMPLIED  >
+             sections   IDREFS                              #IMPLIED  >
 
 
 
@@ -154,6 +155,10 @@
 <!--                    emphasis                                   -->
 <!--                    Emphasized text                            -->
 <!ELEMENT  emphasis     (#PCDATA)                                    >
+
+<!--                    literal                                    -->
+<!--                    Literal string                             -->
+<!ELEMENT  literal      (#PCDATA | xref | link | ulink)*             >
 
 <!--                    Xref                                       -->
 <!--                    Automatic cross-reference                  -->
@@ -215,7 +220,13 @@
 
 <!--                    Code                                       -->
 <!--                    A block of formatted programming code      -->
-<!ELEMENT  code         (#PCDATA | userinput)*                       >
+<!ELEMENT  code         (#PCDATA | tab | userinput)*                 >
+
+<!--                    indent                                     -->
+<!ELEMENT  tab          EMPTY                                        >
+<!ATTLIST  tab
+             count      CDATA                              "1"       >
+
 <!--                    userinput                                  -->
 <!ELEMENT  userinput    (#PCDATA)                                    >
 
