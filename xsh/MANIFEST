@@ -1,5 +1,7 @@
 Artistic
+BUGS
 ChangeLog
+Changes
 INSTALL
 LICENSE
 MANIFEST
@@ -19,7 +21,9 @@ src/recdescent.dtd
 src/xsh_grammar.xml
 t/01basic.t
 t/02gdome.t
+t/03copy.t
 tools/gen_completions.pl
+tools/gen_doc.xsh
 tools/gen_grammar.pl
 tools/gen_help.pl
 tools/gen_reference.xsh
