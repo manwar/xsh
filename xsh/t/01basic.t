@@ -66,9 +66,13 @@ test-mode; eval die;
 
 run-mode;
 
+ls scratch://oof[not(@bar)] | cat 1>&2
+
 move scratch://oof[not(@bar)] into t://foo[@bar='1'];
 
 count scratch:count(/scratch/oof)=9;
+
+ls t:/scratch/foo[@bar='1'] | cat 1>&2
 
 count t:count(/scratch/foo/oof)=1;
 

@@ -5,3 +5,4 @@
 * split element
 * 'locate' - allow use also nearest id() 
 * external xinclude save support
+* untag/split element

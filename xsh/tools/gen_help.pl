@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_help.pl,v 1.3 2002-03-14 17:32:06 pajas Exp $
+# $Id: gen_help.pl,v 1.4 2002-05-22 16:48:43 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -49,6 +49,7 @@ print_description($desc,"  ","  ") if ($desc);
 print "END\n\n";
 
 foreach my $r ($rules->findnodes('./rule')) {
+  next unless $r;
   my ($ruledoc)=$r->findnodes('./documentation');
   next unless $ruledoc;
   my $name=get_name($r);
@@ -61,7 +62,7 @@ foreach my $r ($rules->findnodes('./rule')) {
   if ($usage) {
     print "usage:       ",get_text($usage),"\n\n";
   }
-  @aliases=$r->findnodes('./aliases/alias');
+  @aliases=grep {defined($_)} $r->findnodes('./aliases/alias');
   if (@aliases) {
     print "aliases:     ",join " ",map { get_name($_) } @aliases;
     print "\n\n";
@@ -71,9 +72,9 @@ foreach my $r ($rules->findnodes('./rule')) {
     print "description:";
     print_description($desc," "," "x(13));
   }
-  @seealso=$ruledoc->findnodes('./description/see-also/ruleref');
+  @seealso=grep {defined($_)} $ruledoc->findnodes('./description/see-also/ruleref');
   if (@seealso) {
-    print "see also:     ",join " ",
+    print "see also:     ",join " ", grep {defined($_)}
       map { get_name($_) } @seealso;
     print "\n\n";
   }
@@ -128,7 +129,7 @@ sub get_text {
 	$text.=">";
       } elsif ($n->nodeName() eq 'typeref') {
 	foreach (split /\s/,$n->getAttribute('types')) {
-	  $text.=join ", ", sort map { get_name($_) } $node->findnodes("//rules/rule[\@type='$_']");
+	  $text.=join ", ", sort map { get_name($_) } grep {defined($_)} $node->findnodes("//rules/rule[\@type='$_']");
 	}
       } else {
 	$text.=get_text($n);

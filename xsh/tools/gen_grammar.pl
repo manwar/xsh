@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_grammar.pl,v 1.3 2002-03-20 17:53:15 pajas Exp $
+# $Id: gen_grammar.pl,v 1.4 2002-05-22 16:48:43 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -113,7 +113,7 @@ sub create_rule_production {
 			   $_->getAttribute('regexp') :
 			   $_->getAttribute('name')
 		       }
-	      $rule,$rule->findnodes("./aliases/alias"))
+	      $rule, grep {defined($_)} $rule->findnodes("./aliases/alias"))
 	. ')'
 	. (has_sibling($item) ? '\s/' : '/');
     }
