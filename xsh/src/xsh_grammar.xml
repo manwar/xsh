@@ -98,6 +98,7 @@ sub new {
 	  <production><ruleref ref="count_command"/></production>
 	  <production><ruleref ref="eval_command"/></production>
 	  <production><ruleref ref="saveas_command"/></production>
+	  <production><ruleref ref="savexinclude_command"/></production>
 	  <production><ruleref ref="savehtml_command"/></production>
 	  <production><ruleref ref="save_command"/></production>
 	  <production><ruleref ref="files_command"/></production>
@@ -136,6 +137,8 @@ sub new {
       </documentation>
     </rule>
     <rule id="option">
+      <production><ruleref ref="backups"/></production>
+      <production><ruleref ref="nobackups"/></production>
       <production><ruleref ref="quiet"/></production>
       <production><ruleref ref="verbose"/></production>
       <production><ruleref ref="test_mode"/></production>
@@ -1805,7 +1808,7 @@ sub new {
 	<description>
 	  <para>
 	    Save the document identified by <xref linkend='ID'/> to its
-	    original XML file, possibly converting it from its original
+	    original XML file, optionally converting it from its original
 	    encoding to <xref linkend='enc_string'/>.
 	  </para>
 	</description>
@@ -1839,7 +1842,7 @@ sub new {
 	<description>
 	  <para>
 	    Save the document identified by <xref linkend='ID'/> as a
-	    HTML file named <xref linkend='filename'/>, possibly
+	    HTML file named <xref linkend='filename'/>, optionally
 	    converting it from its original encoding to <xref
 	      linkend='enc_string'/> Note, that this does just
 	    the character conversion, so you
@@ -1854,6 +1857,9 @@ sub new {
       </documentation>
     </rule>
     <rule type='command' id="saveas_command" name="saveas">
+      <aliases>
+	<alias name="save_as"/>
+      </aliases>
       <production>
 	<selfref/>
 	<ruleref ref="expression"/>
@@ -1874,7 +1880,42 @@ sub new {
 	<description>
 	  <para>
 	    Save the document identified by <xref linkend='ID'/> as a
-	    XML file named <xref linkend='filename'/>, possibly
+	    XML file named <xref linkend='filename'/>, optionally
+	    converting it from its original encoding to <xref
+	      linkend='enc_string'/>.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="save_command"/>
+	  <ruleref ref="savehtml_command"/>
+	  <ruleref ref="open_command"/>
+	  <ruleref ref="close_command"/>
+	  <ruleref ref="print_enc_command"/>
+	  <ruleref ref="files_command"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule type='command' id="savexinclude_command" name="save_xinclude">
+      <production>
+	<selfref/>
+	<ruleref ref="expression"/>
+	<regexp>encoding\s</regexp>
+	<ruleref ref="expression"/>
+	<action>[\&amp;XML::XSH::Functions::save_xinclude,@item[2,4]]</action>
+      </production>
+      <production>
+	<selfref/>
+	<ruleref ref="expression"/>
+	<action>[\&amp;XML::XSH::Functions::save_xinclude,$item[2]]</action>
+      </production>
+      <documentation>
+	<usage>save_xinclude <xref linkend='ID'/> [encoding <xref
+	    linkend='enc_string'/>]</usage>
+	<description>
+	  <para>
+	    Save the document identified by <xref linkend='ID'/>
+	    saving all expanded XInclude sections to the original
+	    files (optionally
 	    converting it from its original encoding to <xref
 	      linkend='enc_string'/>.
 	  </para>
@@ -2406,6 +2447,36 @@ sub new {
 	</description>
 	<see-also>
 	  <ruleref ref="verbose"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="backups" type='command' name="backups">
+      <production>
+	<selfref/>
+	<action>[\&amp;XML::XSH::Functions::set_backups,1]</action>
+      </production>
+      <documentation>
+	<usage>backups</usage>
+	<description>
+	  <para>Enable creating backup files on save (default).</para>
+	</description>
+	<see-also>
+	  <ruleref ref="nobackups"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="nobackups" type='command' name="backups">
+      <production>
+	<selfref/>
+	<action>[\&amp;XML::XSH::Functions::set_backups,0]</action>
+      </production>
+      <documentation>
+	<usage>nobackups</usage>
+	<description>
+	  <para>Disable creating backup files on save.</para>
+	</description>
+	<see-also>
+	  <ruleref ref="nobackups"/>
 	</see-also>
       </documentation>
     </rule>
