@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 1.3 2002-03-08 18:01:20 pajas Exp $
+# $Id: Makefile.PL,v 1.4 2002-03-15 15:05:05 pajas Exp $
 
 use strict;
 
@@ -8,7 +8,7 @@ $| = 1;
 
 WriteMakefile(
     'NAME'      => 'XML::XSH',
-    'VERSION_FROM' => 'lib/XML/XSH.pm',
+    'VERSION_FROM' => 'lib/XML/XSH/Functions.pm',
     'EXE_FILES' => ['xsh'],
     'PREREQ_PM' => {
 		    'XML::LibXML' => 1.31,

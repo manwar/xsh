@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.5 2002-03-15 14:55:48 pajas Exp $
+# $Id: Functions.pm,v 1.6 2002-03-15 15:05:05 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -16,7 +16,8 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $OUT $LOCAL_ID $LOCAL_NODE
             %_doc %_files %_iconv %_defs/;
 
 BEGIN {
-  $VERSION='1.1';
+  $VERSION='1.2';
+
   @ISA=qw(Exporter);
   @EXPORT_OK=qw(&xsh_init &xsh
                 &xsh_set_output &xsh_set_parser
