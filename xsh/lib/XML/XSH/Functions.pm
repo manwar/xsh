@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.37 2002-11-04 13:09:32 pajas Exp $
+# $Id: Functions.pm,v 1.38 2002-11-06 18:47:20 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -719,7 +719,9 @@ sub _find_nodes {
   if ($query=~/^\%([a-zA-Z_][a-zA-Z0-9_]*)(.*)$/) { # node-list
     $query=$2;
     my $name=$1;
-    return [] unless exists($_nodelist{$name});
+    unless (exists($_nodelist{$name})) {
+      die "No such nodelist '\%$name'\n";
+    }
     if ($query ne "") {
       if ($query =~m|^\s*\[(\d+)\](.*)$|) { # index on a node-list
 	return $_nodelist{$name}->[1]->[$1+1] ?
@@ -846,7 +848,9 @@ sub open_doc {
     print STDERR "hint: open identifier=file-name\n" unless "$_quiet";
     return;
   }
-  if ($source ne 'file' || -f $file || $file=~/^[a-z]+:/) { # || (-f ($file="$file.gz"))) {
+  if (($source ne 'file') or
+      (-f $file) or
+      ($file=~/^[a-z]+:/)) {
     print STDERR "parsing $file\n" unless "$_quiet";
 
     my $doc;
@@ -2419,7 +2423,8 @@ sub xslt {
     print STDERR "\n";
   }
 
-  if (-f $stylefile) {
+  if ((-f $stylefile) or
+      ($stylefile=~/^[a-z]+:/)) {
     require XML::LibXSLT;
 
     local *SAVE;
@@ -2625,6 +2630,7 @@ sub literal {
   $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):(?!:))?((?:.|\n)*)$/;
   return &XML::XSH::Functions::eval_xpath_literal([$1,$2]);
 }
+
 
 #######################################################################
 #######################################################################
