@@ -1,5 +1,6 @@
 TODO XSH2:
 
+- support name-like and XPath expressions for rename
 - help apropos commnad
 - echo --stderr
 - inner-wrap 
