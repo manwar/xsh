@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.8 2002-03-21 15:42:16 pajas Exp $
+# $Id: Functions.pm,v 1.9 2002-03-21 15:43:40 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -51,6 +51,7 @@ sub xsh_init {
   $_parser = XML::LibXML->new();
   $_parser->load_ext_dtd(1);
   $_parser->validation(1);
+  $_parser->keep_blanks(1);
 
   if (eval { require XML::XSH::Parser; }) {
     $_xsh=XML::XSH::Parser->new();
