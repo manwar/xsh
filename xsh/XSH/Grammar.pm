@@ -190,10 +190,9 @@ $grammar=<<'_EO_GRAMMAR_';
                                        { [\&XSH::Functions::save_as,@item[2,3,5]]; }
                | /saveas\s/ ID filename
                                        { [\&XSH::Functions::save_as,@item[2,3]]; }
-               | /save\s/ ID /encoding\s/
-                                       { [\&XSH::Functions::save_as,$item[2],$XSH::Functions::files{$item[2]},
-                                                       $item[4]]; }
-               | /save\s/ ID           { [\&XSH::Functions::save_as,$item[2],$XSH::Functions::files{$item[2]}]; }
+               | /save\s/ ID /encoding\s/ expression
+                                       { [\&XSH::Functions::save_as,$item[2],$item[4]]; }
+               | /save\s/ ID           { [\&XSH::Functions::save_as,$item[2]]; }
 
   list_dtd_command : /dtd\s/ ID        { [\&XSH::Functions::list_dtd,$item[2]]; }
                    | /dtd(\s|$)/       { [\&XSH::Functions::list_dtd,undef] }

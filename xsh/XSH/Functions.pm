@@ -234,6 +234,7 @@ sub save_as {
   my ($id,$file,$enc)= expand(@_);
   ($id,my $doc)=_id($id);
   return unless ref($doc);
+  $file=$_files{$id} if $file eq "";
   print STDERR "$id=$_files{$id} --> $file ($enc)\n" unless "$_quiet";
   $enc=$doc->getEncoding() unless ($enc ne "");
   local *F;
