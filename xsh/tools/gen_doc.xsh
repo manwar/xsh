@@ -14,8 +14,8 @@ load-ext-dtd 0;
 validation 0;
 
 $d := create <<EOF;
-<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" 
-  "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" 
+  "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
 <article>
   <title>XSH2 Reference</title>
   <section id="intro">
