@@ -1,9 +1,12 @@
-#!/usr/bin/perl /home/pajas/bin/xsh
+#!xsh
 # -*- cperl -*-
 
 if ("$xsh_grammar_file" = "") $xsh_grammar_file="src/xsh_grammar.xml";
 if ("$db_stylesheet" = "") {
-  perl { ($db_stylesheet)=split(/\n/,`locate html/docbook.xsl`); };
+  # weired things happen in XML::LibXML/LibXSLT with new stylesheets!
+  $db_stylesheet="http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl";
+
+#  perl { ($db_stylesheet)=split(/\n/,`locate html/docbook.xsl`); };
   echo "Using DocBook XML stylesheet: $db_stylesheet"
 }
 if ("$db_stylesheet" = "") {
@@ -12,11 +15,15 @@ if ("$db_stylesheet" = "") {
 }
 if ("$html_stylesheet"="") $html_stylesheet="style.css";
 
-parser-completes-attributes 1;
-X = $xsh_grammar_file;
-indent 1;
-validation 0;
 quiet;
+load-ext-dtd 1;
+validation 1;
+parser-completes-attributes 1;
+
+open X = $xsh_grammar_file;
+
+validation 0;
+indent 1;
 
 def transform_section {
   map { s/^[ \t]+//; s/\n[ \t]+/\n/g; } %section//code/descendant::text();
@@ -47,18 +54,17 @@ def transform_section {
   }
   xslt S $db_stylesheet H params html.stylesheet="'$html_stylesheet'";
   clone H=H;
-
   xadd attribute target=_self into H://*[name()='a'];
   # move content of <a name="">..</a> out, so that it does not behave
   # as a link in browsers
-   foreach H://*[name()='a' and not(@href)] {
-     xmove ./node() after .;
-   }
-   for %section/@id {
-     save_HTML H "doc/s_${{string(.)}}.html";
-     saveas S "doc/s_${{string(.)}}.xml";
-   }
-   close H;
+  foreach H://*[name()='a' and not(@href)] {
+    xmove ./node() after .;
+  }
+  for %section/@id {
+    save_HTML H "doc/frames/s_${{string(.)}}.html";
+    saveas S "doc/frames/s_${{string(.)}}.xml";
+  }
+  close H;
 }
 
 $toc_template="<html>
@@ -95,7 +101,7 @@ new I "<html>
      </noframes>
   </frameset>
 </html>";
-save_HTML I 'doc/index.html';
+save_HTML I 'doc/frames/index.html';
 close I;
 
 new S "<section id='intro'><title>Getting Started</title></section>";
@@ -144,7 +150,7 @@ foreach X:/recdescent-xml/doc/section {
   call transform_section;
 }
 
-save_HTML T "doc/t_syntax.html";
+save_HTML T "doc/frames/t_syntax.html";
 close T;
 
 # COMMANDS AND TYPES
@@ -235,6 +241,6 @@ foreach { qw(command type) } {
     call transform_section;
     close S;
   }
-  save_HTML T "doc/t_${__}.html";
+  save_HTML T "doc/frames/t_${__}.html";
   close T;
 };

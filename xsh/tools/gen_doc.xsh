@@ -1,19 +1,21 @@
 #!xsh
 # -*- cperl -*-
 
+if ("$xsh_grammar_file" = "") $xsh_grammar_file="src/xsh_grammar.xml";
+
 quiet;
 load-ext-dtd 1;
 validation 1;
 parser-completes-attributes 1;
 
-open x = xsh_grammar.xml;
+open x = $xsh_grammar_file;
 
 load-ext-dtd 0;
 validation 0;
 
 create d 
 '<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" 
-  "file:///home/pajas/share/sgml/dtd/docbookx/docbookx.dtd">
+  "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
 <article>
   <title>XSH Reference</title>
   <section id="intro">
@@ -55,7 +57,6 @@ foreach d:/article/section[@id='intro']/section {
     </varlistentry>" into %varlist;
     copy ./documentation/shortdesc/node() into %varlist/varlistentry[last()]/listitem;
   }
-    
 }
 
 foreach { qw(command type) } {
@@ -153,4 +154,4 @@ foreach d://variablelist {
 }
 
 indent 1;
-saveas d xsh_reference.xml;
+saveas d 'doc/xsh_reference.xml';
