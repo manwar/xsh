@@ -2365,7 +2365,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::insert,@item[3,4,7,6],$item[5][0],0]</action>
       </production>
       <documentation sections="Manipulation">
-	<usage>insert <xref linkend="nodetype"/> <xref linkend="expression"/> [namespace <xref linkend="expression"/>] <xref linkend="loc"/><xref linkend="xpath"/>
+	<usage>insert <xref linkend="nodetype"/> <xref
+	linkend="expression"/> [namespace <xref
+	linkend="expression"/>] <xref linkend="loc"/> <xref linkend="xpath"/>
 	</usage>
 	<shortdesc>create a node in on a given target location</shortdesc>
 	<description>
@@ -2396,7 +2398,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::insert,@item[3,4,7,6],$item[5][0],1]</action>
       </production>
       <documentation sections="Manipulation">
-	<usage>xinsert <xref linkend="nodetype"/> <xref linkend="expression"/> [namespace <xref linkend="expression"/>] <xref linkend="loc"/><xref linkend="xpath"/>
+	<usage>xinsert <xref linkend="nodetype"/> <xref
+	linkend="expression"/> [namespace <xref
+	linkend="expression"/>] <xref linkend="loc"/> <xref linkend="xpath"/>
 	</usage>
 	<shortdesc>create nodes on all target locations</shortdesc>
 	<description>
