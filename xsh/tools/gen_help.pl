@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_help.pl,v 1.5 2002-08-30 17:14:46 pajas Exp $
+# $Id: gen_help.pl,v 1.6 2002-09-02 15:47:53 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -44,7 +44,7 @@ PREAMB
 
 print "\$HELP=<<'END';\n";
 print "General notes:\n\n";
-($desc)=$dom->findnodes('./description');
+($desc)=$dom->findnodes('./doc/description');
 print_description($desc,"  ","  ") if ($desc);
 print "END\n\n";
 
@@ -137,6 +137,10 @@ sub get_text {
 	foreach (split /\s/,$n->getAttribute('types')) {
 	  $text.=join ", ", sort map { get_name($_) } grep {defined($_)} $node->findnodes("//rules/rule[\@type='$_']");
 	}
+      } elsif ($n->nodeName eq 'tab') {
+	$text.="\t" x $n->getAttribute('count');
+      } if ($n->nodeName() eq 'literal') {
+	$text.="`".get_text($n,1)."'";
       } else {
 	$text.=get_text($n);
       }
