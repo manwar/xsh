@@ -1,0 +1,86 @@
+2002-02-06  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* XSH/Parser.pm: new compile
+
+	* XSH/Help.pm: help update
+
+	* XSH/Grammar.pm: new commands (defs, select) added
+
+	* XSH/Functions.pm: list_defs added
+	trying to solve some problems with validation
+
+2002-02-04  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* xsh.pl: XSH modularized.
+	Function create added to create a new document. Now, there is at least
+	one document open on startup, it is called scratch and consists of a
+	single (root) element.
+
+	* XSH/Functions.pm, XSH/Grammar.pm, XSH/Help.pm, XSH/Parser.pm:
+	XSH modularized:
+	  XSH::Functions - implementation of XSH language functions
+	  XSH::Grammar   - XSH grammar description for RecDescent parser
+	  XSH::Help      - XSH on-line help
+	  XSH::Parser    - module automatically created by RecDescent from
+	                   XSH::Grammar
+
+2002-01-31  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* xsh.pl: exit function fixed.
+
+	* xsh.pl: On-line help updated.
+
+2002-01-31  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* xsh.pl: exit function fixed.
+
+	* xsh.pl: On-line help updated.
+
+2002-01-29  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* xsh.pl:
+	grammar corrected: non-backslashed quotes allowed in inline ${{XPATH}} expressions
+
+	* xsh.pl: Added ${{XPATH}} expansion in expressions.
+
+	* xsh.pl: several fixes (btw, print works now:-))
+
+	* xsh.pl: print command added.
+
+2002-01-28  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* xsh.pl:
+	greatly improved grammar (xpath expressions and perl blocks do not
+	need quotes, shell-like quoting, semicolon may be used to separate
+	commands and may be part of the last token), added new commands
+	(include, eval, exec), renamed some commands (for -> map), embedded
+	perl code has its own namespace (XSH::Map).
+
+2002-01-18  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* xsh.pl:
+	Count changed to support any type of <xpath> expressions, thus
+	allowing evaluation of arithmetic, boolean and string expressions in
+	addition to the expressions resulting in a node-list. This change also
+	affects the if and while statements, providing them with the same power.
+
+	* INSTALL, LICENCE, README, xsh.pl: INSTALL, LICENCE, README added
+	xsh.pl - added copyright and GPL notes
+
+2002-01-18  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* xsh.pl:
+	Count changed to support any type of <xpath> expressions, thus
+	allowing evaluation of arithmetic, boolean and string expressions in
+	addition to the expressions resulting in a node-list. This change also
+	affects the if and while statements, providing them with the same power.
+
+	* INSTALL, LICENCE, README, xsh.pl: INSTALL, LICENCE, README added
+	xsh.pl - added copyright and GPL notes
+
+2002-01-17  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* xsh.pl: New file.
+
+	* xsh.pl: initial commit
+
