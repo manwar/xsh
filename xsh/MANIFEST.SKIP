@@ -9,3 +9,4 @@
 ^examples/
 ^MakeMaker-\d
 .#$
+\.tar\.gz$

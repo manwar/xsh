@@ -1,3 +1,4 @@
+Artistic
 ChangeLog
 INSTALL
 LICENSE
@@ -9,8 +10,10 @@ lib/XML/XSH.pm
 lib/XML/XSH/Completion.pm
 lib/XML/XSH/CompletionList.pm
 lib/XML/XSH/Functions.pm
+lib/XML/XSH/GDOMECompat.pm
 lib/XML/XSH/Grammar.pm
 lib/XML/XSH/Help.pm
+lib/XML/XSH/LibXMLCompat.pm
 lib/XML/XSH/Parser.pm
 src/recdescent.dtd
 src/tests.xsh
