@@ -3354,20 +3354,22 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	file, pipe or URI</shortdesc>
 	<description>
 	  <para>
-	    Load a new XML, HTML or SGML DOCBOOK document from the
-	    file, URI, command output or string provided by the <xref
-	    linkend="expression"/>.  In XSH
-	    the document is given a symbolic name <xref
-	    linkend="ID"/>.  To identify the documentin commands like
-	    close, save, validate, dtd or enc simply use <xref
-	    linkend="ID"/>. In commands which work on document nodes,
-	    give <xref linkend="ID"/>: prefix to XPath expressions to
-	    point the XPath to the document.
+	    Load a new XML, HTML or SGML DOCBOOK document from the file
+	    (actually arbitrary URL), command output or string provided by
+	    the <xref linkend="expression" />.  In XSH the document is given a
+	    symbolic name <xref
+	    linkend="ID"/>.  To identify the documentin commands like close,
+	    save, validate, dtd or enc simply use <xref
+	    linkend="ID"/>. In commands which work on document nodes, give
+	    <xref linkend="ID"/>: prefix to XPath expressions to point the
+	    XPath to the document.
 	  </para>
 	  <example>
 	    <code>
 	      xsh&gt; <userinput>open x=mydoc.xml # open a document</userinput>
 
+              # open a HTML document from the Internet
+	      xsh&gt; <userinput>open HTML h="http://www.google.com/?q=xsh"</userinput>
 	      # quote file name if it contains whitespace
 	      xsh&gt; <userinput>open y=&quot;document with a long name with spaces.xml&quot;</userinput>
 
