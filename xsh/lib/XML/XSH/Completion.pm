@@ -1,14 +1,23 @@
-# $Id: Completion.pm,v 1.5 2002-10-22 16:48:32 pajas Exp $
+# $Id: Completion.pm,v 1.6 2003-01-22 14:55:53 pajas Exp $
 
 package XML::XSH::Completion;
 
 use XML::XSH::CompletionList;
+use XML::XSH::Functions qw();
 use strict;
 
 sub cpl {
   my($word,$line,$pos) = @_;
   if ($line=~/^\s*[^=\s]*$/) {
-     return grep { index($_,$word)==0 } @XML::XSH::CompletionList::XSH_COMMANDS;
+    return grep { index($_,$word)==0 } @XML::XSH::CompletionList::XSH_COMMANDS;
+  } elsif ($line=~/\$([a-zA-Z0-9_]*)$/) {
+    return grep { index($_,$1)==0 } XML::XSH::Functions::string_vars;
+  } elsif ($line=~/\%([a-zA-Z0-9_]*)$/) {
+    return map {'%'.$_} grep { index($_,$1)==0 } XML::XSH::Functions::nodelist_vars;
+  } elsif ($line=~/^\s*call\s+(\S*)$|[;}]\s*call\s+(\S*)$/) {
+    return grep { index($_,$1)==0 } XML::XSH::Functions::defs;
+  } elsif ($line=~/^\s*help\s+(\S*)$|[;}]\s*help\s+(\S*)$/) {
+    return grep { index($_,$1)==0 } keys %XML::XSH::Help::HELP;
   } else {
     return eval { map { s:\@$::; $_ } readline::rl_filename_list($_[0]); };
   }
@@ -19,6 +28,14 @@ sub gnu_cpl {
     my(@perlret);
     if ($line=~/^\s*[^=\s]*$/) {
       @perlret = grep { index($_,$text)==0 } @XML::XSH::CompletionList::XSH_COMMANDS;
+    } elsif ($line=~/\$([a-zA-Z0-9_]*)$/) {
+      @perlret = grep { index($_,$1)==0 } XML::XSH::Functions::string_vars;
+    } elsif ($line=~/\%([a-zA-Z0-9_]*)$/) {
+      @perlret = map {'%'.$_} grep { index($_,$1)==0 } XML::XSH::Functions::nodelist_vars;
+    } elsif ($line=~/^\s*call\s+(\S*)$|[;}]\s*call\s+(\S*)$/) {
+      @perlret = grep { index($_,$1)==0 } XML::XSH::Functions::defs;
+    } elsif ($line=~/^\s*help\s+(\S*)$|[;}]\s*help\s+(\S*)$/) {
+      @perlret = grep { index($_,$1)==0 } keys %XML::XSH::Help::HELP;
     } else {
       eval {
 	@perlret = map { s:\@$::; $_ } Term::ReadLine::GNU::XS::rl_filename_list($_[0]);
