@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 1.17 2003-08-07 07:57:11 pajas Exp $
+# $Id: Completion.pm,v 1.18 2003-08-07 13:53:03 pajas Exp $
 
 package XML::XSH::Completion;
 
@@ -6,102 +6,196 @@ use XML::XSH::CompletionList;
 use XML::XSH::Functions qw();
 use strict;
 
-sub cpl {
+our @PATH_HASH;
+our $M=qr/(?:^|[;}]|\s+{)\s*/;
+our $match_sv=qr/\$([a-zA-Z0-9_]*)$/; # scalar variable completion
+our $match_nv=qr/\%([a-zA-Z0-9_]*)$/; # node-list variable completion
+our $match_command=qr/${M}[^=\s]*$/; # command completion
+our $match_func=qr/${M}(?:call|undef|undefine)\s+(\S*)$/; # function name completion
+our $match_nodetype=qr/${M}x?(?:insert|add)\s+(\S*)$/; # node-type completion
+our $match_doc=qr/${M}(?:close|doc[-_]info|dtd|enc)\s+(\S*)$|${M}clone\s+[a-zA-Z0-9_]*\s*=\s*[a-zA-Z0-9_]*$|${M}create\s+[a-zA-Z0-9_]*/; # docid completion
+our $match_clone_doc=qr/${M}clone\s+[a-zA-Z0-9_]*$/;
+our $match_help=qr/${M}help\s+(\S*)$/; # help topic completion
+our $match_open_flag1=qr/${M}open(?:\s+|([-_]))([A-Z]*)$/;
+our $match_open_flag2=qr/${M}(?:open\s+|(open[-_]))(html|xml|docbook|HTML|XML|DOCBOOK)(?:\s+[A-Z]*|([-_])[A-Za-z]*)$/;
+our $match_open_doc=qr/${M}(open)(?:\s+|_|-)(?:(?:html|xml|docbook|HTML|XML|DOCBOOK)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?([a-zA-Z0-9_]*)$/;
+our $match_open_filename=qr/${M}(?:open(?:\s+|_|-)(?:(?:html|xml|docbook|HTML|XML|DOCBOOK)(?:\s+|_|-))?(?:(?:file|FILE)\s+)?)?[a-zA-Z0-9_]+\s*=\s*(\S*)$/;
+
+our $match_save_flag1=qr/${M}save(?:\s+|([-_]))([A-Z]*)$/;
+our $match_save_flag2=qr/${M}(?:save\s+|(save[-_]))(html|xml|xinclude|HTML|XML|XINCLUDE|XInclude)(?:\s+[A-Z]*|([-_])[A-Za-z]*)$/;
+our $match_save_doc=qr/${M}(save)(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?([a-zA-Z0-9_]*)$/;
+our $match_save_filename=qr/${M}save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|FILE)\s+)?[a-zA-Z0-9_]+\s+(\S*)$/;
+our $match_filename=qr/${M}(?:\.|include)\s+(\S*)$/;
+our $match_dir=qr/${M}(?:lcd)\s+(\S*)$/;
+our $match_path_filename=qr/${M}(?:system\s|exec\s|\!)\s*\S*$|\s\|\s*\S*$/;
+our $match_no_xpath=join "|",@XML::XSH::CompletionList::XSH_NOXPATH_COMMANDS;
+our $match_no=qr/${M}(?:${match_no_xpath}create\s+[a-zA-Z0-9_]*\s)\s*$/;
+
+# PATH-completion: system, !, exec, |, 
+
+our @nodetypes = qw(element attribute attributes text cdata pi comment chunk entity_reference);
+our @openflags1 = qw(HTML XML DOCBOOK);
+our @openflags2 = qw(FILE PIPE STRING);
+our @saveflags1 = qw(HTML XML XINCLUDE);
+our @saveflags2 = qw(FILE PIPE STRING);
+
+sub perl_complete {
   my($word,$line,$pos) = @_;
   my $endpos=$pos+length($word);
-#  print STDERR "---",substr($line,0,$endpos),"---\n";
-  if (substr($line,0,$endpos)=~/\$([a-zA-Z0-9_]*)$/) {
-    return map {'$'.$_} grep { index($_,$1)==0 } XML::XSH::Functions::string_vars;
-  } elsif (substr($line,0,$endpos)=~/\%([a-zA-Z0-9_]*)$/) {
-    return map {'%'.$_} grep { index($_,$1)==0 } XML::XSH::Functions::nodelist_vars;
-  } elsif (substr($line,0,$pos)=~/(?:^|[;}])\s*[^=\s]*$/) {
-    return grep { index($_,$word)==0 } @XML::XSH::CompletionList::XSH_COMMANDS;
-  } elsif (substr($line,0,$endpos)=~/(?:^|[;}])\s*call\s+(\S*)$/) {
-    return grep { index($_,$1)==0 } XML::XSH::Functions::defs;
-  } elsif (substr($line,0,$endpos)=~/(?:^|[;}])\s*x?(?:insert|add)\s+(\S*)$/) {
-    return grep { index($_,$1)==0 } qw(element attribute attributes text
-                                       cdata pi comment chunk entity_reference);
-  } elsif (substr($line,0,$endpos)=~/(?:^|[;}])\s*help\s+(\S*)$/) {
-    return grep { index($_,$1)==0 } keys %XML::XSH::Help::HELP;
-  } elsif (substr($line,0,$endpos)=~
-	   /(?:^|[;}])\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?([a-zA-Z0-9_]*)$/) {
-    return grep { index($_,$word)==0 } XML::XSH::Functions::docs;
-  } elsif (substr($line,0,$endpos)=~
-	   /(?:^|[;}])\s*(?:open(?:\s+|_|-)(?:(?:html|xml|docbook|HTML|XML|DOCBOOK)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?)?[a-zA-Z0-9_]+\s*=\s*(\S*)$/
-	   ||
-	   substr($line,0,$endpos)=~
-	   /(?:^|[;}])\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?[a-zA-Z0-9_]+\s+(\S*)$/
-	   ||
-	   substr($line,0,$endpos)=~
-	   /(?:^|[;}])\s*(?:\.|include)\s+(\S*)$/
-	  ) {
-    my @results=eval { map { s:\@$::; $_ } readline::rl_filename_list($word); };
-    if (@results==1 and -d $results[0]) {
-      $readline::rl_completer_terminator_character='';
-    }
-    return @results;
-  } else { # XPath completion
-#    print "\nW:$word\nL:$line\nP:$pos\n";
-    $readline::rl_completer_terminator_character='';
-    return xpath_complete($line,$word,$pos);
+  cpl('perl',$word,$line,$pos,$endpos);
+}
+
+sub gnu_complete {
+  my($text, $line, $start, $endpos) = @_;
+  &main::_term()->Attribs->{completion_append_character} = ' ';
+  my @result=cpl('gnu',$text,$line,$start,$endpos);
+  # find longest common match. Can anybody show me how to persuade
+  # T::R::Gnu to do this automatically? Seems expensive.
+  return () unless @result;
+  my($newtext) = $text;
+  for (my $i = length($text)+1;;$i++) {
+    last unless length($result[0]) && length($result[0]) >= $i;
+    my $try = substr($result[0],0,$i);
+    my @tries = grep {substr($_,0,$i) eq $try} @result;
+    # warn "try[$try]tries[@tries]";
+    if (@tries == @result) {
+      $newtext = $try;
+        } else {
+	  last;
+        }
+  }
+  ($newtext,@result);
+}
+
+sub complete_set_term_char {
+  my ($type,$char)=@_;
+  if ($type eq 'perl') {
+    $readline::rl_completer_terminator_character = $char;
+  } else {
+    &main::_term()->Attribs->{completion_append_character} = $char;
   }
 }
 
-sub gnu_cpl {
-    my($text, $line, $start, $end) = @_;
-    my(@perlret);
-    if ($line=~/\$([a-zA-Z0-9_]*)$/) {
-      @perlret = map {'$'.$_} grep { index($_,$1)==0 } XML::XSH::Functions::string_vars;
-    } elsif ($line=~/\%([a-zA-Z0-9_]*)$/) {
-      @perlret = map {'%'.$_} grep { index($_,$1)==0 } XML::XSH::Functions::nodelist_vars;
-    } elsif (substr($line,0,$end)=~/^\s*[^=\s]*$/) {
-      @perlret = grep { index($_,$text)==0 } @XML::XSH::CompletionList::XSH_COMMANDS;
-    } elsif ($line=~/^\s*call\s+(\S*)$|[;}]\s*call\s+(\S*)$/) {
-      @perlret = grep { index($_,$1)==0 } XML::XSH::Functions::defs;
-    } elsif ($line=~/^\s*help\s+(\S*)$|[;}]\s*help\s+(\S*)$/) {
-      @perlret = grep { index($_,$1)==0 } keys %XML::XSH::Help::HELP;
-    } elsif ($line=~/^\s*x?(?:insert|add)\s+(\S*)$|[;}]\s*x?(?:insert|add)\s+(\S*)$/) {
-      @perlret = grep { index($_,$1)==0 } qw(element attribute attributes text
-					     cdata pi comment chunk entity_reference);
-    } elsif (substr($line,0,$end)=~
-	   /(?:^|[;}])\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?([a-zA-Z0-9_]*)$/) {
-      @perlret = grep { index($_,substr($line,$start,$end))==0 } XML::XSH::Functions::docs;
-    } elsif (substr($line,0,$end)=~
-	     /(?:^|[;}])\s*(?:open(?:\s+|_|-)(?:(?:html|xml|docbook|HTML|XML|DOCBOOK)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?)?[a-zA-Z0-9_]+\s*=\s*(\S*)$/
-	     ||
-	     substr($line,0,$end)=~
-	     /(?:^|[;}])\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?[a-zA-Z0-9_]+\s+(\S*)$/
-	   ||
-	   substr($line,0,$end)=~
-	   /(?:^|[;}])\s*(?:\.|include)\s+(\S*)$/
-	    ) {
-      @perlret = eval { map { s:\@$::; $_ } Term::ReadLine::Gnu::XS::rl_filename_list($_[0]) };
-      if (@perlret==1 and -d $perlret[0]) {
-	&main::_term()->Attribs->{completion_append_character} = '';
-      } else {
-	&main::_term()->Attribs->{completion_append_character} = ' ';
-      }
-    } else { # XPath completion
-      &main::_term()->Attribs->{completion_append_character} = '';
-      @perlret = xpath_complete($line,substr($line,$start,$end),$start);
-    }
+sub complete_filename {
+  my ($type,$word)=@_;
+  if ($type eq 'perl') {
+    return eval { map { s:\@$::; $_ } readline::rl_filename_list($word); };
+  } else {
+    return eval { map { s:\@$::; $_ } Term::ReadLine::Gnu::XS::rl_filename_list($word) };
+  }
+}
 
-    # find longest common match. Can anybody show me how to persuade
-    # T::R::Gnu to do this automatically? Seems expensive.
-    return () unless @perlret;
-    my($newtext) = $text;
-    for (my $i = length($text)+1;;$i++) {
-        last unless length($perlret[0]) && length($perlret[0]) >= $i;
-        my $try = substr($perlret[0],0,$i);
-        my @tries = grep {substr($_,0,$i) eq $try} @perlret;
-        # warn "try[$try]tries[@tries]";
-        if (@tries == @perlret) {
-            $newtext = $try;
-        } else {
-            last;
-        }
+sub rehash_path_hash {
+  my %result;
+  my $dh;
+  my $pdelim= $^O eq 'MSWin32' ? '\\' : '/';
+  my $delim=($^O eq 'MSWin32' ? ';' : ':');
+  my @path=grep /\S/,split($delim,$ENV{PATH});
+  foreach my $dir (@path) {
+    local *DIR;
+    if (opendir DIR, $dir) {
+      my @files=grep { -f "$dir$pdelim$_" and -x "$dir$pdelim$_" } readdir(DIR);
+      @result{@files}=();
+      closedir DIR;
     }
-    ($newtext,@perlret);
+  }
+  @PATH_HASH=sort keys %result;
+}
+
+sub complete_system_command {
+  my ($type,$word)=@_;
+  my $pdelim= $^O eq 'MSWin32' ? '\\' : '/';
+  if (index($word,$pdelim)>=0) {
+    return grep -x,complete_filename($type,$word);
+  }
+  unless (defined @PATH_HASH) {
+    rehash_path_hash();
+  }
+  return grep {index($_,$word)==0} @PATH_HASH;
+}
+
+sub cpl {
+  my($type,$word,$line,$pos,$endpos) = @_;
+  if (substr($line,0,$endpos)=~$match_sv) {
+    return map {'$'.$_} grep { index($_,$1)==0 } XML::XSH::Functions::string_vars;
+  } elsif (substr($line,0,$endpos)=~$match_nv) {
+    return map {'%'.$_} grep { index($_,$1)==0 } XML::XSH::Functions::nodelist_vars;
+  } elsif (substr($line,0,$endpos)=~$match_func) {
+    return grep { index($_,$1)==0 } XML::XSH::Functions::defs;
+  } elsif (substr($line,0,$endpos)=~$match_nodetype) {
+    return grep { index($_,$1)==0 } @nodetypes;
+  } elsif (substr($line,0,$endpos)=~$match_help) {
+    return grep { index($_,$1)==0 } keys %XML::XSH::Help::HELP;
+  } elsif (substr($line,0,$endpos)=~$match_open_flag1) {
+    my $prefix;
+    $prefix='open'.$1 if ($1 ne "");
+    return grep { index(uc($_),uc($word))==0 } map {$prefix.$_} @openflags1, @openflags2;
+  } elsif (substr($line,0,$endpos)=~$match_open_flag2) {
+    my $prefix;
+    if ($3 ne "") {
+      $prefix=$1.uc($2).$3;
+      return grep { index(uc($_),uc($word))==0 } map {$prefix.$_} @openflags2;
+    } else {
+      return grep { index($_,uc($word))==0 } @openflags2;
+    }
+  } elsif (substr($line,0,$endpos)=~$match_save_flag1) {
+    if ($1) {
+      my $prefix;
+      $prefix='save'.$1;
+      return grep { index(uc($_),uc($word))==0 } map {$prefix.$_} @saveflags1, @saveflags2;
+    } else {
+      return grep { index($_,uc($word))==0 } @saveflags1, @saveflags2, XML::XSH::Functions::docs();
+    }
+  } elsif (substr($line,0,$endpos)=~$match_save_flag2) {
+    my $prefix;
+    if ($3 ne "") {
+      $prefix=$1.uc($2).$3;
+      return grep { index(uc($_),uc($word))==0 } map {$prefix.$_} @saveflags2;
+    } else {
+      return grep { index($_,uc($word))==0 } @saveflags2, XML::XSH::Functions::docs();
+    }
+  } elsif (substr($line,0,$pos)=~$match_command) {
+    return grep { index($_,$word)==0 } @XML::XSH::CompletionList::XSH_COMMANDS;
+  } elsif (substr($line,0,$endpos)=~$match_doc ||
+	   substr($line,0,$endpos)=~$match_save_doc) {
+    return grep { index($_,$word)==0 } XML::XSH::Functions::docs();
+  } elsif (substr($line,0,$endpos)=~$match_clone_doc ||
+	   substr($line,0,$endpos)=~$match_open_doc) {
+    complete_set_term_char($type,'=');
+    return grep { index($_,$word)==0 } XML::XSH::Functions::docs();
+  } elsif (substr($line,0,$endpos)=~$match_open_filename ||
+	   substr($line,0,$endpos)=~$match_save_filename ||
+	   substr($line,0,$endpos)=~$match_filename) {
+    my @result=complete_filename($type,$word);
+    if (@result==1 and -d $result[0]) {
+      complete_set_term_char($type,'');
+    } else {
+      complete_set_term_char($type,' ');
+    }
+    return @result;
+  } elsif (substr($line,0,$endpos)=~$match_dir) {
+    my @result=grep -d, complete_filename($type,$word);
+    if (@result==1) {
+      complete_set_term_char($type,' ');
+    } else {
+      complete_set_term_char($type,'');
+    }
+    return @result;
+  } elsif (substr($line,0,$endpos)=~$match_path_filename) {
+    my @result=complete_system_command($type,$word);
+    if (@result==1 and -d $result[0]) {
+      complete_set_term_char($type,'');
+    } else {
+      complete_set_term_char($type,' ');
+    }
+    return @result;
+
+  } elsif (substr($line,0,$endpos)=~$match_no) {
+    return ();
+  } else {
+    complete_set_term_char($type,'');
+    return xpath_complete($line,$word,$pos);
+  }
 }
 
 sub xpath_complete_str {
