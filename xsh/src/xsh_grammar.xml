@@ -766,6 +766,8 @@ sub new {
       <ruleref ref="valid_command"/>
       <ruleref ref="list_dtd_command"/>
       <ruleref ref="print_enc_command"/>
+      <ruleref ref="set_enc_command"/>
+      <ruleref ref="set_standalone_command"/>
       <ruleref ref="cd_command"/>
       <ruleref ref="clone_command"/>
       <ruleref ref="count_command"/>
@@ -2931,10 +2933,10 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::strip_ws,$item[3]]</action>
       </production>
       <documentation sections="Manipulation">
-	<usage>strip-whitespace <xref linkend="xpath"/></usage>
+	<usage>strip <xref linkend="xpath"/></usage>
 	<shortdesc>strip leading and trailing whitespace</shortdesc>
 	<description>
-	  <para><literal>strip-whitespace</literal> removes all leading and
+	  <para><literal>strip</literal> removes all leading and
 	    trailing whitespace from given nodes. If applied to an
 	    element node, it removes all leading and trailing child
 	    text nodes and CDATA sections that consist entirely of
@@ -3549,6 +3551,72 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</see-also>
       </documentation>
     </rule>
+    <rule id="set_enc_command" type="command" name="set-enc" inline="yes">
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="expression"/>
+	<ruleref ref="optional_expression" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::set_doc_enc,$item[3],@{$item[4]}]</action>
+      </production>
+      <documentation sections="Manipulation">
+	<usage>set-enc <xref linkend="enc_string"/> [<xref linkend="ID"/>]</usage>
+	<shortdesc>set document's charset (encoding)</shortdesc>
+	<description>
+	  <para>
+	    Changes character encoding of a given document. If no document
+	    <xref linkend="ID"/> is given, the command applies to the
+	    current document. This has two effects:
+	    changing the XMLDecl encoding declaration 
+	    in the document prolog to display the new
+	    encoding and making all future <xref linkend="save_command"/> operations
+	    on the document default to the given charset.
+	  </para>
+	  <example>
+	    <code>xsh&gt; <userinput>ls</userinput>
+&lt;?xml version="1.0" encoding="iso-8859-1"?&gt;
+&lt;foo&gt;...&lt;/foo&gt;
+xsh&gt; <userinput>set-enc "utf-8"</userinput>
+xsh&gt; <userinput>ls</userinput>
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;foo&gt;...&lt;/foo&gt;
+xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
+</code>
+	  </example>
+	</description>
+	<see-also>
+	  <ruleref ref="print_enc_command"/>
+	  <ruleref ref="doc_info_command"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="set_standalone_command" type="command" name="set-standalone" inline="yes">
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="expression"/>
+	<ruleref ref="optional_expression" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::set_doc_standalone,$item[3],@{$item[4]}]</action>
+      </production>
+      <documentation sections="Manipulation">
+	<usage>set-standalone <xref linkend="expression"/> [<xref linkend="ID"/>]</usage>
+	<shortdesc>set document's standalone flag</shortdesc>
+	<description>
+	  <para>
+	    Changes the value of <literal>standalone</literal> declaration
+            in the XMLDecl prolog of a document. The <xref
+            linkend="expression"/> should evaluate to either 1 or 0 
+	    or <literal>'yes'</literal> or <literal>'no'</literal>.
+	    The result of applying the command on other values is not specified.
+	    If no document <xref linkend="ID"/> is given, 
+	    the command applies to the current document. 
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="doc_info_command"/>
+	</see-also>
+      </documentation>
+    </rule>
     <rule id="print_enc_command" type="command" name="enc" inline="yes">
       <production>
 	<selfref sep="no"/>
@@ -3566,6 +3634,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    used.
 	  </para>
 	</description>
+	<see-also>
+	  <ruleref ref="set_enc_command"/>
+	</see-also>
       </documentation>
     </rule>
     <rule id="validate_command" type="command" name="validate" inline="yes">
@@ -4998,6 +5069,10 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    original XML file.
 	  </para>
 	</description>
+	<see-also>
+	  <ruleref ref="set_enc_command"/>
+	  <ruleref ref="set_standalone_command"/>
+	</see-also>
       </documentation>
     </rule>
   </rules>  
