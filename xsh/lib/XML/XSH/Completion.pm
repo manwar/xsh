@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 1.9 2003-05-06 17:35:49 pajas Exp $
+# $Id: Completion.pm,v 1.10 2003-05-26 15:21:56 pajas Exp $
 
 package XML::XSH::Completion;
 
@@ -35,7 +35,7 @@ sub cpl {
   } else { # XPath completion
 #    print "\nW:$word\nL:$line\nP:$pos\n";
     $readline::rl_completer_terminator_character='';
-    return XML::XSH::Functions::xpath_complete($line,$word,$pos);
+    return xpath_complete($line,$word,$pos);
   }
 }
 
@@ -69,7 +69,7 @@ sub gnu_cpl {
       }
     } else { # XPath completion
       &main::_term()->Attribs->{completion_append_character} = '';
-      @perlret = XML::XSH::Functions::xpath_complete($line,substr($line,$start,$end),$start);
+      @perlret = xpath_complete($line,substr($line,$start,$end),$start);
     }
 
     # find longest common match. Can anybody show me how to persuade
@@ -88,6 +88,157 @@ sub gnu_cpl {
         }
     }
     ($newtext,@perlret);
+}
+
+sub xpath_complete_str {
+  my $str = reverse($_[0]);
+  my $debug = $_[1];
+  my $result="";
+  my $NAMECHAR = '[-_.[:alnum:]]';
+  my $NNAMECHAR = '[-:_.[:alnum:]]';
+  my $NAME = "${NAMECHAR}*${NNAMECHAR}*[_.[:alpha:]]";
+
+  my $WILDCARD = '\*(?!\*|${NAME}|\)|\]|\.)';
+  my $OPER = qr/(?:[,=<>\+\|]|-(?!${NAME})|(?:vid|dom|dna|ro)(?=\s*\]|\s*\)|\s*[0-9]+(?!${NNAMECHAR})|\s+{$NAMECHAR}|\s+\*))/;
+
+  print "'$str'\n" if $debug;
+  my $localmatch;
+
+ STEP0:
+  if ($str =~ /\G\s*[\]\)]/gsco) {
+    print "No completions after ] or )\n" if $debug;
+    return;
+  }
+
+ STEP1:
+  if ( $str =~ /\G(${NAMECHAR}+)(:${NNAMECHAR}+)?/gsco ) {
+    $localmatch=reverse($1);
+    $result=reverse($2).'*[starts-with(local-name(),"'.$localmatch.'")]'.$result;
+  } else {
+    $result='*'.$result;
+  }
+  if ($str =~ /\G\@/gsco) {
+    $result="@".$result;
+  }
+
+ STEP2:
+  print "STEP2: $result\n" if $debug;
+  print "STEP2-STR: ".reverse(substr($str,pos($str)))."\n" if $debug;
+  while ($str =~ m/\G(::|:|\@|${NAME}\$?|\/\/|\/|${WILDCARD}|\)|\])/gsco) {
+    print "STEP2-MATCH: '$1'\n" if $debug;
+    if ($1 eq ')' or $1 eq ']') {
+      # eat ballanced upto $1
+      my @ballance=(($1 eq ')' ? '(' : '['));
+      $result=$1.$result;
+      print "STEP2: Ballanced $1\n" if $debug;
+      do {
+	$result=reverse($1).$result if $str =~ m/\G([^]["'()]+)/gsco; # skip normal characters
+	return ($result,$localmatch) unless $str =~ m/\G(.)/gsco;
+	if ($1 eq $ballance[$#ballance]) {
+	  pop @ballance;
+	} elsif ($1 eq ')') {
+	  push @ballance, '(';
+	} elsif ($1 eq ']') {
+	  push @ballance, '[';
+	} elsif ($1 eq '"') {
+	  push @ballance, '"';
+	} elsif ($1 eq "'") {
+	  push @ballance, "'";
+	} else {
+	  print STDERR "Error 2: lost in an expression on '$1' ";
+	  print STDERR reverse(substr($str,pos()))."\n";
+	  print "-> $result\n";
+	  return undef;
+	}
+	$result=$1.$result;
+      }	while (@ballance);
+    } else {
+      $result=reverse($1).$result;
+    }
+  }
+
+ STEP3:
+  print "STEP3: $result\n" if $debug;
+  print "STEP3-STR: ".reverse(substr($str,pos($str)))."\n" if $debug;
+  if (substr($result,0,1) eq '/') {
+    if ($str =~ /\G['"]/gsco) {
+      print STDERR "Error 1: unballanced '$1'\n";
+      return undef;
+    } elsif ($str =~ /\G(?:\s+['"]|\(|\[|${OPER})/gsco) {
+      return ($result,$localmatch);
+    }
+    return ($result,$localmatch); # uncertain!!!
+  } else {
+    return ($result,$localmatch) if ($str=~/\G\s+(?=${OPER})/gsco);
+  }
+
+ STEP4:
+  print "STEP4: $result\n" if $debug;
+  print "STEP4-STR: ".reverse(substr($str,pos($str)))."\n" if $debug;
+  my @ballance;
+  do {
+    $str =~ m/\G([^]["'()]+)/gsco; # skip normal characters
+    print "STEP4-MATCH '".reverse($1)."'\n" if $debug;
+    return ($result,$localmatch) unless $str =~ m/\G(.)/gsco;
+    print "STEP4-BALLANCED '$1'\n" if $debug;
+    if (@ballance and $1 eq $ballance[$#ballance]) {
+      pop @ballance;
+    } elsif ($1 eq ')') {
+      push @ballance, '(';
+    } elsif ($1 eq ']') {
+      push @ballance, '[';
+    } elsif ($1 eq '"') {
+      push @ballance, '"';
+    } elsif ($1 eq "'") {
+      push @ballance, "'";
+    } elsif (not(@ballance) and $1 eq '[') {
+      print "STEP4-PRED2STEP '$1'\n" if $debug;
+      $result='/'.$result;
+      goto STEP2;
+    }
+  } while (@ballance);
+  goto STEP4;
+}
+
+sub xpath_complete {
+  my ($line, $word,$pos)=@_;
+  my $str=XML::XSH::Functions::toUTF8($XML::XSH::Functions::QUERY_ENCODING,
+				      substr($line,0,$pos).$word);
+
+  my ($xp,$local) = xpath_complete_str($str);
+#  __debug("COMPLETING $_[0] local $local as $xp\n");
+  return () if $xp eq "";
+  $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):(?!:))?((?:.|\n)*)$/;
+#  __debug("ID:$1 XP:$2\n");
+  my ($id,$query,$doc)=XML::XSH::Functions::_xpath([$1,$2]);
+
+  return () unless (ref($doc));
+  my $ql= eval { XML::XSH::Functions::find_nodes([$id,$query]) };
+  return () if $@;
+  my %names;
+  @names{ map { 
+    XML::XSH::Functions::fromUTF8($XML::XSH::Functions::QUERY_ENCODING,
+	     substr(substr($str,0,
+			   length($str)
+			   -length($local)).
+		    $_->localname(),$pos))
+  } @$ql}=();
+  if ((keys %names)==0) {
+#    print "completing $word as an axis\n";
+    # complete XML axis
+    my @completions;
+    foreach my $axis (qw(following preceding following-or-self preceding-or-self
+                         parent ancestor ancestor-or-self descendant self
+                         descendant-or-self child attribute namespace)) {
+      my ($pre,$axpart)=($word =~ /(^|[^[:alnum:]])([_[:alpha:]][-[:alnum:]_.:]*)/);
+      if ($axis =~ /^${axpart}/) {
+	push @completions, "${pre}${axis}::";
+      }
+    }
+    return @completions;
+  } else {
+    return sort { $a cmp $b } keys %names;
+  }
 }
 
 1;
