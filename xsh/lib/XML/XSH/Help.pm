@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Thu Aug  7 17:11:07 2003
+# Fri Aug  8 12:57:31 2003
 
 package XML::XSH::Help;
 use strict;
@@ -25,9 +25,10 @@ General notes:
   Brackets may be used to join more shell commands (may depend on which
   shell is used).
 
-Example: Count any attributes that contain string foo in its name or value.
+Example: Count attributes of words containing string foo in its name or
+  value.
 
-  xsh> ls //words/attribute() | grep foo | wc
+  xsh> ls //words/@* | grep foo | wc
 
   In order to store a command's output in a string variable, the pipeline
   redirection must take the form `xsh-command |> $variable' where
@@ -269,10 +270,12 @@ XPath argument type
 
 description:
 	     XSH supports arbitrary XPath expression as defined in W3C
-	     recommendation at http://www.w3.org/TR/xpath. In XSH, XPath
-	     expressoin may be optionally preceded with a document
-	     identifier followed by colon (<id>:xpath). If no document
-	     identifier is given, the current document is used.
+	     recommendation at http://www.w3.org/TR/xpath. (Nice
+	     interactive XPath tutorials and references can be found at
+	     http://www.zvon.org.) In XSH, XPath expressoin may be
+	     optionally preceded with a document identifier followed by
+	     colon (<id>:xpath). If no document identifier is given, the
+	     current document is used.
 
 	     As an extension, the following XPath extension functions are
 	     defined in the XSH namespace:
