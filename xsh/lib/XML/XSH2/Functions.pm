@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.1 2004-12-02 19:26:36 pajas Exp $
+# $Id: Functions.pm,v 2.2 2004-12-04 10:26:15 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -35,8 +35,8 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 	  /;
 
 BEGIN {
-  $VERSION='2.0.0';
-  $REVISION=q($Revision: 2.1 $);
+  $VERSION='2.0.1';
+  $REVISION=q($Revision: 2.2 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -146,6 +146,18 @@ sub __debug {
 
 sub __bug {
   _err("BUG: ",@_);
+}
+
+sub _tilde_expand {
+  my ($filename)=@_;
+  $filename =~ s{ ^ ~ ( [^/]* ) }
+    { $1
+	? (getpwnam($1))[7]
+	  : ( $ENV{HOME} || $ENV{LOGDIR}
+		|| (getpwuid($>))[7]
+	       )
+	}ex;
+  return $filename;
 }
 
 sub _ev_opts {
@@ -2000,6 +2012,7 @@ sub index_doc {
 sub open_doc {
   my ($opts,$file)=@_;
   $opts = _ev_opts($opts);
+  $opts->{file} = _tilde_expand($opts->{file}) if exists($opts->{file});
   if (exists($opts->{file})+exists($opts->{pipe})+
       exists($opts->{string})>1) {
     die "'save' may have only one output flag: --file | ".
@@ -2035,7 +2048,7 @@ sub open_doc {
   local $PARSER_EXPANDS_XINCLUDE = 0 if $opts->{'no-xinclude'};
 
   my ($source) = grep exists($opts->{$_}),qw(file pipe string);
-  my $file = _ev_string($file);
+  my $file = _tilde_expand(_ev_string($file));
   $file=~s{^(\~[^\/]*)}{(glob($1))[0]}eg;
   print STDERR "open [$file]\n" if "$DEBUG";
   if ($file eq "") {
@@ -2218,6 +2231,7 @@ sub save_doc {
   unless ($doc) {
     die "No document to save\n";
   }
+  $opts->{file} = _tilde_expand($opts->{file}) if exists($opts->{file});
   if (exists($opts->{file})+exists($opts->{pipe})+
       exists($opts->{print})+exists($opts->{string})>1) {
     die "'save' may have only one output flag: --file | ".
@@ -3785,6 +3799,7 @@ sub validate_doc {
   if (exists($opts->{public}) ne "" and not $opts->{dtd}) {
     die "--public ID can only be used for DTD validation (--dtd)\n";
   }
+  $opts->{file} = _tilde_expand($opts->{file}) if exists($opts->{file});
   my $ret = 0;
   if ($doc->can('is_valid')) {
     if (!$opts->{dtd} or exists($opts->{file}) or exists($opts->{string}) or
@@ -4062,7 +4077,7 @@ sub print_eval {
 
 # change current directory
 sub cd {
-  my $dir = _ev_literal($_[0]);
+  my $dir = _tilde_expand(_ev_string($_[0]));
   unless (chdir $dir) {
     print STDERR "Can't change directory to $dir\n";
     return 0;
@@ -4393,7 +4408,7 @@ sub xslt_compile {
     $styledoc = _ev_doc($stylefile);
     die "No XSL document: $stylefile\n" unless $styledoc;
   } else {
-    $stylefile = _ev_string($stylefile);
+    $stylefile = _tilde_expand(_ev_string($stylefile));
     if ((-f $stylefile) or ($stylefile=~/^[a-z]+:/)) {
       $styledoc = XML::LibXML->new()->parse_file($stylefile);
     } else {
@@ -4614,7 +4629,7 @@ sub load {
 # call XSH to evaluate commands from a given file
 sub include {
   my ($opts,$f,$conditionally)=@_;
-  $f=_ev_string($f);
+  $f=_tilde_expand(_ev_string($f));
   $opts=_ev_opts($opts);
   if (!$conditionally || !$_includes{$f}) {
     $_includes{$f}=1;
@@ -4654,7 +4669,7 @@ sub help {
 
 # load catalog file to the parser
 sub load_catalog {
-  $_xml_module->load_catalog($_parser,_ev_string($_[0]));
+  $_xml_module->load_catalog($_parser,_tilde_expand(_ev_string($_[0])));
   return 1;
 }
 
@@ -4710,6 +4725,8 @@ sub stream_process {
 
   my $out;
   my $termout;
+  $opts->{'input-file'} = _tilde_expand($opts->{'input-file'}) if exists($opts->{'input-file'});
+  $opts->{'output-file'} = _tilde_expand($opts->{'output-file'}) if exists($opts->{'output-file'});
   my $output = $opts->{'output-string'} || $opts->{'output-pipe'} ||
                $opts->{'output-file'} || '-';
   my $input = $opts->{'input-string'} || $opts->{'input-pipe'} ||
