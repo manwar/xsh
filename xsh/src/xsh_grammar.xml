@@ -531,16 +531,22 @@
 	  <literal>xsh</literal> is defined in the
 	  <literal>XML::XSH::Map</literal> namespace.  All parameters
 	  passed to this function are interpreted as XSH commands. To
-	  simplify evaluation of XPath expressions, another two
-	  functions called <literal>count</literal> and
-	  <literal>xpath</literal> are defined.  The first one returns
-	  the same value as would be printed by <xref
+	  simplify evaluation of XPath expressions, another three
+	  functions:  The first one, named <literal>count</literal>,
+	  returns the same value as would be printed by <xref
 	  linkend="count_command"/> command in XSH on the same XPath
-	  expression. The second one returns the result of the XPath
-	  search as a XML string which is equivallent to the output of
-	  a <xref linkend="list_command"/> on the same XPath
-	  expression (without indentation and without folding and any
-	  other limitation on the depth of the listing).
+	  expression. The second function, named <literal>literal</literal>,
+	  returns the result of XPath evaluation as if the whole
+	  expression was wrapped with the XPath
+	  <literal>string()</literal> function. In other words,
+	  <literal>literal('doc:expression')</literal> returns the same
+	  value as <literal>count('doc:string(expression)')</literal>.
+	  The third function, named <literal>xpath</literal>, returns
+	  the result of the XPath search as a XML string which is
+	  equivallent to the output of a <xref
+	  linkend="list_command"/> on the same XPath expression
+	  (without indentation and without folding and any other
+	  limitation on the depth of the listing).
 	</para>
 	<para>
 	  In the following examples we use Perl to populate the
@@ -809,7 +815,7 @@ sub new {
 	</action>
       </production>
       <production>
-	<directive type="error">Syntax error near: "}.substr($text,0,40).qq{ ..."</directive>
+	<directive type="error">Parse error near: "}.substr($text,0,40).qq{ ..."</directive>
       </production>
     </rule>
 
@@ -911,7 +917,13 @@ sub new {
     </rule>
     <rule id="exp_inline_count">
       <production>
-	<regexp>\${{([^}]|}[^}])*}}</regexp>
+	<regexp>\${\((.+?)\)}</regexp>
+      </production>
+      <production>
+	<regexp>\${{{(.+?)}}}</regexp>
+      </production>
+      <production>
+	<regexp>\${{([^{].*?)}}</regexp>
       </production>
     </rule>
     <rule id="expression" type="argtype">
@@ -930,23 +942,61 @@ sub new {
 	    whitespace or semicolon, single quote or double quote
 	    characters or quoted characters of any kind. By quoting we
 	    mean preceding a single character with a backslash or
-	    enclosing a part of the string into single quotes '...'  or
-	    double quotes &quot;...&quot;. Quoting characters are removed from the
-	    string so they must be quoted themselves if they are a part of
-	    the expression: \\, \' or " ' ", \" or ' " '.
+	    enclosing a part of the string into single quotes '...'
+	    or double quotes &quot;...&quot;. Quoting characters are
+	    removed from the string so they must be quoted themselves
+	    if they are a part of the expression: \\, \' or " ' ", \"
+	    or ' " '.  Unquoted (sub)expressons or (sub)expressions
+	    quoted with double-quotes are subject to variable, Perl,
+	    and XPath expansions.
 	  </para>
 	  <para>
-	    Variable interpolation is performed on expressions. That
-	    means that any substrings of the forms $id or ${id} where $ is
-	    unquoted and id is an identifier are substituted with the
-	    value of the variable named $id.
+	    Variable expansion replaces substrings of the form $id or
+	    ${id} with the value of the variable named $id, unless
+	    the '$' sign is quoted.
 	  </para>
 	  <para>
-	    XPath interpolation is performed on expressions. That means
-	    that any substring enclosed in between ${{ and }} is evaluated
-	    in the same way as in the count command and the result of the
-	    evaluation is substituted in its place.
+	    Perl expansion evaluates every substring enclosed in between
+	    <literal>${{{</literal> and <literal>}}}</literal>
+	    as a Perl expresson (in very much the same way as the <xref
+	    linkend="eval_command"/> command) and replaces the whole thing
+	    with the resulting value.
 	  </para>
+	  <para>
+	    XPath interpolation evaluates every substring enclosed in
+	    between     
+	    <literal>${{</literal> and <literal>}}</literal>
+	    as an XPath expression (in very much the same way as the
+	    <xref linkend="count_command"/> command) and substitutes
+	    the whole thing with the resul.
+	  </para>
+	  <para>
+	    For convenience, another kind XPath interpolation is
+	    performed on expressions. It replaces any substring
+	    occuring between <literal>${(</literal> and
+	    <literal>)}</literal> with a <emphasis>literal</emphasis>
+	    result of XPath evaluation of the string. This means, that
+	    if the evaluation results in a node-list, the textual
+	    content of its first node is substituted rather than the
+	    number of nodes in the node-list (as with <literal>${{
+	    ... }}</literal>).
+	  </para>
+	  <example>
+	    <code>echo foo "bar"                        # prints: foo bar</code>
+	    <code>echo foo"bar"                         # prints: foobar</code>
+	    <code>echo foo'"bar"'                       # prints: foo"bar"</code>
+	    <code>echo foo"'b\\a\"r'"                   # prints: foo'b\a"r'</code>
+	    <code>$a="bar"</code>
+	    <code>echo foo$a                            # prints: foobar</code>
+	    <code>echo foo\$a                           # prints: foo$a</code>
+	    <code>echo '$a'                             # prints: '$a'</code>
+	    <code>echo "'$a'"                           # prints: 'bar'</code>
+	    <code>echo "${{//middle-earth/creatures}}"  # prints: 10</code>
+	    <code>echo '${{//middle-earth/creatures}}'  # prints: ${{//middle-earth/creatures}}</code>
+	    <code>echo ${{//creature[1]/@name}}         # !!! prints: 1</code>
+	    <code>echo ${(//creature[1]/@name)}         # prints: Bilbo</code>
+	    <code>echo ${{{ join(",",split(//,$a)) }}}  # prints: b,a,r</code>
+	  </example>
 	</description>
       </documentation>
     </rule>
@@ -1275,7 +1325,7 @@ sub new {
 	<action>[[\&amp;XML::XSH::Functions::sh,$item[3]]]</action>
       </production>
       <production>
-	<directive type="error-if-committed">Syntax error near: "! }.substr(0,40,$text).qq{ ..."</directive>
+	<directive type="error-if-committed">Parse error near: "! }.substr(0,40,$text).qq{ ..."</directive>
 	<directive type="reject"/>
       </production>
     </rule>
@@ -1300,7 +1350,7 @@ sub new {
       </production>
       <production>
 	<directive type="uncommit"/>
-	<directive type="error">Syntax error near keyword elsif: "}.substr(0,40,$text).qq{ ..."</directive>
+	<directive type="error">Parse error near keyword elsif: "}.substr(0,40,$text).qq{ ..."</directive>
       </production>
     </rule>
     <rule id="else_block" name="else">
@@ -1317,7 +1367,7 @@ sub new {
       </production>
       <production>
 	<directive type="uncommit"/>
-	<directive type="error">Syntax error near keyword else: "}.substr(0,40,$text).qq{ ..."</directive>
+	<directive type="error">Parse error near keyword else: "}.substr(0,40,$text).qq{ ..."</directive>
       </production>
     </rule>
     <!-- if -->
@@ -1539,7 +1589,7 @@ sub new {
 	</action>
       </production>
       <production>
-	<directive type="error-if-committed">Syntax error near: "}.substr(0,40,$text).qq{ ..."</directive>
+	<directive type="error-if-committed">Parse error near: "}.substr(0,40,$text).qq{ ..."</directive>
 	<directive type="reject"/>
       </production>
       <documentation sections="flow">
@@ -2490,7 +2540,6 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<usage>xmove <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/></usage>
 	<shortdesc>move nodes (in the all-to-every mode)</shortdesc>
 	<description>
-	  <para>
 	  <para>Like <xref linkend="xcopy_command"/>, except that
 	    <literal>xmove</literal> <emphasis>removes</emphasis> the
 	    source nodes after a succesfull copy.  Remember that the
@@ -2771,9 +2820,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  </para>
 	  <example>
 	    <title>Sort creatures by name</title>
-	    <code>xsh&gt; <userinput>%c=//creatures</userinput>
+	    <code>xsh&gt; <userinput>%c=/middle-earth[1]/creatures</userinput>
 	      xsh&gt; <userinput>sort { $a=string(@name) }{ $b=string(@name) }{ $a cmp $b } %c</userinput>
-	      xsh&gt; <userinput>ls %c/@name</userinput></code>
+	      xsh&gt; <userinput>xmove %c into /middle-earth[1]</userinput># replaces the creatures</code>
 	  </example>
 	</description>
       </documentation>
@@ -3411,7 +3460,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  <para>
 	    Turn on validation during the parse process if the
 	    <xref linkend="expression"/> is non-zero or off otherwise.
-	    Defaults to on.
+	    In XSH version 1.6 and later, defaults to off.
 	  </para>
 	</description>
       </documentation>
