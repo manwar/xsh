@@ -7,6 +7,7 @@ quiet;
 load-ext-dtd 1;
 validation 1;
 parser-completes-attributes 1;
+xpath-extensions;
 
 $x := open $xsh_grammar_file;
 
@@ -138,7 +139,7 @@ map { $_='orderedlist' } $d//enumerate;
 
 foreach $d/descendant::typeref {
   my $sl := insert element "simplelist type='inline'" before .;
-  foreach split("\\s",@types) {
+  foreach xsh:split("\\s",@types) {
     foreach ($x/recdescent-xml/rules/rule[@type=current()]) {
       insert chunk
 	(concat("<member>",if(@id,concat("<xref linkend='",@id,"'/>"),@name),"</member>")) into $sl;
