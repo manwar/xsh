@@ -222,7 +222,7 @@
 
 	  # comment out the first chapter
 	  <userinput>ls //chapter[1] |&gt; $chapter_xml;</userinput>
-	  <userinput>add comment $chapter_xml replace //chapter[1];</userinput>
+	  <userinput>insert comment $chapter_xml replace //chapter[1];</userinput>
 	  <userinput>ls / 0;</userinput>
 	  # OUTPUT:
 	  &lt;?xml version=&quot;1.0&quot;?&gt;
@@ -239,7 +239,7 @@
 
 	  # un-comment the chapter
 	  <userinput>$comment = string(//comment()[1]);</userinput>
-	  <userinput>add chunk $comment replace //comment()[1];</userinput>
+	  <userinput>insert chunk $comment replace //comment()[1];</userinput>
 	  <userinput>ls / 0;</userinput>
 	  # OUTPUT:
 	  &lt;?xml version=&quot;1.0&quot;?&gt;
@@ -2502,9 +2502,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
     </rule>
     <rule id="store_or_append_nl">
       <production>
-	<regexp>store|append</regexp>
-	<ruleref ref="nodelist_variable"/>
-	<action>[$item[1],$item[2]]</action>
+	<regexp>result|append-result</regexp>
+	<ruleref ref="nodelistvariable"/>
+	<action>[$item[1] eq 'result' ? 0 : 1,$item[2]]</action>
       </production>
     </rule>
     <rule id="copy_command" type="command" name="copy" inline="yes">
@@ -2517,58 +2517,114 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<ruleref ref="loc"/>
 	<ruleref ref="xpath"/>
-	<ruleref ref="sore_or_append_nl" rep="?"/>
-	<action>[\&amp;XML::XSH::Functions::copy,@item[3,5,4,6]]</action>
+	<ruleref ref="store_or_append_nl" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::copy,@item[3,5,4],0,@{$item[6]}]</action>
       </production>
       <documentation sections="Manipulation">
-	<usage>copy <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/></usage>
+	<usage>copy <xref linkend="xpath"/> <xref linkend="loc"/> <xref
+	    linkend="xpath"/> [(result|append-result) %<xref linkend="ID"/>]</usage>
 	<shortdesc>copy nodes (in the one-to-one mode)</shortdesc>
 	<description>
 	  <para>
-	    Copies nodes matching the first <xref linkend="xpath"/> to
-	    the destinations determined by the <xref linkend="loc"/> directive relative to the second <xref linkend="xpath"/>. If more than one node matches the first
-	    <xref linkend="xpath"/> than it is copied to the position
-	    relative to the corresponding node matched by the second
-	    <xref linkend="xpath"/> according to the order in which are
-	    nodes matched. Thus, the n'th node matching the first <xref linkend="xpath"/> is copied to the location relative to the
-	    n'th node matching the second <xref linkend="xpath"/>.
+	    Copies nodes matching the first <xref linkend="xpath" /> 
+	    (source nodes) to the destinations determined by the 
+	    <xref linkend="loc"/> directive
+	    applied to nodes matching the second <xref linkend="xpath"/>
+	    (target nodes). If more than one
+	    node matched source <xref linkend="xpath"/> than n'th source node
+	    is copied to the location relative to the n'th target node.
           </para>
-          <para>The
-	    possible values for <xref linkend="loc"/> are: after,
-	    before, into, replace and cause copying the source nodes
-	    after, before, into (as the last child-node).  the
-	    destination nodes. If replace <xref linkend="loc"/> is
-	    used, the source node is copied before the destination node
-	    and the destination node is removed.
+          <para>The possible values for <xref linkend="loc" /> are:
+	    <literal>after</literal>, <literal>before</literal>,
+	    <literal>into</literal>, <literal>replace</literal>,
+	    <literal>append</literal> and <literal>prepend</literal>. The first
+	    three location directives cause making a copy of the source nodes
+	    after, before, and within (as the last child-node) the target
+	    nodes, respectively. 
+	    If <literal>replace</literal> location directive is used,
+            source node are copied before the respective
+	    target nodes and target nodes are removed.
+	    The <literal>append</literal> and <literal>prepend</literal>
+	    location directives allow,
+	    depending on the destination node type,
+	    either inserting copies of the
+	    source nodes as the first or last child nodes of
+	    a destination element or appending/prepending
+	    destination node data in case of non-element destination nodes.
+	    See <xref linkend="loc"/> argument type
+	    for more detail.
 	  </para>
 	  <para>
-	    Some kind of type conversion is used when the types of the
-	    source and destination nodes are not equal.  Thus, text,
-	    cdata, comment or processing instruction node data prepend,
-	    append or replace value of a destination attribute when
-	    copied before,after/into or instead (replace) an attribute,
-	    and vice versa.
+	    The user may collect the copies
+	    of the source nodes created by the <literal>copy</literal>
+	    command by storing them to a given node-list variable
+	    <literal>%<xref linkend="ID"/></literal>
+	    following either <literal>result</literal>
+	    or <literal>append-result</literal> keyword.
+	    In case of <literal>result</literal>, the node-list variable is 
+	    cleared fist, so that it contains only nodes
+	    resulting from the copy operation. In case of 
+	    <literal>append-result</literal>, 
+	    the original content of the node-list variable
+	    is preserved and the resulting nodes are appended to it.
 	  </para>
-	  <para>
-	    Attributes may be copied after, before or into some other
-	    attribute to append, prepend or replace the destination
-	    attribute value. They may also replace the destination
-	    attribute completely (both its name and value).
-	    To copy an attribute from one element to another,
-	    simply copy the attribute node into the destination element.
+	  <para>Although we used the word "copy", nodes resulting from copying
+	    the source nodes may pass through certain type conversion before
+	    they are inserted at the appointed destinations. This, however,
+	    only happens in cases where the types of the source and target
+	    nodes are not straightforwardly compatible with the location
+	    directive. See <xref linkend="loc"/> argument
+	    type for more detail.
 	  </para>
-	  <para>
-	    Elements may be copied into other elements (which results in
-	    appending the child-list of the destination element), or
-	    before, after or instead (replace) other nodes of any type
-	    except attributes.
-	  </para>
+<!-- 	  <para> -->
+<!-- 	    Thus, copying a text, cdata, comment or -->
+<!-- 	    processing-instruction node -->
+<!-- 	    before, after, into or in place of -->
+<!-- 	    (using <literal>replace</literal> directive) -->
+<!-- 	    an attribute node results in	    -->
+<!-- 	    prepending (<literal>before</literal> or -->
+<!-- 	    appending (<literal>after</literal> or <literal>into</literal>)  -->
+<!-- 	    the source node data to the target attribute's value -->
+<!-- 	    or in replacing the entire target attribute's value -->
+<!-- 	    (in case of <literal>replace</literal> directive). -->
+<!-- 	    Same type conversion applies vice versa.</para> -->
+<!-- 	  <para> -->
+<!-- 	    Attributes may be copied <literal>after</literal>,  -->
+<!-- 	    <literal>before</literal> or <literal>into</literal> -->
+<!-- 	    other attributes, in order to append, prepend or replace the target -->
+<!-- 	    attribute's value with the source one. -->
+<!-- 	    Replacing attribute nodes with attribute nodes -->
+<!-- 	    (using <literal>replace</literal> as <xref linkend="loc" />) -->
+<!-- 	    replaces the target attribute completely (both name and value). -->
+<!-- 	    Attributes may further be copied from one element to another, -->
+<!-- 	    by simply copying the attribute node <literal>into</literal>  -->
+<!-- 	    the destination element. -->
+<!-- 	  </para> -->
+<!-- 	  <para> -->
+<!-- 	    Non-attribute nodes may be copied <literal>into</literal> -->
+<!-- 	    elements (which results in -->
+<!-- 	    appending a copy of the source node as  -->
+<!-- 	    the child-list of the destination element), or -->
+<!-- 	    <literal>before</literal>, <literal>after</literal> or  -->
+<!-- 	    in place of (using <literal>replace</literal>)  -->
+<!-- 	    other non-attribute nodes. -->
+<!-- 	  </para> -->
+	  <para>Note that XSH refuses creating multiple top-level (document)
+	    elements using <literal>copy</literal>, <xref
+	      linkend="move_command"/> and smilar commands.</para>
 	  <example>
-	    <title>Replace living-thing elements in the document b with
-	      the coresponding creature elements of the document a.</title>
+	    <title>Replace living-thing elements in the document b with copies
+	      of the coresponding creature elements from the document a.</title>
 	    <code>xsh&gt; <userinput>copy a://creature replace b://living-thing</userinput></code>             
 	  </example>
 	</description>
+	<see-also>
+	  <ruleref ref="xcopy_command"/>
+	  <ruleref ref="move_command"/>
+	  <ruleref ref="xmove_command"/>
+	  <ruleref ref="insert_command"/>
+	  <ruleref ref="xinsert_command"/>
+	</see-also>
       </documentation>
     </rule>
     <rule id="xcopy_command" type="command" name="xcopy" inline="yes">
@@ -2581,19 +2637,22 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<ruleref ref="loc"/>
 	<ruleref ref="xpath"/>
-	<action>[\&amp;XML::XSH::Functions::copy,@item[3,5,4],1]</action>
+	<ruleref ref="store_or_append_nl" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::copy,@item[3,5,4],1,@{$item[6]}]</action>
       </production>
       <documentation sections="Manipulation">
-	<usage>xcopy <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/></usage>
+	<usage>xcopy <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/> [(result|append-result) %<xref linkend="ID"/>]</usage>
 	<shortdesc>copy nodes (in the all-to-every mode)</shortdesc>
 	<description>
 	  <para>
-	    xcopy is similar to <xref linkend="copy_command"/>, but copies *all* nodes matching
-	    the first <xref linkend="xpath"/> to *all* destinations determined by the
-	    <xref linkend="loc"/> directive relative to the
-	    second <xref linkend="xpath"/>. See <xref
-	    linkend="copy_command"/>
-	    for detailed description of <literal>xcopy</literal> arguments.
+	    xcopy is similar to <xref linkend="copy_command" />, but copies
+	    <emphasis>all</emphasis> nodes matching the first <xref
+	      linkend="xpath"/> to <emphasis>all</emphasis>
+	    destinations determined by the
+	    <xref linkend="loc"/> directive relative to the second <xref
+	      linkend="xpath"/>. See <xref
+	    linkend="copy_command"/> for detailed description of
+	    <literal>xcopy</literal> arguments.
 	  </para>
 	  <example>
 	    <title>Copy all middle-earth creatures within the document a
@@ -2601,6 +2660,13 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    <code>xsh&gt; <userinput>xcopy a:/middle-earth/creature into b://world</userinput></code>
 	  </example>
 	</description>
+	<see-also>
+	  <ruleref ref="copy_command"/>
+	  <ruleref ref="move_command"/>
+	  <ruleref ref="xmove_command"/>
+	  <ruleref ref="insert_command"/>
+	  <ruleref ref="xinsert_command"/>
+	</see-also>
       </documentation>
     </rule>
     <rule id="cd_command" type="command" name="lcd" inline="yes">
@@ -2638,17 +2704,19 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="namespace" rep="?"/>
 	<ruleref ref="loc"/>
 	<ruleref ref="xpath"/>
-	<action>[\&amp;XML::XSH::Functions::insert,@item[3,4,7,6],$item[5][0],0]</action>
+	<ruleref ref="store_or_append_nl" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::insert,@item[3,4,7,6],$item[5][0],0,@{$item[8]}]</action>
       </production>
       <documentation sections="Manipulation">
 	<usage>insert <xref linkend="nodetype"/> <xref
 	linkend="expression"/> [namespace <xref
-	linkend="expression"/>] <xref linkend="loc"/> <xref linkend="xpath"/>
+	linkend="expression"/>] <xref linkend="loc"/> <xref linkend="xpath"/> [(result|append-result) %<xref linkend="ID"/>]
 	</usage>
 	<shortdesc>create a node in on a given target location</shortdesc>
 	<description>
 	  <para>
-	    Works just like xadd, except that the new node is attached
+	    Works just like <xref linkend="xinsert_command"/>, 
+	    except that the new node is attached
 	    only the first node matched.
 	  </para>
 	</description>
@@ -2671,12 +2739,13 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="namespace" rep="?"/>
 	<ruleref ref="loc"/>
 	<ruleref ref="xpath"/>
-	<action>[\&amp;XML::XSH::Functions::insert,@item[3,4,7,6],$item[5][0],1]</action>
+	<ruleref ref="store_or_append_nl" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::insert,@item[3,4,7,6],$item[5][0],1,@{$item[8]}]</action>
       </production>
       <documentation sections="Manipulation">
 	<usage>xinsert <xref linkend="nodetype"/> <xref
 	linkend="expression"/> [namespace <xref
-	linkend="expression"/>] <xref linkend="loc"/> <xref linkend="xpath"/>
+	linkend="expression"/>] <xref linkend="loc"/> <xref linkend="xpath"/> [(result|append-result) %<xref linkend="ID"/>]
 	</usage>
 	<shortdesc>create nodes on all target locations</shortdesc>
 	<description>
@@ -2713,19 +2782,21 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    of the <xref linkend="loc"/> argument type for more detail.
 	  </para>
 	  <para>
-	    The namespace <xref linkend="expression"/> is only valid for
-	    elements and attributes and must evaluate to the namespace
-	    URI. In that case, the element or attribute name must have a
-	    prefix. The created node is associated with a given
-	    namespace.
+	    The namespace <xref linkend="expression"/> may be
+	    used to associate inserted nodes with a namespace.
+	    This part of the command is optional and only makes
+	    sense for elements and attributes.
+	    The expression itself is supposed to evaluate to a namespace
+	    URI and the name of the element or attribute being inserted 
+	    name <emphasis>must have a prefix</emphasis>.
 	  </para>
 	  <example>
 	    <title>Append a new Hobbit element to the list of
 	      middle-earth creatures and name him Bilbo.</title>
 	    <code>
-	      xsh&gt; <userinput>xadd element &quot;&lt;creature race='hobbit' manner='good'&gt;&quot; \
+	      xsh&gt; <userinput>xinsert element &quot;&lt;creature race='hobbit' manner='good'&gt;&quot; \
 		<tab/>into /middle-earth/creatures</userinput>
-	      xsh&gt; <userinput>xadd attribute &quot;name='Bilbo'&quot; \
+	      xsh&gt; <userinput>xinsert attribute &quot;name='Bilbo'&quot; \
 		<tab/>into /middle-earth/creatures/creature[@race='hobbit'][last()]</userinput>
 	    </code>
 	  </example>
@@ -2872,10 +2943,12 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<ruleref ref="loc"/>
 	<ruleref ref="xpath"/>
-	<action>[\&amp;XML::XSH::Functions::move,@item[3,5,4]]</action>
+	<ruleref ref="store_or_append_nl" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::move,@item[3,5,4],0,@{$item[6]}]</action>
       </production>
       <documentation sections="Manipulation">
-	<usage>move <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/></usage>
+	<usage>move <xref linkend="xpath"/> <xref linkend="loc"/> <xref
+	    linkend="xpath"/> [(result|append-result) %<xref linkend="ID"/>]</usage>
 	<shortdesc>move nodes (in the one-to-one mode)</shortdesc>
 	<description>
 	  <para><literal>move</literal> command acts exactly like
@@ -2895,8 +2968,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  </para>
 	</description>
 	<see-also>
-	  <ruleref ref="copy_command"/>
 	  <ruleref ref="xmove_command"/>
+	  <ruleref ref="copy_command"/>
+	  <ruleref ref="xcopy_command"/>
 	  <ruleref ref="insert_command"/>
 	  <ruleref ref="xinsert_command"/>
 	</see-also>
@@ -2912,10 +2986,11 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<ruleref ref="loc"/>
 	<ruleref ref="xpath"/>
-	<action>[\&amp;XML::XSH::Functions::move,@item[3,5,4],1]</action>
+	<ruleref ref="store_or_append_nl" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::move,@item[3,5,4],1,@{$item[6]}]</action>
       </production>
       <documentation sections="Manipulation">
-	<usage>xmove <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/></usage>
+	<usage>xmove <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/> [(result|append-result) %<xref linkend="ID"/>]</usage>
 	<shortdesc>move nodes (in the all-to-every mode)</shortdesc>
 	<description>
 	  <para>Like <xref linkend="xcopy_command"/>, except that
@@ -2952,8 +3027,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  </example>
 	</description>
 	<see-also>
-	  <ruleref ref="xcopy_command"/>
 	  <ruleref ref="move_command"/>
+	  <ruleref ref="copy_command"/>
+	  <ruleref ref="xcopy_command"/>
 	  <ruleref ref="insert_command"/>
 	  <ruleref ref="xinsert_command"/>
 	</see-also>
