@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Wed May 22 16:30:46 2002
+# Thu May 30 14:22:18 2002
 
 
 package XML::XSH::Grammar;
@@ -35,6 +35,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | count_command
 	  | eval_command
 	  | saveas_command
+	  | savexinclude_command
 	  | savehtml_command
 	  | save_command
 	  | files_command
@@ -67,7 +68,9 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 
   option:
-	    quiet
+	    backups
+	  | nobackups
+	  | quiet
 	  | verbose
 	  | test_mode
 	  | run_mode
@@ -579,11 +582,19 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 
   saveas_command:
-	    /(saveas)\s/ expression filename /encoding\s/ expression
+	    /(saveas|save_as)\s/ expression filename /encoding\s/ expression
 		{ [\&XML::XSH::Functions::save_as,@item[2,3,5]] }
   	
-	  | /(saveas)\s/ expression filename
+	  | /(saveas|save_as)\s/ expression filename
 		{ [\&XML::XSH::Functions::save_as,@item[2,3]] }
+  	
+
+  savexinclude_command:
+	    /(save_xinclude)\s/ expression /encoding\s/ expression
+		{ [\&XML::XSH::Functions::save_xinclude,@item[2,4]] }
+  	
+	  | /(save_xinclude)\s/ expression
+		{ [\&XML::XSH::Functions::save_xinclude,$item[2]] }
   	
 
   list_dtd_command:
@@ -746,6 +757,16 @@ $grammar=<<'_EO_GRAMMAR_';
   quiet:
 	    /(quiet)/
 		{ [\&XML::XSH::Functions::set_opt_q,1] }
+  	
+
+  backups:
+	    /(backups)/
+		{ [\&XML::XSH::Functions::set_backups,1] }
+  	
+
+  nobackups:
+	    /(backups)/
+		{ [\&XML::XSH::Functions::set_backups,0] }
   	
 
 

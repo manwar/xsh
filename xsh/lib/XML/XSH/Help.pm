@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Wed May 22 16:30:46 2002
+# Thu May 30 14:22:18 2002
 
 package XML::XSH::Help;
 use strict;
@@ -45,16 +45,17 @@ END
 $HELP{'command'}=[<<'END'];
 List of XSH commands
 
-description: assign, call, cd, clone, close, complete_attributes, copy, count, create,
-	     debug, def, defs, dtd, encoding, eval, exec, exit, files,
-	     foreach, help, if, include, indent, insert, keep_blanks, lcd,
-	     list, load_ext_dtd, locate, map, move, nodebug, open,
-	     open_HTML, open_PIPE, parser_expands_entities,
+description: assign, backups, backups, call, cd, clone, close, complete_attributes,
+	     copy, count, create, debug, def, defs, dtd, encoding, eval,
+	     exec, exit, files, foreach, help, if, include, indent, insert,
+	     keep_blanks, lcd, list, load_ext_dtd, locate, map, move,
+	     nodebug, open, open_HTML, open_PIPE, parser_expands_entities,
 	     parser_expands_xinclude, pedantic_parser, print,
 	     print_enc_command, process_xinclude, pwd, query-encoding,
-	     quiet, remove, run-mode, save, save_HTML, saveas, select,
-	     test-mode, unless, valid, validate, validation, variables,
-	     verbose, version, while, xcopy, xinsert, xmove, xslt, xupdate
+	     quiet, remove, run-mode, save, save_HTML, save_xinclude,
+	     saveas, select, test-mode, unless, valid, validate,
+	     validation, variables, verbose, version, while, xcopy,
+	     xinsert, xmove, xslt, xupdate
 
 END
 
@@ -796,7 +797,7 @@ $HELP{'new'}=$HELP{create};
 $HELP{'save'}=[<<'END'];
 usage:       save <id> [encoding <enc-string>]
 
-description: Save the document identified by <id> to its original XML file, possibly
+description: Save the document identified by <id> to its original XML file, optionally
 	     converting it from its original encoding to <enc-string>.
 
 END
@@ -806,7 +807,7 @@ $HELP{'save_HTML'}=[<<'END'];
 usage:       save_HTML <id> <filename> [encoding <enc-string>]
 
 description: Save the document identified by <id> as a HTML file named <filename>,
-	     possibly converting it from its original encoding to
+	     optionally converting it from its original encoding to
 	     <enc-string> Note, that this does just the character
 	     conversion, so you must specify the correct encoding in the
 	     META tag yourself.
@@ -817,9 +818,22 @@ END
 $HELP{'saveas'}=[<<'END'];
 usage:       saveas <id> <filename> [encoding <enc-string>]
 
+aliases:     save_as
+
 description: Save the document identified by <id> as a XML file named <filename>,
-	     possibly converting it from its original encoding to
+	     optionally converting it from its original encoding to
 	     <enc-string>.
+
+END
+
+$HELP{'save_as'}=$HELP{saveas};
+
+$HELP{'save_xinclude'}=[<<'END'];
+usage:       save_xinclude <id> [encoding <enc-string>]
+
+description: Save the document identified by <id> saving all expanded XInclude sections
+	     to the original files (optionally converting it from its
+	     original encoding to <enc-string>.
 
 END
 
@@ -1085,6 +1099,22 @@ $HELP{'quiet'}=[<<'END'];
 usage:       quiet
 
 description: Turn off verbose messages.
+
+END
+
+
+$HELP{'backups'}=[<<'END'];
+usage:       backups
+
+description: Enable creating backup files on save (default).
+
+END
+
+
+$HELP{'backups'}=[<<'END'];
+usage:       nobackups
+
+description: Disable creating backup files on save.
 
 END
 

@@ -6,3 +6,4 @@
 * 'locate' - allow use also nearest id() 
 * external xinclude save support
 * untag/split element
+* comment-out node (?? uncomment ??)

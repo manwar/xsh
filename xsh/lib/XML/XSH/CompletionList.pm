@@ -8,6 +8,8 @@ use vars qw(@XSH_COMMANDS);
 ?
 add
 assign
+backups
+backups
 call
 cd
 chdir
@@ -77,6 +79,8 @@ rm
 run-mode
 save
 save_HTML
+save_as
+save_xinclude
 saveas
 sed
 select
