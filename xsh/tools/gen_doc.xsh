@@ -27,6 +27,9 @@ create d <<EOF;
   <section id="type">
     <title>Type Reference</title>
   </section>
+  <section id="function">
+    <title>XPath Extension Function Reference</title>
+  </section>
 </article>
 EOF
 
@@ -38,15 +41,11 @@ foreach d:/article/section[@id='intro']/section {
   local $id=string(@id);
   local %rules=x:/recdescent-xml/rules/rule[documentation[id(@sections)[@id='$id']]];
   echo section: $id, rules: ${{%rules}};
-  local $a $c $t;
-  if %rules[@type='command'] { $c='Commands' } else { $c='' }
-  if %rules[@type='argtype'] { $a='Argument Types' } else { $a='' }
-  if ('$c' != '' and '$a' != '') { $t='$a and $c' } else { $t='$a$c' }
 
-  if ('$a$c' != '')
+  if %rules[@type='command' or @type='argtype' or @type='function']
     add chunk <<"EOF" append .;
 <section>
-  <title>Related $t</title>
+  <title>Related topics</title>
   <para>
     <variablelist/>
   </para>
@@ -66,7 +65,7 @@ EOF
   }
 }
 
-foreach { qw(command type) } {
+foreach { qw(command type function) } {
   print "FILLING: ${__}"; print "";
   local %sec=d:/article/section[@id='${__}'];
   if ('$__'='type') $__='argtype';
@@ -91,49 +90,47 @@ foreach { qw(command type) } {
 
     #USAGE
     if (./documentation/usage) {
-      add chunk "<simplesect><title>Usage</title></simplesect>" into %section;
-      foreach (./documentation/usage) {
-	add element para into %section/simplesect[last()];
-      }
-      copy ./documentation/usage into %section/simplesect[last()]/para;
-      map { $_='literal' } %section/simplesect[last()]/para/usage;
+      local %us;
+      add chunk "<simplesect><title>Usage</title><para></para></simplesect>"
+	into %section result %us;
+      copy ./documentation/usage into %us/para;
+      rename { $_='literal' } %us/para/usage;
     }
 
     #ALIASES
     if (./aliases/alias) {
-      add chunk <<CHUNK into %section;
+      local %us;
+      add chunk <<CHUNK into %section result %us;
  <simplesect>
    <title>Aliases</title>
    <para><literal> </literal></para>
  </simplesect>
 CHUNK
       foreach (./aliases/alias) {
-	copy ./@name 
-	  append %section/simplesect[last()]/para/literal/text()[last()];
+	copy ./@name append %us/para/literal/text()[last()];
 	if (following-sibling::alias) {
-	  add text ", "
-	    append %section/simplesect[last()]/para/literal/text()[last()];
+	  add text ", " append %us/para/literal/text()[last()];
 	}
       }
     }
 
     #DESCRIPTION
     if (./documentation/description) {
-      add chunk "<simplesect><title>Description</title></simplesect>" 
-	into %section;
-      xcopy ./documentation/description/node() 
-	into %section/simplesect[last()];
+      local %us;
+      add chunk "<simplesect><title>Description</title></simplesect>"
+	into %section result %us;
+      xcopy ./documentation/description/node() into %us;
     }
 
     #SEE ALSO
     if (./documentation/see-also/ruleref) {
-      add chunk "<simplesect><title>See Also</title><para/></simplesect>" into %section;
+      local %us;
+      add chunk "<simplesect><title>See Also</title><para/></simplesect>"
+	into %section result %us;
       foreach (./documentation/see-also/ruleref) {
 	add element "<xref linkend='${{string(@ref)}}'/>"
-	  into %section/simplesect[last()]/para;
-	if (following-sibling::ruleref) {
-	  add text ", " into %section/simplesect[last()]/para;
-	}
+	  into %us/para;
+	if (following-sibling::ruleref) add text ", " into %us/para;
       }
     }
   }
@@ -148,9 +145,8 @@ map { $_='programlisting' } d://code;
 foreach d://xref {
   map { $_='link' } .;
   local $linkend=string(@linkend);
-  if x:id('$linkend')/@name { assign $content=x:string(id('$linkend')/@name) }
-    else { assign $content=x:string(id('$linkend')/@id) }
-  insert text $content into .;
+  insert text "${( x:(xsh:if(id('${linkend}')/@name,id('${linkend}')/@name,
+			    id('${linkend}')/@id)) )}" into .;
 };
 
 foreach d://variablelist {
