@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.3 2004-12-09 08:41:14 pajas Exp $
+# $Id: Functions.pm,v 2.4 2004-12-14 13:39:56 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.1';
-  $REVISION=q($Revision: 2.3 $);
+  $REVISION=q($Revision: 2.4 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -1046,7 +1046,7 @@ sub cast_value_to_objects {
 # evaluate given XPath or Perl expression
 sub _ev {
   my $exp = $_[0];
-  utf8::upgrade($exp);
+  utf8::upgrade($exp) unless ref($exp);
   if (ref($exp) eq 'ARRAY') {
     return run_commands($exp,0,1);
   } elsif ($exp =~ /^<<(.)/) {
