@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 1.16 2003-08-05 08:02:23 pajas Exp $
+# $Id: Completion.pm,v 1.17 2003-08-07 07:57:11 pajas Exp $
 
 package XML::XSH::Completion;
 
@@ -10,8 +10,8 @@ sub cpl {
   my($word,$line,$pos) = @_;
   my $endpos=$pos+length($word);
 #  print STDERR "---",substr($line,0,$endpos),"---\n";
-  if ($line=~/\$([a-zA-Z0-9_]*)$/) {
-    return grep { index($_,$1)==0 } XML::XSH::Functions::string_vars;
+  if (substr($line,0,$endpos)=~/\$([a-zA-Z0-9_]*)$/) {
+    return map {'$'.$_} grep { index($_,$1)==0 } XML::XSH::Functions::string_vars;
   } elsif (substr($line,0,$endpos)=~/\%([a-zA-Z0-9_]*)$/) {
     return map {'%'.$_} grep { index($_,$1)==0 } XML::XSH::Functions::nodelist_vars;
   } elsif (substr($line,0,$pos)=~/(?:^|[;}])\s*[^=\s]*$/) {
@@ -51,7 +51,7 @@ sub gnu_cpl {
     my($text, $line, $start, $end) = @_;
     my(@perlret);
     if ($line=~/\$([a-zA-Z0-9_]*)$/) {
-      @perlret = grep { index($_,$1)==0 } XML::XSH::Functions::string_vars;
+      @perlret = map {'$'.$_} grep { index($_,$1)==0 } XML::XSH::Functions::string_vars;
     } elsif ($line=~/\%([a-zA-Z0-9_]*)$/) {
       @perlret = map {'%'.$_} grep { index($_,$1)==0 } XML::XSH::Functions::nodelist_vars;
     } elsif (substr($line,0,$end)=~/^\s*[^=\s]*$/) {
@@ -75,7 +75,7 @@ sub gnu_cpl {
 	   substr($line,0,$end)=~
 	   /(?:^|[;}])\s*(?:\.|include)\s+(\S*)$/
 	    ) {
-      @perlret = eval { map { s:\@$::; $_ } Term::ReadLine::GNU::XS::rl_filename_list($_[0]) };
+      @perlret = eval { map { s:\@$::; $_ } Term::ReadLine::Gnu::XS::rl_filename_list($_[0]) };
       if (@perlret==1 and -d $perlret[0]) {
 	&main::_term()->Attribs->{completion_append_character} = '';
       } else {
