@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Tue Mar 11 15:02:58 2003
+# Wed Mar 12 16:01:19 2003
 
 package XML::XSH::Help;
 use strict;
@@ -282,7 +282,7 @@ usage:       if <xpath>|<perl-code> <command>
     <command-block> [ elsif <command-block> ]* [ else <command-block> ]
              
 description:
-	     Execute <command-block> if the given <xpath> or <perl-code>
+	     Execute <command-block> if a given <xpath> or <perl-code>
 	     expression evaluates to a non-emtpty node-list, true
 	     boolean-value, non-zero number or non-empty literal. If the
 	     first test fails, check all possibly following `elsif'
@@ -517,7 +517,7 @@ Example:     Some caveats of counting node-lists
              $a=Biblo
 
 	     In the other two cases (where percent sign appears) find all
-	     nodes matching the given <xpath> and store the resulting
+	     nodes matching a given <xpath> and store the resulting
 	     node-list in the variable named %<id>. The variable may be
 	     later used instead of an XPath expression.
 
@@ -813,7 +813,7 @@ description:
 	     The namespace <expression> is only valid for elements and
 	     attributes and must evaluate to the namespace URI. In that
 	     case, the element or attribute name must have a prefix. The
-	     created node is associated with the given namespace.
+	     created node is associated with a given namespace.
 
 Example:     Append a new Hobbit element to the list of middle-earth
 	     creatures and name him Bilbo.
@@ -974,7 +974,7 @@ usage:       normalize <xpath>
              
 description:
 	     `normalize' puts all text nodes in the full depth of the
-	     sub-tree underneath each node selected by the given <xpath>,
+	     sub-tree underneath each node selected by a given <xpath>,
 	     into a "normal" form where only structure (e.g., elements,
 	     comments, processing instructions, CDATA sections, and entity
 	     references) separates text nodes, i.e., there are neither
@@ -1028,7 +1028,7 @@ usage:       count <xpath>
 aliases:     print_value get
 
 description:
-	     Calculate the given <xpath> expression. If the result is a
+	     Calculate a given <xpath> expression. If the result is a
 	     node-list, return number of nodes in the node-list. If the
 	     <xpath> results in a boolean, numeric or literal value, return
 	     the value.
@@ -1071,7 +1071,7 @@ usage:       eval <perl-code>
 aliases:     eval
 
 description:
-	     Evaluate the given perl expression.
+	     Evaluate a given perl expression.
 
 END
 
@@ -1102,7 +1102,7 @@ usage:       print <expression> [<expression> ...]
 aliases:     echo
 
 description:
-	     Interpolate and print given expression(s).
+	     Interpolate and print a given expression(s).
 
 END
 
@@ -1279,7 +1279,7 @@ aliases:     new
 
 description:
 	     Create a new document using <expression> to form the root
-	     element and associate it with the given identifier.
+	     element and associate it with a given identifier.
 
 Example:
              xsh> create t1 root
@@ -1353,7 +1353,7 @@ $HELP{'dtd'}=[<<'END'];
 usage:       dtd [<id>]
              
 description:
-	     Print external or internal DTD for the given document. If no
+	     Print external or internal DTD for a given document. If no
 	     document identifier is given, the current document is used.
 
 END
@@ -1398,7 +1398,7 @@ aliases:     quit
 
 description:
 	     Exit xsh immediately, optionally with the exit-code resulting
-	     from the given expression.
+	     from a given expression.
 
 	     WARNING: No files are saved on exit.
 
@@ -1433,7 +1433,7 @@ aliases:     chxpath
 
 description:
 	     Change current context node (and current document) to the
-	     first node matching the given <xpath> argument.
+	     first node matching a given <xpath> argument.
 
 END
 
@@ -1453,8 +1453,8 @@ $HELP{'locate'}=[<<'END'];
 usage:       locate <xpath>
              
 description:
-	     Print canonical XPaths leading to nodes matched by the <xpath>
-	     given.
+	     Print canonical XPaths leading to nodes matched by a given
+	     <xpath>.
 
 END
 
@@ -1820,8 +1820,8 @@ usage:       unfold <xpath>
              
 description:
 	     This feature is still EXPERIMENTAL! Unfold command removes
-	     `xsh:fold' attributes from all elements matching given <xpath>
-	     created by previous usage of <fold>. Be aware, that
+	     `xsh:fold' attributes from all elements matching a given
+	     <xpath> created by previous usage of <fold>. Be aware, that
 	     `xmlns:xsh' namespace declaration may still be present in the
 	     document even when all elements are unfolded.
 
@@ -1941,7 +1941,7 @@ $HELP{'catalog'}=[<<'END'];
 usage:       catalog <expression>
              
 description:
-	     Will use given catalog file as a catalog during all parsing
+	     Will use a given catalog file as a catalog during all parsing
 	     processes. Using a catalog will significantly speed up parsing
 	     processes if many external ressources are loaded into the
 	     parsed documents (such as DTDs or XIncludes)
@@ -1955,7 +1955,7 @@ usage:       iterate <xpath> <command-block>
 description:
 	     Iterate works very much like the XPath variant of <foreach>,
 	     except that `iterate' evaluates the <command-block> as soon as
-	     a new node matching given <xpath> is found. As a limitation,
+	     a new node matching a given <xpath> is found. As a limitation,
 	     the <xpath> expresion used with `iterate' may only consist of
 	     one XPath step, i.e. it cannot contain an XPath step separator
 	     `/'.
