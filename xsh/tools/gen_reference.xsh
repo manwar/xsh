@@ -19,45 +19,38 @@ quiet;
 load-ext-dtd 1;
 validation 1;
 parser-completes-attributes 1;
+xpath-extensions;
 
 open X = $xsh_grammar_file;
 
 validation 0;
 indent 1;
 
-def transform_section {
-  map { s/^[ \t]+//; s/\n[ \t]+/\n/g; } %section//code/descendant::text();
-  foreach %section//code/descendant::tab {
-    perl { $ws='  ' x count('string(@count)'); };
-    insert text $ws instead of .;
+def transform_section %s {
+  map { s/^[ \t]+//; s/\n[ \t]+/\n/g; } %s//code/descendant::text();
+  foreach %s//code/descendant::tab {
+    insert text ${(times(@count,'  '))} replace .;
   }
-  map { $_='programlisting' } %section//code;
-  local %typeref;
-  foreach %section//typeref {
-    insert element "simplelist type='inline'" before . result %typeref;
-    local $types=string(@types);
-    foreach { split /\s/,$types } {
-      foreach X:(/recdescent-xml/rules/rule[@type="$__"]) {
-	insert chunk "<member>${(@name|@id)}</member>" into %typedef;
+  rename { $_='programlisting' } %s//code;
+  local %sl;
+  foreach %s/descendant::typeref {
+    insert element "simplelist type='inline'" before . result %sl;
+    foreach split("\\s",@types) {
+      foreach X:(/recdescent-xml/rules/rule[@type=current()]) {
+	insert chunk
+	  ${(concat("<member>",if(@name,@name,@id),"</member>"))} into %sl;
       }
     }
+    rm .;
   }
-  foreach %section//xref {
+  foreach %s//xref {
     $linkend=string(@linkend);
     foreach X:(id("$linkend")) {
-      if (name()='section') {
-	$content=string(title);
-      } else {
-	if (@name) {
-	  $content=string(@name);
-	} else {
-	  $content="$linkend";
-	}
-      }
+      local $content=string(if(name()="section",title,if(@name,@name,@id)));
+      add chunk "<ulink url='s_$linkend.html'>$content</ulink>" replace .;
     }
-    add chunk "<ulink url='s_$linkend.html'>$content</ulink>" replace .;
   };
-  foreach %section//link {
+  foreach %s//link {
     map { $_='ulink' } .;
     add attribute url=${{string(@linkend)}} replace @linkend;
     map { $_="s_".$_.".html" } @url;
@@ -74,7 +67,7 @@ def transform_section {
     xmove ./node() after .;
   }
   echo "saving";
-  for %section/@id {
+  for %s/@id {
     echo "saving doc/frames/s_${{string(.)}}.html";
     save_HTML H "doc/frames/s_${{string(.)}}.html";
     echo "saving doc/frames/s_${{string(.)}}.xml";
@@ -84,7 +77,8 @@ def transform_section {
 }
 
 echo 'index';
-$toc_template="<html>
+$toc_template=<<"EOF";
+<html>
   <head>
     <title>Table of contents</title>
     <link href='$html_stylesheet' rel='stylesheet'/>
@@ -100,9 +94,11 @@ $toc_template="<html>
     <hr/>
     <small></small>
   </body>
-</html>";
+</html>
+EOF
 
-new I "<html>
+new I <<"EOF";
+<html>
   <head>
     <title>XSH Reference</title>
     <link href='$html_stylesheet' rel='stylesheet'/>
@@ -118,7 +114,9 @@ new I "<html>
        </body>
      </noframes>
   </frameset>
-</html>";
+</html>
+EOF
+
 save_HTML I 'doc/frames/index.html';
 close I;
 
@@ -126,7 +124,7 @@ echo 'sections';
 new S "<section id='intro'><title>Getting Started</title></section>";
 %section=S://section;
 xcopy X:/recdescent-xml/doc/description/node() into %section;
-call transform_section;
+call transform_section %section;
 close S;
 
 # SYNTAX TOC
@@ -165,7 +163,7 @@ foreach X:/recdescent-xml/doc/section {
     xcopy ./documentation/shortdesc/node()
       into %section/simplesect[last()]/variablelist/varlistentry[last()]/listitem;
   }
-  call transform_section;
+  call transform_section %section;
 }
 
 save_HTML T "doc/frames/t_syntax.html";
@@ -254,7 +252,7 @@ foreach { qw(command type function) } {
 	}
       }
     }
-    call transform_section;
+    call transform_section %section;
     close S;
   }
   echo "writing doc/frames/t_${__}.html";
