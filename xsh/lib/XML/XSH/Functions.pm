@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.12 2002-04-17 13:49:42 pajas Exp $
+# $Id: Functions.pm,v 1.13 2002-04-19 17:40:43 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -559,8 +559,14 @@ sub save_as {
   $file=$_files{$id} if $file eq "";
   print STDERR "$id=$_files{$id} --> $file ($enc)\n" unless "$_quiet";
   $enc=$doc->getEncoding() unless ($enc ne "");
-  local *F;
-  $file=~/^\s*[|>]/ ? open(F,$file) : open(F,">$file");
+  my $F;
+  if ($file=~/^\s*[|>]/) {
+    $F=IO::File->new($file);
+  } elsif ($file=~/.gz\s*$/) {
+    $F=IO::File->new("| gzip -c > $file");
+  } else {
+    $F=IO::File->new(">$file");
+  }
   eval {
     local $SIG{INT}=\&sigint;
     my $conv=mkconv($doc->getEncoding(),$enc);
@@ -571,8 +577,8 @@ sub save_as {
     } else {
       $t=$doc->toString($_indent);
     }
-    print F $t;
-    close F;
+    $F->print($t);
+    $F->close();
     $_files{$id}=$file unless $file=~/^\s*[|>]/; # no change in case of pipe
   };
   print STDERR "saved $id=$_files{$id} as $file in $enc encoding\n" unless ($@ or "$_quiet");
@@ -586,14 +592,20 @@ sub save_as_html {
   $file=$_files{$id} if $file eq "";
   print STDERR "$id=$_files{$id} --HTML--> $file ($enc)\n" unless "$_quiet";
   $enc=$doc->getEncoding() unless ($enc ne "");
-  local *F;
-  $file=~/^\s*[|>]/ ? open(F,$file) : open(F,">$file");
+  my $F;
+  if ($file=~/^\s*[|>]/) {
+    $F=IO::File->new($file);
+  } elsif ($file=~/.gz\s*$/) {
+    $F=IO::File->new("| gzip -c > $file");
+  } else {
+    $F=IO::File->new(">$file");
+  }
   eval {
     local $SIG{INT}=\&sigint;
     my $conv=mkconv($doc->getEncoding(),$enc);
-    print F "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n";
-    print F $conv->convert($doc->toStringHTML());
-    close F;
+    $F->print("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n");
+    $F->print($conv->convert($doc->toStringHTML()));
+    $F->close();
   };
   print STDERR "saved $id=$_files{$id} as HTML $file in $enc encoding\n" unless ($@ or "$_quiet");
   return _check_err($@);
