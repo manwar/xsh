@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.78 2003-11-03 07:11:19 pajas Exp $
+# $Id: Functions.pm,v 1.79 2003-11-03 18:55:03 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -31,7 +31,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8.2';
-  $REVISION='$Revision: 1.78 $';
+  $REVISION='$Revision: 1.79 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -455,7 +455,7 @@ sub XPATH_sprintf {
 
 sub XPATH_current {
   die "Wrong number of arguments for function xsh:current()!" if (@_);
-  return XML::LibXML::NodeList->new(get_local_node());
+  return XML::LibXML::NodeList->new($LOCAL_NODE ? $LOCAL_NODE : ());
 }
 
 sub XPATH_path {
@@ -463,7 +463,7 @@ sub XPATH_path {
   die "Wrong type of argument 1 for xsh:path(node-list)!" unless (ref($_[0]) and $_[0]->isa('XML::LibXML::NodeList'));
   return "" unless $_[0][0];
   return
-    XML::LibXML::String->new(pwd($_[0][0]));
+    XML::LibXML::Literal->new(pwd($_[0][0]));
 }
 
 sub XPATH_map {
@@ -474,12 +474,12 @@ sub XPATH_map {
   my ($nl,$xpath)=@_;
   my $res = XML::LibXML::NodeList->new();
   unless (@{$nl} and $xpath ne "") { return $res; }
-  my $xpc = clone_xpc();
+#  my $xpc = clone_xpc();
   my $res_el;
   my $res_doc;
   foreach my $node (@{$nl}) {
 # #    my $val = $node->find($xpath);
-     my $val = $xpc->find($xpath,$node);
+     my $val = $_xpc->find($xpath,$node);
      next unless (ref($val));
      if ($val->isa("XML::LibXML::NodeList")) {
       push @$res,@$val;
