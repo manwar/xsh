@@ -1,4 +1,4 @@
-# $Id: GDOMECompat.pm,v 1.5 2002-09-27 08:38:51 pajas Exp $
+# $Id: GDOMECompat.pm,v 1.6 2002-10-22 16:58:29 pajas Exp $
 
 package XML::XSH::GDOMECompat;
 
@@ -29,8 +29,23 @@ sub toStringUTF8 {
   }
 }
 
+sub owner_document {
+  my ($self,$node)=@_;
+  if ($self->is_document($node)) {
+    return $node
+  } else {
+    return $node->getOwnerDocument()
+  }
+}
+
 sub doc_URI {
   return undef;
+}
+
+sub set_encoding {
+  my ($class,$dom,$encoding)=@_;
+  croak "Changing document encoding not supported by GDOME\n";
+  return;
 }
 
 sub doc_encoding {
@@ -86,6 +101,21 @@ sub parser_options {
 
 sub parse_html_file {
   croak "HTML parsing not supported by GDOME\n";
+  return undef;
+}
+
+sub parse_html_fh {
+  croak "HTML parsing not supported by GDOME\n";
+  return undef;
+}
+
+sub parse_sgml_file {
+  croak "DOCBOOK parsing not supported by GDOME\n";
+  return undef;
+}
+
+sub parse_sgml_fh {
+  croak "DOCBOOK parsing not supported by GDOME\n";
   return undef;
 }
 
@@ -187,6 +217,11 @@ sub is_namespace {
 sub get_dtd {
   die "Not implemented for GDOME\n";
 }
+
+sub has_dtd {
+  0;
+}
+
 
 sub clone_node {
   my ($class, $dom, $node)=@_;

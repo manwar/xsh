@@ -1,4 +1,4 @@
-# $Id: LibXMLCompat.pm,v 1.5 2002-09-27 08:38:51 pajas Exp $
+# $Id: LibXMLCompat.pm,v 1.6 2002-10-22 16:58:29 pajas Exp $
 
 package XML::XSH::LibXMLCompat;
 
@@ -27,6 +27,15 @@ sub new_parser {
   return XML::LibXML->new();
 }
 
+sub owner_document {
+  my ($self,$node)=@_;
+  if ($self->is_document($node)) {
+    return $node
+  } else {
+    return $node->ownerDocument()
+  }
+}
+
 sub doc_URI {
   my ($class,$dom)=@_;
   return $dom->URI();
@@ -37,6 +46,11 @@ sub doc_encoding {
   return $dom->getEncoding();
 }
 
+sub set_encoding {
+  my ($class,$dom,$encoding)=@_;
+  return $dom->setEncoding($encoding);
+}
+
 sub xml_equal {
   my ($class,$a,$b)=@_;
   return $a->isSameNode($b);
@@ -44,7 +58,9 @@ sub xml_equal {
 
 sub count_xpath {
   my ($class,$node,$xp)=@_;
-  my $result=$node->find($xp);
+  my $result;
+  $result=$node->find($xp);
+
   if (ref($result)) {
     if ($result->isa('XML::LibXML::NodeList')) {
       return $result->size();
@@ -66,31 +82,49 @@ sub doc_process_xinclude {
 
 sub init_parser {
   my ($class,$parser)=@_;
-  $parser->validation($XML::XSH::Functions::VALIDATION);
-  $parser->recover($XML::XSH::Functions::RECOVERING) if $parser->can('recover');
-  $parser->expand_entities($XML::XSH::Functions::EXPAND_ENTITIES);
-  $parser->keep_blanks($XML::XSH::Functions::KEEP_BLANKS);
-  $parser->pedantic_parser($XML::XSH::Functions::PEDANTIC_PARSER);
-  $parser->load_ext_dtd($XML::XSH::Functions::LOAD_EXT_DTD);
-  $parser->complete_attributes($XML::XSH::Functions::COMPLETE_ATTRIBUTES);
-  $parser->expand_xinclude($XML::XSH::Functions::EXPAND_XINCLUDE);
+   $parser->validation($XML::XSH::Functions::VALIDATION);
+   $parser->recover($XML::XSH::Functions::RECOVERING) if $parser->can('recover');
+   $parser->expand_entities($XML::XSH::Functions::EXPAND_ENTITIES);
+   $parser->keep_blanks($XML::XSH::Functions::KEEP_BLANKS);
+   $parser->pedantic_parser($XML::XSH::Functions::PEDANTIC_PARSER);
+   $parser->load_ext_dtd($XML::XSH::Functions::LOAD_EXT_DTD);
+   $parser->complete_attributes($XML::XSH::Functions::COMPLETE_ATTRIBUTES);
+   $parser->expand_xinclude($XML::XSH::Functions::EXPAND_XINCLUDE);
 }
 
 
 sub parse_string {
   my ($class,$parser,$str)=@_;
   $class->init_parser($parser);
-  return $parser->parse_string($str);
+   return $parser->parse_string($str);
 }
 
 sub parse_html_file {
   my ($class,$parser,$file)=@_;
   $class->init_parser($parser);
   my $doc=$parser->parse_html_file($file);
-  # WORKAROUND
-  # THIS WAS A WORKAROUND FOR A BUG, NOW LibXML SEEMS FIXED
-  #  $doc=$parser->parse_string(join "\n", map { $_->toString() } $doc->childNodes());
-  # WORKAROUND
+  return $doc;
+}
+
+sub parse_html_fh {
+  my ($class,$parser,$fh)=@_;
+  $class->init_parser($parser);
+  print STDERR ("$parser $fh\n");
+  my $doc=$parser->parse_html_fh($fh);
+  return $doc;
+}
+
+sub parse_sgml_file {
+  my ($class,$parser,$file,$encoding)=@_;
+  $class->init_parser($parser);
+  my $doc=$parser->parse_sgml_file($file,$encoding);
+  return $doc;
+}
+
+sub parse_sgml_fh {
+  my ($class,$parser,$fh,$encoding)=@_;
+  $class->init_parser($parser);
+  my $doc=$parser->parse_sgml_fh($fh,$encoding);
   return $doc;
 }
 
@@ -172,16 +206,26 @@ sub is_namespace {
   return $node->nodeType == XML::LibXML::XML_NAMESPACE_DECL();
 }
 
+sub has_dtd {
+  my ($class,$doc)=@_;
+  foreach my $node ($doc->childNodes()) {
+    if ($node->nodeType == XML::LibXML::XML_DTD_NODE()) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
 sub get_dtd {
   my ($class,$doc,$quiet)=@_;
   my $dtd;
-  foreach ($doc->childNodes()) {
-    if ($_->nodeType == XML::LibXML::XML_DTD_NODE()) {
-      if ($_->hasChildNodes()) {
-	$dtd=$_;
+  foreach my $node ($doc->childNodes()) {
+    if ($node->nodeType == XML::LibXML::XML_DTD_NODE()) {
+      if ($node->hasChildNodes()) {
+	$dtd=$node;
       } elsif (get_load_ext_dtd()) {
-	my $str=$_->toString();
-	my $name=$_->getName();
+	my $str=$node->toString();
+	my $name=$node->getName();
 	my $public_id;
 	my $system_id;
 	if ($str=~/PUBLIC\s+(\S)([^\1]*\1)\s+(\S)([^\3]*)\3/) {
