@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.7 2002-08-26 14:34:23 pajas Exp $
+# $Id: xsh,v 1.8 2002-08-30 17:08:13 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -29,7 +29,7 @@ require Term::ReadLine if $opt_i;
 BEGIN {
   getopts('scqgwdfhViE:e:');
   $VERSION='0.9';
-  $REVISION='$Revision: 1.7 $';
+  $REVISION='$Revision: 1.8 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -52,7 +52,9 @@ if ($opt_h) {
 }
 
 if ($opt_V) {
-  print "Current version is $VERSION ($REVISION)\n";
+  my $rev=$REVISION;
+  $rev=~s/\s*\$//g;
+  print "$XML::XSH::Functions::VERSION/$VERSION ($rev)\n";
   exit 1;
 }
 
@@ -108,7 +110,7 @@ if ($opt_i) {
   unless ($opt_q) {
     my $rev=$REVISION;
     $rev=~s/\s*\$//g;
-    $rev=" xsh - XML Editing Shell version $VERSION ($rev)\n";
+    $rev=" xsh - XML Editing Shell version $XML::XSH::Functions::VERSION/$VERSION ($rev)\n";
     print STDERR "-"x length($rev),"\n";
     print STDERR $rev;
     print STDERR "-"x length($rev),"\n\n";
