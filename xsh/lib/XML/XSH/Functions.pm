@@ -1,9 +1,9 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.76 2003-10-21 20:18:28 pajas Exp $
+# $Id: Functions.pm,v 1.77 2003-10-23 17:46:10 pajas Exp $
 
 package XML::XSH::Functions;
 
-eval "no encoding";
+#eval "no encoding";
 undef $@;
 use strict;
 no warnings;
@@ -31,7 +31,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8.2';
-  $REVISION='$Revision: 1.76 $';
+  $REVISION='$Revision: 1.77 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -230,7 +230,7 @@ sub xpc_init {
     $_xpc=XML::XSH::DummyXPathContext->new();
   }
   $_xpc->registerVarLookupFunc(\&xpath_var_lookup,undef);
-  $_xpc->registerNs('xsh',$XML::XSH::xshNS);
+  register_ns('xsh',$XML::XSH::xshNS);
   $_xpc->registerFunctionNS('doc',$XML::XSH::xshNS,
 			  sub {
 			    die "Wrong number of arguments for function doc(id)!" if (@_!=1);
@@ -242,13 +242,33 @@ sub xpc_init {
   $_xpc->registerFunctionNS('matches',$XML::XSH::xshNS,
 			  sub {
 			    die "Wrong number of arguments for function matches(string,regexp)!" if (@_!=2);
-			    my ($string,$regexp)=@_;
-			    $regexp=literal_value($regexp);
 			    use utf8;
-			    my $ret=literal_value($string)=~m{$regexp} ?
-			      XML::LibXML::Boolean->True : XML::LibXML::Boolean->False;
+			    my ($string,$regexp)=@_;
+			    $string=literal_value($string);
+			    $regexp=literal_value($regexp);
+			    my $ret=$string=~m{$regexp} ?
+			      XML::LibXML::Boolean->True :
+			      XML::LibXML::Boolean->False;
 			    $ret;
 			  });
+  $_xpc->registerFunctionNS('substr',$XML::XSH::xshNS,
+			  sub {
+			    die "Wrong number of arguments for function substr(string,position,[length])!" if (@_<2 or @_>3);
+			    use utf8;
+			    my ($str,$pos,$len)=@_;
+			    return (@_ == 2) ? substr(literal_value($str),
+						      literal_value($pos)) :
+			                       substr(literal_value($str),
+						      literal_value($pos),
+						      literal_value($len));
+			  });
+  $_xpc->registerFunctionNS('reverse',$XML::XSH::xshNS,
+			  sub {
+			    die "Wrong number of arguments for function reverse(string)!" if (@_!=1);
+			    use utf8;
+			    return scalar reverse(literal_value($_[0]));
+			  });
+
   $_xpc->registerFunctionNS('grep',$XML::XSH::xshNS,
 			  sub {
 			    die "Wrong number of arguments for function grep(list,regexp)!" if (@_!=2);
@@ -269,6 +289,50 @@ sub xpc_init {
 			    return XML::LibXML::Boolean->new($nodea->size() && $nodeb->size() &&
 							     $nodea->[0]->isSameNode($nodea->[0]));
 			  });
+  $_xpc->registerFunctionNS('max', $XML::XSH::xshNS,
+			    sub {
+			      my $r=0;
+			      foreach (cast_objects_to_values(@_)) {
+				$r = $_>$r ? $_ : $r;
+			      }; $r;
+			    });
+  $_xpc->registerFunctionNS('strmax', $XML::XSH::xshNS,
+			    sub {
+			      my $r=0;
+			      foreach (cast_objects_to_values(@_)) {
+				$r = $_ ge $r ? $_ : $r;
+			      }; $r;
+			    });
+  $_xpc->registerFunctionNS('min', $XML::XSH::xshNS,
+			    sub {
+			      my $r=0;
+			      foreach (cast_objects_to_values(@_)) {
+				print "$_\n";
+				$r = $_ < $r ? $_ : $r;
+			      };
+			      print "r=$r\n";
+			      return 0+$r
+			    });
+  $_xpc->registerFunctionNS('strmin', $XML::XSH::xshNS,
+			    sub {
+			      my $r=0;
+			      foreach (cast_objects_to_values(@_)) {
+				$r = $_ le $r ? $_ : $r;
+			      }; $r;
+			    });
+  $_xpc->registerFunctionNS('sum', $XML::XSH::xshNS,
+			    sub {
+			      my $r=0;
+			      foreach (cast_objects_to_values(@_)) {
+				$r += $_;
+			      }; $r;
+			    });
+  $_xpc->registerFunctionNS('join', $XML::XSH::xshNS,
+			    sub {
+			      my ($j)=cast_objects_to_values(shift);
+			      join $j,cast_objects_to_values(@_);
+			    });
+
 }
 
 sub list_flags {
@@ -338,6 +402,16 @@ sub xsh_set_output {
 # get output stream
 sub xsh_get_output {
   return $OUT;
+}
+
+sub cast_objects_to_values {
+  return map {
+    if (ref($_)) {
+      UNIVERSAL::can($_,'textContent') ? $_->textContent() : $_->value();
+    } else { $_ }
+  } map {
+    UNIVERSAL::isa($_,'XML::LibXML::NodeList') ? @$_ : $_;
+  } @_;
 }
 
 sub xsh_docs {
@@ -2481,9 +2555,7 @@ sub get_dtd {
 sub validate_doc {
   my ($show_errors,$schema,$id)=@_;
   $id=expand $id;
-  __debug("SCHEMA @$schema");
   my @schema = expand @$schema;
-  __debug("SCHEMA @schema");
   ($id,my $doc)=_id($id);
   unless (ref($doc)) {
     die "No such document '$id' (to validate)!\n";
@@ -2498,14 +2570,9 @@ sub validate_doc {
 	eval { XML::LibXML::Dtd->can('new') } ||
 	  die "DTD validation not supported by your version of XML::LibXML\n";
 	if ($format eq 'FILE') {
-	  __debug("PUBLIC $schema[0], SYSTEM $schema[1]");
 	  $dtd=XML::LibXML::Dtd->new(@schema);
-	  __debug($dtd);
 	} elsif ($format eq 'STRING') {
-	  __debug("STRING $schema[0]");
 	  $dtd=XML::LibXML::Dtd->parse_string($schema[0]);
-	  __debug($dtd);
-	  __debug($dtd->toString());
 	} else {
 	  die "Unknown DTD format '$format!'\n";
 	}
