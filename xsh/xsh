@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.24 2003-06-05 10:12:17 pajas Exp $
+# $Id: xsh,v 1.25 2003-08-05 08:01:28 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -15,7 +15,7 @@ use strict;
 
 use Getopt::Std;
 use vars qw/$opt_q $opt_w $opt_i $opt_h $opt_V $opt_E $opt_e $opt_d $opt_c $opt_s
-            $opt_f $opt_g $opt_v $opt_t $opt_T $opt_a $opt_l $opt_n/;
+            $opt_f $opt_g $opt_v $opt_t $opt_T $opt_a $opt_l $opt_n $opt_p $opt_P/;
 use vars qw/$VERSION $REVISION/;
 
 use IO::Handle;
@@ -25,9 +25,9 @@ use XML::XSH qw(&xsh_set_output &xsh_get_output &xsh &xsh_init
 		&set_compile_only_mode);
 
 BEGIN {
-  getopts('atscqvwdfhVinTE:e:l:');
+  getopts('atscqvwdfhVinTE:e:l:pP');
   $VERSION='0.10';
-   $REVISION='$Revision: 1.24 $';
+   $REVISION='$Revision: 1.25 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -40,6 +40,9 @@ if ($opt_h) {
   print "   -q   quiet\n\n";
   print "   -i   interactive\n\n";
   print "   -n   non-interactive\n\n";
+  print "   -p   operate as pipe, openning stdin as document _ and saving it\n",
+        "        to stdout at the end\n\n";
+  print "   -P   same as -p but for HTML documents\n\n";
   print "   -a   command-line contains arguments to be stored to XSH::Map::ARGV\n";
   print "        rather than XSH commands\n\n";
   print "   -l   file containing XSH commands to execute\n",
@@ -61,8 +64,26 @@ if ($opt_h) {
   exit 1;
 }
 
+my $string;
+if ($opt_a) {
+  @XML::XSH::ARGV=@ARGV;
+} else {
+  $string=join " ",@ARGV;
+}
+
+my $p_html='';
+if ($opt_P) {
+  $opt_p=1;
+  $p_html=' HTML';
+}
+if ($opt_p) {
+  $opt_n=1;
+  $opt_i=0;
+  $opt_t=0;
+}
+
 unless ($opt_n || $opt_i) {
-  $opt_i=(-t STDIN) ? 1 : 0;
+  $opt_i=((-t STDIN) && !$string) ? 1 : 0;
 }
 
 require Term::ReadLine if $opt_i;
@@ -112,13 +133,6 @@ if ($opt_w) {
   XML::XSH::Functions::set_complete_attributes(1);
 }
 
-my $string;
-
-if ($opt_a) {
-  @XML::XSH::ARGV=@ARGV;
-} else {
-  $string=join " ",@ARGV;
-}
 my $l;
 
 eval {
@@ -151,6 +165,8 @@ if ($opt_i) {
 } else {
   $XML::XSH::Functions::_die_on_err=1;
 }
+
+xsh("open$p_html _=-") if ($opt_p);
 
 if ($string) {
   print "xsh> $string\n" if ($opt_i and not $opt_q);
@@ -203,10 +219,10 @@ if ($opt_i) {
   if ($term->ReadLine eq "Term::ReadLine::Gnu") {
     $term->Attribs->{attempted_completion_function} = \&XML::XSH::Completion::gnu_cpl;
     $term->Attribs->{completion_entry_function} = sub { return () };
-    $term->Attribs->{completer_word_break_characters} = " \t\n\r\"'`;|&})[{(]";
+    $term->Attribs->{completer_word_break_characters} = " =\t\n\r\"'`;|&})[{(]";
   } else {
     $readline::rl_completion_function = 'XML::XSH::Completion::cpl';
-    $readline::rl_completer_word_break_characters = " \t\n\r\"'`;|&})[{(]";
+    $readline::rl_completer_word_break_characters = " =\t\n\r\"'`;|&})[{(]";
   }
 
   xsh_set_output($term->OUT) if ($term->OUT);
@@ -229,11 +245,12 @@ if ($opt_i) {
 #      $term->addhistory($l);
     }
   }
-} elsif (($string eq "" and $opt_l eq "") or $opt_t) {
+  print STDERR "Good bye!\n" if $opt_i and not "$opt_q";
+} elsif ((!$opt_p and $string eq "" and $opt_l eq "") or $opt_t) {
   xsh(join "",<STDIN>);
 }
 
-print STDERR "Good bye!\n" if $opt_i and not "$opt_q";
+xsh("save$p_html _ -") if ($opt_p);
 
 # get a line of input from ReadLine
 # if ^C interruption by user occures return $retonint
