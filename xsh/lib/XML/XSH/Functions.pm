@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.79 2003-11-03 18:55:03 pajas Exp $
+# $Id: Functions.pm,v 1.80 2003-11-04 20:42:35 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -31,7 +31,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8.2';
-  $REVISION='$Revision: 1.79 $';
+  $REVISION='$Revision: 1.80 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -3922,7 +3922,7 @@ sub count {
   return &XML::XSH::Functions::count([$1,$2]);
 }
 
-sub xml_list {
+sub serialize {
   my ($xp)=@_;
   $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):(?!:))?((?:.|\n)*)$/;
   my ($id,$query,$doc)=&XML::XSH::Functions::_xpath([$1,$2]);
@@ -3938,7 +3938,7 @@ sub xml_list {
   return $result;
 }
 
-sub serialize { xml_list(@_) }
+sub xml_list { xml_list(@_) }
 
 sub literal {
   my ($xp)=@_;
@@ -3957,8 +3957,6 @@ sub type {
     die "No such document '$id'!\n";
   }
   my $ql=&XML::XSH::Functions::find_nodes([$id,$query]);
-
-
   my $xm=$XML::XSH::Functions::_xml_module;
   my @result;
   foreach (@$ql) {

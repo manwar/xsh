@@ -463,25 +463,26 @@
     <section id="Configuration">
       <title>Options</title> <para>The following commands are used to
 	modify the default behaviour of the XML parser or XSH itself.
-	Some of the commands are switch between two different modes
+	Some of the commands switch between two different modes
 	according to a given expression (which is expected to result
 	either in zero or non-zero value). Other commands also working
-	as a flip-flop have their own explicit counterpart (e.g.
+	as a flip-flop have their own explicit counterparts (e.g.
 	<xref linkend="verbose"/> and <xref linkend="quiet"/> or <xref linkend="debug"/> and <xref linkend="nodebug"/>).  This
 	misconsistency is due to historical reasons.
       </para>
       <para>
-	The <xref linkend="encoding"/> and <xref linkend="query_encoding"/> options allow to specify character
-	encoding that should be expected from user as well as the
-	encoding to be used by XSH on output. This is particularly
+	The <xref linkend="encoding"/> and <xref linkend="query_encoding"/>
+	options 
+	allow to specify character
+	encodings of user's input and XSH's own output. This is particularly
 	useful when you work with UTF-8 encoded documents on a console
-	which supports only 8-bit characters.
+	which only supports 8-bit characters.
       </para>
       <para>
 	The <xref linkend="options_command"/> command
 	displays current settings by means of XSH commands.
 	Thus it can not only be used to review current values, but
-	also to store them future use, e.g. in ~/.xshrc file.
+	also to store them for future use, e.g. in ~/.xshrc file.
       </para>
       <example>
 	<code>xsh&gt; <userinput>options | cat &gt; ~/.xshrc</userinput></code>
@@ -503,12 +504,12 @@
 	  good language for many system management tasks.  The
 	  language is intended to be practical (easy to use,
 	  efficient, and complete). XSH itself is written in Perl,
-	  so it is extremely easy to support this language as an
-	  extension to XSH.
+	  and XSH is designed so that it is very easy to access 
+	  perl interpreter from within XSH.
 	</para>
 	<para>
 	  Perl <link linkend="perl_code">expressions or blocks of
-	  code</link> can either be simply evaluated with the <xref
+	  code</link> can either be simply evaluated using the <xref
 	  linkend="eval_command"/> command, used to do quick changes
 	  to nodes of the DOM tree (see <xref linkend="map_command"/>
 	  command), used to provide list of strings to iterate over in
@@ -526,28 +527,62 @@
 	  <emphasis>are</emphasis> Perl variables defined in the
 	  <literal>XML::XSH::Map</literal> namespace.</para>
 	<para>
-	  The interaction between XSH and Perl actually works also the
-	  other way round, so that you may call back XSH from the
+	  The interaction between XSH and Perl actually works the
+	  other way round as well, so that you may call back XSH from the
 	  evaluated Perl code.  For this, Perl function
 	  <literal>xsh</literal> is defined in the
 	  <literal>XML::XSH::Map</literal> namespace.  All parameters
-	  passed to this function are interpreted as XSH commands. To
-	  simplify evaluation of XPath expressions, another three
-	  functions:  The first one, named <literal>count</literal>,
-	  returns the same value as would be printed by <xref
-	  linkend="count_command"/> command in XSH on the same XPath
-	  expression. The second function, named <literal>literal</literal>,
-	  returns the result of XPath evaluation as if the whole
-	  expression was wrapped with the XPath
-	  <literal>string()</literal> function. In other words,
+	  passed to this function are interpreted as XSH commands.</para>
+	<para>Moreover, the following
+	  Perl helper functions are defined:
+	</para>
+	<para><literal>xsh(string,....)</literal> - evaluates
+	  given string(s) as XSH commands.
+	</para>
+	<para><literal>count(string)</literal> - evaluates
+	  given string as an XPath expression and returns
+	  either literal value of the result (in case of
+	  boolean, string and float result type) or
+	  number of nodes in a returned node-set.
+	</para>
+	<para><literal>literal(string)</literal> -
+	  evaluates string as a given XPath expression
+	  and returns the literal value of the result,
+	  as if the whole XPath expression was wrapped
+	  in the XPath <literal>string()</literal> function.
+	  In other words,
 	  <literal>literal('doc:expression')</literal> returns the same
 	  value as <literal>count('doc:string(expression)')</literal>.
-	  The third function, named <literal>xml_list</literal>, returns
-	  the result of the XPath search as a XML string which is
-	  equivallent to the output of a <xref
-	  linkend="list_command"/> on the same XPath expression
-	  (without indentation and without folding or any other
-	  limitation on the depth of the listing).
+	</para>
+	<para>
+	  <literal>serialize(string)</literal> - returns
+	  the result of the XPath search serialized into XML.
+	  The resulting string is equal to the output of a <xref
+	  linkend="list_command"/> XSH command on the same XPath expression
+	  without indentation, folding or other limitations on the depth of the listing.
+	</para>
+	<para>
+	  <literal>type(string)</literal> - evaluates
+	  given XPath expression to obtain a node-set
+	  and returns a list of strings representing
+	  types of nodes in the node-set
+	  (ordered in the cannonical document order).
+	  The returned type strings are: 
+	  <literal>element</literal>,
+	  <literal>attribute</literal>,
+	  <literal>text</literal>,
+	  <literal>cdata</literal>,
+	  <literal>pi</literal>,
+	  <literal>entity_reference</literal>,
+	  <literal>document</literal>,
+	  <literal>chunk</literal>,
+	  <literal>comment</literal>,
+	  <literal>namespace</literal>,
+	  <literal>unknown</literal>.
+	</para>
+	<para>
+	  <literal>echo(string,...)</literal> - prints
+	  given strings on XSH output.
 	</para>
 	<para>
 	  In the following examples we use Perl to populate the
@@ -586,51 +621,51 @@
       <section id="binding_perl_xpathextensions">
         <title>Writing your own XPath extension functions in Perl</title>
         <para>
-	  XSH allows the user to extend the set of XPath functions by
-	  providing an extension function written in Perl.  This can
+	  XSH allows users to extend the set of XPath functions by
+	  providing extension functions written in Perl.  This can
 	  be achieved using the <xref linkend="registerfunc_command"/>
-	  command.  The perl code implementing an extension function
+	  command. The perl code implementing an extension function
 	  works as a usual perl routine accepting its arguments in
 	  <literal>@_</literal> and returning the result. The
 	  following conventions are used:
 	</para>
 	<para>
 	  The arguments passed to the perl implementation by the XPath
-	  engine are either simple scalars or
-	  <literal>XML::LibXML::NodeList</literal> objects, depending
-	  on the types of the XPath arguments.  The implementation is
-	  responsible for checking the argument number and types.  The
-	  implementation may use arbitrary
-	  <literal>XML::LibXML</literal> methods to process the
-	  arguments and return the result.
-	  (<literal>XML::LibXML</literal> perl module documentation
+	  engine are simple scalars for string, boolean and float
+	  argument types and
+	  <literal>XML::LibXML::NodeList</literal> objects for node-set
+	  argument types. The implementation is
+	  responsible for checking the argument number and types. The
+	  implementation may use general Perl functions as well as
+	  <literal>XML::LibXML</literal>
+	  methods to process the arguments and return the result.
+	  Documentation for the <literal>XML::LibXML</literal> Perl module
 	  can be found for example at <ulink
-	  url="http://search.cpan.org/author/PHISH/XML-LibXML-1.54/LibXML.pm">http://search.cpan.org/author/PHISH/XML-LibXML-1.54/LibXML.pm</ulink>).
+	  url="http://search.cpan.org/author/PHISH/XML-LibXML-1.54/LibXML.pm">http://search.cpan.org/author/PHISH/XML-LibXML-1.54/LibXML.pm</ulink>.
 	</para>
 	<para>
-	  The implementation SHOULD NOT, however, MODIFY the document.
-	  Doing so could not only confuse the XPath engine but result
-	  in an critical error (such as segmentation fault).
-	</para>
-	<para>
+	  Extension functions SHOULD NOT MODIFY the document DOM tree.
+	  Doing so could not only confuse the XPath engine but possibly 
+	  even result in an critical error (such as segmentation fault).
 	  Calling XSH commands from extension function implementations
-	  is not currently allowed.
+	  is also dangerous and isn't generally recommended.
 	</para>
 	<para>
-	  The perl code must return a single value, which can be of
-	  one of the following types: a simple scalar (a number or
+	  The extension function implementation must return 
+	  a single value, which can be of
+	  one of the following types: simple scalar (a number or
 	  string), <literal>XML::LibXML::Boolean</literal> object
 	  reference (result is a boolean value),
 	  <literal>XML::LibXML::Literal</literal> object reference
 	  (result is a string), <literal>XML::LibXML::Number</literal>
 	  object reference (resulat is a float),
 	  <literal>XML::LibXML::Node</literal> (or derived) object
-	  reference (result is a nodeset consisting of a single node),
+	  reference (result is a node-set consisting of a single node),
 	  or <literal>XML::LibXML::NodeList</literal> (result is a
-	  nodeset). For convenience, simple (non-blessed) array
+	  node-set). For convenience, simple (non-blessed) array
 	  references consisting of
 	  <literal>XML::LibXML::Node</literal> objects can also be
-	  used for a nodeset result instead of a
+	  used for a node-set result instead of a
 	  <literal>XML::LibXML::NodeList</literal>.
         </para>
       </section>
@@ -638,9 +673,9 @@
 	<title>Calling the System Shell</title>
 	<para>
 	  In the interactive mode, XSH interprets all lines starting
-	  with a exclamation mark (<literal>!</literal>) as shell
-	  commands and invokes the system shell to interpret them
-	  (this is to mimic FTP command-line interpreters).
+	  with the exclamation mark (<literal>!</literal>) as shell
+	  commands and invokes the system shell to interpret the line
+	  (this is to mimic FTP and similar command-line interpreters).
 	</para>
 	<example>
 	  <code>xsh> <userinput>!ls -l</userinput>
@@ -2802,23 +2837,24 @@ xsh scratch:/> ls %wrapper;
 	    a start node and an end node. All nodes within
 	    a span must have the same parent node.
 	    The spans to be wrapped are defined
-	    by two <xref linkend="xpath"/> expressions.
+	    by a pair of <xref linkend="xpath"/> expressions.
 	    The first one should evaluate to 
-	    a node-set containing start-nodes of the spans.
-	    The other should evaluate to a node-set of span end-nodes.
-	    Thus, the two <xref linkend="xpath"/> expressions
-	    should evaluate do the same number of nodes.
-	    The n'th span is then defined by the 
-	    n'th node matching the first <xref linkend="xpath"/>
-	    expression and the n'th node matching the
+	    a node-set of start nodes of one or more spans.
+	    The other should evaluate to a node-set of the corresponding
+	    span end nodes.
+	    The two <xref linkend="xpath"/> expressions
+	    must evaluate do the exactly same number of nodes.
+	    The n'th span is then defined as a span
+	    starting on the n'th node matching the first <xref linkend="xpath"/>
+	    expression and ending at the n'th node matching the
 	    second <xref linkend="xpath"/> expression
-	    (in document order).
+	    (in the canonical document order).
 	  </para>
 	  <para>
 	    For each span,
-	    a new element node is generated according to a
+	    a new element node is constructed according to a
 	    given <xref linkend="expression"/> (in the same
-	    way as <xref linkend="xinsert_command"/> does)
+	    way as with <xref linkend="xinsert_command"/>)
 	    and all nodes within the span are removed from
 	    the document and placed into the newly generated element.
 	    The element is then placed back into the document tree
@@ -2828,7 +2864,7 @@ xsh scratch:/> ls %wrapper;
 	    If <literal>result</literal> or <literal>append-result</literal>
 	    keywords are present, followed by a name
 	    of a <xref linkend="nodelistvariable"/>,
-	    the newly created elements are also stored into the given
+	    the newly created elements are stored into the given
 	    node-list (with <literal>result</literal> the
 	    node-list variable is emptied first).
 	  </para>
