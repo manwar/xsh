@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.33 2002-10-29 11:25:05 pajas Exp $
+# $Id: Functions.pm,v 1.34 2002-10-30 10:07:00 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -1065,6 +1065,7 @@ sub save_doc {
 	$_xml_module->set_encoding($doc,$enc);
       }
       if ($target eq 'file') {
+	$doc->setCompression(6) if $file=~/\.gz\s*$/;
 	$doc->toFile($file,$_indent); # should be document-encoding encoded
 	$_files{$id}=$file;
       } elsif ($target eq 'pipe') {
