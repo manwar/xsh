@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Aug  9 16:52:48 2002
+# Mon Aug 26 17:11:49 2002
 
 
 package XML::XSH::Grammar;
@@ -528,7 +528,11 @@ $grammar=<<'_EO_GRAMMAR_';
 
   loc:
 	    /after\s/
+		{ "after" }
+  	
 	  | /before\s/
+		{ "before" }
+  	
 	  | /(to|into|as child( of)?)\s/
 		{ "as_child" }
   	

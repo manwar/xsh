@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Aug  9 16:52:48 2002
+# Mon Aug 26 17:11:49 2002
 
 package XML::XSH::Help;
 use strict;
@@ -1072,7 +1072,7 @@ description: Turn on recovering parser mode if the <expression> is non-zero or o
 
 	     The recover mode helps to efficiently recover documents that
 	     are almost well-formed. This for example includes documents
-	     whit to close tag for the document element (or any other
+	     without a close tag for the document element (or any other
 	     element inside the document).
 
 END
