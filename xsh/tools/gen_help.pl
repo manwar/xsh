@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_help.pl,v 1.10 2002-12-11 13:56:17 pajas Exp $
+# $Id: gen_help.pl,v 1.11 2003-08-07 13:59:30 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -108,10 +108,10 @@ foreach my $r ($rules->findnodes('./rule')) {
     print "description:\n";
     print_description($desc," "x(13)," "x(13));
   }
-  @seealso=grep {defined($_)} $ruledoc->findnodes('./description/see-also/ruleref');
+  @seealso=grep {defined($_)} $ruledoc->findnodes('./see-also/ruleref');
   if (@seealso) {
     print "see also:     ",join " ", grep {defined($_)}
-      map { get_name($_) } @seealso;
+      map { $_->getAttribute('ref') } @seealso;
     print "\n\n";
   }
 
@@ -149,6 +149,7 @@ foreach my $sec ($dom->findnodes('/recdescent-xml/doc/section')) {
   print "END\n\n";
 }
 
+print "\$HELP{'commands'}=\$HELP{'command'};\n";
 
 print "\n1;\n__END__\n\n";
 
