@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Tue Oct 22 14:05:34 2002
+# Fri Oct 25 18:02:43 2002
 
 package XML::XSH::Help;
 use strict;
@@ -286,9 +286,9 @@ description:
 
 	     The routine can be later invoked using the <call> command
 	     followed by the routine name and parameters. Nodelist
-	     parameters have to be given as an XPath expressions, and are
+	     parameters must be given as an XPath expressions, and are
 	     evaluated just before the subroutine's body is executed.
-	     String variables must be given as a (string) <expression>.
+	     String parameters must be given as (string) <expression>s.
 	     Resulting node-lists/strings are stored into the parametric
 	     variables before the body is executed. These variables are
 	     local to the subroutine's call tree (see also the <local>
@@ -420,23 +420,25 @@ END
 
 
 $HELP{'local'}=[<<'END'];
-usage:       local $<id>=<xpath>
-             local %<id>=<xpath>
+usage:       local $<id> [ = <xpath>]
+             local %<id> [ = <xpath>]
              
 description:
 	     This command acts in a very similar way as <assign> does,
 	     except that the variable assignment is done temporarily and
 	     lasts only for the rest of the nearest enclosing
 	     <command-block>. At the end of the enclosing block or
-	     subroutine the original value is restored.
+	     subroutine the original value is restored. This command may
+	     also be used without the assignment part and assignments may
+	     be done later using the usual <assign> command.
 
 	     Note, that the variable itself is not lexically is still
 	     global in the sense that it is still visible to any subroutine
 	     called subsequently from within the same block. A local just
 	     gives temporary values to global (meaning package) variables.
-	     Unlike C's `auto' or Perl's `my' declarations it does not
-	     create a local variable. This is known as dynamic scoping.
-	     Lexical scoping is not implemented in XSH, at least so far.
+	     Unlike Perl's `my' declarations it does not create a local
+	     variable. This is known as dynamic scoping. Lexical scoping is
+	     not implemented in XSH.
 
 	     To sum up for Perl programmers: `local' in XSH works exactly
 	     the same as `local' in Perl.
@@ -490,9 +492,9 @@ usage:       call <id> [<xpath> | <expression>]*
 description:
 	     Call an XSH subroutine named <id> previously created using
 	     def. If the subroutine requires some paramters, these have to
-	     be specified after the <id>. Node-list parameters have to be
-	     provided as <xpath> expressions. String variables are have to
-	     be provided as string <expression>.
+	     be specified after the <id>. Node-list parameters are given by
+	     means of <xpath> expressions. String parameters have to be
+	     string <expression>s.
 
 END
 
@@ -740,15 +742,54 @@ $HELP{'location'}=[<<'END'];
 Location argument type
 
 description:
-	     One of: after, before, (in)to/as child (of), (as) first (child
-	     (of)), append(ing), prepend(ing), replace/instead (of)?.
+	     One of: `after', `before', `into', `append', `prepend',
+	     `replace'.
 
-	     This argument is required by all commands allow inserting
-	     nodes to a document at a destination given by an XPath
-	     expression. The semantics for location argument values depends
-	     types of both the source node and the target node.
+	     NOTE: XSH 1.6 introduces two new values for location argument:
+	     `append' and `prepend' and slighlty changes behavior of
+	     `after' and `before'!
 
-	     TO BE DOCUMENTED!
+	     This argument is required by all commands that insert nodes to
+	     a document in some way to a destination described by an XPath
+	     expression. The meaning of the values listed above is supposed
+	     be obvious in most cases, however the exact semantics for
+	     location argument values depends on types of both the source
+	     node and the target node.
+
+	     `after/before' place the node right after/before the
+	     destination node, except for when the destination node is a
+	     document node or one of the source nodes is an attribute: If
+	     the destination node is a document node, the source node is
+	     attached to the end/beginning of the document (remember: there
+	     is no "after/before a document"). If both the source and
+	     destination nodes are attributes, then the source node is
+	     simply attached to the element containing the destination node
+	     (remember: there is no order on attribute nodes). If the
+	     destination node is an attribute but the source node is of a
+	     different type, then the textual content of the source node is
+	     appended to the value of the destination attribute (i.e. in
+	     this case after/before act just as append/prepend).
+
+	     `append/prepend' appends/prepends the source node to the
+	     destination node. If the destination node can contain other
+	     nodes (i.e. it is an element or a document node) then the
+	     entire source node is attached to it. In case of other
+	     destination node types, the textual content of the source node
+	     is appended/prepended to the content of the destination node.
+
+	     `into' can also be used to place the source node to the end of
+	     an element (in the same way as `append'), to attach an
+	     attribute to an element, or, if the destination node is a text
+	     node, cdata section, processing-instruction, attribute or
+	     comment, to replace its textual content with the textual
+	     content of the source node.
+
+	     `replace' replaces the entire destination node with the source
+	     node except for the case when the destination node is an
+	     attribute and the source node is not. In such a case only the
+	     value of the destination attribute is replaced with the
+	     textual content of the source node. Note also that document
+	     node can never be replaced.
 
 END
 
@@ -1448,13 +1489,15 @@ END
 
 
 $HELP{'switch-to-new-documents'}=[<<'END'];
-usage:       switch-to-new-documents
+usage:       switch-to-new-documents <expression>
              
 aliases:     switch_to_new_documents
 
 description:
-	     If true, change current node to the document node of a newly
-	     open/created files after <open> or <create>.
+	     If non-zero, XSH changes current node to the document node of
+	     a newly open/created files every time a new document is opened
+	     or created with <open> or <create>. Default value for this
+	     option is 1.
 
 END
 
