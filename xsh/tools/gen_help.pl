@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_help.pl,v 1.7 2002-09-27 08:00:52 pajas Exp $
+# $Id: gen_help.pl,v 1.8 2002-10-22 17:05:21 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -19,6 +19,7 @@ EOF
 my $parser=XML::LibXML->new();
 $parser->load_ext_dtd(1);
 $parser->validation(1);
+$parser->keep_blanks(1);
 my $doc=$parser->parse_file($ARGV[0]);
 
 my $dom=$doc->getDocumentElement();
@@ -120,7 +121,9 @@ sub get_text {
   foreach my $n ($node->childNodes()) {
     if ($n->nodeType() == XML::LibXML::XML_TEXT_NODE ||
 	$n->nodeType() == XML::LibXML::XML_CDATA_SECTION_NODE) {
-      $text.=$n->getData();
+      my $data=$n->getData();
+      $data=~s/\t/  /g;
+      $text.=$data;
     } elsif ($n->nodeType() == XML::LibXML::XML_ELEMENT_NODE) {
       if ($n->nodeName() eq 'link') {
 	$text.="<".get_text($n,1).">";
@@ -165,10 +168,14 @@ sub  print_description {
 	  s/\s+/ /g;
 	  print wrap("",$bigindent,"Example:"." "x(max(1,length($bigindent)-8))."$_\n");
 	}
+	unless ($c->findnodes('./title')) {
+	  print "Example:";
+	}
 	print "\n";
 	foreach (map { get_text($_) } $c->findnodes('./code')) {
-	  s/\n[ ]+/\n$bigindent/g;
-	  s/\\\n/\\\n  /g;
+	  s/\n[ ]*/\n$bigindent/mg;
+
+	  s/\\\n/\\\n$bigindent  /g;
 	  s/\t/  /g;
 	  print "$bigindent$_\n";
 	}

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_grammar.pl,v 1.8 2002-09-27 08:00:52 pajas Exp $
+# $Id: gen_grammar.pl,v 1.9 2002-10-22 17:05:21 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -109,7 +109,9 @@ sub create_rule_production {
       $result.=" /".get_text($item)."/";
     } elsif ($name eq 'directive') {
       my $text=get_text($item);
-      $result.=" <".$item->getAttribute('type');
+      my $type=$item->getAttribute('type');
+      $type='error?' if ($type eq 'error-if-committed');
+      $result.=" <".$type;
       $result.=":$text" if ($text ne "");
       $result.=">";
     } elsif ($name eq 'ruleref') {
