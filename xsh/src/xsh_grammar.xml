@@ -207,7 +207,8 @@
 	<title>Using string variables to convert between different
 	  types of nodes</title>
 	<code>
-	  xsh&gt; <userinput>create doc &quot;&lt;?xml version='1.0'?&gt;
+	  <userinput>create doc &lt;&lt;EOF;
+	  &lt;?xml version='1.0'?&gt;
 	    &lt;book&gt;
 	    <tab/>&lt;chapter&gt;
 	  <tab count="2"/>&lt;title&gt;Intro&lt;/title&gt;
@@ -215,14 +216,15 @@
 	  <tab/>&lt;chapter&gt;
 	    <tab count="2"/>&lt;title&gt;Rest&lt;/title&gt;
 	  <tab/>&lt;/chapter&gt;
-	    &lt;/book&gt;&quot;;</userinput>
+	    &lt;/book&gt;
+	  EOF
+	  </userinput>
 
 	  # comment out the first chapter
-	  xsh&gt; <userinput>ls //chapter[1] |&gt; $chapter_xml;</userinput>
-	  xsh&gt; <userinput>add comment $chapter_xml replace //chapter[1];</userinput>
-
-	  # show the result
-	  xsh&gt; <userinput>ls / 0;</userinput>
+	  <userinput>ls //chapter[1] |&gt; $chapter_xml;</userinput>
+	  <userinput>add comment $chapter_xml replace //chapter[1];</userinput>
+	  <userinput>ls / 0;</userinput>
+	  # OUTPUT:
 	  &lt;?xml version=&quot;1.0&quot;?&gt;
 	  &lt;book&gt;
 	  &lt;!--<tab/>&lt;chapter&gt;
@@ -236,11 +238,10 @@
 
 
 	  # un-comment the chapter
-	  xsh&gt; <userinput>$comment = string(//comment()[1]);</userinput>
-	  xsh&gt; <userinput>add chunk $comment replace //comment()[1];</userinput>
-
-	  # show the result
-	  xsh&gt; <userinput>ls / 0;</userinput>
+	  <userinput>$comment = string(//comment()[1]);</userinput>
+	  <userinput>add chunk $comment replace //comment()[1];</userinput>
+	  <userinput>ls / 0;</userinput>
+	  # OUTPUT:
 	  &lt;?xml version=&quot;1.0&quot;?&gt;
 	  &lt;book&gt;
 	  <tab/>&lt;chapter&gt;
@@ -816,6 +817,7 @@ sub new {
       <ruleref ref="namespaces_command"/>
       <ruleref ref="xpath_completion_command"/>
       <ruleref ref="xpath_axis_completion_command"/>
+      <ruleref ref="doc_info_command"/>
       <!-- ADD NEW COMMANDS HERE -->
       <production>
 	<ruleref ref="call_command"/>
@@ -1228,7 +1230,7 @@ END
 	<directive type="error">expected ID:XPath or XPath, but got "}.substr($text,0,40).qq{ ..."</directive>
       </production>
       <documentation sections="Argtypes Navigation Manipulation Variables">
-	<title>Xpath argument type</title>
+	<title>XPath argument type</title>
 	<shortdesc>XPath expression</shortdesc>
 	<description>
 	  <para>
@@ -3282,20 +3284,21 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
     </rule>
     <rule id="close_command" type="command" name="close" inline="yes">
       <production>
-	<selfref/>
+	<selfref sep="no"/>
 	<directive type="commit"/>
-	<ruleref ref="expression"/>
-	<action>[\&amp;XML::XSH::Functions::close_doc,$item[3]]</action>
+	<ruleref ref="optional_expression" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::close_doc,@{$item[3]}]</action>
       </production>
       <documentation sections="Documents">
-	<usage>close <xref linkend="ID"/></usage>
+	<usage>close [<xref linkend="ID"/>]</usage>
 	<shortdesc>close document (do not save it, though)</shortdesc>
 	<description>
 	  <para>
 	    Close the document identified by <xref linkend="ID"/>,
 	    removing its parse-tree from memory (note also that all
 	    nodes belonging to the document are removed from all
-	    nodelists they appear in).
+	    nodelists they appear in). If <xref linkend="ID"/> is
+	    omitted, the command closes the current document.
 	  </para>
 	</description>
       </documentation>
@@ -4618,7 +4621,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  </para>
 	</description>
 	<see-also>
-	  <ruleref ref="foreach_command"/>
+	  <ruleref ref="foreach"/>
 	  <ruleref ref="next_command"/>
 	  <ruleref ref="prev_command"/>
 	  <ruleref ref="last_command"/>
@@ -4906,7 +4909,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       </production>
       <documentation sections="Configuration">
 	<usage>xpath_completion <xref linkend="expression"/></usage>
-	<shortdesc>turn on/off TAB complation for xpath expressions in
+	<shortdesc>turn on/off TAB completion for xpath expressions in
 	the interactive mode</shortdesc>
 	<description>
 	  <para>
@@ -4933,8 +4936,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::set_xpath_axis_completion,$item[3]]</action>
       </production>
       <documentation sections="Configuration">
-	<usage>xpath_axis_completion <xref linkend="expression"/></usage>
-	<shortdesc>sets TAB complation for axes in xpath expressions in
+	<usage>xpath-axis-completion <xref linkend="expression"/></usage>
+	<shortdesc>sets TAB completion for axes in xpath expressions in
 	the interactive mode</shortdesc>
 	<description>
 	  <para>
@@ -4965,6 +4968,33 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  </para>
 	  <para>This command is equivalent to setting the
 	    <literal>$XPATH_AXIS_COMPLETION</literal> variable.</para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="doc_info_command" type="command"
+	    name="doc-info" inline="yes">
+      <aliases>
+	<alias name="doc_info"/>
+      </aliases>
+      <production>
+	<selfref sep="no"/>
+	<directive type="commit"/>
+	<ruleref ref="optional_expression" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::doc_info,@{$item[3]}]</action>
+      </production>
+      <documentation sections="Information">
+	<usage>doc-info [<xref linkend="expression"/>]</usage>
+	<shortdesc>displays various information about a document</shortdesc>
+	<description>
+	  <para>
+	    In the present implementation, this command displays
+	    information provided in the <literal>&lt;?xml
+	    ...?&gt;</literal> declaration of a document:
+	    <literal>version</literal>, <literal>encoding</literal>,
+	    <literal>standalone</literal>, plus information about
+	    level of <literal>gzip</literal> compression of the
+	    original XML file.
+	  </para>
 	</description>
       </documentation>
     </rule>
