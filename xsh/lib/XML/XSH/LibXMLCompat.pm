@@ -1,4 +1,5 @@
-# $Id: LibXMLCompat.pm,v 1.12 2003-08-07 13:56:25 pajas Exp $
+# -*- cperl -*-
+# $Id: LibXMLCompat.pm,v 1.13 2003-08-25 12:25:04 pajas Exp $
 
 package XML::XSH::LibXMLCompat;
 
