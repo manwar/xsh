@@ -1,4 +1,4 @@
-# $Id: XSH.pm,v 1.9 2003-03-12 13:54:11 pajas Exp $
+# $Id: XSH.pm,v 1.10 2003-08-07 13:47:39 pajas Exp $
 
 package XML::XSH;
 
@@ -56,11 +56,12 @@ xsh()
 =head1 DESCRIPTION
 
 This module implements XSH sripting language. XSH stands for XML
-(editing) SHell. XSH language is documented on
-http://xsh.sourceforge.net/doc.
+(editing) SHell. XSH language is documented in L<XSH>
+and on L<http://xsh.sourceforge.net/doc>.
 
 The distribution package of XML::XSH module includes XSH shell
-interpreter called C<xsh>. To use it interactively, run C<xsh -i>.
+interpreter called C<xsh> (see L<xsh>). To use it interactively, run
+C<xsh -i>.
 
 =head2 C<xsh_init>
 
@@ -80,6 +81,6 @@ Petr Pajas, pajas@matfyz.cz
 
 =head1 SEE ALSO
 
-L<XML::LibXML>, L<XML::XUpdate>, http://xsh.sourceforge.net/doc
+L<xsh> L<XSH> L<XML::LibXML>, L<XML::XUpdate>
 
 =cut
