@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Dec  6 09:51:28 2002
+# Tue Dec 10 19:26:42 2002
 
 package XML::XSH::Help;
 use strict;
@@ -75,9 +75,10 @@ Help items:
     parser-completes-attributes, parser-expands-entities,
     parser-expands-xinclude, pedantic-parser, perl, print,
     process-xinclude, pwd, query-encoding, quiet, recovering, remove,
-    run-mode, save, select, sort, switch-to-new-documents, test-mode, try,
-    unfold, unless, valid, validate, validation, variables, verbose,
-    version, while, xcopy, xinsert, xmove, xslt, xupdate
+    run-mode, save, select, sort, strip-whitespace,
+    switch-to-new-documents, test-mode, try, unfold, unless, valid,
+    validate, validation, variables, verbose, version, while, xcopy,
+    xinsert, xmove, xslt, xupdate
 
   XSH Argument Types:
 
@@ -98,10 +99,10 @@ description:
 	     parser-completes-attributes, parser-expands-entities,
 	     parser-expands-xinclude, pedantic-parser, perl, print,
 	     process-xinclude, pwd, query-encoding, quiet, recovering,
-	     remove, run-mode, save, select, sort, switch-to-new-documents,
-	     test-mode, try, unfold, unless, valid, validate, validation,
-	     variables, verbose, version, while, xcopy, xinsert, xmove,
-	     xslt, xupdate
+	     remove, run-mode, save, select, sort, strip-whitespace,
+	     switch-to-new-documents, test-mode, try, unfold, unless,
+	     valid, validate, validation, variables, verbose, version,
+	     while, xcopy, xinsert, xmove, xslt, xupdate
 
 END
 
@@ -969,13 +970,28 @@ usage:       normalize <xpath>
 description:
 	     `normalize' puts all text nodes in the full depth of the
 	     sub-tree underneath each node selected by the given <xpath>,
-	     into a ""normal"" form where only structure (e.g., elements,
+	     into a "normal" form where only structure (e.g., elements,
 	     comments, processing instructions, CDATA sections, and entity
 	     references) separates text nodes, i.e., there are neither
 	     adjacent Text nodes nor empty Text nodes.
 
 END
 
+
+$HELP{'strip-whitespace'}=[<<'END'];
+usage:       strip <xpath>
+             
+aliases:     strip_whitespace
+
+description:
+	     `strip' removes all leading and trailing whitespace from given
+	     nodes. If applied to an element node, it removes all leading
+	     and trailing child text nodes and CDATA sections that only
+	     contain whitespace.
+
+END
+
+$HELP{'strip_whitespace'}=$HELP{'strip-whitespace'};
 
 $HELP{'ls'}=[<<'END'];
 usage:       ls <xpath> [<expression>]
@@ -1737,6 +1753,11 @@ Example: Store XSH document DOC on a remote machine using Secure Shell
 
   xsh> ls DOC:/ | ssh my.remote.org 'cat > test.xml'
 
+
+Related commands:
+  backups, clone, close, create, nobackups, open, process-xinclude, save,
+  select, switch-to-new-documents
+
 END
 
 $HELP{'navigation'}=[<<'END'];
@@ -1775,6 +1796,10 @@ Example:
   xsh docA:/article/chapter[4]> cd ..
   xsh docA:/article> select docB
   xsh docB:/>
+
+
+Related commands:
+  cd, fold, locate, ls, pwd, select, unfold
 
 END
 
@@ -1884,6 +1909,11 @@ Example: Using string variables to convert between different types of nodes
     </chapter>
   </book>
 
+
+Related commands:
+  clone, copy, insert, move, normalize, process-xinclude, remove,
+  strip-whitespace, xcopy, xinsert, xmove, xslt, xupdate
+
 END
 
 $HELP{'flow'}=[<<'END'];
@@ -1901,6 +1931,11 @@ Flow control
   to iterate, while the other one utilizes <perl-code> for this purpose.
   See descriptions of the individual statements for more detail.
 
+
+Related commands:
+  call, def, exit, foreach, if, include, run-mode, test-mode, try, unless,
+  while
+
 END
 
 $HELP{'information'}=[<<'END'];
@@ -1911,6 +1946,11 @@ Retrieving more information
   (as described in <navigation>), XSH provides commands to obtain other
   information related to open documents as well as the XSH interpreter
   itself. These commands are listed bellow.
+
+
+Related commands:
+  count, defs, dtd, enc, files, help, locate, ls, options, print, pwd,
+  valid, validate, variables, version
 
 END
 
@@ -2055,6 +2095,10 @@ Example:
         sort ($a cmp $b), keys(%races); 
     };
 
+
+Related commands:
+  assign, local
+
 END
 
 $HELP{'configuration'}=[<<'END'];
@@ -2081,6 +2125,14 @@ Options
 
 Example:
   xsh> options | cat > ~/.xshrc
+
+
+Related commands:
+  backups, debug, encoding, indent, keep-blanks, load-ext-dtd, nobackups,
+  nodebug, options, parser-completes-attributes, parser-expands-entities,
+  parser-expands-xinclude, pedantic-parser, query-encoding, quiet,
+  recovering, run-mode, switch-to-new-documents, test-mode, validation,
+  verbose
 
 END
 
@@ -2207,6 +2259,10 @@ Example: Use grep and less to display context of `funny'
 Example: The same on Windows 2000/XP systems
 
     xsh> ls //chapter[5]/para | find "funny" | more
+
+
+Related commands:
+  exec, lcd, map, perl
 
 END
 
