@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.51 2003-05-02 16:59:08 pajas Exp $
+# $Id: Functions.pm,v 1.52 2003-05-02 17:19:12 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -26,7 +26,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.7';
-  $REVISION='$Revision: 1.51 $';
+  $REVISION='$Revision: 1.52 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -1396,7 +1396,7 @@ sub list {
 
 # list namespaces in scope of the given nodes
 sub list_namespaces {
-  my $xp = $_[0] || '.';
+  my $xp = $_[0] || [undef,'.'];
   my ($id,$query,$doc)=_xpath($xp);
   unless (ref($doc)) {
     die "No such document '$id'!\n";
