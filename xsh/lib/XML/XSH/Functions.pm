@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.41 2002-12-11 13:55:28 pajas Exp $
+# $Id: Functions.pm,v 1.42 2002-12-13 11:45:59 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -22,7 +22,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.6';
-  $REVISION='$Revision: 1.41 $';
+  $REVISION='$Revision: 1.42 $';
   @ISA=qw(Exporter);
   @EXPORT_OK=qw(&xsh_init &xsh &xsh_get_output
                 &xsh_set_output &xsh_set_parser
@@ -2458,13 +2458,14 @@ sub try_catch {
     local $TRAP_SIGPIPE=1;
     local $SIG{INT}=\&sigint;
     local $SIG{PIPE}=\&sigpipe;
+    local $_die_on_err=1; # make sure errors cause an exception
     run_commands($try);
   };
   if ($@) {
     if ($@ =~ /^SIGINT/) {
       die $@; # propagate sigint
     } else {
-      _assign($var,$@);
+      _assign($var,$@) if $var ne "";
       run_commands($catch);
     }
   }
