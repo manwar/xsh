@@ -1,3 +1,99 @@
+2002-09-02  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* tools/gen_reference.xsh:
+	many improvements, docbook stylesheet lookup with locate
+
+	* tools/gen_grammar.pl, tools/gen_help.pl: changes to reflect new DTD
+
+	* src/recdescent.dtd, src/xsh_grammar.xml: - documentation improved
+	- fold/unfold commands added
+
+	* lib/XML/XSH/Functions.pm: version number changed
+	fold/unfold commands implemented
+	XML::XSH::Map::count function added
+
+	* lib/XML/XSH/CompletionList.pm, lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm, lib/XML/XSH/Parser.pm:
+	regenerated
+
+	* MANIFEST, MANIFEST.SKIP, Makefile.PL: simple update
+
+2002-08-30  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* TODO: some stuff now solved?
+
+	* tools/gen_help.pl, tools/gen_reference.xsh:
+	changed according to new recdescent.dtd layout
+
+	* t/02gdome.t: fixed to skip tests on systems without XML::GDOME
+
+	* src/recdescent.dtd: several documentation elements added
+
+	* lib/XML/XSH/Functions.pm: - foreach context fix
+	- new XSH command "sort" implemented
+	- insert_node improvements
+	- xslt parameters string interpolation added
+	- some more fixes
+
+	* lib/XML/XSH/GDOMECompat.pm, lib/XML/XSH/LibXMLCompat.pm:
+	is_document, is_namespace
+
+	* lib/XML/XSH/CompletionList.pm, lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm, lib/XML/XSH/Parser.pm:
+	regenerated
+
+	* lib/XML/XSH.pm: XSH namespace now followed by a slash
+
+	* xsh: version/revision number information fixes
+
+	* src/xsh_grammar.xml: some more doc and other fixes
+
+	* tools/gen_reference.xsh: initial commit
+
+2002-08-28  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* lib/XML/XSH/Functions.pm:
+	moved no warnings to eval to support older perl versions
+
+	* lib/XML/XSH/Functions.pm: removed ls debug print
+
+	* lib/XML/XSH/Functions.pm:
+	* fixed Term::ReadLine->OUT->print compatibility for
+	  Term::ReadLine::Gnu and older versions of Perl etc.
+	  (reported by Tom Nurkkala)
+
+2002-08-26  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* ChangeLog: *** empty log message ***
+
+	* lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm, lib/XML/XSH/Parser.pm:
+	regenerated
+
+	* src/xsh_grammar.xml: fixed after/before locations parsing
+
+	* t/01basic.t, t/02gdome.t: fixed missing semicolons
+
+	* src/xsh_grammar.xml: new commands: recovering and options
+	new node-type: entity-reference (use with care)
+
+	* lib/XML/XSH/CompletionList.pm, lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm, lib/XML/XSH/Parser.pm:
+	regenerated from xsh_grammar.xml
+
+	* lib/XML/XSH/GDOMECompat.pm, lib/XML/XSH/LibXMLCompat.pm:
+	flag for recovering parser enabled
+
+	* lib/XML/XSH/Functions.pm: - improved namespaces handling
+	- list_flags and recovering implemented
+	- simple folding implemented (via fold attribute in XSH namespace)
+	- many bugfixes
+
+	* lib/XML/XSH.pm: $XML::XSH::xshNS variable holds XSH namespace URI
+
+	* xsh:
+	saving/loading history from previous session to/from .xsh_history
+
+	* TODO: new TODOs
+
+	* Makefile.PL: require latest versions of LibXML and XUpdate
+
 2002-08-26  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
 
 	* lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm, lib/XML/XSH/Parser.pm:
