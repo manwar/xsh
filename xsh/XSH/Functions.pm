@@ -659,8 +659,8 @@ sub get_dtd {
 	} elsif ($_parser->load_ext_dtd) {
 	  my $str=$_->toString();
 	  my $name=$_->getName();
-	  my $public_id="";
-	  my $system_id="";
+	  my $public_id;
+	  my $system_id;
 	  if ($str=~/PUBLIC\s+(\S)([^\1]*\1)\s+(\S)([^\3]*)\3/) {
 	    $public_id=$2;
 	    $system_id=$4;
@@ -668,10 +668,17 @@ sub get_dtd {
 	  if ($str=~/SYSTEM\s+(\S)([^\1]*)\1/) {
 	    $system_id=$2;
 	  }
+	  if ($system_id!~m(/)) {
+	    $system_id="$1$system_id" if ($doc->URI()=~m(^(.*/)[^/]+$));
+	  }
 	  print STDERR "loading external dtd: $system_id\n" unless "$_quiet";
-	  $dtd=XML::LibXML::Dtd->new($public_id, $system_id) if $system_id ne "";
-	  $dtd->setName($name);
-	  print STDERR "failed to load dtd: $system_id\n" unless ($dtd or "$_quiet");
+	  $dtd=XML::LibXML::Dtd->new($public_id, $system_id)
+	    if $system_id ne "";
+	  if ($dtd) {
+	    $dtd->setName($name);
+	  } else {
+	    print STDERR "failed to load dtd: $system_id\n" unless ("$_quiet");
+	  }
 	}
       }
     }
