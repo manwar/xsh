@@ -561,7 +561,7 @@ usage:       var, vars
 
 description: List all defined variables and their values.
 
-see also:    files
+see also:    files, defs
 H1
 'saveas' => <<'H1',
 usage:       saveas <id> <filename> [encoding <encoding>]
@@ -784,6 +784,31 @@ examples:    xsh> create t1 root
              t2 = new_document2.xml
 
 see also:    open, clone
+
+H1
+'defs' => <<'H1',
+
+usage:       defs
+
+description: List names of all defined XSH routines.
+
+see also:    def, variables
+
+H1
+'select' => <<'H1',
+
+usage:       select <id>
+
+description: Make <id> the document identifier to be used in the next
+             xpath evaluation without identifier prefix.
+
+example:     xsh> a=mydoc1.xml       # opens and selects a
+             xsh> list /             # lists a
+             xsh> b=mydoc2.xml       # opens and selects b
+             xsh> list /             # lists b
+             xsh> list a:/           # lists and selects a
+             xsh> select b           # does nothing except selecting b
+             xsh> list /             # lists b
 
 H1
 );
