@@ -1,9 +1,9 @@
-# $Id: Functions.pm,v 1.21 2002-08-28 09:48:44 pajas Exp $
+# $Id: Functions.pm,v 1.22 2002-08-28 09:49:56 pajas Exp $
 
 package XML::XSH::Functions;
 
 use strict;
-eval { no warnings };
+eval "no warnings";
 
 use XML::XSH::Help;
 use IO::File;
