@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.53 2003-05-06 13:46:31 pajas Exp $
+# $Id: Functions.pm,v 1.54 2003-05-07 11:29:30 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -26,7 +26,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.7';
-  $REVISION='$Revision: 1.53 $';
+  $REVISION='$Revision: 1.54 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -3339,7 +3339,7 @@ sub xpath_complete_str {
     }
     return ($result,$localmatch); # uncertain!!!
   } else {
-    return ($result,$localmatch) if ($str=~/\G\s+(?!${OPER})/gsco);
+    return ($result,$localmatch) if ($str=~/\G\s+(?=${OPER})/gsco);
   }
 
  STEP4:

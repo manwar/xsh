@@ -24,6 +24,8 @@ sub xpath_complete_str {
   my $WILDCARD = '\*(?!\*|${NAME}|\)|\]|\.)';
   my $OPER = qr/(?:[,=<>\+\|]|-(?!${NAME})|(?:vid|dom|dna|ro)(?=\s*\]|\s*\)|\s*[0-9]+(?!${NNAMECHAR})|\s+{$NAMECHAR}|\s+\*))/;
 
+  print "match: ",(" dna td[" =~ /^\s+${OPER}/),"\n";
+
   print "'$str'\n" if $debug;
   my $localmatch;
 
@@ -83,7 +85,7 @@ sub xpath_complete_str {
 
  STEP3:
   print "STEP3: $result\n" if $debug;
-  print "STEP3-STR: ".reverse(substr($str,pos($str)))."\n" if $debug;
+  print "STEP3-STR: '".reverse(substr($str,pos($str)))."'\n" if $debug;
   if (substr($result,0,1) eq '/') {
     if ($str =~ /\G['"]/gsco) {
       print STDERR "Error 1: unballanced '$1'\n";
@@ -93,7 +95,8 @@ sub xpath_complete_str {
     }
     return ($result,$localmatch); # uncertain!!!
   } else {
-    return ($result,$localmatch) if ($str=~/\G\s+(?!${OPER})/gsco);
+    print "STEP3-OPER\n" if $debug;
+    return ($result,$localmatch) if ($str=~/\G\s+${OPER}/gsco);
   }
 
  STEP4:
