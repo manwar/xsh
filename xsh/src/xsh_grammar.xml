@@ -707,6 +707,7 @@ sub new {
       <ruleref ref="exit_command"/>
       <ruleref ref="prune_command"/>
       <ruleref ref="map_command"/>
+      <ruleref ref="rename_command"/>
       <ruleref ref="sort_command"/>
       <ruleref ref="close_command"/>
       <ruleref ref="validate_command"/>
@@ -749,6 +750,7 @@ sub new {
       <ruleref ref="strip_ws_command"/>
       <ruleref ref="last_command"/>
       <ruleref ref="next_command"/>
+      <ruleref ref="prev_command"/>
       <ruleref ref="redo_command"/>
       <ruleref ref="return_command"/>
       <ruleref ref="throw_command"/>
@@ -776,6 +778,7 @@ sub new {
       <ruleref ref="while"/>
       <ruleref ref="foreach"/>
       <ruleref ref="try_catch"/>
+      <ruleref ref="iterate"/>
     </rule>
 
     <rule id="complex_command">
@@ -1105,7 +1108,7 @@ sub new {
 	<action>[undef,$item[1]]</action>
       </production>
       <production>
-	<directive type="error">expected ID:XPath or XPath, but got "}.substr(0,40,$text).qq{ ..."</directive>
+	<directive type="error">expected ID:XPath or XPath, but got "}.substr($text,0,40).qq{ ..."</directive>
       </production>
       <documentation sections="argtypes navigation manipulation variables">
 	<title>Xpath argument type</title>
@@ -1335,7 +1338,7 @@ sub new {
 	<action>[[\&amp;XML::XSH::Functions::sh,$item[3]]]</action>
       </production>
       <production>
-	<directive type="error-if-committed">Parse error near: "! }.substr(0,40,$text).qq{ ..."</directive>
+	<directive type="error-if-committed">Parse error near: "! }.substr($text,0,40).qq{ ..."</directive>
 	<directive type="reject"/>
       </production>
     </rule>
@@ -1360,7 +1363,7 @@ sub new {
       </production>
       <production>
 	<directive type="uncommit"/>
-	<directive type="error">Parse error near keyword elsif: "}.substr(0,40,$text).qq{ ..."</directive>
+	<directive type="error">Parse error near keyword elsif: "}.substr($text,0,40).qq{ ..."</directive>
       </production>
     </rule>
     <rule id="else_block" name="else">
@@ -1377,7 +1380,7 @@ sub new {
       </production>
       <production>
 	<directive type="uncommit"/>
-	<directive type="error">Parse error near keyword else: "}.substr(0,40,$text).qq{ ..."</directive>
+	<directive type="error">Parse error near keyword else: "}.substr($text,0,40).qq{ ..."</directive>
       </production>
     </rule>
     <!-- try/catch -->
@@ -1665,7 +1668,7 @@ sub new {
 	</action>
       </production>
       <production>
-	<directive type="error-if-committed">Parse error near: "}.substr(0,40,$text).qq{ ..."</directive>
+	<directive type="error-if-committed">Parse error near: "}.substr($text,0,40).qq{ ..."</directive>
 	<directive type="reject"/>
       </production>
       <documentation sections="flow">
@@ -2834,7 +2837,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    code as well. Since, in the interactive mode, XSH
 	    redirects output to the terminal, you cannot simply use
 	    perl print function for output if you want to filter the
-	    result with a shell command. Instead use predefined perl
+	    result with a shell command. Instead use the predefined perl
 	    routine <literal>echo(...)</literal> which is equivalent to
 	    Perl's
 	    <literal>print $::OUT ...</literal>. The <literal>$::OUT</literal>
@@ -2928,40 +2931,67 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       <production>
 	<selfref/>
 	<directive type="commit"/>
-	<ruleref ref="block"/>
-	<ruleref ref="block"/>
+	<ruleref ref="condition"/>
 	<ruleref ref="perl_code"/>
 	<ruleref ref="nodelistvariable"/>
-	<action>[\&amp;XML::XSH::Functions::perlsort,@item[3..6]]</action>
+	<action>[\&amp;XML::XSH::Functions::perlsort,@item[3..5]]</action>
       </production>
       <documentation>
-	<usage>sort <xref linkend="block"/> <xref linkend="block"/> <xref linkend="perl_code"/> %<xref linkend="ID"/></usage>
-	<shortdesc>sort given node-list using xsh and perl commands</shortdesc>
+	<usage>sort <xref linkend="xpath"/>|<xref linkend="perl_code"/> <xref linkend="perl_code"/> %<xref linkend="ID"/></usage>
+	<shortdesc>sort given node-list by given criteria</shortdesc>
 	<description>
 	  <para>
 	    EXPERIMENTAL! This command is not yet guaranteed to remain in the 
 	    future releases.
 	  </para>
 	  <para>
-	    This command may be used to sort the node-list stored in
-	    the node-list variable <xref linkend="ID"/>. On each
-	    comparizon, first the two <xref linkend="block"/> are
-	    evaluated, each in a context of one of the nodes to
-	    compare. These <xref linkend="block"/> are supposed to
-	    prepair any variables needed for later order comparizon in
-	    the <xref linkend="perl_code"/>.  It is the <xref
-	    linkend="perl_code"/> that is responsible for deciding
-	    which node comes first by returning either -1 (the first
-	    node should come first), 0 (no precedence - e.g. the nodes
-	    gave the same value for comparizon), or 1 (the second node should come first).
+	    DOCUMENTATION OBSOLETE! Syntax changed!
+	  </para>
+	  <para>!!!!TODO!!!!  This command may be used to sort the
+	    node-list stored in the node-list variable <xref
+	    linkend="ID"/>. First, for each node in the node-list, the
+	    first <xref linkend="xpath"/> or <xref
+	    linkend="perl_code"/> expression is evaluated in its
+	    context and the resulting value is remembered for the
+	    node. (In case of <xref linkend="xpath"/>, the result of
+	    whatever type is cast to a string).  Now perl sorting
+	    algorithm is used to sort the nodelist, consulting the
+	    second argument <xref linkend="perl_code"/> to compare
+	    nodes.  Before each comparison, the values obtained from
+	    the previous evaluation of the first argument expression
+	    on the two nodes being compared are stored into
+	    <literal>$a</literal> and <literal>$b</literal> variables
+	    in respective order.  Now, the <xref linkend="perl_code"/>
+	    being consulted is supposed to be either -1 (the first
+	    node should come first), 0 (no order precedence), or 1
+	    (the second node should come first). Note, that Perl
+	    provides very convenient operators <literal>cmp</literal>
+	    and <literal>&lt;=&gt;</literal> for string and numeric
+	    comparison of this kind as shown in the examples below.
+	  </para>
+	  <para>
+	    Note that here, unlike in <xref
+	      linkend="assign_command"/>, <xref linkend="if"/>, or
+	      <xref linkend="while"/>, the evaluation of an <xref
+	      linkend="xpath"/> expression always results in a
+	      string. Thus you need not to bother with wrapping
+	      node-queries with a <literal>string()</literal>
+	      function.
 	  </para>
 	  <example>
-	    <title>Sort creatures by name</title>
+	    <title>Sort creatures by name (XPath-based sort)
+	      in ascending order using current locale settings
+	    </title>
 	    <code>
-	      xsh&gt; <userinput>local $a; local $b;</userinput>
 	      xsh&gt; <userinput>local %c=/middle-earth[1]/creatures</userinput>
-	      xsh&gt; <userinput>sort { $a=string(@name) }{ $b=string(@name) }{ $a cmp $b } %c</userinput>
+	      xsh&gt; <userinput>sort @name { use locale; lc($a) cmp lc($b) } %c</userinput>
 	      xsh&gt; <userinput>xmove %c into /middle-earth[1]</userinput># replaces the creatures</code>
+	  </example>
+	  <example>
+	    <title>Sort (descending order) a node-list by score (Perl-based sort)</title>
+	    <code>
+	      xsh&gt; <userinput>sort { $scores{ literal('@name') } } { $b &lt;=&gt; $a } %players</userinput>
+	    </code>
 	  </example>
 	</description>
       </documentation>
@@ -2979,31 +3009,74 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       </production>
       <documentation sections="perl_shell">
 	<usage>map <xref linkend="perl_code"/> <xref linkend="xpath"/></usage>
-	<shortdesc>quickly rename/modify nodes with in-line Perl code</shortdesc>
+	<shortdesc>quickly modify node value/data using Perl code</shortdesc>
 	<description>
 	  <para>
-	    Each of the nodes matching <xref linkend="xpath"/> is
-	    processed with the <xref linkend="perl_code"/> in the
-	    following way: if the node is an element, its name is
-	    processed, if it is an attribute, its value is used, if it
-	    is a cdata section, text node, comment or processing
-	    instruction, its data is used.  The expression should expect
-	    the data in the $_ variable and should use the same variable
-	    to store the modified data.
+	    This command provides an easy way to modify node's data
+	    (content) using arbitrary Perl code.
 	  </para>
-	  <example>
-	    <title>Renames all hobbits to halflings</title>
-	    <code>xsh&gt; <userinput>map $_='halfling' //hobbit</userinput></code>
-	  </example>
+	  <para>
+	    Each of the nodes matching <xref linkend="xpath"/> is
+	    passes its data to the <xref linkend="perl_code"/> via
+	    the <literal>$_</literal> variable and receives the (possibly)
+	    modified data using the same variable.
+	  </para>
+	  <para>Since element nodes do not really have any proper
+	    content (they are only a storage for other nodes), node's
+	    name (tag) is used in case of elements. Note, however,
+	    that recent versions of XSH provide a special command
+	    <xref linkend="rename_command"/> with a very similar
+	    syntax to <literal>map</literal>, that should be used for
+	    renaming element, attribute, and processing instruction
+	    nodes.
+	  </para>
 	  <example>
 	    <title>Capitalises all hobbit names</title>
 	    <code>xsh&gt; <userinput>map { $_=ucfirst($_) } //hobbit/@name</userinput></code>	  
 	  </example>
 	  <example>
 	    <title>Changes goblins to orcs in all hobbit tales.</title>
-	    <code>xsh&gt; <userinput>on s/goblin/orc/gi //hobbit/tale/text()</userinput></code>
+	    <code>xsh&gt; <userinput>map { s/goblin/orc/gi } //hobbit/tale/text()</userinput></code>
 	  </example>
 	</description>
+      </documentation>
+    </rule>
+    <rule id="rename_command" type="command" name="rename" inline="yes">
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="perl_code"/>
+	<ruleref ref="xpath"/>
+	<action>[\&amp;XML::XSH::Functions::perlrename,@item[4,3]]</action>
+      </production>
+      <documentation sections="perl_shell">
+	<usage>rename <xref linkend="perl_code"/> <xref linkend="xpath"/></usage>
+	<shortdesc>quickly rename nodes with in-line Perl code</shortdesc>
+	<description>
+	  <para>
+	    This command is very similar to the <xref linkend="map_command"/>
+	    command, except that it operates on nodes' names rather
+	    than their data/values. For every element, attribute or
+	    processing-instruction matched by the <xref
+	    linkend="xpath"/> expression the following procedure is
+	    used: 1) the name of the node is stored into Perl's
+	    <literal>$_</literal> variable, 2) the <xref
+	    linkend="perl_code"/> is evaluated, and 3) the (posibly
+	    changed) content of the <literal>$_</literal> variable is
+	    used as a new name for the node.
+	  </para>
+	  <example>
+	    <title>Renames all hobbits to halflings</title>
+	    <code>xsh&gt; <userinput>map $_='halfling' //hobbit</userinput></code>
+	  </example>
+	  <example>
+	    <title>Make all elements and attributes uppercase</title>
+	    <code>xsh&gt; <userinput>map { $_=uc($_) } (//*|//@*)</userinput></code>	  
+	  </example>
+	</description>
+	<see-also>
+	  <ruleref ref="map_command"/>
+	</see-also>
       </documentation>
     </rule>
     <rule id="close_command" type="command" name="close" inline="yes">
@@ -3057,7 +3130,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
     </rule>
     <rule id="open_command" type="command" name="open" inline="yes">
       <production>
-	<regexp>open((\s*|_|-)(HTML|XML|DOCBOOK|html|xml|docbook))?((\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?</regexp>
+	<regexp>open((\s*|_|-)(HTML|XML|DOCBOOK|html|xml|docbook)(?!\s*=))?((\s*|_|-)(FILE|file|PIPE|pipe|STRING|string)(?!\s*=))?</regexp>
 	<directive type="commit"/>
 	<ruleref ref="id_or_var"/>
 	<regexp>\s*=\s*</regexp>
@@ -4047,6 +4120,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<see-also>
 	  <ruleref ref="foreach"/>
 	  <ruleref ref="while"/>
+	  <ruleref ref="iterate"/>
 	  <ruleref ref="next_command"/>
 	  <ruleref ref="last_command"/>
 	</see-also>
@@ -4057,11 +4131,11 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref sep="no"/>
 	<directive type="commit"/>
 	<ruleref ref="optional_expression" rep="?"/>
-	<action>[\&amp;XML::XSH::Functions::loop_next,,@{$item[3]}]</action>
+	<action>[\&amp;XML::XSH::Functions::loop_next,@{$item[3]}]</action>
       </production>
       <documentation sections="flow">
 	<usage>next [<xref linkend="expression"/>]</usage>
-	<shortdesc>start the next iteration of the innermost enclosing
+	<shortdesc>start the next iteration of an enclosing
 	loop</shortdesc>
 	<description>
 	  <para>
@@ -4080,8 +4154,38 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<see-also>
 	  <ruleref ref="foreach"/>
 	  <ruleref ref="while"/>
+	  <ruleref ref="iterate"/>
 	  <ruleref ref="redo_command"/>
 	  <ruleref ref="last_command"/>
+	  <ruleref ref="prev_command"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="prev_command" type="command" name="prev" inline="yes">
+      <production>
+	<selfref sep="no"/>
+	<directive type="commit"/>
+	<ruleref ref="optional_expression" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::loop_prev,@{$item[3]}]</action>
+      </production>
+      <documentation sections="flow">
+	<usage>prev [<xref linkend="expression"/>]</usage>
+	<shortdesc>restart an iteration on a previous node</shortdesc>
+	<description>
+	  <para>
+	    This command is only allowed inside an
+	    <literal>iterate</literal> loop. It returns the iteration
+	    one step back, to the previous node on the iterated axis.
+	    The optional <xref linkend="expression"/> argument may be
+	    used to indicate to which level of nested loops the
+	    command applies to.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="iterate"/>
+	  <ruleref ref="redo_command"/>
+	  <ruleref ref="last_command"/>
+	  <ruleref ref="next_command"/>
 	</see-also>
       </documentation>
     </rule>
@@ -4094,7 +4198,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       </production>
       <documentation sections="flow">
 	<usage>last [<xref linkend="expression"/>]</usage>
-	<shortdesc>immediately exit the innermost enclosing loop</shortdesc>
+	<shortdesc>immediately exit an enclosing loop</shortdesc>
 	<description>
 	  <para>
 	    The last command is like the break statement in C (as used
@@ -4112,6 +4216,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<see-also>
 	  <ruleref ref="foreach"/>
 	  <ruleref ref="while"/>
+	  <ruleref ref="iterate"/>
 	  <ruleref ref="next_command"/>
 	  <ruleref ref="last_command"/>
 	</see-also>
@@ -4173,6 +4278,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</see-also>
       </documentation>
     </rule>
+
     <rule id="catalog_command" type="command" name="catalog" inline="yes">
       <production>
 	<selfref/>
@@ -4192,7 +4298,124 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</description>
       </documentation>
     </rule>
-
+    <rule id="xpaxis">
+      <production>
+	<regexp>[-a-z]+::</regexp>
+      </production>
+    </rule>
+    <rule id="xpnodetest">
+      <production>
+	<regexp>node\(\)|text\(\)|comment\(\)|processing-instruction\(\)|[^\(\[\/\"\'\&amp;\;\s]+</regexp>
+      </production>
+    </rule>
+    <rule id="xplocationstep">
+      <production>
+	<ruleref ref="xpaxis" rep="?"/>
+	<directive type="skip">&quot;&quot;</directive>
+	<ruleref ref="xpnodetest"/>
+	<action>[ (@{$item[1]} ? $item[1][0] : 'child::'),$item[3] ]</action>
+      </production>
+    </rule>
+    <rule id="xpstep">
+      <production>
+	<ruleref ref="xplocationstep"/>
+	<directive type="skip">&quot;&quot;</directive>
+	<ruleref ref="xpfilter" rep="?"/>
+	<action>[ @{$item[1]}, @{$item[3]}]</action>
+      </production>
+    </rule>
+    <rule id="iterate" type="command" name="iterate" inline="yes">
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="xpstep"/>
+	<ruleref ref="block"/>
+	<action>[\&amp;XML::XSH::Functions::iterate,$item[4],@{$item[3]}]</action>
+      </production>
+      <documentation sections="flow">
+	<usage>iterate <xref linkend="xpath"/> <xref linkend="block"/></usage>
+	<shortdesc>iterate a block over current subtree</shortdesc>
+	<description>
+	  <para>
+	    Iterate works very much like the XPath variant of <xref
+	      linkend="foreach"/>, except that <literal>iterate</literal>
+	    evaluates the <xref linkend="block"/> as soon as 
+	    a new node matching given <xref linkend="xpath"/> 
+	    is found. As a limitation, the <xref linkend="xpath"/>
+	    expresion used with <literal>iterate</literal>
+	    may only consist of one XPath step, i.e. it cannot
+	    contain an XPath step separator <literal>/</literal>.
+	  </para>
+	  <para>
+	    What are the benefits of <literal>iterate</literal> over a
+	    <literal>foreach</literal> loop, then? Well, under some
+	    circumstances it is efficiency, under other there are
+	    none. To clarify this, we have to go a bit deaper into the
+	    details of XPath implementation.  By definition, the
+	    node-list resulting from evaluation of an XPath has to be
+	    ordered in the canonical document order. That means that
+	    an XPath implementation must contain some kind of sorting
+	    algorighm. This would not itself be much trouble if a
+	    relative document order of two nodes of a DOM tree could
+	    be determined in constant time. Unfortunately, the libxml2
+	    library, used behind XSH, does not implement mechanisms
+	    that would allow this complexity restriction. (This is,
+	    however, quite reasonable approach if all the consequences
+	    are conserned.) Thus, when comparing two nodes, libxml2
+	    traverses the tree to find their nearest common ancestor
+	    and at that point determines the relative order of the two
+	    subtrees by trying to seek one of them in a list of right
+	    siblings of the other. This of course cannot be handled in
+	    a constant time. As a result, the sorting algorithm, which
+	    would otherwise be itself quite fast becomes very
+	    inefficient when applied on a huge node-list (in a huge
+	    DOM tree).
+	  </para>
+	  <para>
+	    The <literal>iterate</literal> command provides a way to
+	    avoid sorting the resulting nodelist by limiting allowed
+	    XPath expression to one step (and thus one axis) at a
+	    time. On the other hand, since <literal>iterate</literal>
+	    is implemented in Perl, a proxy object glueing the C and
+	    Perl layers has to be created for every node the iterator
+	    passes by. This makes it about two to three times slower
+	    compared to a similar tree-traversing algorithm used by
+	    libxml2 itself during XPath evaluation.
+	  </para>
+	  <para>
+	    Our experience shows, that <literal>iterate</literal>
+	    beats <literal>foreach</literal> in performance on
+	    large node-lists (>=1500 nodes, but your milage may vary)
+	    while foreach wins on small node-lists.
+	  </para>
+	  <para>
+	    The following two examples give equivallent results.
+	    However, the one using iterate may be faster esp. if
+	    the number of nodes being counted is very large.
+	  </para>
+	  <example>
+	    <title>Count inhabitants of the kingdom of Rohan in productive age</title>
+	    <code>cd rohan/inhabitants;</code>
+	    <code>iterate child::*[@age&gt;=18 and @age&lt;60] { perl $productive++ };</code>
+	    <code>echo "$productive inhabitants in productive age";</code>
+	  </example>
+	  <example>
+	    <title>Using XPath</title>
+	    <code>$productive=count(rohan/inhabitants/*[@age&gt;=18 and @age&lt;60]);</code>
+	    <code>echo "$productive inhabitants in productive age";</code>
+	  </example>
+	  <para>
+	    To benchmark a XSH command on a UNIX system, follow the 
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="foreach_command"/>
+	  <ruleref ref="next_command"/>
+	  <ruleref ref="prev_command"/>
+	  <ruleref ref="last_command"/>
+	</see-also>
+      </documentation>
+    </rule>
   </rules>  
 </recdescent-xml>
 <!-- Keep this comment at the end of the file
