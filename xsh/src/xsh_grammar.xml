@@ -1720,10 +1720,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::nodelist_assign_local,$item[2],["",""]]</action>
       </production>
       <documentation sections="variables">
-	<usage>local $<xref linkend="ID"/>=<xref linkend="xpath"/>
-	</usage>
+	<usage>local $<xref linkend="ID"/> [ = <xref linkend="xpath"/>]</usage>
 	<usage>
-	  local %<xref linkend="ID"/>=<xref linkend="xpath"/></usage>
+	  local %<xref linkend="ID"/> [ = <xref linkend="xpath"/>]</usage>
 	<shortdesc>temporarily assign new value to a variable</shortdesc>
 	<description>
 	  <para> 
@@ -1733,17 +1732,18 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    and lasts only for the rest of the nearest enclosing
 	    <xref linkend="block"/>. At the end of the
 	    enclosing block or subroutine the original value
-	    is restored.
+	    is restored. This command may also be used without the
+	    assignment part and assignments may be done later using
+	    the usual <xref linkend="assign_command"/> command.
 	  </para>
 	  <para>Note, that the variable itself is not lexically is
 	    still global in the sense that it is still visible to any
 	    subroutine called subsequently from within the same block.
 	    A local just gives temporary values to global (meaning
-	    package) variables. Unlike C's <literal>auto</literal> or
-	    Perl's <literal>my</literal> declarations it does not
-	    <emphasis>create</emphasis> a local variable.  This is
-	    known as dynamic scoping.  Lexical scoping is not
-	    implemented in XSH, at least so far.
+	    package) variables. Unlike Perl's <literal>my</literal>
+	    declarations it does not <emphasis>create</emphasis> a
+	    local variable.  This is known as dynamic scoping.
+	    Lexical scoping is not implemented in XSH.
 	  </para>
 	  <para>
 	    To sum up for Perl programmers: <literal>local</literal>
@@ -2321,17 +2321,18 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  <para>One of: 
 	    after, 
 	    before, 
-	    (in)to/as child (of),
-	    (as) first (child (of)),
-	    append(ing),
-	    prepend(ing),
-	    replace/instead (of)?.
+	    into
+	    append,
+	    prepend,
+	    replace.
 	  </para>
 	  <para>
 	    This argument is required by all commands allow inserting
 	    nodes to a document at a destination given by an XPath
-	    expression. The semantics for location argument values
-	    depends types of both the source node and the target node.
+	    expression. While their meaning is supposed be obvious in
+	    most cases, the exact semantics for location argument
+	    values depends on types of both the source node and the
+	    target node.
 	  </para>
 	  <para>
 	    TO BE DOCUMENTED!
