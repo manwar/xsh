@@ -138,32 +138,36 @@ EOF
 END {
   skip($no_gdome,$loaded);
 }
-use XML::XSH qw/&xsh &xsh_init &set_opt_q &xsh_set_output/;
-$XML::XSH::Functions::SIGSEGV_SAFE=1;
-$loaded=1;
-ok(1);
+unless ($no_gdome) {
+  require XML::XSH;
+  import XML::XSH qw/&xsh &xsh_init &set_opt_q &xsh_set_output/;
+  $XML::XSH::Functions::SIGSEGV_SAFE=1;
+  $XML::XSH::Functions::SIGSEGV_SAFE=1;
+  $loaded=1;
+  ok(1);
 
-($::RD_ERRORS,$::RD_WARN,$::RD_HINT)=(1,1,1);
+  ($::RD_ERRORS,$::RD_WARN,$::RD_HINT)=(1,1,1);
 
-$::RD_ERRORS = 1; # Make sure the parser dies when it encounters an error
-$::RD_WARN   = 1; # Enable warnings. This will warn on unused rules &c.
-$::RD_HINT   = 1; # Give out hints to help fix problems.
+  $::RD_ERRORS = 1; # Make sure the parser dies when it encounters an error
+  $::RD_WARN   = 1; # Enable warnings. This will warn on unused rules &c.
+  $::RD_HINT   = 1;		# Give out hints to help fix problems.
 
-xsh_set_output(\*STDERR);
-set_opt_q(0);
+  xsh_set_output(\*STDERR);
+  set_opt_q(0);
 
-xsh_init("XML::XSH::GDOMECompat");
+  xsh_init("XML::XSH::GDOMECompat");
 
-print STDERR "\n";
-ok(1);
+  print STDERR "\n";
+  ok(1);
 
-print STDERR "\n";
-ok ( XML::XSH::Functions::create_doc("scratch","scratch") );
+  print STDERR "\n";
+  ok ( XML::XSH::Functions::create_doc("scratch","scratch") );
 
-print STDERR "\n";
-ok ( XML::XSH::Functions::set_local_xpath(['scratch','/']) );
+  print STDERR "\n";
+  ok ( XML::XSH::Functions::set_local_xpath(['scratch','/']) );
 
-foreach (@xsh_test) {
-  print STDERR "\n\n[[ $_ ]]\n";
-  ok( xsh($_) );
+  foreach (@xsh_test) {
+    print STDERR "\n\n[[ $_ ]]\n";
+    ok( xsh($_) );
+  }
 }
