@@ -7,3 +7,5 @@
 * external xinclude save support
 * untag/split element
 * comment-out node (?? uncomment ??)
+* fold/unfold command (fold/unfold elements for subsequent ls commands)
+* xsh-grammar: parse xslt parameters as XPATH instead of XSH expressions ??
