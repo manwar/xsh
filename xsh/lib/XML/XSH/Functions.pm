@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.17 2002-05-30 12:27:09 pajas Exp $
+# $Id: Functions.pm,v 1.18 2002-07-15 17:48:48 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -485,8 +485,10 @@ sub find_nodes {
 sub nodelist_assign {
   my ($name,$xp)=@_;
   my ($id,$query,$doc)=_xpath($xp);
-  $_nodelist{$name}=[$doc,find_nodes($xp)];
-  print STDERR "\nStored ",scalar(@{$_nodelist{$name}->[1]})," node(s).\n" unless "$_quiet";
+  if ($doc) {
+    $_nodelist{$name}=[$doc,find_nodes($xp)];
+    print STDERR "\nStored ",scalar(@{$_nodelist{$name}->[1]})," node(s).\n" unless "$_quiet";
+  }
 }
 
 # remove given node and all its descendants from all nodelists
@@ -605,6 +607,15 @@ sub open_io_file {
   }
 }
 
+sub is_xinclude {
+  my ($node)=@_;
+  return
+    $_xml_module->is_xinclude_start($node) ||
+    ($_xml_module->is_element($node) and
+     $node->namespaceURI() eq 'http://www.w3.org/2001/XInclude' and
+     $node->localname() eq 'include');
+}
+
 sub xinclude_start_tag {
   my ($xi)=@_;
   my %xinc = map { $_->nodeName() => $_->value() } $xi->attributes();
@@ -618,46 +629,49 @@ sub xinclude_end_tag {
 
 sub xinclude_print {
   my ($doc,$F,$node,$enc)=@_;
-  print STDERR "xinclude_print-node: $node\n";
   return unless ref($node);
   if ($_xml_module->is_element($node) || $_xml_module->is_document($node)) {
-    print STDERR "el or doc\n";
     $F->print(fromUTF8($enc,start_tag($node))) if $_xml_module->is_element($node);
     my $child=$node->firstChild();
     while ($child) {
-      __debug("$child\n");
-      if ($_xml_module->is_xinclude_start($child)) {
+      if (is_xinclude($child)) {
 	my %xinc = map { $_->nodeName() => $_->value() } $child->attributes();
-
+	$xinc{parse}||='xml';
+	$xinc{encoding}||=$enc; # may be used even to convert included XML
 	my $elements=0;
 	my @nodes=();
-	my $node=$child->nextSibling();
-	while ($node and
-	       !$_xml_module->is_xinclude_end($node) and
-	      !$_xml_module->is_xinclude_start($node)) {
+	my $node;
+	my $expanded=$_xml_module->is_xinclude_start($child);
+	if ($expanded) {
+	  $node=$child->nextSibling(); # in case of special XINCLUDE node
+	} else {
+	  $node=$child->firstChild(); # in case of include element from XInclude NS
+	}
+	my $nested=0;
+	while ($node and not($_xml_module->is_xinclude_end($node)
+			     and $nested==0
+			     and $expanded)) {
+	  if ($_xml_module->is_xinclude_start($node)) { $nested++ }
+	  elsif ($_xml_module->is_xinclude_end($node)) { $nested-- }
 	  push @nodes,$node;
 	  $elements++ if $_xml_module->is_element($node);
 	  $node=$node->nextSibling();
 	}
-	if ($_xml_module->is_xinclude_start($node)) {
-	  print STDERR "Warning: Unexpected nested XInclude start node.\n",
-                       "         Skipping whole XInclude span!\n";
+	if ($nested>0) {
+	  print STDERR "Error: Unbalanced nested XInclude nodes.\n",
+                       "       Ignoring this XInclude span!\n";
 	  $F->print("<!-- ".fromUTF8($enc,xinclude_start_tag($child))." -->");
-	} elsif (!$_xml_module->is_xinclude_end($node)) {
-	  print STDERR "Warning: XInclude end node not found.\n",
-                       "         Skipping whole XInclude span!\n";
-	  $F->print("<!-- ".fromUTF8($enc,xinclude_start_tag($child))." -->");
-	} elsif (!$node) {
-	  print STDERR "Warning: XInclude end node not found.\n",
- 	               "         Skipping whole XInclude span!\n";
+	} elsif (!$node and $_xml_module->is_xinclude_start($child)) {
+	  print STDERR "Error: XInclude end node not found.\n",
+ 	               "       Ignoring this XInclude span!\n";
 	  $F->print("<!-- ".fromUTF8($enc,xinclude_start_tag($child))." -->");
 	} elsif ($xinc{parse} ne 'text' and $elements==0) {
 	  print STDERR "Warning: XInclude: No elements found in XInclude span.\n",
-                       "         Skipping whole XInclude span!\n";
+                       "         Ignoring whole XInclude span!\n";
 	  $F->print("<!-- ".fromUTF8($enc,xinclude_start_tag($child))." -->");
-	} elsif ($xinc{parse} ne 'text' and $elements>1) {
-	  print STDERR "Warning: XInclude: More than one element found in XInclude span.\n",
-                       "         Skipping whole XInclude span!\n";
+	} elsif ($xinc{parse} ne 'xml' and $elements>1) {
+	  print STDERR "Error: XInclude: More than one element found in XInclude span.\n",
+                       "       Ignoring whole XInclude span!\n";
 	  $F->print("<!-- ".fromUTF8($enc,xinclude_start_tag($child))." -->");
 	} elsif ($xinc{parse} eq 'text' and $elements>0) {
 	  print STDERR "Warning: XInclude: Element(s) found in textual XInclude span.\n",
@@ -665,14 +679,14 @@ sub xinclude_print {
 	  $F->print("<!-- ".fromUTF8($enc,xinclude_start_tag($child))." -->");
 	} else {
 	  $F->print(fromUTF8($enc,xinclude_start_tag($child)));
-	  save_xinclude_chunk($doc,\@nodes,$xinc{href},$xinc{parse},$enc);
+	  save_xinclude_chunk($doc,\@nodes,$xinc{href},$xinc{parse},$xinc{encoding});
 	  $F->print(fromUTF8($enc,xinclude_end_tag($node)));
-	  $child=$node;
+	  $child=$node if ($expanded); # jump to XINCLUDE end node
 	}
-      } elsif($_xml_module->is_xinclude_end($child)) {
+      } elsif ($_xml_module->is_xinclude_end($child)) {
 	$F->print("<!-- ".fromUTF8($enc,xinclude_end_tag($child))." -->");
       } else {
-	xinclude_print($doc,$F,$child,$enc);
+	xinclude_print($doc,$F,$child,$enc); # call recursion
       }
       $child=$child->nextSibling();
     }
@@ -704,6 +718,7 @@ sub save_xinclude_chunk {
     foreach my $node (@$nodes) {
       xinclude_print($doc,$F,$node,$enc);
     }
+    $F->print("\n");
   }
   $F->close();
 }
@@ -797,14 +812,15 @@ sub save_as_html {
 
 sub start_tag {
   my ($element)=@_;
-  return "<".$element->getName().
-    join("",map { " ".$_->getName()."=\"".$_->nodeValue()."\"" } 
-	 $element->findnodes('attribute::*'))
-      .    join("",map { " xmlns:".$_->getName()."=\"".$_->nodeValue()."\"" }
-		$element->can('getNamespaces') ?
-		$element->getNamespaces() :
-		$element->findnodes('namespace::*')
-		)
+  return "<".$element->nodeName().
+    join("",map { " ".$_->nodeName()."=\"".$_->nodeValue()."\"" } 
+	 $element->attributes())
+#	 findnodes('attribute::*'))
+#      .    join("",map { " xmlns:".$_->getName()."=\"".$_->nodeValue()."\"" }
+#		$element->can('getNamespaces') ?
+#		$element->getNamespaces() :
+#		$element->findnodes('namespace::*')
+#		)
     .($element->hasChildNodes() ? ">" : "/>");
 }
 
@@ -999,7 +1015,6 @@ sub setAttNS {
 # node-type conversion if necessary
 sub insert_node {
   my ($node,$dest,$dest_doc,$where,$ns)=@_;
-
   if ($_xml_module->is_text($node)           ||
       $_xml_module->is_cdata_section($node)  ||
       $_xml_module->is_comment($node)        ||
