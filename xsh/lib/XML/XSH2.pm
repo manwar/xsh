@@ -1,4 +1,4 @@
-# $Id: XSH2.pm,v 2.1 2004-12-02 19:26:36 pajas Exp $
+# $Id: XSH2.pm,v 2.2 2004-12-14 14:04:40 pajas Exp $
 
 package XML::XSH2;
 
@@ -32,19 +32,19 @@ XML::XSH2 - A powerfull scripting language/shell for XPath-based editing of XML
  xsh(<<'__XSH__');
 
    # ... XSH Language commands (example borrowed from Kip Hampton's article) ...
-   open sources="perl_channels.xml";   # open a document from file
-   create merge news-items;            # create a new document
+   $sources := open "perl_channels.xml";   # open a document from file
+   $merge := create "news-items";            # create a new document
 
-   foreach sources://rss-url {         # traverse the sources document
-       open src=${{ string(@href) }};  # load the URL given by @href attribute
+   foreach $sources//rss-url {         # traverse the sources document
+       my $src := open @href;          # load the URL given by @href attribute
        map { $_ = lc($_) } //*;        # lowercase all tag names
-       xcopy src://item                # copy all items from the src document
-          into merge:/news-items[1];   # into the news-items element in merge document
-       close src;                      # close src document (not mandatory)
+       xcopy $src//item                # copy all items from the src document
+          into $merge/news-items[1];   # into the news-items element in merge document
+       close $src;                     # close src document (not mandatory)
    };
-   close sources;
-   saveas merge "files/headlines.xml"; # save the resulting merge document
-   close merge;
+   close $sources;
+   save --file "files/headlines.xml" $merge; # save the resulting merge document
+   close $merge;
 
  __XSH__
 
@@ -80,6 +80,6 @@ Petr Pajas, pajas@matfyz.cz
 
 =head1 SEE ALSO
 
-L<xsh>, L<XSH>, L<XML::LibXML>, L<XML::XUpdate>
+L<xsh>, L<XSH2>, L<XML::LibXML>, L<XML::XUpdate>
 
 =cut
