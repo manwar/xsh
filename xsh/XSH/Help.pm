@@ -25,10 +25,11 @@ Argument types:
 Available commands:
 
   add, assign, call, cd, clone, close, copy, count, create, debug,
-  def, dtd, enc, encoding, eval, exec, exit, files, foreach, help, if,
-  include, list, map, move, nodebug, open, print, query-encoding,
-  quiet, remove, run-mode, save, saveas, test-mode, unless, valid,
-  validate, variables, verbose, while, xadd, xcopy, xmove, xslt
+  def, dtd, echo, enc, encoding, eval, exec, exit, files, foreach,
+  help, if, include, list, map, move, nodebug, open, print,
+  query-encoding, quiet, remove, run-mode, save, saveas, test-mode,
+  unless, valid, validate, variables, verbose, while, xadd, xcopy,
+  xmove, xslt
 
 Type help <command|type> to get more information on a given command or
 argument type.
@@ -809,6 +810,17 @@ example:     xsh> a=mydoc1.xml       # opens and selects a
              xsh> list a:/           # lists and selects a
              xsh> select b           # does nothing except selecting b
              xsh> list /             # lists b
+
+H1
+'echo' => <<'H1',
+
+usage:       echo <expression>
+
+aliases:     print
+
+description: Prints the result of the expression expansion.
+
+example:     xsh> $dolly=Dolly; echo hallo $dolly
 
 H1
 );
