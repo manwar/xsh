@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Oct 25 18:02:42 2002
+# Sun Oct 27 18:38:38 2002
 
 
 package XML::XSH::Grammar;
@@ -13,7 +13,8 @@ $grammar=<<'_EO_GRAMMAR_';
 
   
   command:
-	    /(switch-to-new-documents|switch_to_new_documents)\s/ expression
+	    ... /\s*[}{;]/ <commit> <reject>
+	  | /(switch-to-new-documents|switch_to_new_documents)\s/ expression
 		{ [\&XML::XSH::Functions::set_cdonopen,$item[2]] }
   	
 	  | /(backups)/
@@ -219,11 +220,6 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(foreach|for)\s/ <commit> condition command
 		{ [\&XML::XSH::Functions::foreach_statement,$item[3],[$item[4]]] }
   	
-	  | /(def|define)\s/ <commit> ID typedvariable(s?) block(?)
-		{ 
-	  &XML::XSH::Functions::def($item[3],$item[5],$item[4]);
-	 }
-  	
 	  | /(process-xinclude|process_xinclude|process-xincludes|process_xincludes|xinclude|xincludes|load_xincludes|load-xincludes|load_xinclude|load-xinclude)/ <commit> optional_expression(?)
 		{ [\&XML::XSH::Functions::process_xinclude,@{$item[3]}] }
   	
@@ -254,45 +250,59 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | call_command
 
   statement:
-	   ( if
-	  | unless
-	  | while
-	  | foreach
-	   )
-		{ $item[1] }
+	    ... /\s*[}{;]/ <commit> <reject>
+	  | /(if)\s/ <commit> condition block elsif_block else_block
+		{ [\&XML::XSH::Functions::if_statement,[$item[3],$item[4]],@{$item[5]},@{$item[6]}] }
   	
-
-  simple_command_or_statement:
-	    statement
-	  | command
+	  | /(unless)\s/ <commit> condition block else_block(?)
+		{ [\&XML::XSH::Functions::unless_statement,$item[3],$item[4],@{$item[5]}] }
+  	
+	  | /(while)\s/ <commit> condition block
+		{ [\&XML::XSH::Functions::while_statement,$item[3],$item[4]] }
+  	
+	  | /(foreach|for)\s/ <commit> condition block
+		{ [\&XML::XSH::Functions::foreach_statement,$item[3],$item[4]] }
+  	
 
   complex_command:
 	    ';'
-	  | simple_command_or_statement trail(?)
+	  | statement <commit> trail(?)
+		{ 
+	  if (scalar(@{$item[3]})) {
+	    if ($item[3][0][0] eq 'pipe') {
+  	      $return=[\&XML::XSH::Functions::pipe_command,[$item[1]],$item[3][0][1]]
+	    } else {
+   	      $return=[\&XML::XSH::Functions::string_pipe_command,[$item[1]],$item[3][0][1]]
+	    }
+          } else {
+            $return=$item[1]
+          }
+	 }
+  	
+	  | command <commit> trail(?)
 	  ( ';'
 	  | ... /^\s*(}|\Z)/
 	   )
 		{ 
-	  my $r=$item[1];
-	  if (scalar(@{$item[2]})) {
-	    if ($item[2][0][0] eq 'pipe') {
-  	      $r=[\&XML::XSH::Functions::pipe_command,[$r],$item[2][0][1]]
+	  if (scalar(@{$item[3]})) {
+	    if ($item[3][0][0] eq 'pipe') {
+  	      $return=[\&XML::XSH::Functions::pipe_command,[$item[1]],$item[3][0][1]]
 	    } else {
-   	      $r=[\&XML::XSH::Functions::string_pipe_command,[$r],$item[2][0][1]]
+   	      $return=[\&XML::XSH::Functions::string_pipe_command,[$item[1]],$item[3][0][1]]
 	    }
+          } else {
+            $return=$item[1]
           }
-	  $r
 	 }
   	
+	  | <error:Syntax error near: "}.substr($text,0,40).qq{ ...">
 
   statement_or_command:
 	    def
 	  | complex_command
-	  | statement
-	  | <error:Syntax error near "}.substr($text,0,40).qq{">
 
   block:
-	    '{' <commit> statement_or_command(s) '}'
+	    '{' <commit> complex_command(s) '}'
 		{ [grep ref,@{$item[3]}] }
   	
 
@@ -377,7 +387,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | xp
 		{ [undef,$item[1]] }
   	
-	  | <error:ID:XPath or XPath expected!>
+	  | <error:expected ID:XPath or XPath, but got "}.substr(0,40,$text).qq{ ...">
 
   xpcont:
 	   ( xpfilters
@@ -464,7 +474,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	    shell <commit> eof
 		{ XML::XSH::Functions::run_commands($item[1],1) }
   	
-	  | statement_or_command(s) eof
+	  | statement_or_command(s) <commit> eof
 		{ XML::XSH::Functions::run_commands($item[1],1) }
   	
 
@@ -493,43 +503,32 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 
   shell:
-	    /!\s*/ /.*/
-		{ [[\&XML::XSH::Functions::sh,$item[2]]] }
+	    /!\s*/ <commit> /.*/
+		{ [[\&XML::XSH::Functions::sh,$item[3]]] }
   	
+	  | <error?:Syntax error near: "! }.substr(0,40,$text).qq{ ..."> <reject>
 
   condition:
 	    <perl_codeblock>
 	  | xpath
 
   elsif_block:
-	    /(elsif)\s/ <commit> condition block
-		{ [$item[3],$item[4]] }
+	    /(elsif)\s/ <commit> condition block elsif_block
+		{ [[$item[3],$item[4]],@{$item[5]}] }
   	
+	  | ...! /(elsif)/
+		{ [] }
+  	
+	  | <uncommit> <error:Syntax error near keyword elsif: "}.substr(0,40,$text).qq{ ...">
 
   else_block:
 	    /(else)\s/ <commit> block
-		{ [undef,$item[3]] }
+		{ [[undef,$item[3]]] }
   	
-
-  if:
-	    /(if)\s/ <commit> condition block elsif_block(s?) else_block(?)
-		{ [\&XML::XSH::Functions::if_statement,[$item[3],$item[4]],@{$item[5]},@{$item[6]}] }
+	  | ...! /(else)/
+		{ [] }
   	
-
-  unless:
-	    /(unless)\s/ <commit> condition block else_block(?)
-		{ [\&XML::XSH::Functions::unless_statement,$item[3],$item[4],@{$item[5]}] }
-  	
-
-  while:
-	    /(while)\s/ <commit> condition block
-		{ [\&XML::XSH::Functions::while_statement,$item[3],$item[4]] }
-  	
-
-  foreach:
-	    /(foreach|for)\s/ <commit> condition block
-		{ [\&XML::XSH::Functions::foreach_statement,$item[3],$item[4]] }
-  	
+	  | <uncommit> <error:Syntax error near keyword else: "}.substr(0,40,$text).qq{ ...">
 
   typedvariable:
 	    /[\$\%]/ <skip:""> ID
@@ -542,6 +541,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  &XML::XSH::Functions::def($item[3],$item[5],$item[4]);
 	 }
   	
+	  | <error?:Syntax error near: "}.substr(0,40,$text).qq{ ..."> <reject>
 
   match_typedargs:
 	   
