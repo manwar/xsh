@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.7 2005-01-09 21:31:33 pajas Exp $
+# $Id: Functions.pm,v 2.8 2005-02-21 17:41:15 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.2';
-  $REVISION=q($Revision: 2.7 $);
+  $REVISION=q($Revision: 2.8 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -135,10 +135,10 @@ sub out {
     my $l = length;
     my $i = 1;
     while ($l > $i*$MAXPRINTLENGTH) {
-      $OUT->print(substr($_,($i-1)*$MAXPRINTLENGTH,$MAXPRINTLENGTH));
+      print $OUT (substr($_,($i-1)*$MAXPRINTLENGTH,$MAXPRINTLENGTH));
       $i++;
     }
-    $OUT->print(substr($_,($i-1)*$MAXPRINTLENGTH)); # the rest
+    print $OUT (substr($_,($i-1)*$MAXPRINTLENGTH)); # the rest
   }
 }
 
@@ -812,26 +812,26 @@ sub XPATH_lineno {
 # ===================== END OF XPATH EXT FUNC ================
 
 sub list_flags {
-  $OUT->print("validation ".(get_validation() or "0").";\n");
-  $OUT->print("recovering ".(get_recovering() or "0").";\n");
-  $OUT->print("parser_expands_entities ".(get_expand_entities() or "0").";\n");
-  $OUT->print("parser_expands_xinclude ".(get_expand_xinclude() or "0").";\n");
-  $OUT->print("keep_blanks ".(get_keep_blanks() or "0").";\n");
-  $OUT->print("pedantic_parser ".(get_pedantic_parser() or "0").";\n");
-  $OUT->print("load_ext_dtd ".(get_load_ext_dtd() or "0").";\n");
-  $OUT->print("complete_attributes ".(get_complete_attributes() or "0").";\n");
-  $OUT->print("indent ".(get_indent() or "0").";\n");
-  $OUT->print("empty_tags ".(get_empty_tags() or "0").";\n");
-  $OUT->print("skip_dtd ".(get_skip_dtd() or "0").";\n");
-  $OUT->print(((get_backups() ? "backups" : "nobackups"),";\n"));
-  $OUT->print((($QUIET ? "quiet" : "verbose"),";\n"));
-  $OUT->print((($DEBUG ? "debug" : "nodebug"),";\n"));
-  $OUT->print((($TEST_MODE ? "run-mode" : "test-mode"),";\n"));
-  $OUT->print("switch_to_new_documents ".(get_cdonopen() or "0").";\n");
-  $OUT->print("encoding '$ENCODING')\n");
-  $OUT->print("query_encoding '$QUERY_ENCODING';\n");
-  $OUT->print("xpath_completion ".(get_xpath_completion() or "0").";\n");
-  $OUT->print("xpath_axis_completion \'".get_xpath_axis_completion()."';\n");
+  out("validation ".(get_validation() or "0").";\n");
+  out("recovering ".(get_recovering() or "0").";\n");
+  out("parser_expands_entities ".(get_expand_entities() or "0").";\n");
+  out("parser_expands_xinclude ".(get_expand_xinclude() or "0").";\n");
+  out("keep_blanks ".(get_keep_blanks() or "0").";\n");
+  out("pedantic_parser ".(get_pedantic_parser() or "0").";\n");
+  out("load_ext_dtd ".(get_load_ext_dtd() or "0").";\n");
+  out("complete_attributes ".(get_complete_attributes() or "0").";\n");
+  out("indent ".(get_indent() or "0").";\n");
+  out("empty_tags ".(get_empty_tags() or "0").";\n");
+  out("skip_dtd ".(get_skip_dtd() or "0").";\n");
+  out(((get_backups() ? "backups" : "nobackups"),";\n"));
+  out((($QUIET ? "quiet" : "verbose"),";\n"));
+  out((($DEBUG ? "debug" : "nodebug"),";\n"));
+  out((($TEST_MODE ? "run-mode" : "test-mode"),";\n"));
+  out("switch_to_new_documents ".(get_cdonopen() or "0").";\n");
+  out("encoding '$ENCODING')\n");
+  out("query_encoding '$QUERY_ENCODING';\n");
+  out("xpath_completion ".(get_xpath_completion() or "0").";\n");
+  out("xpath_axis_completion \'".get_xpath_axis_completion()."';\n");
 }
 
 sub toUTF8 {
@@ -4134,7 +4134,7 @@ sub cd {
     print STDERR "Can't change directory to $dir\n";
     return 0;
   } else {
-    $OUT->print("$dir\n") unless "$QUIET";
+    out("$dir\n") unless "$QUIET";
   }
   return 1;
 }
