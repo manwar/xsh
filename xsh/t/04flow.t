@@ -9,17 +9,17 @@ BEGIN {
 
   @xsh_test=split /\n\n/, <<'EOF';
 
-def xp_assert $cond
+def p_assert $cond
   {
    perl { xsh("unless {$cond} throw \"Assertion failed \$cond\"") }
   }
 
 $a=5;
-call xp_assert '$a == 5';
+call p_assert '$a == 5';
 
 try {
-  call xp_assert '$a == 3';
-  throw "xp_assert failed";
+  call p_assert '$a == 3';
+  throw "p_assert failed";
 } catch local $err {
   unless { $err eq 'Assertion failed $a == 3' } throw $err;
 };
@@ -31,7 +31,7 @@ foreach { 1..3 } {
   last;
 }
 
-call xp_assert '$a == 1';
+call p_assert '$a == 1';
 
 foreach { 1..3 } {
   $b = 0;
@@ -40,9 +40,9 @@ foreach { 1..3 } {
   $b = 1;
 }
 
-call xp_assert '$a == 3';
+call p_assert '$a == 3';
 
-call xp_assert '$b == 0';
+call p_assert '$b == 0';
 
 $a=0; $b=1; $c=0;
 foreach { 1..3 } {
@@ -53,9 +53,9 @@ foreach { 1..3 } {
   $c = 1;
 }
 
-call xp_assert '$a == 6';
+call p_assert '$a == 6';
 
-call xp_assert '$c == 1';
+call p_assert '$c == 1';
 
 # XPATH based foreach
 insert chunk "<a/><a/><a/>" into /scratch;
@@ -70,7 +70,7 @@ foreach a {
   last;
 }
 
-call xp_assert '$a == 1';
+call p_assert '$a == 1';
 
 $a=0;
 foreach a {
@@ -80,9 +80,9 @@ foreach a {
   $b = 1;
 }
 
-call xp_assert '$a == 3';
+call p_assert '$a == 3';
 
-call xp_assert '$b == 0';
+call p_assert '$b == 0';
 
 $a=0; $b=1; $c=0;
 foreach a {
@@ -92,9 +92,9 @@ foreach a {
   $c = 1;
 }
 
-call xp_assert '$a == 6';
+call p_assert '$a == 6';
 
-call xp_assert '$c == 1';
+call p_assert '$c == 1';
 
 # Perl based while
 $a=3;
@@ -103,7 +103,7 @@ while { $a } {
   last;
 }
 
-call xp_assert '$a == 2';
+call p_assert '$a == 2';
 
 $a=0; $b=2;
 while { $a<3 } {
@@ -113,9 +113,9 @@ while { $a<3 } {
   $b = 1;
 }
 
-call xp_assert '$a == 3';
+call p_assert '$a == 3';
 
-call xp_assert '$b == 0';
+call p_assert '$b == 0';
 
 $i=0; $a=0; $b=1; $c=0;
 while { $i++<3 } {
@@ -126,11 +126,11 @@ while { $i++<3 } {
   $c = 1;
 }
 
-call xp_assert '$i == 4';
+call p_assert '$i == 4';
 
-call xp_assert '$a == 6';
+call p_assert '$a == 6';
 
-call xp_assert '$c == 1';
+call p_assert '$c == 1';
 
 # XPATH based while
 $a=3;
@@ -139,7 +139,7 @@ while ($a) {
   last;
 }
 
-call xp_assert '$a == 2';
+call p_assert '$a == 2';
 
 $a=0; $b=2;
 while ( $a<3 ) {
@@ -149,9 +149,9 @@ while ( $a<3 ) {
   $b = 1;
 }
 
-call xp_assert '$a == 3';
+call p_assert '$a == 3';
 
-call xp_assert '$b == 0';
+call p_assert '$b == 0';
 
 $i=0; $a=0; $b=1; $c=0;
 while ( $i<3 ) {
@@ -163,11 +163,11 @@ while ( $i<3 ) {
   $c = 1;
 }
 
-call xp_assert '$i == 3';
+call p_assert '$i == 3';
 
-call xp_assert '$a == 6';
+call p_assert '$a == 6';
 
-call xp_assert '$c == 1';
+call p_assert '$c == 1';
 EOF
 
   plan tests => 4+@xsh_test;
