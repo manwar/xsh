@@ -490,7 +490,8 @@ sub create_attributes {
       my $name=$1;
       print STDERR "attribute_name=$1\n" if $_debug;
       if ($exp=~/\G"((?:[^\\"]|\\.)*)"/gsco or
-	  $exp=~/\G'((?:[^\\']|\\.)*)'/gsco) {
+	  $exp=~/\G'((?:[^\\']|\\.)*)'/gsco or
+	  $exp=~/\G(\S+)/gsco) {
 	$value=$1;
 	$value=~s/\\(.)/$1/g;
 	print STDERR "creating $name=$value attribute\n" if $_debug;
@@ -694,7 +695,8 @@ sub move {
   my ($src)=@_;
   my @sourcenodes;
   my ($id,$query)= expand @{$src};
-  return unless ref($_doc{$id});
+  ($id,my $doc)=_id($id);
+  return unless ref($doc);
   my $i=0;
   eval {
     local $SIG{INT}=\&sigint;
@@ -789,8 +791,9 @@ sub while_statement {
 
 sub foreach_statement {
   my ($xp,$command)=@_;
-  my ($id,$query)=@$xp;
-  return unless ref($_doc{$id});
+  my ($id,$query)=expand @{$xp};
+  ($id, my $doc)=_id($id);
+  return unless ref($doc);
   eval {
     local $SIG{INT}=\&sigint;
     my $qconv=mkconv($_qencoding,"utf-8");
@@ -815,6 +818,7 @@ sub unless_statement {
 
 sub xslt {
   my ($id,$stylefile,$newid)=expand @_[0..2];
+  $id=_id($id);
   my $params=$_[3];
   print STDERR "running xslt on @_\n";
   return unless $_doc{$id};
