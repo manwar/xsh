@@ -26,8 +26,8 @@
 	depend on which shell is used).
       </para>
       <example>
-	<title>Count any attributes that contain string foo in its name or value.</title>
-	<code>xsh&gt; <userinput>ls //words/attribute() | grep foo | wc</userinput></code>
+	<title>Count attributes of words containing string foo in its name or value.</title>
+	<code>xsh&gt; <userinput>ls //words/@* | grep foo | wc</userinput></code>
       </example>
       <para>
 	In order to store a command's output in a string variable, the
@@ -1237,6 +1237,8 @@ END
 	    XSH supports arbitrary XPath expression as defined in W3C
 	    recommendation at <ulink
 	    url="http://www.w3.org/TR/xpath">http://www.w3.org/TR/xpath</ulink>.
+	    (Nice interactive XPath tutorials and references
+	    can be found at <ulink url="http://www.zvon.org">http://www.zvon.org</ulink>.)
 	    In XSH, XPath expressoin may be optionally preceded with a
 	    document identifier followed by colon (<xref linkend="ID"/>:xpath). If no document
 	    identifier is given, the current document is used.
@@ -1920,8 +1922,6 @@ def comment
 <tab/><tab/>%n      # nodes to move to comments
 <tab/><tab/>$mark   # maybe some handy mark to recognize such comments
 {
-<tab/>echo "MARK: $mark\n";
-
 <tab/>foreach %n {
 <tab/><tab/>if ( . = ../@* ) {
 <tab/><tab/><tab/>echo "Warning: attribute nodes are not supported!";
@@ -2313,7 +2313,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	      of your machine's operating system.</title>
 	    <code>
 	      exec echo hallo world;                 # prints hallo world
-	      exec &quot;echo hallo word | wc&quot;; # counts words in hallo world
+	      exec &quot;echo hallo word&quot; | wc; # counts words in hallo world
 	      exec uname;                            # prints operating system name
 	    </code>
 	  </example>
