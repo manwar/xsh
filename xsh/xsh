@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.30 2003-08-13 11:34:31 pajas Exp $
+# $Id: xsh,v 1.31 2003-08-19 16:26:54 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -55,7 +55,7 @@ BEGIN {
 			) or $usage=1;
 #  getopts('atscqvwdfhVinTE:e:l:pP');
   $VERSION='0.12';
-   $REVISION='$Revision: 1.30 $';
+   $REVISION='$Revision: 1.31 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -73,7 +73,7 @@ if ($manpage) {
 
 my $string;
 if ($opt_a) {
-  @XML::XSH::ARGV=@ARGV;
+  @XML::XSH::Map::ARGV=@ARGV;
 } else {
   $string=join " ",@ARGV;
 }
@@ -286,6 +286,7 @@ sub prompt {
   return 'xsh '.xsh_local_id().":".xsh_pwd().'> ';
 }
 
+
 __END__
 
 
@@ -335,7 +336,7 @@ other commands provided on the command-line, but after executed
 =item B<--arguments|-a>
 
 Command-line contains arguments accessible to the script via
-C<@XSH::Map::ARGV> rather than XSH commands.
+C<@XML::XSH::Map::ARGV> rather than XSH commands.
 
 =item B<--stdin|-t>
 
