@@ -8,9 +8,8 @@ TODO:
 
 ###
 
+* check the XML::LibXML module for XPath-ruled tree additions
 * document installation proces in ActiveState perl
-* check adding fragments into /
-* adding into/appending/prepending /
 * document new location argument-type semantics
 * support DTD modification
 * better support for namespaces (e.g. registering as soon as it's available
@@ -30,12 +29,13 @@ o fold/unfold command (fold/unfold elements for subsequent ls commands)
 
 
 IMPLEMENTED:
-+ port to XML::LibXML-1.53
++ check adding fragments into /
++ adding into/appending/prepending /
++ better Ctrl+C handling
++ die in perl fragments dies the execution
 + unify open,open_HTML,open_PIPE,open_DOCBOOK to 
   open [XML|HTML|DOCBOOK] =[|] file|command
++ port to XML::LibXML-1.53
 + allow entity reference insertion
 + allow parameters for user defined functions
 + external xinclude save support
-+ die in perl fragments dies the execution
-+ better Ctrl+C handling
-
