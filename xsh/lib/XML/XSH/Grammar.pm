@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Sep 27 10:37:06 2002
+# Tue Oct 22 14:05:33 2002
 
 
 package XML::XSH::Grammar;
@@ -13,7 +13,10 @@ $grammar=<<'_EO_GRAMMAR_';
 
   
   command:
-	    /(backups)/
+	    /(switch-to-new-documents|switch_to_new_documents)\s/ expression
+		{ [\&XML::XSH::Functions::set_cdonopen,$item[2]] }
+  	
+	  | /(backups)/
 		{ [\&XML::XSH::Functions::set_backups,1] }
   	
 	  | /(nobackups)/
@@ -112,12 +115,6 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(close)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::close_doc,$item[3]] }
   	
-	  | /(open-HTML|open_HTML)\s/ <commit> id_or_var /\s*=\s*/ filename
-		{ [\&XML::XSH::Functions::open_doc,@item[3,5],'html'] }
-  	
-	  | /(open-PIPE|open_PIPE)\s/ <commit> id_or_var /\s*=\s*/ expression
-		{ [\&XML::XSH::Functions::open_doc,@item[3,5],'pipe'] }
-  	
 	  | /(validate)/ <commit> optional_expression(?)
 		{ [\&XML::XSH::Functions::validate_doc,@{$item[3]}] }
   	
@@ -142,17 +139,11 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(perl|eval)\s/ <commit> perl_code
 		{ [\&XML::XSH::Functions::print_eval,$item[3]] }
   	
-	  | /(saveas|save-as|save_as)\s/ <commit> expression filename encoding_param(?)
-		{ [\&XML::XSH::Functions::save_as,@item[3,4],@{$item[5]}] }
+	  | /save(as|_as|-as)?((\s*|_|-)(HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?((\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?/ expression filename encoding_param(?)
+		{ [\&XML::XSH::Functions::save_doc,@item[1,2,3,4]] }
   	
-	  | /(save-xinclude|save_xinclude)\s/ <commit> expression encoding_param(?)
-		{ [\&XML::XSH::Functions::save_xinclude,$item[3],@{$item[4]}] }
-  	
-	  | /(save-HTML|save_HTML)\s/ <commit> expression filename encoding_param(?)
-		{ [\&XML::XSH::Functions::save_as_html,@item[3,4],@{$item[5]}] }
-  	
-	  | /(save)\s/ <commit> expression encoding_param(?)
-		{ [\&XML::XSH::Functions::save_as,$item[3],@{$item[4]}] }
+	  | /save(as|_as|-as)?((\s*|_|-)(HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?((\s*|_|-)(FILE|file|STRING|string))?/ <commit> expression encoding_param(?)
+		{ [\&XML::XSH::Functions::save_doc,@item[1,3],undef,$item[4]] }
   	
 	  | /(files)/
 		{ [\&XML::XSH::Functions::files] }
@@ -172,24 +163,6 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(exec|system)\s/ <commit> expression(s)
 		{ [\&XML::XSH::Functions::sh,join(" ",@{$item[3]})] }
   	
-	  | <rulevar:@args>
-	  | /(call)\s/ <commit> ID
-		{ 
-	  if (exists($XML::XSH::Functions::_defs{$item[3]})) {
-	    @args=@{ $XML::XSH::Functions::_defs{$item[3]} };
-	    shift @args;
-	    $return=1;
-          } else { 
-	    $return=undef;
-	  }
-	 }
-  	 match_typedargs[@args]
-		{ 
-	  $return=1;
-	 }
-  	
-		{ $return=[\&XML::XSH::Functions::call,$item[3],$item[5]] }
-  	
 	  | /(include|\.)\s/ <commit> filename
 		{ [\&XML::XSH::Functions::include,$item[3]] }
   	
@@ -204,8 +177,14 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(local)\s/ variable '=' xpath
 		{ [\&XML::XSH::Functions::xpath_assign_local,$item[2],$item[4]] }
   	
+	  | /(local)\s/ variable
+		{ [\&XML::XSH::Functions::xpath_assign_local,$item[2],undef] }
+  	
 	  | /(local)\s/ nodelistvariable '=' xpath
 		{ [\&XML::XSH::Functions::nodelist_assign_local,$item[2],$item[4]] }
+  	
+	  | /(local)\s/ nodelistvariable
+		{ [\&XML::XSH::Functions::nodelist_assign_local,$item[2],["",""]] }
   	
 	  | variable
 		{ [\&XML::XSH::Functions::print_var,$item[1]] }
@@ -240,7 +219,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(foreach|for)\s/ <commit> condition command
 		{ [\&XML::XSH::Functions::foreach_statement,$item[3],[$item[4]]] }
   	
-	  | /(def|define)\s/ <commit> ID typedvariable(s?) block
+	  | /(def|define)\s/ <commit> ID typedvariable(s?) block(?)
 		{ 
 	  &XML::XSH::Functions::def($item[3],$item[5],$item[4]);
 	 }
@@ -260,8 +239,8 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(xupdate)\s/ <commit> expression expression(?)
 		{ [\&XML::XSH::Functions::xupdate,$item[3],@{$item[4]}] }
   	
-	  | /(open)\s/ <commit> id_or_var /\s*=\s*/ filename
-		{ [\&XML::XSH::Functions::open_doc,@item[3,5]] }
+	  | /open((\s*|_|-)(HTML|XML|DOCBOOK|html|xml|docbook))?((\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?/ <commit> id_or_var /\s*=\s*/ expression
+		{ [\&XML::XSH::Functions::open_doc,@item[3,5,1]] }
   	
 	  | ID /\s*=\s*/ <commit> filename
 		{ [\&XML::XSH::Functions::open_doc,@item[1,4]] }
@@ -272,21 +251,24 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(unfold)\s/ xpath
 		{ [\&XML::XSH::Functions::mark_unfold,$item[2]] }
   	
+	  | call_command
 
   statement:
 	   ( if
 	  | unless
 	  | while
 	  | foreach
-	  | def
 	   )
 		{ $item[1] }
   	
-	  | <error>
+
+  simple_command_or_statement:
+	    statement
+	  | command
 
   complex_command:
 	    ';'
-	  | command trail(?)
+	  | simple_command_or_statement trail(?)
 	  ( ';'
 	  | ... /^\s*(}|\Z)/
 	   )
@@ -302,11 +284,12 @@ $grammar=<<'_EO_GRAMMAR_';
 	  $r
 	 }
   	
-	  | <error>
 
   statement_or_command:
-	    statement
+	    def
 	  | complex_command
+	  | statement
+	  | <error:Syntax error near "}.substr($text,0,40).qq{">
 
   block:
 	    '{' <commit> statement_or_command(s) '}'
@@ -394,13 +377,16 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | xp
 		{ [undef,$item[1]] }
   	
-	  | <error>
+	  | <error:ID:XPath or XPath expected!>
 
   xpcont:
 	   ( xpfilters
 	  | xpbrackets
 	   ) <skip:""> xp(?)
 		{ $item[1].join("",@{$item[3]}) }
+  	
+	  | xp
+		{ $item[1] }
   	
 
   xp:
@@ -448,7 +434,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	    /'[^']*'|"[^"]*"/
 
   xpsimple:
-	    /[^]|"' [();]+/
+	    /[^]}|"' [();]+/
 	  | xpbrackets
 
   perl_expression:
@@ -476,10 +462,10 @@ $grammar=<<'_EO_GRAMMAR_';
 
   startrule:
 	    shell <commit> eof
-		{ XML::XSH::Functions::run_commands($item[1]) }
+		{ XML::XSH::Functions::run_commands($item[1],1) }
   	
 	  | statement_or_command(s) eof
-		{ XML::XSH::Functions::run_commands($item[1]) }
+		{ XML::XSH::Functions::run_commands($item[1],1) }
   	
 
   trail:
@@ -551,7 +537,7 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 
   def:
-	    /(def|define)\s/ <commit> ID typedvariable(s?) block
+	    /(def|define)\s/ <commit> ID typedvariable(s?) block(?)
 		{ 
 	  &XML::XSH::Functions::def($item[3],$item[5],$item[4]);
 	 }
@@ -559,17 +545,50 @@ $grammar=<<'_EO_GRAMMAR_';
 
   match_typedargs:
 	   
-		{ (@arg and $arg[0]=~m/^%/) ? shift(@arg) : undef }
-  	 xpath match_typedargs[@arg]
-		{ [$item[2],@{$item[3]}]; }
+		{ 
+	  $return = ((@arg and $arg[0]<=$#arg and $arg[$arg[0]]=~m/^%/) 
+	            ? $arg[$arg[0]] : undef)
+	 }
+  	 xpath match_typedargs[$arg[0]+1,@arg[1..$#arg]]
+		{ 
+	  $return=(defined($item[3]) ? [$item[2],@{$item[3]}] : undef);
+	 }
   	
 	  |
-		{ (@arg and $arg[0]=~m/^\$/) ? shift(@arg) : undef }
-  	 expression match_typedargs[@arg]
-		{ [$item[2],@{$item[3]}]; }
+		{ 
+	  $return = ((@arg and $arg[0]<=$#arg and $arg[$arg[0]]=~m/^\$/)
+  	            ? $arg[$arg[0]] : undef)
+	 }
+  	 expression match_typedargs[$arg[0]+1,@arg[1..$#arg]]
+		{ 
+	  $return=(defined($item[3]) ? [$item[2],@{$item[3]}] : undef);
+	 }
   	
 	  |
-		{ $return=(!@arg) ? [] : undef }
+		{ 
+	  $return= (($arg[0]==$#arg+1) ? [] : undef);
+	 }
+  	
+
+  subroutine_arguments:
+	   
+		{ 
+	  if (exists($XML::XSH::Functions::_defs{$arg[0]})) {
+	    $return=[ @{$XML::XSH::Functions::_defs{$arg[0]}} ];
+	    shift @$return;
+          } else { 
+	    $return=undef;
+	  }
+	 }
+  	
+	  | <error:Call to undefined subroutine $arg[0]!>
+
+  call_command:
+	    <rulevar:@args>
+	  | /(call)\s/ <commit> ID subroutine_arguments[$item[3]] match_typedargs[1,@{$item[4]}]
+		{ 
+	  $return=[\&XML::XSH::Functions::call,$item[3],$item[5]]
+	 }
   	
 
   xslt_params:

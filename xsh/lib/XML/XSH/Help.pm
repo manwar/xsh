@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Sep 27 10:37:07 2002
+# Tue Oct 22 14:05:34 2002
 
 package XML::XSH::Help;
 use strict;
@@ -55,14 +55,13 @@ description:
 	     debug, def, defs, dtd, enc, encoding, exec, exit, files, fold,
 	     foreach, help, if, include, indent, insert, keep-blanks, lcd,
 	     load-ext-dtd, local, locate, ls, map, move, nobackups,
-	     nodebug, open, open-HTML, open-PIPE, options,
-	     parser-completes-attributes, parser-expands-entities,
-	     parser-expands-xinclude, pedantic-parser, perl, print,
-	     process-xinclude, pwd, query-encoding, quiet, recovering,
-	     remove, run-mode, save, save-HTML, save-xinclude, saveas,
-	     select, sort, test-mode, unfold, unless, valid, validate,
-	     validation, variables, verbose, version, while, xcopy,
-	     xinsert, xmove, xslt, xupdate
+	     nodebug, open, options, parser-completes-attributes,
+	     parser-expands-entities, parser-expands-xinclude,
+	     pedantic-parser, perl, print, process-xinclude, pwd,
+	     query-encoding, quiet, recovering, remove, run-mode, save,
+	     select, sort, switch-to-new-documents, test-mode, unfold,
+	     unless, valid, validate, validation, variables, verbose,
+	     version, while, xcopy, xinsert, xmove, xslt, xupdate
 
 END
 
@@ -77,11 +76,11 @@ description:
 Example:     Count paragraphs in each chapter
 
              $i=0;
-        foreach //chapter {
-          $c=./para;
-          $i=$i+1;
-          print "$c paragraphs in chapter no.$i";
-        }
+             foreach //chapter {
+               $c=./para;
+               $i=$i+1;
+               print "$c paragraphs in chapter no.$i";
+             }
 
 END
 
@@ -165,9 +164,9 @@ Example:     Open a document and count all sections containing a subsection
 	     in it
 
              xsh scratch:/> open v = mydocument1.xml;
-        xsh v:/> open k = mydocument2.xml;
-        xsh k:/> count //section[subsection]; # searches k
-        xsh k:/> count v://section[subsection]; # searches v
+             xsh v:/> open k = mydocument2.xml;
+             xsh k:/> count //section[subsection]; # searches k
+             xsh k:/> count v://section[subsection]; # searches v
 
 END
 
@@ -175,7 +174,7 @@ END
 $HELP{'if'}=[<<'END'];
 usage:       if <xpath>|<perl-code> <command>
              if <xpath>|<perl-code>
-	  <command-block> [ elsif <command-block> ]* [ else <command-block> ]
+    <command-block> [ elsif <command-block> ]* [ else <command-block> ]
              
 description:
 	     Execute <command-block> if the given <xpath> or <perl-code>
@@ -189,31 +188,31 @@ description:
 Example:     Display node type
 
              def node_type %n {
-          foreach (%n) {
-            if ( . = self::* ) { # XPath trick to check if . is an element
-              echo 'element';
-            } elsif ( . = ../@* ) { # XPath trick to check if . is an attribute
-              echo 'attribute';
-            } elsif ( . = ../processing-instruction() ) {
-              echo 'pi';
+               foreach (%n) {
+                 if ( . = self::* ) { # XPath trick to check if . is an element
+                   echo 'element';
+                 } elsif ( . = ../@* ) { # XPath trick to check if . is an attribute
+                   echo 'attribute';
+                 } elsif ( . = ../processing-instruction() ) {
+                   echo 'pi';
                  } elsif ( . = ../text() ) {
-              echo 'text';
+                   echo 'text';
                  } elsif ( . = ../comment() ) {
                    echo 'comment'
-            } else { # well, this should not happen, but anyway, ...
+                 } else { # well, this should not happen, but anyway, ...
                    echo 'unknown-type';
                  }
                }
-        }
+             }
 
 END
 
 
 $HELP{'unless'}=[<<'END'];
 usage:       unless <xpath>|<perl-code>
-	  <command>
+    <command>
              unless <xpath>|<perl-code>
-	  <command-block> [ else <command-block> ]
+    <command-block> [ else <command-block> ]
              
 description:
 	     Like if but negating the result of the expression.
@@ -232,15 +231,14 @@ description:
 Example:     The commands have the same results
 
              xsh> while /table/row remove /table/row[1];
-        xsh> remove /table/row;
+             xsh> remove /table/row;
 
 END
 
 
 $HELP{'foreach'}=[<<'END'];
 usage:       foreach <xpath>|<perl-code> 
-	  <command>
-	  <command-block>
+    <command>|<command-block>
              
 aliases:     for
 
@@ -270,8 +268,9 @@ END
 $HELP{'for'}=$HELP{'foreach'};
 
 $HELP{'def'}=[<<'END'];
-usage:       def <id> [$<id> | %<id>]*
-	  <command-block>
+usage:       def <id> [$<id> | %<id>]* <command-block>
+         or
+  def <id> [$<id> | %<id>]*;
              
 aliases:     define
 
@@ -298,52 +297,61 @@ description:
 	     variable is replaced with the value of the parametric variable
 	     for the time of the subroutine's run-time.
 
+	     Note that subroutine has to be declared before it is called
+	     with <call>. If you cannot do so, e.g. if you want to call a
+	     subroutine recursively, you have to pre-declare the subroutine
+	     using a `def' with no <command-block>. There may be only one
+	     full declaration (and possibly one pre-declaration) of a
+	     subroutine for one <id> and the declaration and
+	     pre-declaration has to define the same number of arguments and
+	     their types must match.
 
+Example:
              def l3 %v {
-          ls %v 3; # list given nodes upto depth 3
-        }
-        call l3 //chapter;
+               ls %v 3; # list given nodes upto depth 3
+             }
+             call l3 //chapter;
 
 Example:     Commenting and un-commenting pieces of document
 
              def comment
-    %n      # nodes to move to comments
-    $mark   # maybe some handy mark to recognize such comments
-  {
-  echo "MARK: $mark\n";
-
-  foreach %n {
-    if ( . = ../@* ) {
-      echo "Warning: attribute nodes are not supported!";
-    } else {
-      echo "Commenting out:";
-      ls .;
-      local $node = "";
-      ls . |> $node;
-      add comment "$mark$node" replace .;
-    }
-  }
-}
-
-def uncomment %n $mark {
-  foreach %n {
-    if (. = ../comment()) { # is this node a comment node
-      local $string = substring-after(.,"$mark");
-      add chunk $string replace .;
-    } else {
-      echo "Warning: Ignoring non-comment node:";
-      ls . 0;
-    }
-  }
-}
-
-
-# comment out all chapters with no paragraphs
-call comment //chapter[not(para)] "COMMENT-NOPARA";
-
-# uncomment all comments (may not always be valid!)
-$mark="COMMENT-NOPARA";
-call uncomment //comment()[starts-with(.,"$mark")] $mark;
+                 %n      # nodes to move to comments
+                 $mark   # maybe some handy mark to recognize such comments
+             {
+               echo "MARK: $mark\n";
+             
+               foreach %n {
+                 if ( . = ../@* ) {
+                   echo "Warning: attribute nodes are not supported!";
+                 } else {
+                   echo "Commenting out:";
+                   ls .;
+                   local $node = "";
+                   ls . |> $node;
+                   add comment "$mark$node" replace .;
+                 }
+               }
+             }
+             
+             def uncomment %n $mark {
+               foreach %n {
+                 if (. = ../comment()) { # is this node a comment node
+                   local $string = substring-after(.,"$mark");
+                   add chunk $string replace .;
+                 } else {
+                   echo "Warning: Ignoring non-comment node:";
+                   ls . 0;
+                 }
+               }
+             }
+             
+             
+             # comment out all chapters with no paragraphs
+             call comment //chapter[not(para)] "COMMENT-NOPARA";
+             
+             # uncomment all comments (may not always be valid!)
+             $mark="COMMENT-NOPARA";
+             call uncomment //comment()[starts-with(.,"$mark")] $mark;
 
 END
 
@@ -367,41 +375,41 @@ description:
 Example:     String expressions
 
              xsh> $a=string(chapter/title)
-        xsh> $b="hallo world"
+             xsh> $b="hallo world"
 
 Example:     Arithmetic expressions
 
              xsh> $a=5*100
-        xsh> $a
-        $a=500
-        xsh> $a=(($a+5) div 10)
-        xsh> $a
-        $a=50.5
+             xsh> $a
+             $a=500
+             xsh> $a=(($a+5) div 10)
+             xsh> $a
+             $a=50.5
 
 Example:     Counting nodes
 
              xsh> $a=//chapter
-        xsh> $a
-        $a=10
-        xsh> %chapters=//chapter
-        xsh> $a=%chapters
-        xsh> $a
-        $a=10
+             xsh> $a
+             $a=10
+             xsh> %chapters=//chapter
+             xsh> $a=%chapters
+             xsh> $a
+             $a=10
 
 Example:     Some caveats of counting node-lists
 
              xsh> ls ./creature
-            <creature race='hobbit' name="Bilbo"/>
-
-        ## WRONG (@name results in a singleton node-list) !!!
-        xsh> $name=@name
-        xsh> $name
-        $a=1
-
-        ## CORRECT (use string() function)
-        xsh> $name=string(@name)
-        xsh> $name
-        $a=Biblo
+             <creature race='hobbit' name="Bilbo"/>
+             
+             ## WRONG (@name results in a singleton node-list) !!!
+             xsh> $name=@name
+             xsh> $name
+             $a=1
+             
+             ## CORRECT (use string() function)
+             xsh> $name=string(@name)
+             xsh> $name
+             $a=Biblo
 
 	     In the other two cases (where percent sign appears) find all
 	     nodes matching the given <xpath> and store the resulting
@@ -513,8 +521,8 @@ Example:     Count words in "hallo wold" string, then print name of your
 	     machine's operating system.
 
              exec echo hallo world;                 # prints hallo world
-        exec "echo hallo word | wc"; # counts words in hallo world
-        exec uname;                            # prints operating system name
+             exec "echo hallo word | wc"; # counts words in hallo world
+             exec uname;                            # prints operating system name
 
 END
 
@@ -536,7 +544,7 @@ description:
 	     XPath string have to be quoted themselves to preveserve them
 	     during the XSH expression interpolation.
 
-
+Example:
              xslt src stylesheet.xsl rslt params font="'14pt'" color="'red'"
 
 END
@@ -703,9 +711,9 @@ Example:     Append a new Hobbit element to the list of middle-earth
 	     creatures and name him Bilbo.
 
              xsh> xadd element "<creature race='hobbit' manner='good'>" \
-        into /middle-earth/creatures
-        xsh> xadd attribute "name='Bilbo'" \
-        into /middle-earth/creatures/creature[@race='hobbit'][last()]
+                              into /middle-earth/creatures
+             xsh> xadd attribute "name='Bilbo'" \
+                              into /middle-earth/creatures/creature[@race='hobbit'][last()]
 
 END
 
@@ -719,11 +727,11 @@ description:
 	     (EXPERIMENTALLY!) entity_reference. A chunk is a character
 	     string which forms a well-balanced peace of XML.
 
-
+Example:
              add element hobbit into //middle-earth/creatures;
-        add attribute 'name="Bilbo"' into //middle-earth/creatures/hobbit[last()];
-        add chunk '<hobbit name="Frodo">A small guy from <place>Shire</place>.</hobbit>' 
-          into //middle-earth/creatures;
+             add attribute 'name="Bilbo"' into //middle-earth/creatures/hobbit[last()];
+             add chunk '<hobbit name="Frodo">A small guy from <place>Shire</place>.</hobbit>' 
+               into //middle-earth/creatures;
 
 END
 
@@ -838,12 +846,12 @@ description:
 	     `print $::OUT ...'. The $::OUT perl-variable stores the
 	     referenc to the terminal file handle.
 
-
+Example:
              xsh> $i="foo";
-        xsh> eval { echo "$i-bar\n"; } # prints foo-bar
-        xsh> eval 'echo "\$i-bar\n";'  # exactly the same as above
-        xsh> eval 'echo "$i-bar\n";'   # prints foo-bar too, but $i is
-            # interpolated by XSH. Perl actually evaluates echo "foo-bar\n";
+             xsh> eval { echo "$i-bar\n"; } # prints foo-bar
+             xsh> eval 'echo "\$i-bar\n";'  # exactly the same as above
+             xsh> eval 'echo "$i-bar\n";'   # prints foo-bar too, but $i is
+                 # interpolated by XSH. Perl actually evaluates echo "foo-bar\n";
 
 END
 
@@ -911,8 +919,8 @@ description:
 Example:     Sort creatures by name
 
              xsh> %c=//creatures
-        xsh> sort { $a=string(@name) }{ $b=string(@name) }{ $a cmp $b } %c
-        xsh> ls %c/@name
+             xsh> sort { $a=string(@name) }{ $b=string(@name) }{ $a cmp $b } %c
+             xsh> ls %c/@name
 
 END
 
@@ -952,7 +960,8 @@ usage:       close <id>
              
 description:
 	     Close the document identified by <id>, removing its parse-tree
-	     from memory.
+	     from memory (note also that all nodes belonging to the
+	     document are removed from all nodelists they appear in).
 
 END
 
@@ -964,72 +973,51 @@ description:
 	     Make <id> the document identifier to be used in the next xpath
 	     evaluation without identifier prefix.
 
-
+Example:
              xsh> a=mydoc1.xml       # opens and selects a
-        xsh> ls /               # lists a
-        xsh> b=mydoc2.xml       # opens and selects b
-        xsh> ls /               # lists b
-        xsh> ls a:/             # lists and selects a
-        xsh> select b           # does nothing except selecting b
-        xsh> ls /               # lists b
+             xsh> ls /               # lists a
+             xsh> b=mydoc2.xml       # opens and selects b
+             xsh> ls /               # lists b
+             xsh> ls a:/             # lists and selects a
+             xsh> select b           # does nothing except selecting b
+             xsh> ls /               # lists b
 
 END
 
 
 $HELP{'open'}=[<<'END'];
-usage:       [open] <id>=<filename>
+usage:       [open [HTML|XML|DOCBOOK] [FILE|PIPE|STRING]] <id>=<expression>
              
 description:
-	     Open a new document assigning it a symbolic name of <id>. To
-	     identify the document, use simply <id> in commands like close,
-	     save, validate, dtd or enc. In commands which work on document
-	     nodes, use <id>: prefix is XPath expressions to point the
-	     XPath into the document.
+	     Load a new XML, HTML or SGML DOCBOOK document from the file,
+	     URI, command output or string provided by the <expression>. In
+	     XSH the document is given a symbolic name <id>. To identify
+	     the documentin commands like close, save, validate, dtd or enc
+	     simply use <id>. In commands which work on document nodes,
+	     give <id>: prefix to XPath expressions to point the XPath to
+	     the document.
 
-
+Example:
              xsh> open x=mydoc.xml # open a document
-
-        # quote file name if it contains whitespace
-        xsh> open y="document with a long name with spaces.xml"
-
-        # you may omit the word open (I'm clever enough to find out).
-        xsh> z=mybook.xml
-
-        # use z: prefix to identify the document opened with the
-        # previous comand in an XPath expression.
-        xsh> ls z://chapter/title
-
-END
-
-
-$HELP{'open-HTML'}=[<<'END'];
-usage:       open_HTML <id>=<filename>
              
-aliases:     open_HTML
-
-description:
-	     Open a new HTML document assigning it a symbolic name of <id>.
-	     To save it as HTML, use save_HTML command (use of just save or
-	     saveas would change it to XHTML without changing the DOCTYPE
-	     declaration).
-
-END
-
-$HELP{'open_HTML'}=$HELP{'open-HTML'};
-
-$HELP{'open-PIPE'}=[<<'END'];
-usage:       open_PIPE <id>=<expression>
+             # quote file name if it contains whitespace
+             xsh> open y="document with a long name with spaces.xml"
              
-aliases:     open_PIPE
-
-description:
-	     Run the system command resluting from interpoation of the
-	     <expression> and parse its output as XML, associating the
-	     resulting DOM tree with the given <id>.
+             # you may omit the word open when loading an XML file/URI.
+             xsh> z=mybook.xml
+             
+             # use HTML or DOCBOOK keywords to load these types
+             xsh> open HTML z=index.htm
+             
+             # use PIPE keyword to read output of a command
+             xsh> open HTML PIPE z='wget -O - xsh.sourceforge.net/index.html'
+             
+             # use z: prefix to identify the document opened with the
+             # previous comand in an XPath expression.
+             xsh> ls z://chapter/title
 
 END
 
-$HELP{'open_PIPE'}=$HELP{'open-PIPE'};
 
 $HELP{'create'}=[<<'END'];
 usage:       create <id> <expression>
@@ -1040,92 +1028,69 @@ description:
 	     Create a new document using <expression> to form the root
 	     element and associate it with the given identifier.
 
-
+Example:
              xsh> create t1 root
-        xsh> ls /
-        <?xml version="1.0" encoding="utf-8"?>
-        <root/>
-
-        xsh> create t2 "<root id='r0'>Just a <b>test</b></root>"
-        xsh> ls /
-        <?xml version="1.0" encoding="utf-8"?>
-        <root id='r0'>Just a <b>test</b></root>
-        xsh> files
-        scratch = new_document.xml
-        t1 = new_document1.xml
-        t2 = new_document2.xml
+             xsh> ls /
+             <?xml version="1.0" encoding="utf-8"?>
+             <root/>
+             
+             xsh> create t2 "<root id='r0'>Just a <b>test</b></root>"
+             xsh> ls /
+             <?xml version="1.0" encoding="utf-8"?>
+             <root id='r0'>Just a <b>test</b></root>
+             xsh> files
+             scratch = new_document.xml
+             t1 = new_document1.xml
+             t2 = new_document2.xml
 
 END
 
 $HELP{'new'}=$HELP{'create'};
 
 $HELP{'save'}=[<<'END'];
-usage:       save <id> [encoding <enc-string>]
+usage:       save [HTML|XML|XInclude]? [FILE|PIPE|STRING]? <id> <expression>? [encoding <enc-string>]
              
 description:
-	     Save the document identified by <id> to its original XML file,
-	     optionally converting it from its original encoding to
-	     <enc-string>.
+	     Save the document identified by <id>. Using one of the `FILE',
+	     `PIPE', `STRING' keywords the user may choose to save the
+	     document to a file send it to a given command's input via a
+	     pipe or simply return its content as a string. If none of the
+	     keywords is used, it defaults to FILE. If saving to a PIPE,
+	     the <expression> argument must provide the coresponding
+	     command and all its parameters. If saving to a FILE, the
+	     <expression> argument may provide a filename; if omitted, it
+	     defaults to the original filename of the document. If saving
+	     to a STRING, the <expression> argument is ignored and may
+	     freely be omitted.
+
+	     The output format is controlled using one of the XML, HTML,
+	     XInclude keywords (see below). If the format keyword is
+	     ommited, save it defaults to XML.
+
+	     Note, that a document should be saved as HTML only if it
+	     actually is a HTML document. Note also, that the optional
+	     encoding parameter forces character conversion only; it is up
+	     to the user to declare the document encoding in the
+	     appropriate HTML <META> tag.
+
+	     The XInclude keyword automatically implies XML format and can
+	     be used to force XSH to save all already expanded XInclude
+	     sections back to their original files while replacing them
+	     with <xi:include> tags in the main XML file. Moreover, all
+	     material included within <include> elements from the
+	     `http://www.w3.org/2001/XInclude' namespace is saved to
+	     separate files too according to the `href' attribute, leaving
+	     only empty <include> element in the root file. This feature
+	     may be used to split the document to new XInclude fragments.
+
+	     The encoding keyword followed by a <enc-string> can be used to
+	     convert the document from its original encoding to a different
+	     encoding. In case of XML output, the <?xml?> declaration is
+	     changed accordingly. This encoding is also set as the document
+	     encoding for the particular document.
 
 END
 
-
-$HELP{'save-HTML'}=[<<'END'];
-usage:       save_HTML <id> <filename> [encoding <enc-string>]
-             
-aliases:     save_HTML
-
-description:
-	     Save the document identified by <id> as a HTML file named
-	     <filename>, optionally converting it from its original
-	     encoding to <enc-string> Note, that this does just the
-	     character conversion, so you must specify the correct encoding
-	     in the META tag yourself.
-
-END
-
-$HELP{'save_HTML'}=$HELP{'save-HTML'};
-
-$HELP{'saveas'}=[<<'END'];
-usage:       saveas <id> <filename> [encoding <enc-string>]
-             
-aliases:     save-as save_as
-
-description:
-	     Save the document identified by <id> as a XML file named
-	     <filename>, optionally converting it from its original
-	     encoding to <enc-string>.
-
-END
-
-$HELP{'save-as'}=$HELP{'saveas'};
-$HELP{'save_as'}=$HELP{'saveas'};
-
-$HELP{'save-xinclude'}=[<<'END'];
-usage:       save_xinclude <id> [encoding <enc-string>]
-             
-aliases:     save_xinclude
-
-description:
-	     Save the document identified by <id> while saving all expanded
-	     XInclude sections to the original files (optionally converting
-	     it from its original encoding to <enc-string>). Once expanded,
-	     sections included with XInclude mechanism cannot be normally
-	     distinguished from other parts of the DOM tree by any XPath
-	     expression or XSH command. Internally, however, they are
-	     marked with special DOM nodes. This command uses these nodes
-	     to find the sections and save them to their original documents
-	     while restoring the <xi:include> tags in the root document.
-	     More over, this command may be used to split the document to
-	     new fragments included back by means of XInclude, since all
-	     non-empty fragments containded within
-
-	     elements are saved to separate files too, leaving only empty
-	     xi:include element in the root file.
-
-END
-
-$HELP{'save_xinclude'}=$HELP{'save-xinclude'};
 
 $HELP{'dtd'}=[<<'END'];
 usage:       dtd [<id>]
@@ -1412,8 +1377,16 @@ $HELP{'indent'}=[<<'END'];
 usage:       indent <expression>
              
 description:
-	     If the <expression> is non-zero, format the XML output while
-	     saving a document by adding some nice ignorable whitespace.
+	     If the value of <expression> is 1, format the XML output while
+	     saving a document by adding some nice ignorable whitespace. If
+	     the value is 2 (or higher), XSH will act as in case of 1, plus
+	     it will add a leading and a trailing linebreak to each text
+	     node.
+
+	     Note, that since the underlying C library (libxml2) uses a
+	     hardcoded indentation of 2 space characters per indentation
+	     level, the amount of whitespace used for indentation can not
+	     be altered on runtime.
 
 END
 
@@ -1474,6 +1447,19 @@ description:
 END
 
 
+$HELP{'switch-to-new-documents'}=[<<'END'];
+usage:       switch-to-new-documents
+             
+aliases:     switch_to_new_documents
+
+description:
+	     If true, change current node to the document node of a newly
+	     open/created files after <open> or <create>.
+
+END
+
+$HELP{'switch_to_new_documents'}=$HELP{'switch-to-new-documents'};
+
 $HELP{'backups'}=[<<'END'];
 usage:       backups
              
@@ -1504,14 +1490,14 @@ description:
 	     given by the <expression> (default depth is 0 = fold
 	     immediately).
 
-
+Example:
              xsh> fold //chapter 1
-        xsh> ls //chapter[1] fold
-        <chapter id="intro" xsh:fold="1">
-          <title>...</title>
-          <para>...</para>
-          <para>...</para>
-        </chapter>
+             xsh> ls //chapter[1] fold
+             <chapter id="intro" xsh:fold="1">
+               <title>...</title>
+               <para>...</para>
+               <para>...</para>
+             </chapter>
 
 END
 
