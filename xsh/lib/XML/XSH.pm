@@ -1,4 +1,4 @@
-# $Id: XSH.pm,v 1.7 2002-09-27 09:53:50 pajas Exp $
+# $Id: XSH.pm,v 1.8 2002-12-13 11:46:37 pajas Exp $
 
 package XML::XSH;
 
@@ -28,7 +28,20 @@ XML::XSH - Powerfull Scripting Language/Shell for XPath-based Editing of XML
  use XML::XSH;
  xsh(<<'__XSH__');
 
- ... XSH Language commands ...
+   # ... XSH Language commands (example borrowed from Kip Hampton's article) ...
+   open sources="perl_channels.xml";   # open a document from file
+   create merge news-items;            # create a new document
+
+   foreach sources://rss-url {         # traverse the sources document
+       open src=${{ string(@href) }};  # load the URL given by @href attribute
+       map { $_ = lc($_) } //*;        # lowercase all tag names
+       xcopy src://item                # copy all items from the src document
+          into merge:/news-items[1];   # into the news-items element in merge document
+       close src;                      # close src document (not mandatory)
+   };
+   close sources;
+   saveas merge "files/headlines.xml"; # save the resulting merge document
+   close merge;
 
  __XSH__
 
@@ -47,7 +60,7 @@ This module implements XSH sripting language. XSH stands for XML
 http://xsh.sourceforge.net/doc.
 
 The distribution package of XML::XSH module includes XSH shell
-interpreter called C<xsh>. To use interactively, run C<xsh -i>.
+interpreter called C<xsh>. To use it interactively, run C<xsh -i>.
 
 =head2 C<xsh_init>
 
