@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.25 2002-09-12 15:32:34 pajas Exp $
+# $Id: Functions.pm,v 1.26 2002-09-27 08:28:56 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -151,14 +151,14 @@ sub list_flags {
 sub toUTF8 {
   # encode/decode from UTF8 returns undef if string not marked as utf8
   # by perl (for example ascii)
-  my $res=encodeToUTF8($_[0],$_[1]);
+  my $res=eval { encodeToUTF8($_[0],$_[1]) };
   return defined($res) ? $res : $_[1];
 }
 
 sub fromUTF8 {
   # encode/decode from UTF8 returns undef if string not marked as utf8
   # by perl (for example ascii)
-  my $res=decodeFromUTF8($_[0],$_[1]);
+  my $res=eval { decodeFromUTF8($_[0],$_[1]) };
   return defined($res) ? $res : $_[1];
 }
 
@@ -718,6 +718,8 @@ sub open_doc {
 	open F,"$file|";
 	$doc=$_xml_module->parse_fh($_parser,\*F);
 	close F;
+      } elsif ($format eq 'docbook') {
+	$doc=$_xml_module->parse_sgml_file($_parser,\*F);
       } else {
 	$doc=$_xml_module->parse_file($_parser,$file);
       }
@@ -1253,96 +1255,209 @@ sub name_prefix {
 # node-type conversion if necessary
 sub insert_node {
   my ($node,$dest,$dest_doc,$where,$ns)=@_;
-  if ($_xml_module->is_text($node)           ||
-      $_xml_module->is_cdata_section($node)  ||
-      $_xml_module->is_comment($node)        ||
-      $_xml_module->is_pi($node)             ||
-      $_xml_module->is_entity($node)
-      and $_xml_module->is_attribute($dest)) {
-    my $val=$node->getData();
-    if ($where eq 'replace' or $where eq 'as_child') {
-      $val=~s/^\s+|\s+$//g;
-      set_attr_ns($dest->ownerElement(),$dest->namespaceURI(),$dest->getName(),$val);
-    } elsif ($where eq 'before') {
-      $val=~s/^\s+//g;
-      set_attr_ns($dest->ownerElement(),$dest->namespaceURI(),$dest->getName(),
-		  $val.$dest->getValue());
-    } elsif ($where eq 'after') {
-      $val=~s/\s+$//g;
-      set_attr_ns($dest->ownerElement(),$dest->namespaceURI(),$dest->getName(),
-		  $dest->getValue().$val);
+
+  # destination: Attribute
+  if ($_xml_module->is_attribute($dest)) {
+    # source: Text, CDATA, Comment, PI, Entity
+    if ($_xml_module->is_text($node)           ||
+	$_xml_module->is_cdata_section($node)  ||
+	$_xml_module->is_comment($node)        ||
+	$_xml_module->is_pi($node)             ||
+	$_xml_module->is_entity($node)) {
+      my $val=$node->getData();
+      if ($where eq 'replace' or $where eq 'into') {
+	$val=~s/^\s+|\s+$//g;
+	# xcopy will replace the value several times, which may not be intended
+	set_attr_ns($dest->ownerElement(),$dest->namespaceURI(),$dest->getName(),$val);
+	return 'keep'; # as opposed to 'remove'
+      } elsif ($where eq 'before' or $where eq 'prepend') {
+	$val=~s/^\s+//g;
+	set_attr_ns($dest->ownerElement(),$dest->namespaceURI(),$dest->getName(),
+		    $val.$dest->getValue());
+      } elsif ($where eq 'after' or $where eq 'append') {
+	$val=~s/\s+$//g;
+	set_attr_ns($dest->ownerElement(),$dest->namespaceURI(),$dest->getName(),
+		    $dest->getValue().$val);
+      }
+
     }
-  } elsif ($_xml_module->is_attribute($node)) {
-    if ($_xml_module->is_attribute($dest)) {
-      my ($name,$value);
+    # source: attribute, element
+    elsif ($_xml_module->is_attribute($node) ||
+	   $_xml_module->is_element($node)) {
+      my $name=$node->getName();
+      my $value = $_xml_module->is_attribute($node) ? $node->getValue()
+	: $node->textContent();
       if ($where eq 'replace') {
 	# -- prepare NS
 	$ns=$node->namespaceURI() if ($ns eq "");
-	if ($ns eq "" and name_prefix($node->getName) ne "") {
-	  $ns=$dest->lookupNamespaceURI(name_prefix($node->getName))
+	if ($ns eq "" and name_prefix($name) ne "") {
+	  $ns=$dest->lookupNamespaceURI(name_prefix($name))
 	}
 	# --
-	set_attr_ns($dest->ownerElement(),"$ns",$node->getName(),$node->getValue());
-	remove_node($dest);
+	my $elem=$dest->ownerElement();
+	set_attr_ns($elem,"$ns",$name,$value);
+	if ($name ne $dest->getName()) {
+	  return 'remove'; # remove the destination node in the end
+	} else {
+	  return 'keep'; # no need to remove the destination node
+	}
       } else {
 	# -- prepare NS
 	$ns=$dest->namespaceURI(); # given value of $ns is ignored here
 	# --
-	if ($where eq 'after') {
-	  set_attr_ns($dest->ownerElement(),"$ns",$dest->getName(),$dest->getValue().$node->getValue());
-	} elsif ($where eq "as_child") {
-	  set_attr_ns($dest->ownerElement(),"$ns",$dest->getName(),$node->getValue());
-	} else { #before
-	  set_attr_ns($dest->ownerElement(),"$ns",$dest->getName(),$node->getValue().$dest->getValue());
+	if ($where eq 'after' or $where eq 'append') {
+	  set_attr_ns($dest->ownerElement(),"$ns",$dest->getName,$dest->getValue().$value);
+	} elsif ($where eq 'into') {
+	  set_attr_ns($dest->ownerElement(),"$ns",$dest->getName(),$value);
+	} elsif ($where eq 'before' or $where eq 'prepend') {
+	  set_attr_ns($dest->ownerElement(),"$ns",$dest->getName(),$value.$dest->getValue());
 	}
       }
-    } elsif ($_xml_module->is_element($dest)) {
+    } else {
+      print STDERR
+	"Warning: Ignoring incompatible source ",ref($node),
+	  " and destination ",ref($dest),"!\n";
+    }
+  }
+  # destination: Element
+  elsif ($_xml_module->is_element($dest)) {
+    # source: Attribute
+    if ($_xml_module->is_attribute($node)) {
       # -- prepare NS
       $ns=$node->namespaceURI() if ($ns eq "");
       if ($ns eq "" and name_prefix($node->getName) ne "") {
 	$ns=$dest->lookupNamespaceURI(name_prefix($node->getName))
       }
       # --
-      set_attr_ns($dest,"$ns",$node->getName(),$node->getValue());
-    } elsif ($_xml_module->is_text($dest)          ||
-	     $_xml_module->is_cdata_section($dest) ||
-	     $_xml_module->is_comment($dest)       ||
-	     $_xml_module->is_pi($dest)) {
-      if ($where eq 'replace') {
-	$dest->setData($node->getValue());
-      } elsif ($where eq 'after' or $where eq 'as_child') {
-	$dest->setData($dest->getData().$node->getValue());
+      if ($where eq 'into') {
+	set_attr_ns($dest,"$ns",$node->getName(),$node->getValue());
+      } elsif ($where eq 'replace') {
+	my $parent=$dest->parentNode();
+	if ($_xml_module->is_element($parent)) {
+	  set_attr_ns($dest,"$ns",$node->getName(),$node->getValue());
+	}
+	return 'remove';
       } else {
-	$dest->setData($node->getValue().$dest->getData());
+	# converting attribute to element
+	my $new=new_element($dest_doc,$node->getName(),$ns);
+	$new->appendText($node->getValue());
+	my $parent=$dest->parentNode();
+	if ($_xml_module->is_element($parent)) {
+	  if ($where eq 'before') {
+	    $parent->insertBefore($new,$dest);
+	  } elsif ($where eq 'after') {
+	    $parent->insertAfter($new,$dest);
+	  }
+	} elsif ($where eq 'append') {
+	  $dest->appendChild($new);
+	} elsif ($where eq 'prepend') {
+	  $dest->insertBefore($new,$dest->firstChild());
+	}
       }
     }
-  } else {
-#    my $copy=$node->cloneNode(1);
-    my $copy;
-    if ($_xml_module->is_element($node) and !$node->hasChildNodes) {
+    # source: Any but Attribute
+    else {
+      my $copy;
+      if ($_xml_module->is_element($node) and !$node->hasChildNodes) {
+	# -- prepare NS
+	$ns=$node->namespaceURI() if ($ns eq "");
+	if ($ns eq "" and name_prefix($node->getName) ne "") {
+	  $ns=$dest->lookupNamespaceURI(name_prefix($node->getName));
+	}
+	# --
+	$copy=new_element($dest_doc,$node->getName(),$ns,
+			  [map { [$_->nodeName(),$_->nodeValue()] } $node->attributes]);
+      } elsif ($_xml_module->is_document_fragment($node)) {
+	$copy=$_parser->parse_xml_chunk($node->toString());
+      } else {
+	$copy=$_xml_module->clone_node($dest_doc,$node);
+      }
+      if ($where eq 'after') {
+	$dest->parentNode()->insertAfter($copy,$dest)
+	  unless ($_xml_module->is_document_fragment($node) and
+		  !$_xml_module->is_element($dest->parentNode()));
+      } elsif ($where eq 'before') {
+	$dest->parentNode()->insertBefore($copy,$dest)
+	  unless ($_xml_module->is_document_fragment($node) and
+		  !$_xml_module->is_element($dest->parentNode()));
+      } elsif ($where eq 'into' or $where eq 'append') {
+	$dest->appendChild($copy);
+      } elsif ($where eq 'prepend') {
+	$dest->insertBefore($copy,$dest->firstChild());
+      } elsif ($where eq 'replace') {
+	$dest->parentNode()->insertBefore($copy,$dest)
+	  unless ($_xml_module->is_document_fragment($node) and
+		  !$_xml_module->is_element($dest->parentNode()));
+	return 'remove';
+      }
+    }
+  }
+  # destination: Text, CDATA, Comment, PI
+  elsif ($_xml_module->is_text($dest)          ||
+	 $_xml_module->is_cdata_section($dest) ||
+	 $_xml_module->is_comment($dest)       ||
+	 $_xml_module->is_pi($dest)) {
+
+    if ($where eq 'into') {
+      my $value=$_xml_module->is_element($node) ?
+	$node->textContent() : $node->getData();
+      $dest->setData($value);
+    } elsif ($where eq 'append') {
+      my $value=$_xml_module->is_element($node) ?
+	$node->textContent() : $node->getData();
+      $dest->setData($dest->getData().$value);
+    } elsif ($where eq 'prepend') {
+      my $value=$_xml_module->is_element($node) ?
+	$node->textContent() : $node->getData();
+      $dest->setData($value.$dest->getData());
+    }
+    # replace + source: Attribute
+    elsif ($where eq 'replace' and $_xml_module->is_attribute($node)) {
+      my $parent=$dest->parentNode();
       # -- prepare NS
       $ns=$node->namespaceURI() if ($ns eq "");
       if ($ns eq "" and name_prefix($node->getName) ne "") {
 	$ns=$dest->lookupNamespaceURI(name_prefix($node->getName));
       }
       # --
-      $copy=new_element($dest_doc,$node->getName(),$ns,
-		  [map { [$_->nodeName(),$_->nodeValue()] } $node->attributes]);
-    } elsif ($_xml_module->is_document_fragment($node)) {
-      $copy=$_parser->parse_xml_chunk($node->toString());
+      if ($_xml_module->is_element($parent)) {
+	set_attr_ns($dest,"$ns",$node->getName(),$node->getValue());
+      }
+      return 'remove';
     } else {
-      $copy=$_xml_module->clone_node($dest_doc,$node);
+      my $parent=$dest->parentNode();
+      unless (!$_xml_module->is_element($parent) and
+	      ($_xml_module->is_element($node) ||
+	       $_xml_module->is_attribute($node) ||
+	       $_xml_module->is_text($node) ||
+	       $_xml_module->is_cdata_section($node))) {
+	my $new;
+	# source: Attribute
+	if ($_xml_module->is_attribute($node)) {
+	  # -- prepare NS
+	  $ns=$node->namespaceURI() if ($ns eq "");
+	  if ($ns eq "" and name_prefix($node->getName) ne "") {
+	    $ns=$parent->lookupNamespaceURI(name_prefix($node->getName));
+	  }
+	  # --
+	  $new=new_element($dest_doc,$node->getName(),$ns);
+	  $new->appendText($node->getValue());
+	}
+	# source: All other
+	else {
+	  $new = $node;
+	}
+	if ($where eq 'after') {
+	  $parent->insertAfter($new,$dest)
+	} elsif ($where eq 'before') {
+	  $parent->insertBefore($new,$dest);
+	} elsif ($where eq 'replace') {
+	  $parent->insertBefore($new,$dest);
+	}
+      }
     }
-    if ($where eq 'after') {
-      $dest->parentNode()->insertAfter($copy,$dest);
-    } elsif ($where eq 'as_child') {
-      $dest->appendChild($copy);
-    } elsif ($where eq 'replace') {
-      $dest->parentNode()->insertBefore($copy,$dest);
-      remove_node($dest);
-    } else {
-      $dest->parentNode()->insertBefore($copy,$dest);
-    }
+  } else {
+    print STDERR "Warning: unsupported/unknown destination type: ",ref($dest),"\n";
   }
   return 1;
 }
@@ -1369,16 +1484,18 @@ sub copy {
   eval {
     local $SIG{INT}=\&sigint;
     if ($all_to_all) {
-      my $to=($where eq 'replace' ? 'before' : $where);
       foreach my $tp (@$tl) {
+	my $replace=0;
 	foreach my $fp (@$fl) {
-	  insert_node($fp,$tp,$tdoc,$to);
+	  $replace = (insert_node($fp,$tp,$tdoc,$where) eq 'replace') && $replace;
 	}
-	remove_node($tp) if $where eq 'replace';
+	remove_node($tp) if $replace;
       }
     } else {
       while (ref(my $fp=shift @$fl) and ref(my $tp=shift @$tl)) {
-	insert_node($fp,$tp,$tdoc,$where);
+	if (insert_node($fp,$tp,$tdoc,$where) eq 'replace') {
+	  remove_node($tp);
+	}
       }
     }
   };
@@ -1418,8 +1535,6 @@ sub new_element {
   my $prefix;
   if ($ns ne "" and $name=~/^([^>]+):(.*)$/) {
     $prefix=$1;
-    print STDERR "NS: $ns\n" if $_debug;
-    print STDERR "Name: $name\n" if $_debug;
     $el=$doc->createElementNS($ns,$name);
   } else {
     $el=$doc->createElement($name);
@@ -1533,33 +1648,21 @@ sub insert {
     my $tl=find_nodes($xpath);
 
     if ($to_all) {
-      my $to=($where eq 'replace' ? 'after' : $where);
       foreach my $tp (@$tl) {
-#	if ($type eq 'chunk') {
-#	  if ($_xml_module->is_element($tp)) {
-#	    $tp->appendWellBalancedChunk($exp);
-#	  } else {
-#	    print STDERR "Target node is not an element!\n";
-#	  }
-#	} else {
+	my $replace=0;
 	foreach my $node (@nodes) {
-	  insert_node($node,$tp,$tdoc,$to);
+	  $replace = (insert_node($node,$tp,$tdoc,$where) eq 'replace') && $replace;
 	}
-	#	}
-	remove_node($tp) if $where eq 'replace';
+	remove_node($tp) if $replace;
       }
     } elsif ($tl->[0]) {
-#      if ($type eq 'chunk') {
-#	if ($_xml_module->is_element($tl->[0])) {
-#	  print STDERR "CHUNK: ",$tl->[0]->appendWellBalancedChunk($exp),"\n";
-#	} else {
-#	  print STDERR "Target node is not an element!\n";
-#	}
-#      } else {
       foreach my $node (@nodes) {
-	insert_node($node,$tl->[0],$tdoc,$where) if ref($tl->[0]);
+	if (ref($tl->[0])) {
+	  if (insert_node($node,$tl->[0],$tdoc,$where) eq 'replace') {
+	    remove_node($tl->[0]);
+	  }
+	}
       }
-      #      }
     }
   };
   return _check_err($@);
