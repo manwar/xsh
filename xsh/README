@@ -37,7 +37,7 @@ manual installation.
 Usage:
 ------
 
-run `xsh.pl -i' from your terminal and type `help | less' to find
+run `xsh -i' from your terminal and type `help | less' to find
 out what to do next.
 
 Licence:

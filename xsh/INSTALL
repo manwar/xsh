@@ -3,32 +3,39 @@ xsh - an XML Editing Shell
 Copyright (c) 2002 Petr Pajas
 
 To install xsh, first install all required modules as described below.
-Then install xsh.pl either 
+Then install xsh either 
 
-automatically:
--------------
+automatically (highly recommended):
+-----------------------------------
 
-1) check/change PREFIX variable in config.mk 
-2) type `make install' from xsh directory
+run:
+
+  perl Makefile.PL  
+  make
+  make install
+
+you may use `perl Makefile.PL PREFIX=<prefix>' to install to a
+directory tree different from /usr
 
 or 
 
 manually:
 --------
 
-1) copy xsh.pl to some location in your PATH 
-2) copy XSH subdirectory and its content into one of the following
+1) copy xsh to some location in your PATH 
+2) copy lib/XSH subdirectory and its content into one of the following
 locations:
 
 - a directory in Perl's @INC search path
-- the directory where you placed xsh.pl
+- the directory where you placed xsh
 - a lib/ directory in the parent directory of the directory
-  where xsh.pl is located 
+  where xsh is located 
+- a lib/ sub-directory in the directory where xsh is located
 
 For example:
-  cp xsh.pl /usr/local/bin
+  cp xsh /usr/local/bin
   cp -R XSH/ /usr/local/lib
-  chmod 775 /usr/local/bin/xsh.pl  # if your tar did not preserve this
+  chmod 775 /usr/local/bin/xsh  # if your tar did not preserve this
 
 
 Requirements:
