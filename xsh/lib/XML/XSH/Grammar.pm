@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Mon Aug 25 14:53:28 2003
+# Wed Sep 10 15:49:50 2003
 
 
 package XML::XSH::Grammar;
@@ -119,11 +119,17 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(close)/ <commit> optional_expression(?)
 		{ [\&XML::XSH::Functions::close_doc,@{$item[3]}] }
   	
+	  | /(validate)/ validation_scheme optional_expression(?)
+		{ [\&XML::XSH::Functions::validate_doc,1,$item[2],@{$item[3]}] }
+  	
 	  | /(validate)/ <commit> optional_expression(?)
-		{ [\&XML::XSH::Functions::validate_doc,@{$item[3]}] }
+		{ [\&XML::XSH::Functions::validate_doc,1,[],@{$item[3]}] }
+  	
+	  | /(valid)/ validation_scheme optional_expression(?)
+		{ [\&XML::XSH::Functions::validate_doc,0,$item[2],@{$item[3]}] }
   	
 	  | /(valid)/ <commit> optional_expression(?)
-		{ [\&XML::XSH::Functions::valid_doc,@{$item[3]}] }
+		{ [\&XML::XSH::Functions::validate_doc,0,[],@{$item[3]}] }
   	
 	  | /(dtd)/ <commit> optional_expression(?)
 		{ [\&XML::XSH::Functions::list_dtd,@{$item[3]}] }
@@ -152,10 +158,10 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /save(as|_as|-as)?((\s*|_|-)(HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?((\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?/ expression filename encoding_param(?)
 		{ [\&XML::XSH::Functions::save_doc,@item[1,2,3,4]] }
   	
-	  | /save(as|_as|-as)?((\s*|_|-)(HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?((\s*|_|-)(FILE|file|STRING|string))?/ <commit> expression encoding_param(?)
-		{ [\&XML::XSH::Functions::save_doc,@item[1,3],undef,$item[4]] }
+	  | /save(as|_as|-as)?((\s*|_|-)(HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?((\s*|_|-)(FILE|file|STRING|string))?/ expression encoding_param(?)
+		{ [\&XML::XSH::Functions::save_doc,@item[1,2],undef,$item[3]] }
   	
-	  | /save(as|_as|-as)?([-_](HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?/
+	  | /save(as|_as|-as)?([-_](HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?/ <commit>
 		{ [\&XML::XSH::Functions::save_doc,$item[1]] }
   	
 	  | /(documents|files|docs)/
@@ -178,6 +184,9 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 	  | /(include|\.)\s/ <commit> filename
 		{ [\&XML::XSH::Functions::include,$item[3]] }
+  	
+	  | /(ifinclude)\s/ <commit> filename
+		{ [\&XML::XSH::Functions::include,$item[3],1] }
   	
 	  |( /(assign)\s/
 	   )(?) variable '=' xpath
@@ -320,6 +329,9 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 	  | /(doc-info|doc_info)/ <commit> optional_expression(?)
 		{ [\&XML::XSH::Functions::doc_info,@{$item[3]}] }
+  	
+	  | /(use)\s/ <commit> /Inline::XSH/
+		{ 1 }
   	
 	  | call_command
 
@@ -472,6 +484,36 @@ $grammar=<<'_EO_GRAMMAR_';
   id_or_var:
 	    ID
 	  | variable
+
+  public_dtd:
+	    'PUBLIC' expression
+		{ $item[2] }
+  	
+
+  system_dtd:
+	    /SYSTEM|FILE/ filename
+		{ $item[2] }
+  	
+
+  validation_scheme:
+	    'DTD' public_dtd system_dtd
+		{ ['DTD','FILE',$item[2],$item[3]] }
+  	
+	  | 'DTD' public_dtd
+		{ ['DTD','FILE',$item[2],undef] }
+  	
+	  | 'DTD' system_dtd
+		{ ['DTD','FILE',undef,$item[2]] }
+  	
+	  | 'DTD' 'STRING' expression
+		{ ['DTD','STRING',$item[3]] }
+  	
+	  | /RNG|RelaxNG|RELAXNG/ /FILE|STRING|DOC/ filename
+		{ ['RNG',@item[2,3]] }
+  	
+	  | /Schema|SCHEMA|XSD/ /FILE|STRING|DOC/ filename
+		{ ['XSD',@item[2,3]] }
+  	
 
   filename:
 	    expression

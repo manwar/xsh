@@ -48,6 +48,7 @@ foreach
 get
 help
 if
+ifinclude
 include
 indent
 insert
@@ -175,6 +176,7 @@ local
 options
 flags
 defs
+ifinclude
 include
 \.
 call

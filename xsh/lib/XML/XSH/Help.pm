@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Mon Aug 25 14:53:29 2003
+# Wed Sep 10 15:49:51 2003
 
 package XML::XSH::Help;
 use strict;
@@ -71,9 +71,9 @@ Help items:
 
     assign, backups, call, catalog, cd, clone, close, copy, count, create,
     debug, def, defs, doc-info, documents, dtd, enc, encoding, exec, exit,
-    fold, foreach, help, if, include, indent, insert, iterate, keep-blanks,
-    last, lcd, load-ext-dtd, local, locate, ls, map, move, namespaces,
-    next, nobackups, nodebug, normalize, open, options,
+    fold, foreach, help, if, ifinclude, include, indent, insert, iterate,
+    keep-blanks, last, lcd, load-ext-dtd, local, locate, ls, map, move,
+    namespaces, next, nobackups, nodebug, normalize, open, options,
     parser-completes-attributes, parser-expands-entities,
     parser-expands-xinclude, pedantic-parser, perl, prev, print,
     process-xinclude, pwd, query-encoding, quiet, recovering, redo,
@@ -98,10 +98,10 @@ List of XSH commands
 description:
 	     assign, backups, call, catalog, cd, clone, close, copy, count,
 	     create, debug, def, defs, doc-info, documents, dtd, enc,
-	     encoding, exec, exit, fold, foreach, help, if, include,
-	     indent, insert, iterate, keep-blanks, last, lcd, load-ext-dtd,
-	     local, locate, ls, map, move, namespaces, next, nobackups,
-	     nodebug, normalize, open, options,
+	     encoding, exec, exit, fold, foreach, help, if, ifinclude,
+	     include, indent, insert, iterate, keep-blanks, last, lcd,
+	     load-ext-dtd, local, locate, ls, map, move, namespaces, next,
+	     nobackups, nodebug, normalize, open, options,
 	     parser-completes-attributes, parser-expands-entities,
 	     parser-expands-xinclude, pedantic-parser, perl, prev, print,
 	     process-xinclude, pwd, query-encoding, quiet, recovering,
@@ -261,7 +261,8 @@ $HELP{'filename'}=[<<'END'];
 Filename argument type
 
 description:
-	     An <expression> which interpolates to a valid file name.
+	     An <expression> which interpolates to a valid file name or
+	     URL.
 
 END
 
@@ -291,8 +292,8 @@ description:
 
 	     `xsh:grep(node-set, regexp-string)' - returns a node set
 	     consisting of nodes of the given `node-set' whose content (as
-	     returned by the built-in XPath function `string()' matches the
-	     regular expression given in `regexp-string'.
+	     returned by the built-in XPath function `string()') matches
+	     the regular expression given in `regexp-string'.
 
 	     `xsh:same(node-set1, node-set2)' - returns `true' if the given
 	     node sets both contain the same node (in XPath, this can also
@@ -341,7 +342,7 @@ Example:     Handle parse errors
                }
              }
 
-see also:     throw_command
+see also:     throw
 
 END
 
@@ -554,7 +555,7 @@ Example:     Commenting and un-commenting pieces of document
              $mark="COMMENT-NOPARA";
              call uncomment //comment()[starts-with(.,"$mark")] $mark;
 
-see also:     call_command return_command local_command
+see also:     call return local
 
 END
 
@@ -619,7 +620,7 @@ Example:     Some caveats of counting node-lists
 	     node-list in the variable named %<id>. The variable may be
 	     later used instead of an XPath expression.
 
-see also:     var_command
+see also:     variables
 
 END
 
@@ -649,7 +650,7 @@ description:
 	     To sum up for Perl programmers: `local' in XSH works exactly
 	     the same as `local' in Perl.
 
-see also:     assign_command def
+see also:     assign def
 
 END
 
@@ -678,7 +679,20 @@ description:
 	     List names and parametric variables for all defined XSH
 	     routines.
 
-see also:     def var_command
+see also:     def variables
+
+END
+
+
+$HELP{'ifinclude'}=[<<'END'];
+usage:       ifinclude <filename>
+             
+description:
+	     Include a file named <filename> and execute all XSH commands
+	     therein unless the file was already included using either
+	     <include> of <ifinclude>.
+
+see also:     include
 
 END
 
@@ -691,6 +705,8 @@ aliases:     .
 description:
 	     Include a file named <filename> and execute all XSH commands
 	     therein.
+
+see also:     include
 
 END
 
@@ -706,7 +722,7 @@ description:
 	     means of <xpath> expressions. String parameters have to be
 	     string <expression>s.
 
-see also:     def return_command
+see also:     def return
 
 END
 
@@ -776,7 +792,7 @@ aliases:     files docs
 description:
 	     List open files and their identifiers.
 
-see also:     open_command close_command
+see also:     open close
 
 END
 
@@ -791,7 +807,7 @@ aliases:     vars var
 description:
 	     List all defined variables and their values.
 
-see also:     files_command list_defs_command
+see also:     documents defs
 
 END
 
@@ -811,12 +827,13 @@ description:
 	     node matched by the second <xpath> according to the order in
 	     which are nodes matched. Thus, the n'th node matching the
 	     first <xpath> is copied to the location relative to the n'th
-	     node matching the second <xpath>. The possible values for
-	     <location> are: after, before, into, replace and cause copying
-	     the source nodes after, before, into (as the last child-node).
-	     the destination nodes. If replace <location> is used, the
-	     source node is copied before the destination node and the
-	     destination node is removed.
+	     node matching the second <xpath>.
+
+	     The possible values for <location> are: after, before, into,
+	     replace and cause copying the source nodes after, before, into
+	     (as the last child-node). the destination nodes. If replace
+	     <location> is used, the source node is copied before the
+	     destination node and the destination node is removed.
 
 	     Some kind of type conversion is used when the types of the
 	     source and destination nodes are not equal. Thus, text, cdata,
@@ -828,10 +845,9 @@ description:
 	     Attributes may be copied after, before or into some other
 	     attribute to append, prepend or replace the destination
 	     attribute value. They may also replace the destination
-	     attribute completely (both its name and value).
-
-	     To simply copy an attribute from one element to another,
-	     simply copy the attribute node into the destination element.
+	     attribute completely (both its name and value). To copy an
+	     attribute from one element to another, simply copy the
+	     attribute node into the destination element.
 
 	     Elements may be copied into other elements (which results in
 	     appending the child-list of the destination element), or
@@ -892,7 +908,7 @@ description:
 	     Works just like xadd, except that the new node is attached
 	     only the first node matched.
 
-see also:     xinsert_command move_command xmove_command
+see also:     xinsert move xmove
 
 END
 
@@ -939,7 +955,7 @@ Example:     Append a new Hobbit element to the list of middle-earth
              xsh> xadd attribute "name='Bilbo'" \
                               into /middle-earth/creatures/creature[@race='hobbit'][last()]
 
-see also:     insert_command move_command xmove_command
+see also:     insert move xmove
 
 END
 
@@ -1036,7 +1052,7 @@ description:
 	     See <copy> for more details on how the copies of the moved
 	     nodes are created.
 
-see also:     copy_command xmove_command insert_command xinsert_command
+see also:     copy xmove insert xinsert
 
 END
 
@@ -1072,7 +1088,7 @@ Example:     Get rid of all <font> tags
                }
              }
 
-see also:     xcopy_command move_command insert_command xinsert_command
+see also:     xcopy move insert xinsert
 
 END
 
@@ -1087,7 +1103,7 @@ description:
 	     Make a copy of the document identified by the <id> following
 	     the equal sign assigning it the identifier of the first <id>.
 
-see also:     open_command close_command print_enc_command files_command
+see also:     open close enc documents
 
 END
 
@@ -1113,10 +1129,10 @@ usage:       strip <xpath>
 aliases:     strip_whitespace
 
 description:
-	     `strip' removes all leading and trailing whitespace from given
-	     nodes. If applied to an element node, it removes all leading
-	     and trailing child text nodes and CDATA sections that consist
-	     entirely of whitespace.
+	     `strip-whitespace' removes all leading and trailing whitespace
+	     from given nodes. If applied to an element node, it removes
+	     all leading and trailing child text nodes and CDATA sections
+	     that consist entirely of whitespace.
 
 END
 
@@ -1142,7 +1158,7 @@ description:
 	     If the <xpath> parameter is omitted, current context node is
 	     listed to the depth of 1.
 
-see also:     count_command fold_command unfold_command
+see also:     count fold unfold
 
 END
 
@@ -1199,7 +1215,7 @@ aliases:     eval
 description:
 	     Evaluate a given perl expression.
 
-see also:     count_command
+see also:     count
 
 END
 
@@ -1337,7 +1353,7 @@ Example:     Make all elements and attributes uppercase
 
              xsh> map { $_=uc($_) } (//*|//@*)
 
-see also:     map_command
+see also:     map
 
 END
 
@@ -1433,14 +1449,18 @@ Example:
              t1 = new_document1.xml
              t2 = new_document2.xml
 
-see also:     open_command clone_command
+see also:     open clone
 
 END
 
 $HELP{'new'}=$HELP{'create'};
 
 $HELP{'save'}=[<<'END'];
-usage:       save [HTML|XML|XInclude]? [FILE|PIPE|STRING]? <id> <expression>? [encoding <enc-string>]
+usage:       save [HTML|XML|XInclude] [FILE|PIPE|STRING] <id> <expression> [encoding <enc-string>]
+or
+    save <id>
+or
+    save
              
 description:
 	     Save the document identified by <id>. Using one of the `FILE',
@@ -1485,7 +1505,7 @@ Example:     Use save to preview a HTML document in Lynx
 
              save HTML PIPE mydoc 'lynx -stdin'
 
-see also:     open_command close_command print_enc_command files_command
+see also:     open close enc documents
 
 END
 
@@ -1497,7 +1517,7 @@ description:
 	     Print external or internal DTD for a given document. If no
 	     document identifier is given, the current document is used.
 
-see also:     valid_command validate_command
+see also:     valid validate
 
 END
 
@@ -1523,7 +1543,7 @@ Example:
              <foo>...</foo>
              xsh> save # saves the file in UTF-8 encoding
 
-see also:     print_enc_command doc_info_command
+see also:     enc doc-info
 
 END
 
@@ -1538,7 +1558,7 @@ description:
 	     command on other values is not specified. If no document <id>
 	     is given, the command applies to the current document.
 
-see also:     doc_info_command
+see also:     doc-info
 
 END
 
@@ -1550,33 +1570,73 @@ description:
 	     Print the original document encoding string. If no document
 	     identifier is given, the current document is used.
 
-see also:     set_enc_command
+see also:     set-enc
 
 END
 
 
 $HELP{'validate'}=[<<'END'];
 usage:       validate [<id>]
+or
+validate DTD PUBLIC <expression> [SYSTEM <filename>] <id>
+or
+validate (DTD|RelaxNG|XSD) FILE <filename> [<id>]
+or
+validate (DTD|RelaxNG|XSD) STRING <filename> [<id>]
+or
+validate (RelaxNG|XSD) DOC <id> [<id>]
              
 description:
-	     Try to validate the document identified with <id> according to
-	     its DTD, report all validity errors. If no document identifier
-	     is given, the current document is used.
+	     This command validates the document identified with <id>
+	     against a DTD, RelaxNG or XSD schema and report all validity
+	     errors. If no document identifier is given, the current
+	     document is used. A DTD can be specified either by its PUBLIC
+	     or SYSTEM identifier (or both), or as a STRING. RelaxNG and
+	     XSD schemas can be specified either as a filename or url (FILE
+	     <filename>), as a string (STRING <expression>), or as a XSH
+	     document (DOC <id>). If no schema is specified, validation is
+	     performed against the internal or external DTD subset of the
+	     document being validated.
 
-see also:     valid_command list_dtd_command
+Example:
+             open mydoc="test.xml"
+             # in all examples below, mydoc can be ommited
+             validate mydoc; # validate against the documet's DOCTYPE
+             validate DTD PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" mydoc
+             validate DTD SYSTEM "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" mydoc
+             validate DTD FILE "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" mydoc
+
+Example:
+             validate RelaxNG FILE "test.rng" mydoc
+             validate RelaxNG STRING $relaxschema mydoc
+             open rng="test.rng"
+             validate RelaxNG DOC rng mydoc
+
+Example:
+             validate XSD FILE "test.xsd" mydoc
+             validate XSD STRING $xsdschema mydoc
+             open xsd="test.xsd"
+             validate XSD DOC xsd mydoc
+
+see also:     valid dtd
 
 END
 
 
 $HELP{'valid'}=[<<'END'];
-usage:       valid [<id>]
+usage:       valid [validation-scheme] [<id>]
              
 description:
-	     Check and report the validity of a document. Prints "yes" if
-	     the document is valid and "no" otherwise. If no document
-	     identifier is given, the current document is used.
+	     Check and report the validity of the document <id> with
+	     respect to a DTD, RelaxNG, or XSD schemas specified in
+	     `validation-scheme' (see <validate> for information, on how
+	     `validation-scheme' may be specified). Prints "yes" if the
+	     document is valid and "no" otherwise. If no document
+	     identifier is given, the current document is used. If no
+	     `validation-scheme' is specified, the validity against the DTD
+	     subset is checked.
 
-see also:     validate_command list_dtd_command
+see also:     validate dtd
 
 END
 
@@ -1604,7 +1664,7 @@ aliases:     process_xinclude process-xincludes process_xincludes xinclude xincl
 description:
 	     Process any xinclude tags in the document <id>.
 
-see also:     parser_expands_xinclude
+see also:     parser-expands-xinclude
 
 END
 
@@ -1638,7 +1698,7 @@ description:
 	     Print XPath leading to the current context node. This is
 	     equivalent to `locate .'.
 
-see also:     locate_command
+see also:     locate
 
 END
 
@@ -1650,7 +1710,7 @@ description:
 	     Print canonical XPaths leading to nodes matched by a given
 	     <xpath>.
 
-see also:     pwd_command
+see also:     pwd
 
 END
 
@@ -1700,7 +1760,7 @@ description:
 
 	     This is equivalent to setting `$TEST_MODE' variable to 1.
 
-see also:     run_mode
+see also:     run-mode
 
 END
 
@@ -1717,7 +1777,7 @@ description:
 
 	     This is equivalent to setting `$TEST_MODE' variable to 0.
 
-see also:     test_mode
+see also:     test-mode
 
 END
 
@@ -1896,7 +1956,7 @@ description:
 	     This command is equivalent to setting the
 	     `$PARSER_EXPANDS_XINCLUDE' variable.
 
-see also:     process_xinclude_command
+see also:     process-xinclude
 
 END
 
@@ -2025,7 +2085,7 @@ Example:
                <para>...</para>
              </chapter>
 
-see also:     unfold_command list_command
+see also:     unfold ls
 
 END
 
@@ -2040,7 +2100,7 @@ description:
 	     `xmlns:xsh' namespace declaration may still be present in the
 	     document even when all elements are unfolded.
 
-see also:     fold_command list_command
+see also:     fold ls
 
 END
 
@@ -2072,7 +2132,7 @@ Example:     Restart a higher level loop from an inner one
                }
              }
 
-see also:     foreach while iterate next_command last_command
+see also:     foreach while iterate next last
 
 END
 
@@ -2091,7 +2151,7 @@ description:
 	     Using this command outside a loop causes an immediate run-time
 	     error.
 
-see also:     foreach while iterate redo_command last_command prev_command
+see also:     foreach while iterate redo last prev
 
 END
 
@@ -2106,7 +2166,7 @@ description:
 	     used to indicate to which level of nested loops the command
 	     applies to.
 
-see also:     iterate redo_command last_command next_command
+see also:     iterate redo last next
 
 END
 
@@ -2125,7 +2185,7 @@ description:
 	     Using this command outside a subroutine causes an immediate
 	     run-time error.
 
-see also:     foreach while iterate next_command last_command
+see also:     foreach while iterate next last
 
 END
 
@@ -2141,7 +2201,7 @@ description:
 	     Using this command outside a subroutine causes an immediate
 	     run-time error.
 
-see also:     def call_command
+see also:     def call
 
 END
 
@@ -2161,7 +2221,7 @@ description:
 	     exceptions are not trapped by <try> constructions and should
 	     be avoided in ordinary XSH scripts.
 
-see also:     try_catch
+see also:     try
 
 END
 
@@ -2245,7 +2305,7 @@ Example:     Using XPath
 	     Use e.g. `| time cut' pipe-line redirection to benchmark a XSH
 	     command on a UNIX system.
 
-see also:     foreach next_command prev_command last_command
+see also:     foreach next prev last
 
 END
 
@@ -2466,7 +2526,7 @@ description:
 	     information about level of `gzip' compression of the original
 	     XML file.
 
-see also:     set_enc_command set_standalone_command
+see also:     set-enc set-standalone
 
 END
 
@@ -2680,8 +2740,9 @@ Flow control
 
 
 Related commands:
-  call, def, exit, foreach, if, include, iterate, last, next, prev, redo,
-  return, run-mode, stream, test-mode, throw, try, undef, unless, while
+  call, def, exit, foreach, if, ifinclude, include, iterate, last, next,
+  prev, redo, return, run-mode, stream, test-mode, throw, try, undef,
+  unless, while
 
 END
 

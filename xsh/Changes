@@ -1,3 +1,22 @@
+Version 1.8.1:
+
+Changes since 1.8 (CVS)
+------------------
+New features:
+   - new xsh option --format to start with indent 1 and keep_blanks 0
+   - new xsh options --input (-I), --output (-O), and --process (-P) to
+     automatically open given file (as a default document called _ - underscore)
+     and save it after the processing
+   - external DTD validation support
+   - RelaxNG and XSD validation support (may require CVS LibXML)
+   - conditional variant of include (ifinclude) added
+   - new Perl module: Inline::XSH
+
+Bug fixes:
+   - encoding related fix for Perl 5.8 (now using Encode in Perl 5.8)
+   - minor documentation fixes
+
+
 Release 1.8:
 
 Changes since 1.7 (CVS)

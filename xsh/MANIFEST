@@ -3,6 +3,7 @@ BUGS
 ChangeLog
 Changes
 INSTALL
+lib/Inline/XSH.pm
 lib/XML/XSH.pm
 lib/XML/XSH/Completion.pm
 lib/XML/XSH/CompletionList.pm
@@ -41,3 +42,4 @@ tools/html.xsl
 tools/xpcomp.pl
 xsh
 XSH.pod
+
