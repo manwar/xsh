@@ -10,7 +10,7 @@
   <xsl:param name="passivetex.extensions" select="1"/>
   <xsl:param name="section.autolabel" select="1"/>
   <xsl:param name="shade.verbatim" select="1"/>
-  <xsl:param name="body.font.family" select="'palatino'"/>
+  <xsl:param name="body.font.family" select="'Palatino'"/>
   <xsl:param name="paper.type" select="'A4'"/>
   <xsl:param name="footer.rule" select="0"/>
 
