@@ -11,17 +11,17 @@ if ("$db_stylesheet" = "") {
 }
 if ("$html_stylesheet"="") $html_stylesheet="style.css";
 
-X = $xsh_grammar_file;
 parser-completes-attributes 1;
+X = $xsh_grammar_file;
 indent 1;
 validation 0;
 quiet;
 
 def transform_section {
-  map { s/^[ \t]+//; s/\n[ \t]+/\n/g; } %section//code/text();
-  foreach %section//code/tab {
+  map { s/^[ \t]+//; s/\n[ \t]+/\n/g; } %section//code/descendant::text();
+  foreach %section//code/descendant::tab {
     perl { $ws='  ' x count('string(@count)'); };
-    insert text $ws instead of %section//code/tab;
+    insert text $ws instead of .;
   }
   map { $_='programlisting' } %section//code;
   foreach %section//xref {
