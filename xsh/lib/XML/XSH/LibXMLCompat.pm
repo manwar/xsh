@@ -1,4 +1,4 @@
-# $Id: LibXMLCompat.pm,v 1.2 2002-05-30 12:27:09 pajas Exp $
+# $Id: LibXMLCompat.pm,v 1.3 2002-08-26 14:40:25 pajas Exp $
 
 package XML::XSH::LibXMLCompat;
 
@@ -45,7 +45,6 @@ sub xml_equal {
 sub count_xpath {
   my ($class,$node,$xp)=@_;
   my $result=$node->find($xp);
-
   if (ref($result)) {
     if ($result->isa('XML::LibXML::NodeList')) {
       return $result->size();
@@ -68,6 +67,7 @@ sub doc_process_xinclude {
 sub init_parser {
   my ($class,$parser)=@_;
   $parser->validation($XML::XSH::Functions::VALIDATION);
+  $parser->recover($XML::XSH::Functions::RECOVERING) if $parser->can('recover');
   $parser->expand_entities($XML::XSH::Functions::EXPAND_ENTITIES);
   $parser->keep_blanks($XML::XSH::Functions::KEEP_BLANKS);
   $parser->pedantic_parser($XML::XSH::Functions::PEDANTIC_PARSER);

@@ -1,4 +1,4 @@
-# $Id: GDOMECompat.pm,v 1.2 2002-05-30 12:27:09 pajas Exp $
+# $Id: GDOMECompat.pm,v 1.3 2002-08-26 14:40:25 pajas Exp $
 
 package XML::XSH::GDOMECompat;
 
@@ -79,6 +79,7 @@ sub doc_process_xinclude {
 sub parser_options {
   my $mode=GDOME_LOAD_PARSING;
   $mode |= GDOME_LOAD_VALIDATING if $XML::XSH::Functions::VALIDATION;
+  $mode |= GDOME_LOAD_RECOVERING if $XML::XSH::Functions::RECOVERING;
   $mode |= GDOME_LOAD_SUBSTITUTE_ENTITIES if $XML::XSH::Functions::EXPAND_ENTITIES;
   $mode |= GDOME_LOAD_COMPLETE_ATTRS if $XML::XSH::Functions::COMPLETE_ATTRIBUTES;
 }
