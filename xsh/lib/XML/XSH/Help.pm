@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Tue Aug  5 12:41:23 2003
+# Thu Aug  7 14:22:14 2003
 
 package XML::XSH::Help;
 use strict;
@@ -69,19 +69,20 @@ Help items:
   XSH Commands:
 
     assign, backups, call, catalog, cd, clone, close, copy, count, create,
-    debug, def, defs, documents, dtd, enc, encoding, exec, exit, fold,
-    foreach, help, if, include, indent, insert, iterate, keep-blanks, last,
-    lcd, load-ext-dtd, local, locate, ls, map, move, namespaces, next,
-    nobackups, nodebug, normalize, open, options,
+    debug, def, defs, doc-info, documents, dtd, enc, encoding, exec, exit,
+    fold, foreach, help, if, include, indent, insert, iterate, keep-blanks,
+    last, lcd, load-ext-dtd, local, locate, ls, map, move, namespaces,
+    next, nobackups, nodebug, normalize, open, options,
     parser-completes-attributes, parser-expands-entities,
     parser-expands-xinclude, pedantic-parser, perl, prev, print,
     process-xinclude, pwd, query-encoding, quiet, recovering, redo,
     register-function, register-namespace, register-xhtml-namespace,
     register-xsh-namespace, remove, rename, return, run-mode, save, select,
     sort, stream, strip-whitespace, switch-to-new-documents, test-mode,
-    throw, try, undef, unfold, unless, valid, validate, validation,
-    variables, verbose, version, while, xcopy, xinsert, xmove,
-    xpath-axis-completion, xpath-completion, xslt, xupdate
+    throw, try, undef, unfold, unless, unregister-function,
+    unregister-namespace, valid, validate, validation, variables, verbose,
+    version, while, xcopy, xinsert, xmove, xpath-axis-completion,
+    xpath-completion, xslt, xupdate
 
   XSH Argument Types:
 
@@ -95,21 +96,22 @@ List of XSH commands
 
 description:
 	     assign, backups, call, catalog, cd, clone, close, copy, count,
-	     create, debug, def, defs, documents, dtd, enc, encoding, exec,
-	     exit, fold, foreach, help, if, include, indent, insert,
-	     iterate, keep-blanks, last, lcd, load-ext-dtd, local, locate,
-	     ls, map, move, namespaces, next, nobackups, nodebug,
-	     normalize, open, options, parser-completes-attributes,
-	     parser-expands-entities, parser-expands-xinclude,
-	     pedantic-parser, perl, prev, print, process-xinclude, pwd,
-	     query-encoding, quiet, recovering, redo, register-function,
-	     register-namespace, register-xhtml-namespace,
-	     register-xsh-namespace, remove, rename, return, run-mode,
-	     save, select, sort, stream, strip-whitespace,
-	     switch-to-new-documents, test-mode, throw, try, undef, unfold,
-	     unless, valid, validate, validation, variables, verbose,
-	     version, while, xcopy, xinsert, xmove, xpath-axis-completion,
-	     xpath-completion, xslt, xupdate
+	     create, debug, def, defs, doc-info, documents, dtd, enc,
+	     encoding, exec, exit, fold, foreach, help, if, include,
+	     indent, insert, iterate, keep-blanks, last, lcd, load-ext-dtd,
+	     local, locate, ls, map, move, namespaces, next, nobackups,
+	     nodebug, normalize, open, options,
+	     parser-completes-attributes, parser-expands-entities,
+	     parser-expands-xinclude, pedantic-parser, perl, prev, print,
+	     process-xinclude, pwd, query-encoding, quiet, recovering,
+	     redo, register-function, register-namespace,
+	     register-xhtml-namespace, register-xsh-namespace, remove,
+	     rename, return, run-mode, save, select, sort, stream,
+	     strip-whitespace, switch-to-new-documents, test-mode, throw,
+	     try, undef, unfold, unless, unregister-function,
+	     unregister-namespace, valid, validate, validation, variables,
+	     verbose, version, while, xcopy, xinsert, xmove,
+	     xpath-axis-completion, xpath-completion, xslt, xupdate
 
 END
 
@@ -147,16 +149,18 @@ $HELP{'expression'}=[<<'END'];
 expression argument type
 
 description:
-	     A string consisting of unquoted characters other than
-	     whitespace or semicolon, single quote or double quote
-	     characters or quoted characters of any kind. By quoting we
-	     mean preceding a single character with a backslash or
-	     enclosing a part of the string into single quotes '...' or
-	     double quotes "...". Quoting characters are removed from the
-	     string so they must be quoted themselves if they are a part of
-	     the expression: \\, \' or " ' ", \" or ' " '. Unquoted
-	     (sub)expressons or (sub)expressions quoted with double-quotes
-	     are subject to variable, Perl, and XPath expansions.
+	     Expression is a string consisting of unquoted characters other
+	     than whitespace or semicolon, single quote or double quote
+	     characters or quoted characters of any kind (but see also
+	     special case of expression - so called here-documents -
+	     described below). Quoting means either preceding a single
+	     character with a backslash or enclosing a part of the string
+	     into single quotes '...' or double quotes "...". Quoting
+	     characters are removed from the string so they must be quoted
+	     themselves if they are a part of the expression: \\, \' or " '
+	     ", \" or ' " '. Unquoted (sub)expressons and (sub)expressions
+	     quoted with double-quotes are subject to variable, Perl, and
+	     XPath expansions.
 
 	     Variable expansion replaces substrings of the form $id or
 	     ${id} with the value of the variable named $id, unless the '$'
@@ -196,6 +200,37 @@ Example:
              echo ${(//creature[1]/@name)}         # prints: Bilbo
              echo ${{{ join(",",split(//,$a)) }}}  # prints: b,a,r
 
+	     There is one more special type of expressions, so called
+	     ``here-documents'' following syntax of similar constructs in
+	     Bash and Perl. Following a `<<' you specify a string to
+	     terminate the quoted material, and all lines following the
+	     current line down to the terminating string are the value of
+	     the expression. The terminating string is either quoted or
+	     unquoted identifier (a word). If quoted, the type of quotes
+	     you use determines the treatment of the text, just as in
+	     regular quoting, i.e. in case of double quotes, the material
+	     contained in the here-document is subject to variable, Perl,
+	     and XPath expansions. An unquoted identifier works just like
+	     double quotes. There must be no space between the `<<' and the
+	     identifier. The terminating string must appear by itself
+	     (unquoted and with no surrounding whitespace) on the
+	     terminating line.
+
+Example:
+             $a="bar"
+             echo foo <<END baz;
+             xx $a yy
+             END
+             # prints foo xx bar yy baz
+             echo foo <<"END" baz;
+             xx $a yy
+             END
+             # same as above
+             echo foo <<'END' baz;
+             xx $a yy
+             END
+             # prints foo xx $a yy baz
+
 END
 
 
@@ -230,7 +265,7 @@ END
 
 
 $HELP{'xpath'}=[<<'END'];
-Xpath argument type
+XPath argument type
 
 description:
 	     XSH supports arbitrary XPath expression as defined in W3C
@@ -256,8 +291,8 @@ description:
 	     regular expression given in `regexp-string'.
 
 	     `xsh:same(node-set1, node-set2)' - returns `true' if the given
-	     node sets contain exactly one node each and these nodes are
-	     the same (in XPath, this can also be expressed as
+	     node sets both contain the same node (in XPath, this can also
+	     be expressed as
 	     `count(node-set1|node-set2)+count(node-set1)+count(node-set2)=
 	     1').
 
@@ -301,6 +336,8 @@ Example:     Handle parse errors
                  exit 1;
                }
              }
+
+see also:     throw_command
 
 END
 
@@ -350,6 +387,8 @@ usage:       unless <xpath>|<perl-code>
              
 description:
 	     Like if but negating the result of the expression.
+
+see also:     if
 
 END
 
@@ -513,6 +552,8 @@ Example:     Commenting and un-commenting pieces of document
              $mark="COMMENT-NOPARA";
              call uncomment //comment()[starts-with(.,"$mark")] $mark;
 
+see also:     call_command return_command local_command
+
 END
 
 $HELP{'define'}=$HELP{'def'};
@@ -576,6 +617,8 @@ Example:     Some caveats of counting node-lists
 	     node-list in the variable named %<id>. The variable may be
 	     later used instead of an XPath expression.
 
+see also:     var_command
+
 END
 
 
@@ -604,6 +647,8 @@ description:
 	     To sum up for Perl programmers: `local' in XSH works exactly
 	     the same as `local' in Perl.
 
+see also:     assign_command def
+
 END
 
 
@@ -631,6 +676,8 @@ description:
 	     List names and parametric variables for all defined XSH
 	     routines.
 
+see also:     def var_command
+
 END
 
 
@@ -656,6 +703,8 @@ description:
 	     be specified after the <id>. Node-list parameters are given by
 	     means of <xpath> expressions. String parameters have to be
 	     string <expression>s.
+
+see also:     def return_command
 
 END
 
@@ -725,6 +774,8 @@ aliases:     files docs
 description:
 	     List open files and their identifiers.
 
+see also:     open_command close_command
+
 END
 
 $HELP{'files'}=$HELP{'documents'};
@@ -737,6 +788,8 @@ aliases:     vars var
 
 description:
 	     List all defined variables and their values.
+
+see also:     files_command list_defs_command
 
 END
 
@@ -837,6 +890,8 @@ description:
 	     Works just like xadd, except that the new node is attached
 	     only the first node matched.
 
+see also:     xinsert_command move_command xmove_command
+
 END
 
 $HELP{'add'}=$HELP{'insert'};
@@ -881,6 +936,8 @@ Example:     Append a new Hobbit element to the list of middle-earth
                               into /middle-earth/creatures
              xsh> xadd attribute "name='Bilbo'" \
                               into /middle-earth/creatures/creature[@race='hobbit'][last()]
+
+see also:     insert_command move_command xmove_command
 
 END
 
@@ -977,6 +1034,8 @@ description:
 	     See <copy> for more details on how the copies of the moved
 	     nodes are created.
 
+see also:     copy_command xmove_command insert_command xinsert_command
+
 END
 
 $HELP{'mv'}=$HELP{'move'};
@@ -1011,6 +1070,8 @@ Example:     Get rid of all <font> tags
                }
              }
 
+see also:     xcopy_command move_command insert_command xinsert_command
+
 END
 
 $HELP{'xmv'}=$HELP{'xmove'};
@@ -1023,6 +1084,8 @@ aliases:     dup
 description:
 	     Make a copy of the document identified by the <id> following
 	     the equal sign assigning it the identifier of the first <id>.
+
+see also:     open_command close_command print_enc_command files_command
 
 END
 
@@ -1076,6 +1139,8 @@ description:
 
 	     If the <xpath> parameter is omitted, current context node is
 	     listed to the depth of 1.
+
+see also:     count_command fold_command unfold_command
 
 END
 
@@ -1131,6 +1196,8 @@ aliases:     eval
 
 description:
 	     Evaluate a given perl expression.
+
+see also:     count_command
 
 END
 
@@ -1268,16 +1335,19 @@ Example:     Make all elements and attributes uppercase
 
              xsh> map { $_=uc($_) } (//*|//@*)
 
+see also:     map_command
+
 END
 
 
 $HELP{'close'}=[<<'END'];
-usage:       close <id>
+usage:       close [<id>]
              
 description:
 	     Close the document identified by <id>, removing its parse-tree
 	     from memory (note also that all nodes belonging to the
-	     document are removed from all nodelists they appear in).
+	     document are removed from all nodelists they appear in). If
+	     <id> is omitted, the command closes the current document.
 
 END
 
@@ -1359,6 +1429,8 @@ Example:
              t1 = new_document1.xml
              t2 = new_document2.xml
 
+see also:     open_command clone_command
+
 END
 
 $HELP{'new'}=$HELP{'create'};
@@ -1409,6 +1481,8 @@ Example:     Use save to preview a HTML document in Lynx
 
              save HTML PIPE mydoc 'lynx -stdin'
 
+see also:     open_command close_command print_enc_command files_command
+
 END
 
 
@@ -1418,6 +1492,8 @@ usage:       dtd [<id>]
 description:
 	     Print external or internal DTD for a given document. If no
 	     document identifier is given, the current document is used.
+
+see also:     valid_command validate_command
 
 END
 
@@ -1440,6 +1516,8 @@ description:
 	     its DTD, report all validity errors. If no document identifier
 	     is given, the current document is used.
 
+see also:     valid_command list_dtd_command
+
 END
 
 
@@ -1450,6 +1528,8 @@ description:
 	     Check and report the validity of a document. Prints "yes" if
 	     the document is valid and "no" otherwise. If no document
 	     identifier is given, the current document is used.
+
+see also:     validate_command list_dtd_command
 
 END
 
@@ -1476,6 +1556,8 @@ aliases:     process_xinclude process-xincludes process_xincludes xinclude xincl
 
 description:
 	     Process any xinclude tags in the document <id>.
+
+see also:     parser_expands_xinclude
 
 END
 
@@ -1509,6 +1591,8 @@ description:
 	     Print XPath leading to the current context node. This is
 	     equivalent to `locate .'.
 
+see also:     locate_command
+
 END
 
 
@@ -1518,6 +1602,8 @@ usage:       locate <xpath>
 description:
 	     Print canonical XPaths leading to nodes matched by a given
 	     <xpath>.
+
+see also:     pwd_command
 
 END
 
@@ -1551,6 +1637,8 @@ description:
 
 	     This is equivalent to setting `$QUIET' variable to 0.
 
+see also:     quiet
+
 END
 
 
@@ -1564,6 +1652,8 @@ description:
 	     executed and only command syntax is checked.
 
 	     This is equivalent to setting `$TEST_MODE' variable to 1.
+
+see also:     run_mode
 
 END
 
@@ -1580,6 +1670,8 @@ description:
 
 	     This is equivalent to setting `$TEST_MODE' variable to 0.
 
+see also:     test_mode
+
 END
 
 $HELP{'run_mode'}=$HELP{'run-mode'};
@@ -1592,6 +1684,8 @@ description:
 
 	     This is equivalent to setting `$DEBUG' variable to 1.
 
+see also:     nodebug
+
 END
 
 
@@ -1602,6 +1696,8 @@ description:
 	     Turn off debugging messages.
 
 	     This is equivalent to setting `$DEBUG' variable to 0.
+
+see also:     debug
 
 END
 
@@ -1753,6 +1849,8 @@ description:
 	     This command is equivalent to setting the
 	     `$PARSER_EXPANDS_XINCLUDE' variable.
 
+see also:     process_xinclude_command
+
 END
 
 $HELP{'parser_expands_xinclude'}=$HELP{'parser-expands-xinclude'};
@@ -1808,6 +1906,8 @@ description:
 
 	     This command is equivalent to setting the `$QUIET' variable.
 
+see also:     verbose
+
 END
 
 
@@ -1838,6 +1938,8 @@ description:
 	     This command is equivalent to setting the `$BACKUPS' variable
 	     to 1.
 
+see also:     nobackups
+
 END
 
 
@@ -1849,6 +1951,8 @@ description:
 
 	     This command is equivalent to setting the `$BACKUPS' variable
 	     to 0.
+
+see also:     nobackups
 
 END
 
@@ -1874,6 +1978,8 @@ Example:
                <para>...</para>
              </chapter>
 
+see also:     unfold_command list_command
+
 END
 
 
@@ -1886,6 +1992,8 @@ description:
 	     <xpath> created by previous usage of <fold>. Be aware, that
 	     `xmlns:xsh' namespace declaration may still be present in the
 	     document even when all elements are unfolded.
+
+see also:     fold_command list_command
 
 END
 
@@ -1917,6 +2025,8 @@ Example:     Restart a higher level loop from an inner one
                }
              }
 
+see also:     foreach while iterate next_command last_command
+
 END
 
 
@@ -1934,6 +2044,8 @@ description:
 	     Using this command outside a loop causes an immediate run-time
 	     error.
 
+see also:     foreach while iterate redo_command last_command prev_command
+
 END
 
 
@@ -1946,6 +2058,8 @@ description:
 	     the iterated axis. The optional <expression> argument may be
 	     used to indicate to which level of nested loops the command
 	     applies to.
+
+see also:     iterate redo_command last_command next_command
 
 END
 
@@ -1964,6 +2078,8 @@ description:
 	     Using this command outside a subroutine causes an immediate
 	     run-time error.
 
+see also:     foreach while iterate next_command last_command
+
 END
 
 
@@ -1977,6 +2093,8 @@ description:
 
 	     Using this command outside a subroutine causes an immediate
 	     run-time error.
+
+see also:     def call_command
 
 END
 
@@ -1995,6 +2113,8 @@ description:
 	     error message starting with a word 'UNCATCHABLE'. Such
 	     exceptions are not trapped by <try> constructions and should
 	     be avoided in ordinary XSH scripts.
+
+see also:     try_catch
 
 END
 
@@ -2078,6 +2198,8 @@ Example:     Using XPath
 	     Use e.g. `| time cut' pipe-line redirection to benchmark a XSH
 	     command on a UNIX system.
 
+see also:     foreach next_command prev_command last_command
+
 END
 
 
@@ -2094,6 +2216,21 @@ description:
 END
 
 $HELP{'regns'}=$HELP{'register-namespace'};
+
+$HELP{'unregister-namespace'}=[<<'END'];
+usage:       unregister-namespace <expression>
+             
+aliases:     unregns
+
+description:
+	     Unregisters given namespace prefix previously registered using
+	     <register-namespace>. The prefix can no longer be used in
+	     XPath expressions unless declared within the current scope of
+	     the queried document.
+
+END
+
+$HELP{'unregns'}=$HELP{'unregister-namespace'};
 
 $HELP{'register-xhtml-namespace'}=[<<'END'];
 usage:       register-xhtml-namespace <expression>
@@ -2130,13 +2267,30 @@ usage:       register-function <expression> <perl-code>
 aliases:     regfunc
 
 description:
-	     EXPERIMENTAL! Register given perl code as a new extension
-	     XPath function. XML::LibXML DOM API may be used in the perl
-	     code for object processing.
+	     EXPERIMENTAL! Register given perl code as a new XPath
+	     extension function under a name provided in the first argument
+	     (<expression>). XML::LibXML DOM API may be used in the perl
+	     code for object processing. If the name contains a colon, then
+	     the first part before the colon must be a registered namespace
+	     prefix (see <register-namespace>) and the function is
+	     registered within the corresponding namespace.
 
 END
 
 $HELP{'regfunc'}=$HELP{'register-function'};
+
+$HELP{'unregister-function'}=[<<'END'];
+usage:       unregister-function <expression>
+             
+aliases:     unregfunc
+
+description:
+	     EXPERIMENTAL! Unregiseter XPath extension function of a given
+	     name previously registered using <register-function>.
+
+END
+
+$HELP{'unregfunc'}=$HELP{'unregister-function'};
 
 $HELP{'stream'}=[<<'END'];
 usage:       stream input [FILE|PIPE|STRING] <expression>
@@ -2225,7 +2379,7 @@ END
 $HELP{'xpath_completion'}=$HELP{'xpath-completion'};
 
 $HELP{'xpath-axis-completion'}=[<<'END'];
-usage:       xpath_axis_completion <expression>
+usage:       xpath-axis-completion <expression>
              
 aliases:     xpath_axis_completion
 
@@ -2252,6 +2406,22 @@ description:
 END
 
 $HELP{'xpath_axis_completion'}=$HELP{'xpath-axis-completion'};
+
+$HELP{'doc-info'}=[<<'END'];
+usage:       doc-info [<expression>]
+             
+aliases:     doc_info
+
+description:
+	     In the present implementation, this command displays
+	     information provided in the `<?xml ...?>' declaration of a
+	     document: `version', `encoding', `standalone', plus
+	     information about level of `gzip' compression of the original
+	     XML file.
+
+END
+
+$HELP{'doc_info'}=$HELP{'doc-info'};
 
 $HELP{'Documents'}=[<<'END'];
 Files/Documents
@@ -2325,7 +2495,8 @@ Example:
 
 Related commands:
   cd, fold, locate, ls, pwd, register-function, register-namespace,
-  register-xhtml-namespace, register-xsh-namespace, select, unfold
+  register-xhtml-namespace, register-xsh-namespace, select, unfold,
+  unregister-function, unregister-namespace
 
 END
 
@@ -2390,7 +2561,8 @@ Example:
 
 Example: Using string variables to convert between different types of nodes
 
-  xsh> create doc "<?xml version='1.0'?>
+  create doc <<EOF;
+  <?xml version='1.0'?>
   <book>
     <chapter>
       <title>Intro</title>
@@ -2398,14 +2570,14 @@ Example: Using string variables to convert between different types of nodes
     <chapter>
       <title>Rest</title>
     </chapter>
-  </book>";
+  </book>
+  EOF
   
   # comment out the first chapter
-  xsh> ls //chapter[1] |> $chapter_xml;
-  xsh> add comment $chapter_xml replace //chapter[1];
-  
-  # show the result
-  xsh> ls / 0;
+  ls //chapter[1] |> $chapter_xml;
+  add comment $chapter_xml replace //chapter[1];
+  ls / 0;
+  # OUTPUT:
   <?xml version="1.0"?>
   <book>
   <!--  <chapter>
@@ -2419,11 +2591,10 @@ Example: Using string variables to convert between different types of nodes
   
   
   # un-comment the chapter
-  xsh> $comment = string(//comment()[1]);
-  xsh> add chunk $comment replace //comment()[1];
-  
-  # show the result
-  xsh> ls / 0;
+  $comment = string(//comment()[1]);
+  add chunk $comment replace //comment()[1];
+  ls / 0;
+  # OUTPUT:
   <?xml version="1.0"?>
   <book>
     <chapter>
@@ -2475,8 +2646,8 @@ Retrieving more information
 
 
 Related commands:
-  count, defs, documents, dtd, enc, help, locate, ls, namespaces, options,
-  print, pwd, valid, validate, variables, version
+  count, defs, doc-info, documents, dtd, enc, help, locate, ls, namespaces,
+  options, print, pwd, valid, validate, variables, version
 
 END
 
@@ -2659,8 +2830,9 @@ Related commands:
   parser-expands-xinclude, pedantic-parser, query-encoding, quiet,
   recovering, register-function, register-namespace,
   register-xhtml-namespace, register-xsh-namespace, run-mode,
-  switch-to-new-documents, test-mode, validation, verbose,
-  xpath-axis-completion, xpath-completion
+  switch-to-new-documents, test-mode, unregister-function,
+  unregister-namespace, validation, verbose, xpath-axis-completion,
+  xpath-completion
 
 END
 
@@ -2830,6 +3002,7 @@ Related commands:
 
 END
 
+$HELP{'commands'}=$HELP{'command'};
 
 1;
 __END__

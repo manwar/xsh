@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Tue Aug  5 12:41:23 2003
+# Thu Aug  7 14:22:13 2003
 
 
 package XML::XSH::Grammar;
@@ -116,8 +116,8 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(sort)\s/ <commit> condition perl_code nodelistvariable
 		{ [\&XML::XSH::Functions::perlsort,@item[3..5]] }
   	
-	  | /(close)\s/ <commit> expression
-		{ [\&XML::XSH::Functions::close_doc,$item[3]] }
+	  | /(close)/ <commit> optional_expression(?)
+		{ [\&XML::XSH::Functions::close_doc,@{$item[3]}] }
   	
 	  | /(validate)/ <commit> optional_expression(?)
 		{ [\&XML::XSH::Functions::validate_doc,@{$item[3]}] }
@@ -281,6 +281,10 @@ $grammar=<<'_EO_GRAMMAR_';
 		{ [\&XML::XSH::Functions::register_ns,
                  $item[3],$item[4]] }
   	
+	  | /(unregister-namespace|unregns)\s/ <commit> expression
+		{ [\&XML::XSH::Functions::unregister_ns,
+                 $item[3]] }
+  	
 	  | /(register-xhtml-namespace|regns-xhtml)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::register_ns,
                  $item[3],'http://www.w3.org/1999/xhtml'] }
@@ -288,6 +292,9 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(register-xsh-namespace|regns-xsh)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::register_ns,
                  $item[3],$XML::XSH::xshNS] }
+  	
+	  | /(unregister-function|unregfunc)\s/ <commit> expression
+		{ [\&XML::XSH::Functions::unregister_func, $item[3]] }
   	
 	  | /(register-function|regfunc)\s/ <commit> expression perl_code
 		{ [\&XML::XSH::Functions::register_func,
@@ -304,6 +311,9 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 	  | /(xpath-axis-completion|xpath_axis_completion)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_xpath_axis_completion,$item[3]] }
+  	
+	  | /(doc-info|doc_info)/ <commit> optional_expression(?)
+		{ [\&XML::XSH::Functions::doc_info,@{$item[3]}] }
   	
 	  | call_command
 
