@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.69 2003-08-25 13:56:01 pajas Exp $
+# $Id: Functions.pm,v 1.70 2003-09-10 13:42:46 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -18,7 +18,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
             $_xsh $_xpc $_parser %_nodelist @stored_variables
             $_newdoc
             $TRAP_SIGINT $TRAP_SIGPIPE $_die_on_err $_on_exit
-            %_doc %_files %_defs %_chr %_ns
+            %_doc %_files %_defs %_includes %_chr %_ns
 	    $ENCODING $QUERY_ENCODING
 	    $INDENT $BACKUPS $SWITCH_TO_NEW_DOCUMENTS $EMPTY_TAGS $SKIP_DTD
 	    $QUIET $DEBUG $TEST_MODE
@@ -31,7 +31,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8';
-  $REVISION='$Revision: 1.69 $';
+  $REVISION='$Revision: 1.70 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -154,18 +154,13 @@ sub xsh_init {
     *encodeToUTF8=*{"$mod"."::encodeToUTF8"};
     *decodeFromUTF8=*{"$mod"."::decodeFromUTF8"};
   }
-
-
   $_parser = $_xml_module->new_parser();
-  set_load_ext_dtd(1);
-  set_validation(0);
-  set_keep_blanks(1);
 
   xpc_init();
   xsh_rd_parser_init();
 }
 
-sub   xsh_rd_parser_init {
+sub xsh_rd_parser_init {
   if (eval { require XML::XSH::Parser; }) {
     $_xsh=XML::XSH::Parser->new();
   } else {
@@ -1034,7 +1029,7 @@ sub open_doc {
   my ($id,$file)=expand @_[0,1];
   my $format;
   my $source;
-  if ($_[2]=~/open(?:(?:\s*|_|-)(HTML|XML|DOCBOOK|html|xml|docbook))?(?:(?:\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?/) {
+  if ($_[2]=~/(?:open)?(?:(?:\s*|_|-)(HTML|XML|DOCBOOK|html|xml|docbook))?(?:(?:\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?/) {
     $format = lc($1) || $DEFAULT_FORMAT;
     $source = lc($2) || 'file';
   } else {
@@ -1097,7 +1092,7 @@ sub open_doc {
 #     }
 #     return _check_err($@);
   } else {
-    die "file not exists: $file";
+    die "file not exists: $file\n";
     return 0;
   }
 }
@@ -1553,18 +1548,19 @@ sub eval_xpath_literal {
   my ($id,$query)=_xpath($xp);
   $_xpc->setContextNode(get_local_node($id));
   my $result = $_xpc->find(toUTF8($QUERY_ENCODING,$query));
-
   if (!ref($result)) {
-    return &fromUTF8($ENCODING, $result);
+    return $result;
   } else {
     if ($result->isa('XML::LibXML::NodeList')) {
       if (wantarray) {
-	return map { &fromUTF8($ENCODING, literal_value($_->to_literal)) } @$result;
+	return map { literal_value($_->to_literal) } @$result;
+      } elsif ($result->[0]) {
+	return literal_value($result->[0]->to_literal);
       } else {
-	return &fromUTF8($ENCODING, literal_value($result->[0]->to_literal));
+	return '';
       }
     } else {
-      return &fromUTF8($ENCODING, literal_value($result->to_literal));
+      return literal_value($result->to_literal);
     }
   }
 }
@@ -2433,36 +2429,99 @@ sub get_dtd {
 }
 
 # check document validity
-sub valid_doc {
-  my ($id)=expand @_;
+sub validate_doc {
+  my ($show_errors,$schema,$id)=@_;
+  $id=expand $id;
+  __debug("SCHEMA @$schema");
+  my @schema = expand @$schema;
+  __debug("SCHEMA @schema");
   ($id,my $doc)=_id($id);
   unless (ref($doc)) {
-    die "No such document '$id'!\n";
+    die "No such document '$id' (to validate)!\n";
   }
 
   if ($doc->can('is_valid')) {
-    out(($doc->is_valid() ? "yes\n" : "no\n"));
+    if (@schema) {
+      my $type = shift @schema;
+      my $format = shift @schema;
+      if ($type eq 'DTD') {
+	my $dtd;
+	eval { XML::LibXML::Dtd->can('new') } ||
+	  die "DTD validation not supported by your version of XML::LibXML\n";
+	if ($format eq 'FILE') {
+	  __debug("PUBLIC $schema[0], SYSTEM $schema[1]");
+	  $dtd=XML::LibXML::Dtd->new(@schema);
+	  __debug($dtd);
+	} elsif ($format eq 'STRING') {
+	  __debug("STRING $schema[0]");
+	  $dtd=XML::LibXML::Dtd->parse_string($schema[0]);
+	  __debug($dtd);
+	  __debug($dtd->toString());
+	} else {
+	  die "Unknown DTD format '$format!'\n";
+	}
+	if ($show_errors) {
+	  $doc->validate($dtd);
+	} else {
+	  out(($doc->is_valid($dtd) ? "yes\n" : "no\n"));
+	}
+      } elsif ($type eq 'RNG') {
+	eval { XML::LibXML::RelaxNG->can('new') } ||
+	  die "RelaxNG validation not supported by your version of XML::LibXML\n";
+	my $rng;
+	if ($format eq 'FILE') {
+	  $rng=XML::LibXML::RelaxNG->new(location => $schema[0]);
+	} elsif ($format eq 'STRING') {
+	  $rng=XML::LibXML::RelaxNG->new(string => $schema[0]);
+	} elsif ($format eq 'DOC') {
+	  my $rngdoc=_doc($schema[0]);
+	  unless (ref($rngdoc)) {
+	    die "No such document '$schema[0]'!\n";
+	  }
+	  $rng=XML::LibXML::RelaxNG->new(DOM => $rngdoc);
+	} else {
+	  die "Unknown RelaxNG format '$format!'\n";
+	}
+	eval { $rng->validate($doc) };
+	if ($show_errors) {
+	  die "$@\n";
+	} else {
+	  out($@ ? "no\n" : "yes\n");
+	}
+      } elsif ($type eq 'XSD') {
+	eval { XML::LibXML::Schema->can('new') } ||
+	  die "Schema validation not supported by your version of XML::LibXML\n";
+	my $xsd;
+	if ($format eq 'FILE') {
+	  $xsd=XML::LibXML::Schema->new(location => $schema[0]);
+	} elsif ($format eq 'STRING') {
+	  $xsd=XML::LibXML::Schema->new(string => $schema[0]);
+	} elsif ($format eq 'DOC') {
+	  my $xsddoc=_doc($schema[0]);
+	  unless (ref($xsddoc)) {
+	    die "No such document '$schema[0]'!\n";
+	  }
+	  $xsd=XML::LibXML::Schema->new(string => $xsddoc->toString());
+	} else {
+	  die "Unknown Schema format '$format!'\n";
+	}
+	eval { $xsd->validate($doc) };
+	if ($show_errors) {
+	  die "$@\n";
+	} else {
+	  out($@ ? "no\n" : "yes\n");
+	}
+      }
+    } else {
+      if ($show_errors) {
+	$doc->validate();
+      } else {
+	out(($doc->is_valid() ? "yes\n" : "no\n"));
+      }
+    }
   } else {
     die("Vaidation not supported by ",ref($doc));
   }
-
-  return 1;
-}
-
-# validate document
-sub validate_doc {
-  my ($id)=expand @_;
-  ($id, my $doc)=_id($id);
-  unless (ref($doc)) {
-    die "No such document '$id'!\n";
-  }
-
-  if ($doc->can('validate')) {
-    $doc->validate();
-  } else {
-    die("Vaidation not supported by ",ref($doc));
-  }
-
   return 1;
 }
 
@@ -3127,8 +3186,13 @@ sub load {
 
 # call XSH to evaluate commands from a given file
 sub include {
-  my $l=load(expand $_[0]);
-  return $_xsh->startrule($l);
+  my $f=expand(shift);
+  my $conditionally = shift;
+  if (!$conditionally || !$_includes{$f}) {
+    $_includes{$f}=1;
+    my $l=load($f);
+    return $_xsh->startrule($l);
+  }
 }
 
 # print help
@@ -3446,8 +3510,7 @@ sub xml_list {
   my $ql=&XML::XSH::Functions::find_nodes([$id,$query]);
   my $result='';
   foreach (@$ql) {
-    $result.=&XML::XSH::Functions::fromUTF8($XML::XSH::Functions::_encoding,
-					    $_->toString());
+    $result.=$_->toString();
   }
   return $result;
 }
@@ -3456,7 +3519,7 @@ sub literal {
   my ($xp)=@_;
   my $xp=$_[0];
   $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):(?!:))?((?:.|\n)*)$/;
-  return &XML::XSH::Functions::eval_xpath_literal([$1,$2]);
+  return XML::XSH::Functions::eval_xpath_literal([$1,$2]);
 }
 
 sub type {
