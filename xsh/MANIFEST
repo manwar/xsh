@@ -3,7 +3,6 @@ BUGS
 ChangeLog
 Changes
 INSTALL
-lib/Inline/XSH.pm
 lib/XML/XSH.pm
 lib/XML/XSH/Completion.pm
 lib/XML/XSH/CompletionList.pm
@@ -12,13 +11,14 @@ lib/XML/XSH/Functions.pm
 lib/XML/XSH/GDOMECompat.pm
 lib/XML/XSH/Grammar.pm
 lib/XML/XSH/Help.pm
+lib/XML/XSH/Inline.pm
 lib/XML/XSH/Iterators.pm
 lib/XML/XSH/LibXMLCompat.pm
 lib/XML/XSH/Parser.pm
 LICENSE
 Makefile.PL
 MANIFEST			This list of files
-NOTES
+META.yml			Module meta-data (added by MakeMaker)
 README
 src/recdescent.dtd
 src/xsh_grammar.xml
@@ -27,6 +27,9 @@ t/02gdome.t
 t/03copy.t
 t/04flow.t
 t/05misc.t
+t/06wrap.t
+t/07functions.t
+t/08more_functions.t
 TODO
 tools/chunk.xsl
 tools/fo.xsl
@@ -39,7 +42,5 @@ tools/gen_pod.pl
 tools/gen_quickref.pl
 tools/gen_reference.xsh
 tools/html.xsl
-tools/xpcomp.pl
 xsh
 XSH.pod
-

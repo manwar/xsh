@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Thu Nov 13 15:20:12 2003
+# Fri Jul 16 23:29:27 2004
 
 
 package XML::XSH::Grammar;
@@ -173,7 +173,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(documents|files|docs)/
 		{ [\&XML::XSH::Functions::files] }
   	
-	  | /(xslt|transform|xsl|xsltproc|process)\s/ <commit> expression filename expression xslt_params(?)
+	  | /(xslt|transform|xsl|xsltproc|process)\s/ <commit> filename expression xslt_params(?)
 		{ [\&XML::XSH::Functions::xslt,@item[3,4,5],@{$item[6]}] }
   	
 	  | /(wrap)\s/ <commit> expression namespace(?) xpath store_or_append_nl(?)
@@ -431,8 +431,8 @@ $grammar=<<'_EO_GRAMMAR_';
 		{ 
 	  local $_=$item[1];
 	  s/^\'|\'$//g;
-	  s{(\\)(.|\n)|(\$)}{ ($3 eq '$') ? "\\\$" : (($2 eq "\\")
-	  ? "\\\\" : (($2 eq "'") ? "'" : ( ($2 eq '$') ? "\\\\\\$2" :
+	  s{(\\)(.|\n)|(\$)}{ (defined($3) and $3 eq '$') ? "\\\$" : ((defined($2) and $2 eq "\\")
+	  ? "\\\\" : ((defined($2) and $2 eq "'") ? "'" : ( (defined($2) and $2 eq '$') ? "\\\\\\$2" :
 	  "\\\\$2"))) }eg;
 	  $_;
 	 }
@@ -464,8 +464,10 @@ $grammar=<<'_EO_GRAMMAR_';
 	    $text=$item[6].$text;
 	    local $_=$item[7]; s/\n$item[3]\s*$//;
 	    if ($item[2] eq "'") {
-	      s{(\\)(.|\n)|(\$)}{ ($3 eq '$') ? "\\\$" : (($2 eq "\\")
-	      ? "\\\\" : (($2 eq "'") ? "'" : ( ($2 eq '$') ? "\\\\\\$2" :
+	      s{(\\)(.|\n)|(\$)}{ (defined($3) and $3 eq '$') ? "\\\$"
+	    : ((defined($2) and $2 eq "\\")
+	      ? "\\\\" : ((defined($2) and $2 eq "'") ? "'" : (
+	    (defined($2) and $2 eq '$') ? "\\\\\\$2" :
 	      "\\\\$2"))) }eg;
           }
 	    $_;
@@ -840,102 +842,6 @@ $grammar=<<'_EO_GRAMMAR_';
 	    /select\s/ xp block
 		{ [$item[2],$item[3]] }
   	
-
-  doc_function:
-	   
-
-  var_function:
-	   
-
-  matches_function:
-	   
-
-  grep_function:
-	   
-
-  substr_function:
-	   
-
-  reverse_function:
-	   
-
-  same_function:
-	   
-
-  max_function:
-	   
-
-  min_function:
-	   
-
-  strmax_function:
-	   
-
-  strmin_function:
-	   
-
-  sum_function:
-	   
-
-  join_function:
-	   
-
-  subst_function:
-	   
-
-  sprintf_function:
-	   
-
-  serialize_function:
-	   
-
-  parse_function:
-	   
-
-  current_function:
-	   
-
-  path_function:
-	   
-
-  if_function:
-	   
-
-  new_attribute_function:
-	   
-
-  new_attributes_function:
-	   
-
-  new_element_function:
-	   
-
-  new_element_ns_function:
-	   
-
-  new_text_function:
-	   
-
-  new_comment_function:
-	   
-
-  new_pi_function:
-	   
-
-  new_cdata_function:
-	   
-
-  new_chunk_function:
-	   
-
-  map_function:
-	   
-
-  split_function:
-	   
-
-  times_function:
-	   
 
 
 

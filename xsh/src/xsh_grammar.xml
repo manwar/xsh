@@ -1027,8 +1027,8 @@ sub new {
 	<action>
 	  local $_=$item[1];
 	  s/^\'|\'$//g;
-	  s{(\\)(.|\n)|(\$)}{ ($3 eq '$') ? "\\\$" : (($2 eq "\\")
-	  ? "\\\\" : (($2 eq "'") ? "'" : ( ($2 eq '$') ? "\\\\\\$2" :
+	  s{(\\)(.|\n)|(\$)}{ (defined($3) and $3 eq '$') ? "\\\$" : ((defined($2) and $2 eq "\\")
+	  ? "\\\\" : ((defined($2) and $2 eq "'") ? "'" : ( (defined($2) and $2 eq '$') ? "\\\\\\$2" :
 	  "\\\\$2"))) }eg;
 	  $_;
 	</action>
@@ -2465,30 +2465,29 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       <production>
 	<selfref/>
 	<directive type="commit"/>
-	<ruleref ref="expression"/>
 	<ruleref ref="filename"/>
 	<ruleref ref="expression"/>
 	<ruleref ref="xslt_params" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::xslt,@item[3,4,5],@{$item[6]}]</action>
       </production>
       <documentation sections="Manipulation">
-	<usage>xslt <xref linkend="ID"/> <xref linkend="filename"/> <xref linkend="ID"/> [(params|parameters) name=<xref linkend="expression"/> [name=<xref linkend="expression"/> ...]]</usage>
-	<shortdesc>transform document with XSLT</shortdesc>
+	<usage>$result := xslt <xref linkend="xpath"/> <xref linkend="filename"/> [name=<xref linkend="xpath"/> [name=<xref linkend="xpath"/> ...]]</usage>
+	<shortdesc>transform a document with XSLT</shortdesc>
 	<description>
 	  <para>
-	    Load an XSLT stylesheet from a file and use it to transform
-	    the document of the first <xref linkend="ID"/> into a new
-	    document named <xref linkend="ID"/>. Parameters
-	    may be passed to a stylesheet after params keyword in the
-	    form of a list of name=value pairs where name is the
-	    parameter name and value is an <xref linkend="expression"/> interpolating to
-	    its value. The resulting value is interpretted by XSLT
-	    processor as an XPath expression so e.g. quotes surrounding
-	    a XPath string have to be quoted themselves to preveserve
-	    them during the XSH expression interpolation.           
+	    Load an XSLT stylesheet from given file, use it to transform
+	    the document specified in the second argument, and return
+            the result. Further arguments of the
+	    form <literal>name=<xref linkend="xpath"/></literal>
+	    (possibly in brackets) are
+	    passed to the XSLT engine. The <xref linkend="xpath"/> part
+	    of the arguments is passed to the XSLT engine as it is,
+	    without evaluation (only <literal>${...}</literal>
+	    interpolators are expanded).
 	  </para>
 	  <example>
-	    <code>xslt src stylesheet.xsl rslt params font=&quot;'14pt'&quot; color=&quot;'red'&quot;</code>
+	    <title>Process current document with XSLT</title>
+	    <code>$result := xslt . stylesheet.xsl font='14pt' color='red'</code>
 	  </example>
 	</description>
       </documentation>

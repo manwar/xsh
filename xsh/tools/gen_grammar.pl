@@ -1,11 +1,11 @@
 #!/usr/bin/perl
 
-# $Id: gen_grammar.pl,v 1.9 2002-10-22 17:05:21 pajas Exp $
+# $Id: gen_grammar.pl,v 1.10 2004-07-16 21:45:38 pajas Exp $
 
 use strict;
 use XML::LibXML;
 
-if ($ARGV[0]=~'^(-h|--help)?$') {
+if ($ARGV[0]=~q(^(-h|--help)?$)) {
   print <<EOF;
 Generates RecDescent grammar from RecDescentXML source.
 
@@ -28,7 +28,8 @@ my ($postamb)=$dom->findnodes('./postamb');
 print "# This file was automatically generated from $ARGV[0] on \n# ",scalar(localtime),"\n";
 
 print get_text($preamb,1);
-foreach my $r ($rules->findnodes('./rule[@inline!="yes"]')) {
+
+foreach my $r ($rules->findnodes('rule[ not(@inline="yes") and not(@type="function") ]')) {
   print "\n  ",$r->getAttribute('id'),":\n\t   ";
   print join("\n\t  |",create_productions($r)),"\n";
 }

@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Thu Nov 13 15:20:13 2003
+# Fri Jul 16 23:29:27 2004
 
 package XML::XSH::Help;
 use strict;
@@ -94,9 +94,9 @@ Help items:
   XPath Extension Functions:
 
     xsh:current, xsh:doc, xsh:grep, xsh:if, xsh:join, xsh:map, xsh:matches,
-    xsh:max, xsh:min, xsh:new-attribute, xsh:new-attributes, xsh:new-cdata,
-    xsh:new-chunk, xsh:new-comment, xsh:new-element, xsh:new-element-ns,
-    xsh:new-pi, xsh:new-text, xsh:parse, xsh:path, xsh:reverse, xsh:same,
+    xsh:max, xsh:min, xsh:new-attribute, xsh:new-cdata, xsh:new-chunk,
+    xsh:new-comment, xsh:new-element, xsh:new-element-ns, xsh:new-pi,
+    xsh:new-text, xsh:parse, xsh:path, xsh:reverse, xsh:same,
     xsh:serialize, xsh:split, xsh:sprintf, xsh:strmax, xsh:strmin,
     xsh:subst, xsh:substr, xsh:sum, xsh:times, xsh:var
 
@@ -304,13 +304,13 @@ description:
 	     XSH provides many powerfull XPath extension functions, listed
 	     below and described in separate sections: xsh:current,
 	     xsh:doc, xsh:grep, xsh:if, xsh:join, xsh:map, xsh:matches,
-	     xsh:max, xsh:min, xsh:new-attribute, xsh:new-attributes,
-	     xsh:new-cdata, xsh:new-chunk, xsh:new-comment,
-	     xsh:new-element, xsh:new-element-ns, xsh:new-pi, xsh:new-text,
-	     xsh:parse, xsh:path, xsh:reverse, xsh:same, xsh:serialize,
-	     xsh:split, xsh:sprintf, xsh:strmax, xsh:strmin, xsh:subst,
-	     xsh:substr, xsh:sum, xsh:times, xsh:var. XPath extension
-	     functions by default belong to XSH namespace
+	     xsh:max, xsh:min, xsh:new-attribute, xsh:new-cdata,
+	     xsh:new-chunk, xsh:new-comment, xsh:new-element,
+	     xsh:new-element-ns, xsh:new-pi, xsh:new-text, xsh:parse,
+	     xsh:path, xsh:reverse, xsh:same, xsh:serialize, xsh:split,
+	     xsh:sprintf, xsh:strmax, xsh:strmin, xsh:subst, xsh:substr,
+	     xsh:sum, xsh:times, xsh:var. XPath extension functions by
+	     default belong to XSH namespace
 	     `http://xsh.sourceforge.net/xsh/' with default namespace
 	     prefix `xsh'. A program may however call the
 	     <xpath-extensions> command to map XSH XPath extension
@@ -489,8 +489,7 @@ $HELP{'undefine'}=$HELP{'undef'};
 
 $HELP{'def'}=[<<'END'];
 usage:       def <id> [$<id> | %<id>]* <command-block>
-         or
-  def <id> [$<id> | %<id>]*;
+             def <id> [$<id> | %<id>]*;
              
 aliases:     define
 
@@ -775,23 +774,21 @@ END
 $HELP{'system'}=$HELP{'exec'};
 
 $HELP{'xslt'}=[<<'END'];
-usage:       xslt <id> <filename> <id> [(params|parameters) name=<expression> [name=<expression> ...]]
+usage:       $result := xslt <xpath> <filename> [name=<xpath> [name=<xpath> ...]]
              
 aliases:     transform xsl xsltproc process
 
 description:
-	     Load an XSLT stylesheet from a file and use it to transform
-	     the document of the first <id> into a new document named <id>.
-	     Parameters may be passed to a stylesheet after params keyword
-	     in the form of a list of name=value pairs where name is the
-	     parameter name and value is an <expression> interpolating to
-	     its value. The resulting value is interpretted by XSLT
-	     processor as an XPath expression so e.g. quotes surrounding a
-	     XPath string have to be quoted themselves to preveserve them
-	     during the XSH expression interpolation.
+	     Load an XSLT stylesheet from given file, use it to transform
+	     the document specified in the second argument, and return the
+	     result. Further arguments of the form `name=<xpath>' (possibly
+	     in brackets) are passed to the XSLT engine. The <xpath> part
+	     of the arguments is passed to the XSLT engine as it is,
+	     without evaluation (only `${...}' interpolators are expanded).
 
-Example:
-             xslt src stylesheet.xsl rslt params font="'14pt'" color="'red'"
+Example:     Process current document with XSLT
+
+             $result := xslt . stylesheet.xsl font='14pt' color='red'
 
 END
 
@@ -1578,10 +1575,8 @@ $HELP{'new'}=$HELP{'create'};
 
 $HELP{'save'}=[<<'END'];
 usage:       save [HTML|XML|XInclude] [FILE|PIPE|STRING] <id> <expression> [encoding <enc-string>]
-or
-    save <id>
-or
-    save
+             save <id>
+             save
              
 description:
 	     Save the document identified by <id>. Using one of the `FILE',
@@ -2979,18 +2974,7 @@ END
 
 
 $HELP{'xsh:new-attribute'}=[<<'END'];
-usage:       node-set xsh:new-attribute(string NAME,[string VALUE,[string NS]])
-             
-description:
-	     Create a new attribute node with given `NAME' and optionally
-	     `VALUE' and namespace-uri `NS' and return a node-set
-	     containing the new node as its only member.
-
-END
-
-
-$HELP{'xsh:new-attributes'}=[<<'END'];
-usage:       node-set xsh:new-attributes(string NAME1,string
+usage:       node-set xsh:new-attribute(string NAME1,string
   VALUE1,[string NAME2, string VALUE2, ...])
              
 description:

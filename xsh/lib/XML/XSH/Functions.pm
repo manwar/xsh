@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.82 2003-12-15 14:39:48 pajas Exp $
+# $Id: Functions.pm,v 1.83 2004-07-16 21:45:44 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -31,7 +31,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8.2';
-  $REVISION='$Revision: 1.82 $';
+  $REVISION='$Revision: 1.83 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -3547,7 +3547,8 @@ sub foreach_statement {
       foreach my $node (@$ql) {
 	$LOCAL_NODE=$node;
 	$LOCAL_ID=_find_id($node);
-	$_xpc->setContextPosition($pos) if $_xpc->can('setContextSize');
+	$_xpc->setContextSize(0+@$ql) if $proximity_support;
+	$_xpc->setContextPosition($pos) if $proximity_support;
 	eval {
 	  run_commands($command);
 	};

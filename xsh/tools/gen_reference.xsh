@@ -1,6 +1,8 @@
 #!xsh
 # -*- cperl -*-
 
+$db_stylesheet = "/usr/share/xml/docbook/stylesheet/nwalsh/1.64.1/html/docbook.xsl";
+
 if ("$xsh_grammar_file" = "") $xsh_grammar_file="src/xsh_grammar.xml";
 if ("$db_stylesheet" = "") {
   # weired things happen in XML::LibXML/LibXSLT with new stylesheets!
