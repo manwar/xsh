@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.59 2003-08-05 08:18:12 pajas Exp $
+# $Id: Functions.pm,v 1.60 2003-08-06 08:56:10 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -15,7 +15,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
             $_xsh $_xpc $_parser %_nodelist @stored_variables
             $_newdoc $SIGSEGV_SAFE
             $TRAP_SIGINT $TRAP_SIGPIPE $_die_on_err $_on_exit
-            %_doc %_files %_defs %_chr
+            %_doc %_files %_defs %_chr %_ns
 	    $ENCODING $QUERY_ENCODING
 	    $INDENT $BACKUPS $SWITCH_TO_NEW_DOCUMENTS
 	    $QUIET $DEBUG $TEST_MODE
@@ -28,7 +28,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.7';
-  $REVISION='$Revision: 1.59 $';
+  $REVISION='$Revision: 1.60 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -615,7 +615,9 @@ sub set_local_doc {
 sub set_local_xpath {
   my ($xp)=@_;
   my ($id,$query,$doc)=_xpath($xp);
-
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
   if ($query eq "") {
     set_local_doc($id);
     return 1;
@@ -623,10 +625,10 @@ sub set_local_xpath {
   return 0 unless ref($doc);
   my ($newlocal);
   $newlocal=find_nodes($xp)->[0];
-  unless ($@) {
-    if (ref($newlocal)) {
-      set_local_node($newlocal);
-    }
+  if (ref($newlocal)) {
+    set_local_node($newlocal);
+  } else {
+    die "No node in document $id matches XPath $query!\n";
   }
 
   return 1;
@@ -3291,7 +3293,15 @@ sub quit {
 
 sub register_ns {
   my ($prefix,$ns)=expand(@_);
+  $_ns{$prefix}=$ns;
   $_xpc->registerNs($prefix,$ns);
+  return 1;
+}
+
+sub unregister_ns {
+  my ($prefix)=expand(@_);
+  delete $_ns{$prefix};
+  $_xpc->unregisterNs($prefix);
   return 1;
 }
 
@@ -3310,7 +3320,21 @@ sub register_func {
     $sub=eval("package XML::XSH::Map; no strict; sub { $code }");
   }
   die $@ if $@;
-  $_xpc->registerFunction($name, $sub);
+  if ($name =~ /^([^:]+):(.*)$/) {
+    if (exists($_ns{$1})) {
+      $_xpc->registerFunctionNS($2, $_ns{$1}, $sub);
+    } else {
+      die "Registration failed: unknown namespace prefix $1!\n";
+    }
+  } else {
+    $_xpc->registerFunction($name, $sub);
+  }
+  return 1;
+}
+
+sub unregister_func {
+  my ($name)=expand(@_);
+  $_xpc->unregisterFunction($name);
   return 1;
 }
 
