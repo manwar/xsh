@@ -1394,8 +1394,12 @@ sub new {
       </production>
     </rule>
     <rule id="loc" type="argtype" name="location">
-      <production><regexp>after\s</regexp></production>
-      <production><regexp>before\s</regexp></production>
+      <production><regexp>after\s</regexp>
+	<action>"after"</action>
+</production>
+      <production><regexp>before\s</regexp>
+	<action>"before"</action>
+</production>
       <production><regexp>(to|into|as child( of)?)\s</regexp>
 	<action>"as_child"</action>
       </production>
