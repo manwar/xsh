@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.27 2003-08-07 13:45:22 pajas Exp $
+# $Id: xsh,v 1.28 2003-08-08 14:02:47 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -54,8 +54,8 @@ BEGIN {
 			 "man"        => \$manpage,
 			) or $usage=1;
 #  getopts('atscqvwdfhVinTE:e:l:pP');
-  $VERSION='0.10';
-   $REVISION='$Revision: 1.27 $';
+  $VERSION='0.12';
+   $REVISION='$Revision: 1.28 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 

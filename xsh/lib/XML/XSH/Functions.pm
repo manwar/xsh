@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.61 2003-08-07 13:54:53 pajas Exp $
+# $Id: Functions.pm,v 1.62 2003-08-08 14:02:46 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -27,8 +27,8 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 	  /;
 
 BEGIN {
-  $VERSION='1.7';
-  $REVISION='$Revision: 1.61 $';
+  $VERSION='1.8';
+  $REVISION='$Revision: 1.62 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
