@@ -893,6 +893,7 @@ sub new {
 
     <rule id="statement_or_command">
       <production><ruleref ref="def"/></production>
+      <production><ruleref ref="undef"/></production>
       <production><ruleref ref="complex_command"/></production>
     </rule>
 
@@ -1000,8 +1001,27 @@ sub new {
       </production>
     </rule>
     <rule id="expression" type="argtype">
+<production>
+	<regexp>&lt;&lt;</regexp>
+	<regexp>(\'|\")?</regexp>
+	<ruleref ref="ID"/>
+	<regexp>$item[2]</regexp>
+	<directive type="skip">&quot;&quot;</directive> 
+	<regexp>.*\n</regexp>
+	<regexp>(.|\n)*?\n$item[3]\s*(\n|$)</regexp>
+	<action>
+	    $text=$item[6].$text;
+	    local $_=$item[7]; s/\n$item[3]\s*$//;
+	    if ($item[2] eq "'") {
+	      s{(\\)(.|\n)|(\$)}{ ($3 eq '$') ? "\\\$" : (($2 eq "\\")
+	      ? "\\\\" : (($2 eq "'") ? "'" : ( ($2 eq '$') ? "\\\\\\$2" :
+	      "\\\\$2"))) }eg;
+          }
+	    $_;
+	  </action>
+      </production>
       <production>
-	<ruleref ref="exp_part"/>	
+	<ruleref ref="exp_part"/>
 	<directive type="skip">&quot;&quot;</directive>
 	<ruleref ref="expression" rep="?"/>
 	<action>$item[1].join(&quot;&quot;,@{$item[3]})</action>
@@ -1745,6 +1765,44 @@ sub new {
 	<ruleref ref="ID"/>
 	<action>"$item[1]$item[3]"</action>
       </production>
+    </rule>
+    <rule id="undef" type="command" name="undef">
+      <aliases>
+	<alias name="undefine"/>
+      </aliases>
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="expression"/>
+	<action>
+	  &amp;XML::XSH::Functions::undef_sub($item[3]);
+	</action>
+      </production>
+      <documentation sections="Flow">
+	<usage>undef <xref linkend="expression"/></usage>
+	<shortdesc>undefine sub-routine (macro)</shortdesc>
+	<description>
+	  <para>
+	    This command can be used to undefine previously defined
+	    XSH subroutines. The <xref linkend="expression"/> is
+	    evaluated as a Perl regular expression. All subroutines
+	    whose names match are undefined. Note, that like
+	    <literal>def</literal>, all <literal>undef</literal>
+	    commands are processed during the compilation of the
+	    source code, not at run-time, so it doesn't matter how
+	    deep in the code is a <literal>undef</literal> command
+	    nested.
+	  </para>
+	  <example>
+	    <code>xsh> include my_defs.xsh
+xsh> call my_sub1 //foo;
+xsh> call my_sub2 //bar;
+xsh> undefine 'my_sub.*'
+xsh> # change/edit the definitions in my_defs.xsh and reload
+xsh> include my_defs.xsh</code>
+	  </example>
+	</description>
+      </documentation>
     </rule>
     <rule id="def" type="command" name="def">
       <aliases>
@@ -3355,6 +3413,10 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<ruleref ref="encoding_param" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::save_doc,@item[1,3],undef,$item[4]]</action>
+      </production>
+      <production>
+	<regexp>save(as|_as|-as)?([-_](HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?</regexp>
+	<action>[\&amp;XML::XSH::Functions::save_doc,$item[1]]</action>
       </production>
       <documentation sections="Documents">
 	<usage>save [HTML|XML|XInclude]? [FILE|PIPE|STRING]? <xref linkend="ID"/> <xref
