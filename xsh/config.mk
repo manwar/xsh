@@ -1,6 +1,6 @@
 # This file contains the global installation options
 #
 
-PREFIX=/mnt/h/local2
+PREFIX=/usr/local
 INSTALL=install -p
 
