@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_grammar.pl,v 1.6 2002-09-02 15:47:54 pajas Exp $
+# $Id: gen_grammar.pl,v 1.7 2002-09-12 15:34:31 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -116,6 +116,9 @@ sub create_rule_production {
       $result.=" ".$item->getAttribute('ref');
       if ($item->getAttribute('rep') ne '') {
 	$result.="(".$item->getAttribute('rep').")";
+      }
+      if ($item->getAttribute('arguments') ne '') {
+	$result.="[".$item->getAttribute('arguments')."]";
       }
     } elsif ($name eq 'string') {
       $result.=" '".get_text($item)."'";
