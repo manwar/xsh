@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.34 2002-10-30 10:07:00 pajas Exp $
+# $Id: Functions.pm,v 1.35 2002-11-01 16:34:59 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -575,10 +575,16 @@ sub _expand {
     } elsif ($l=~/\G\$\{([a-zA-Z_-][a-zA-Z0-9_-]*)\}/gsco
 	     or $l=~/\G\$([a-zA-Z_-][a-zA-Z0-9_-]*)/gsco) {
       $k.=${"XML::XSH::Map::$1"};
-    } elsif ($l=~/\G\$\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*):(\\.|[^}]*|\}[^}]*)\}\}/gsco) {
+    } elsif ($l=~/\G\$\{\{\{(.+?)\}\}\}/gsco) {
+      $k.=perl_eval($1);
+    } elsif ($l=~/\G\$\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*):(?!:)(.*?)\}\}/gsco) {
       $k.=count([$1,$2]);
-    } elsif ($l=~/\G\$\{\{((?:\\.|[^}]*|\}[^}])*)\}\}/gsco) {
+    } elsif ($l=~/\G\$\{\{([^\{].*?)\}\}/gsco) {
       $k.=count([undef,$1]);
+    } elsif ($l=~/\G\$\{\(\s*([a-zA-Z_][a-zA-Z0-9_]*):(?!:)(.*?)\)\}/gsco) {
+      $k.=eval_xpath_literal([$1,$2]);
+    } elsif ($l=~/\G\$\{\((.+?)\)\}/gsco) {
+      $k.=eval_xpath_literal([undef,$1]);
     } elsif ($l=~/\G(.|\n)/gsco) {
       $k.=$1;
     }
@@ -714,8 +720,10 @@ sub _find_nodes {
 # _find_nodes wrapper with q-decoding
 sub find_nodes {
   my ($id,$query,$doc)=_xpath($_[0]);
-  if ($id eq "" or $query eq "") { $query="."; }
-  return undef unless ref($doc);
+  if ($query eq "") { $query="."; }
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
 
   return _find_nodes(get_local_node($id),toUTF8($_qencoding,$query));
 }
@@ -1065,7 +1073,11 @@ sub save_doc {
 	$_xml_module->set_encoding($doc,$enc);
       }
       if ($target eq 'file') {
-	$doc->setCompression(6) if $file=~/\.gz\s*$/;
+	if ($file=~/\.gz\s*$/) {
+	  $doc->setCompression(6);
+	} else {
+	  $doc->setCompression(-1);
+	}
 	$doc->toFile($file,$_indent); # should be document-encoding encoded
 	$_files{$id}=$file;
       } elsif ($target eq 'pipe') {
@@ -1274,6 +1286,18 @@ sub count {
   return $result;
 }
 
+# evaluate given xpath and return the text content of the result
+sub eval_xpath_literal {
+  my ($xp)=@_;
+  my $ql=&find_nodes($xp);
+  if (@$ql) {
+    return &fromUTF8($_encoding, $ql->[0]->to_literal());
+  } else {
+    return '';
+  }
+}
+
+
 # remove nodes matching given XPath from a document and
 # remove all their descendants from all nodelists
 sub prune {
@@ -1311,28 +1335,38 @@ sub perlsort {
   return 1 unless (exists($_nodelist{$var}));
   return 1 unless ref(my $list=$_nodelist{$var});
   my $doc=$list->[0];
-
-  @{$list->[1]} = sort {
-    my $old_local=$LOCAL_NODE;
-    my $old_id=$LOCAL_ID;
-    eval {
-      foreach ([$a,$codea],[$b,$codeb]) {
-	$LOCAL_NODE=$_->[0];
-	$LOCAL_ID=_find_id($_->[0]);
-	run_commands($_->[1]);
-      }
-    };
-    do {
-      local $SIG{INT}=\&flagsigint;
-      $LOCAL_NODE=$old_local;
-      $LOCAL_ID=$old_id;
-      propagate_flagsigint();
-    };
-    die $@ if ($@); # propagate
-    my $result=eval "package XML::XSH::Map; no strict 'vars'; $perl";
-    die $@ if ($@); # propagate
-    $result;
-  } @{$list->[1]};
+#  store_variables(1,qw($a $b));
+#  _assign('$a',undef);
+#  _assign('$b',undef);
+#  eval {
+    @{$list->[1]} = sort {
+      my $old_local=$LOCAL_NODE;
+      my $old_id=$LOCAL_ID;
+      eval {
+	foreach ([$a,$codea],[$b,$codeb]) {
+	  $LOCAL_NODE=$_->[0];
+	  $LOCAL_ID=_find_id($_->[0]);
+	  run_commands($_->[1]);
+	}
+      };
+      do {
+	local $SIG{INT}=\&flagsigint;
+	$LOCAL_NODE=$old_local;
+	$LOCAL_ID=$old_id;
+	propagate_flagsigint();
+      };
+      die $@ if ($@); # propagate
+      my $result=eval "package XML::XSH::Map; no strict 'vars'; $perl";
+      die $@ if ($@); # propagate
+      $result;
+    } @{$list->[1]};
+#  };
+#  do {
+#    local $SIG{INT}=\&flagsigint;
+#    restore_variables();
+#    propagate_flagsigint();
+#  };
+#  die $@ if $@; # propagate
 
   return 1;
 }
@@ -2541,13 +2575,13 @@ sub xsh {
 
 sub count {
   my $xp=$_[0];
-  $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):)?((?:.|\n)*)$/;
+  $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):(?!:))?((?:.|\n)*)$/;
   return &XML::XSH::Functions::count([$1,$2]);
 }
 
 sub xpath {
   my ($xp)=@_;
-  $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):)?((?:.|\n)*)$/;
+  $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):(?!:))?((?:.|\n)*)$/;
   my ($id,$query,$doc)=&XML::XSH::Functions::_xpath([$1,$2]);
 
   unless (ref($doc)) {
@@ -2560,6 +2594,13 @@ sub xpath {
 					    $_->toString());
   }
   return $result;
+}
+
+sub literal {
+  my ($xp)=@_;
+  my $xp=$_[0];
+  $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):(?!:))?((?:.|\n)*)$/;
+  return &XML::XSH::Functions::eval_xpath_literal([$1,$2]);
 }
 
 #######################################################################
