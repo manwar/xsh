@@ -3675,7 +3675,7 @@ xsh $foo/&gt; ls /;
 	<param name="filter" short="f" type="xpath" argument="xpath"/>
       </command>
       <documentation sections="Navigation Information">
-	<usage>c14n [--comments|:c] [--filter|:f <xref linkend="xpath"/>] [<xref linkend="exp"/>]</usage>
+	<usage>canonical [--comments|:c] [--filter|:f <xref linkend="xpath"/>] [<xref linkend="exp"/>]</usage>
 	<shortdesc>serialize nodes as to canonical XML</shortdesc>
 	<description>
 	  <para>
@@ -4718,11 +4718,11 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	  </para>
 	  <para>
 	    XUpdate langauge is described in XUpdate Working Draft at
-            <ulink url="http://www.xmldb.org/xupdate/xupdate-wd.html">http://www.xmldb.org/xupdate/xupdate-wd.html</ulink>.	    	    
+            <ulink url="http://xmldb-org.sourceforge.net/xupdate/xupdate-wd.html">http://xmldb-org.sourceforge.net/xupdate/xupdate-wd.html</ulink>.	    	    
 	  </para>
 	  <para>XUpdate output can be generated for example by
             Python xmldiff utility from
-	    <ulink url="http://www.logilab.org/xmldiff/">http://www.logilab.org/xmldiff/</ulink>.
+	    <ulink url="http://www.logilab.org/projects/xmldiff/">http://www.logilab.org/projects/xmldiff/</ulink>.
 	  </para>
 	</description>
       </documentation>
