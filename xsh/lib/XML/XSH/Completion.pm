@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 1.12 2003-06-04 14:40:46 pajas Exp $
+# $Id: Completion.pm,v 1.13 2003-06-04 15:34:35 pajas Exp $
 
 package XML::XSH::Completion;
 
@@ -111,7 +111,7 @@ sub xpath_complete_str {
   }
 
  STEP1:
-  if ( $str =~ /\G(${NAMECHAR}+)?(?::(${NNAMECHAR}+))?/gsco ) {
+  if ( $str =~ /\G(${NAMECHAR}+)?(?::(${NAMECHAR}+))?/gsco ) {
     if ($2 ne "") {
       $localmatch=reverse($2).":".reverse($1);
       if ($1 ne "") {
@@ -218,20 +218,22 @@ sub xpath_complete {
   my ($xp,$local) = xpath_complete_str($str,0);
 #  XML::XSH::Functions::__debug("COMPLETING $_[0] local $local as $xp\n");
   return () if $xp eq "";
-  $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):(?!:))?((?:.|\n)*)$/;
-  my $docid=$1.":" if $1;
-#  XML::XSH::Functions::__debug("ID:$1 XP:$2\n");
-  my ($id,$query,$doc)=XML::XSH::Functions::_xpath([$1,$2]);
+  my ($docid,$q) = ($xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):(?!:))?((?:.|\n)*)$/);
+  if ($docid ne "" and not XML::XSH::Functions::_doc($docid)) {
+    $q=$docid.":".$q;
+    $docid="";
+  }
+  my ($id,$query,$doc)=XML::XSH::Functions::_xpath([$docid,$q]);
   return () unless (ref($doc));
   my $ql= eval { XML::XSH::Functions::find_nodes([$id,$query]) };
   return () if $@;
   my %names;
   @names{ map { 
     XML::XSH::Functions::fromUTF8($XML::XSH::Functions::QUERY_ENCODING,
-	     $docid.substr(substr($str,0,
-			   length($str)
-			   -length($local)).
-		    $_->nodeName(),$pos))
+				  substr(substr($str,0,
+						length($str)
+						-length($local)).
+					 $_->nodeName(),$pos))
   } @$ql}=();
 
   my @completions = sort { $a cmp $b } keys %names;
