@@ -1,3 +1,18 @@
+Release 2.0.2:
+Minor fixes.
+
+Changes since 2.0.1:
+-------------------
+ - history file can be specified via $HISTORY variable
+ - history file now defaults to ~/.xsh2_history
+ - 'print' (aka echo) has a new flag: --stderr (:e)
+ - 'wrap' has a new flag --inner (:i):
+      wrap --inner a //b (produces <b><a>...</a></b> from <b>...</b>)
+ - new 'apropos' command for searching the help
+ - 'save' has a new flag: --subtree (:S)
+ - various scattered fixes in the documentation
+ - bug fixed that prevented &{...} construct to work in perl>=5.8.5
+
 Release 2.0.1:
 Major feature enhancements.
 
