@@ -47,6 +47,7 @@ if
 include
 indent
 insert
+iterate
 keep-blanks
 keep_blanks
 last
@@ -80,6 +81,7 @@ parser_expands_xinclude
 pedantic-parser
 pedantic_parser
 perl
+prev
 print
 print_value
 process
@@ -96,6 +98,7 @@ quit
 recovering
 redo
 remove
+rename
 return
 rm
 run-mode

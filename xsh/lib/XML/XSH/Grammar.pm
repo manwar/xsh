@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Wed Jan 22 10:34:41 2003
+# Tue Mar 11 15:02:58 2003
 
 
 package XML::XSH::Grammar;
@@ -110,8 +110,11 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(map|sed)\s/ <commit> perl_code xpath
 		{ [\&XML::XSH::Functions::perlmap,@item[4,3]] }
   	
-	  | /(sort)\s/ <commit> block block perl_code nodelistvariable
-		{ [\&XML::XSH::Functions::perlsort,@item[3..6]] }
+	  | /(rename)\s/ <commit> perl_code xpath
+		{ [\&XML::XSH::Functions::perlrename,@item[4,3]] }
+  	
+	  | /(sort)\s/ <commit> condition perl_code nodelistvariable
+		{ [\&XML::XSH::Functions::perlsort,@item[3..5]] }
   	
 	  | /(close)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::close_doc,$item[3]] }
@@ -232,7 +235,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(xupdate)\s/ <commit> expression expression(?)
 		{ [\&XML::XSH::Functions::xupdate,$item[3],@{$item[4]}] }
   	
-	  | /open((\s*|_|-)(HTML|XML|DOCBOOK|html|xml|docbook))?((\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?/ <commit> id_or_var /\s*=\s*/ expression
+	  | /open((\s*|_|-)(HTML|XML|DOCBOOK|html|xml|docbook)(?!\s*=))?((\s*|_|-)(FILE|file|PIPE|pipe|STRING|string)(?!\s*=))?/ <commit> id_or_var /\s*=\s*/ expression
 		{ [\&XML::XSH::Functions::open_doc,@item[3,5,1]] }
   	
 	  | ID /\s*=\s*/ <commit> filename
@@ -254,7 +257,10 @@ $grammar=<<'_EO_GRAMMAR_';
 		{ [\&XML::XSH::Functions::loop_last,@{$item[3]}] }
   	
 	  | /(next)/ <commit> optional_expression(?)
-		{ [\&XML::XSH::Functions::loop_next,,@{$item[3]}] }
+		{ [\&XML::XSH::Functions::loop_next,@{$item[3]}] }
+  	
+	  | /(prev)/ <commit> optional_expression(?)
+		{ [\&XML::XSH::Functions::loop_prev,@{$item[3]}] }
   	
 	  | /(redo)/ <commit> optional_expression(?)
 		{ [\&XML::XSH::Functions::loop_redo,@{$item[3]}] }
@@ -286,6 +292,9 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 	  | /(try)\s/ <commit> block 'catch' local_var(?) block
 		{ [\&XML::XSH::Functions::try_catch,$item[3],$item[6],@{$item[5]}] }
+  	
+	  | /(iterate)\s/ <commit> xpstep block
+		{ [\&XML::XSH::Functions::iterate,$item[4],@{$item[3]}] }
   	
 
   complex_command:
@@ -414,7 +423,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | xp
 		{ [undef,$item[1]] }
   	
-	  | <error:expected ID:XPath or XPath, but got "}.substr(0,40,$text).qq{ ...">
+	  | <error:expected ID:XPath or XPath, but got "}.substr($text,0,40).qq{ ...">
 
   xpcont:
 	   ( xpfilters
@@ -533,7 +542,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	    /!\s*/ <commit> /.*/
 		{ [[\&XML::XSH::Functions::sh,$item[3]]] }
   	
-	  | <error?:Parse error near: "! }.substr(0,40,$text).qq{ ..."> <reject>
+	  | <error?:Parse error near: "! }.substr($text,0,40).qq{ ..."> <reject>
 
   condition:
 	    <perl_codeblock>
@@ -546,7 +555,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | ...! /(elsif)/
 		{ [] }
   	
-	  | <uncommit> <error:Parse error near keyword elsif: "}.substr(0,40,$text).qq{ ...">
+	  | <uncommit> <error:Parse error near keyword elsif: "}.substr($text,0,40).qq{ ...">
 
   else_block:
 	    /(else)\s/ <commit> block
@@ -555,7 +564,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | ...! /(else)/
 		{ [] }
   	
-	  | <uncommit> <error:Parse error near keyword else: "}.substr(0,40,$text).qq{ ...">
+	  | <uncommit> <error:Parse error near keyword else: "}.substr($text,0,40).qq{ ...">
 
   local_var:
 	   ( /local\s/
@@ -574,7 +583,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  &XML::XSH::Functions::def($item[3],$item[5],$item[4]);
 	 }
   	
-	  | <error?:Parse error near: "}.substr(0,40,$text).qq{ ..."> <reject>
+	  | <error?:Parse error near: "}.substr($text,0,40).qq{ ..."> <reject>
 
   anyvariable:
 	    variable
@@ -677,6 +686,22 @@ $grammar=<<'_EO_GRAMMAR_';
   encoding_param:
 	    /encoding\s/ expression
 		{ $item[2] }
+  	
+
+  xpaxis:
+	    /[-a-z]+::/
+
+  xpnodetest:
+	    /node\(\)|text\(\)|comment\(\)|processing-instruction\(\)|[^\(\[\/\"\'\&\;\s]+/
+
+  xplocationstep:
+	    xpaxis(?) <skip:""> xpnodetest
+		{ [ (@{$item[1]} ? $item[1][0] : 'child::'),$item[3] ] }
+  	
+
+  xpstep:
+	    xplocationstep <skip:""> xpfilter(?)
+		{ [ @{$item[1]}, @{$item[3]}] }
   	
 
 
