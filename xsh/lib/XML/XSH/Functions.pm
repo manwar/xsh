@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.57 2003-06-04 14:40:46 pajas Exp $
+# $Id: Functions.pm,v 1.58 2003-06-04 15:33:53 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -28,7 +28,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.7';
-  $REVISION='$Revision: 1.57 $';
+  $REVISION='$Revision: 1.58 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -356,6 +356,10 @@ sub files {
 
 sub docs {
   return sort keys %_files;
+}
+
+sub _doc {
+  return $_doc{$_[0]} if exists($_doc{$_[0]});
 }
 
 sub xpath_var_lookup {
