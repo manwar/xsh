@@ -51,7 +51,7 @@
 	<link linkend="Navigation">navigated</link> and <link
 	  linkend="Manipulation">manipulated</link> with &XSH; commands and XPath
 	language, whose names and syntax make working with
-	the DOM tree a favour of working in a UNIX filesystem.
+	the DOM tree a flavour of working in a UNIX filesystem.
       </para>
       <para>
 	A parsed document is usually stored in a variable. 
@@ -84,11 +84,13 @@
     <section id="Navigation">
       <title>Tree navigation</title>
       <para>
-	With &XSH;, it is possible to browse <link
-	linkend="Documents">document trees</link> as if they were a
-	local filesystem, except that <link
-	linkend="xpath">XPath</link> expressions are used instead of
-	ordinary UNIX paths.</para> 
+	With &XSH;, it is possible to browse a <link
+	linkend="Documents">document tree</link> 
+	(XML data represented as a DOM-tree) as if it was a local f
+	ilesystem, except that <link
+	linkend="xpath">XPath</link> 
+	expressions are used instead of ordinary directory paths.
+      </para> 
       <para>
 	To mimic the filesystem navigation as closely as
 	possible, &XSH; contains several commands named by analogy of
@@ -3132,9 +3134,10 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
     <rule id="wrap_command" type="command" name="wrap" inline="yes">
       <command minargs="2" maxargs="2" func="wrap">
 	<param name="namespace" short="n" type="exp" argument="exp"/>
+	<param name="inner" short="i"/>
       </command>
       <documentation sections="Manipulation">
-	<usage>wrap <xref linkend="exp"/> [namespace <xref linkend="exp"/>] <xref linkend="xpath"/>
+	<usage>wrap [--namespace <xref linkend="exp"/>] [--inner] <xref linkend="exp"/> <xref linkend="xpath"/>
 	</usage>
 	<shortdesc>wrap given nodes into elements</shortdesc>
 	<description>
@@ -3150,18 +3153,33 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    The command returns a node-list consisting
 	    of the elements created.
 	  </para>
+	  <para>
+	    With <literal>--inner</literal> (or <literal>:i</literal>)
+	    flag the command 
+	    wraps children nodes of the matching node
+	    rather than the node it self
+	    the following sense:
+	    for each matching node
+	    a new element node is created,
+	    but this time it is placed into 
+	    the matching node and 
+	    all previous children of the matching node
+	    are moved into the newly created node.
+	    In this mode, all non-element matching
+	    nodes are ignored.
+	  </para>
 	  <example>
-	    <code>xsh scratch:/&gt; ls /;
+	    <code>$scratch/&gt; ls /;
 &lt;?xml version="1.0" encoding="utf-8"?&gt;
 &lt;scratch/&gt;
 
-xsh scratch:/&gt; wrap 'foo' *;
-xsh scratch:/&gt; insert attribute 'bar=baz' into /foo;
-xsh scratch:/&gt; insert text 'some text' into //scratch;
-xsh scratch:/&gt; wrap 'a:A' namespace 'http://foo/bar' //@*;
-xsh scratch:/&gt; $wrapper := wrap 'text aaa="bbb"' //text();
-xsh scratch:/&gt; wrap '&lt;elem ccc=ddd&gt;' //*;
-xsh scratch:/&gt; ls /;
+$scratch/&gt; wrap 'foo' *;
+$scratch/&gt; insert attribute 'bar=baz' into /foo;
+$scratch/&gt; insert text 'some text' into //scratch;
+$scratch/&gt; wrap 'a:A' namespace 'http://foo/bar' //@*;
+$scratch/&gt; $wrapper := wrap 'text aaa="bbb"' //text();
+$scratch/&gt; wrap '&lt;elem ccc=ddd&gt;' //*;
+$scratch/&gt; ls /;
 &lt;?xml version="1.0" encoding="utf-8"?&gt;
 &lt;elem ccc="ddd"&gt;
 <tab count="1"/>&lt;foo xmlns:a="http://foo/bar"&gt;
@@ -3178,8 +3196,29 @@ xsh scratch:/&gt; ls /;
 <tab count="1"/>&lt;/foo&gt;
 &lt;/elem&gt;
 
-xsh scratch:/&gt; ls $wrapper;
+$scratch/&gt; ls $wrapper;
 &lt;text aaa="bbb"&gt;some text&lt;/text&gt;
+
+
+$scratch/&gt; wrap --inner bar //foo
+$scratch/&gt; ls /;
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;elem ccc="ddd"&gt;
+<tab count="1"/>&lt;foo xmlns:a="http://foo/bar"&gt;
+<tab count="1"/><tab count="1"/>&lt;bar&gt;
+<tab count="1"/><tab count="1"/><tab count="1"/>&lt;elem ccc="ddd"&gt;
+<tab count="1"/><tab count="1"/><tab count="1"/><tab count="1"/>&lt;scratch&gt;
+<tab count="1"/><tab count="1"/><tab count="1"/><tab count="1"/><tab count="1"/>&lt;elem ccc="ddd"&gt;
+<tab count="1"/><tab count="1"/><tab count="1"/><tab count="1"/><tab count="1"/><tab count="1"/>&lt;text aaa="bbb"&gt;some text&lt;/text&gt;
+<tab count="1"/><tab count="1"/><tab count="1"/><tab count="1"/><tab count="1"/>&lt;/elem&gt;
+<tab count="1"/><tab count="1"/><tab count="1"/><tab count="1"/>&lt;/scratch&gt;
+<tab count="1"/><tab count="1"/><tab count="1"/>&lt;/elem&gt;
+<tab count="1"/><tab count="1"/><tab count="1"/>&lt;elem ccc="ddd"&gt;
+<tab count="1"/><tab count="1"/><tab count="1"/><tab count="1"/>&lt;a:A xmlns:a="http://foo/bar" bar="baz"/&gt;
+<tab count="1"/><tab count="1"/><tab count="1"/>&lt;/elem&gt;
+<tab count="1"/><tab count="1"/>&lt;/bar&gt;
+<tab count="1"/>&lt;/foo&gt;
+&lt;/elem&gt;
  </code>
 	  </example>
 	</description>
@@ -3835,10 +3874,11 @@ xsh $foo/&gt; ls /;
       </aliases>
       <command func="echo">
 	<param name="nonl" short="n"/>
+	<param name="stderr" short="e"/>
       </command>
       <documentation sections="Information">
-	<usage>print [--nonl|:n] <xref linkend="exp"/> [<xref linkend="exp"/> ...]</usage>
-	<shortdesc>print given stuff on standard console output</shortdesc>
+	<usage>print [--nonl|:n] [--stderr|:e] <xref linkend="exp"/> [<xref linkend="exp"/> ...]</usage>
+	<shortdesc>print stuff on standard or standard error output</shortdesc>
 	<description>
 	  <para>Evaluate given expression(s) and print the results
 	    (separated by a single space character).
@@ -3849,6 +3889,10 @@ xsh $foo/&gt; ls /;
 	  <para>
 	    <literal>--nonl</literal> or <literal>:n</literal>
 	    can be used to avoid printing a trailing new-line.
+	  </para>
+	  <para>
+	    <literal>--stderr</literal> or <literal>:e</literal>
+	    causes the command to print on standard error output.
 	  </para>
 	  <example>
 	    <code>print foo   bar;  # prints "foo bar"</code>
@@ -4271,6 +4315,7 @@ xsh $foo/&gt; ls /;
 	<param name="xinclude" short="x"/>
 	<param name="file" short="f" type="string" argument="filename"/>
 	<param name="pipe" short="p" type="string" argument="exp"/>
+	<param name="subtree" short="S"/>
 	<param name="print" short="r"/>
 	<param name="string" short="s"/>
 	<param name="indent" short="i"/>
@@ -4291,6 +4336,7 @@ xsh $foo/&gt; ls /;
            --pipe|:p <xref linkend="filename"/> | 
            --string|:s |
            --print|:r ]
+          [--subtree|:S]
           [--indent|:i | --no-indent|:I]
 	  [--skip-dtd|:d | --no-skip-dtd|:D]
 	  [--skip-empty-tags|:t | --no-skip-empty-tags|:T]
@@ -4365,6 +4411,13 @@ xsh $foo/&gt; ls /;
 	    &lt;include&gt; element in the root file. This feature may
 	    be used to split the document to a new set of XInclude fragments.
 	  </para>
+	  <para>
+	    If the <literal>--subtree</literal> (<literal>:S</literal>)
+	    flag is used, only the subtree of the
+	    specified node is saved instead of the complete document
+	    (this flag cannot be used
+	    with <literal>--html</literal> format).
+          </para>
 	  <para>
 	    <literal>--indent</literal> (<literal>:i</literal>)
 	    and 
