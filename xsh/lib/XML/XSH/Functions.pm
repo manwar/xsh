@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.55 2003-05-26 15:21:38 pajas Exp $
+# $Id: Functions.pm,v 1.56 2003-05-30 16:14:26 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -26,7 +26,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.7';
-  $REVISION='$Revision: 1.55 $';
+  $REVISION='$Revision: 1.56 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -193,7 +193,8 @@ sub xpc_init {
     $_xpc=XML::XSH::DummyXPathContext->new();
   }
   $_xpc->registerVarLookupFunc(\&xpath_var_lookup,undef);
-  $_xpc->registerFunction('doc',
+  $_xpc->registerNs('xsh',$XML::XSH::xshNS);
+  $_xpc->registerFunctionNS('doc',$XML::XSH::xshNS,
 			  sub {
 			    die "Wrong number of arguments for function doc(id)!" if (@_!=1);
 			    my ($id)=literal_value($_[0]);
@@ -201,7 +202,7 @@ sub xpc_init {
 			    die "Document does not exist!" unless (exists($_doc{$id}));
 			    return $_doc{$id};
 			  });
-  $_xpc->registerFunction('matches',
+  $_xpc->registerFunction('matches',$XML::XSH::xshNS,
 			  sub {
 			    die "Wrong number of arguments for function matches(string,regexp)!" if (@_!=2);
 			    my ($string,$regexp)=@_;
@@ -211,7 +212,7 @@ sub xpc_init {
 			      XML::LibXML::Boolean->True : XML::LibXML::Boolean->False;
 			    $ret;
 			  });
-  $_xpc->registerFunction('grep',
+  $_xpc->registerFunction('grep',$XML::XSH::xshNS,
 			  sub {
 			    die "Wrong number of arguments for function grep(list,regexp)!" if (@_!=2);
 			    my ($nodelist,$regexp)=@_;
@@ -220,7 +221,7 @@ sub xpc_init {
 			    use utf8; 
 			    [grep { $_->to_literal=~m{$regexp} } @$nodelist];
 			  });
-  $_xpc->registerFunction('same',
+  $_xpc->registerFunction('same',$XML::XSH::xshNS,
 			  sub {
 			    die "Wrong number of arguments for function same(node,node)!" if (@_!=2);
 			    my ($nodea,$nodeb)=@_;
@@ -346,7 +347,7 @@ sub xpath_var_lookup {
     } elsif (defined(${"XML::XSH::Map::$name"})) {
       return ${"XML::XSH::Map::$name"};
     } else {
-      die "Undefined nodelist variable $name\n";
+      die "Undefined nodelist variable `$name'\n";
     }
   }
 }
@@ -1667,7 +1668,7 @@ sub node_copy {
     }
     # --
     $copy=new_element($dest_doc,$node->getName(),$ns,
-		      [map { [$_->nodeName(),$_->nodeValue()] } $node->attributes],$dest);
+		      [map { [$_->nodeName(),$_->nodeValue(), $_->namespaceURI()] } $node->attributes],$dest);
   } elsif ($_xml_module->is_document_fragment($node)) {
     $copy=$_parser->parse_xml_chunk($node->toString());
   } else {
@@ -2114,8 +2115,9 @@ sub new_element {
   my ($doc,$name,$ns,$attrs,$dest)=@_;
   my $el;
   my $prefix;
-  if ($ns ne "" and $name=~/^([^>]+):(.*)$/) {
+  if ($name=~/^([^:>]+):(.*)$/) {
     $prefix=$1;
+    die "Error: undefined namespace prefix `$prefix'\n"  if ($ns eq "");
     if ($dest && $_xml_module->is_element($dest)) {
       $el=$dest->addNewChild($ns,$name);
       $el->unbindNode();
@@ -2130,6 +2132,19 @@ sub new_element {
       if ($ns ne "" and ($_->[0]=~/^${prefix}:/)) {
 	print STDERR "NS: $ns\n" if $DEBUG;
 	$el->setAttributeNS($ns,$_->[0],$_->[1]);
+      } elsif  ($_->[0] eq "xmlns:(.*)") {
+	# don't redeclare NS if already declared on destination node
+	unless ($1 eq $ns or $dest->lookupNamespaceURI($1) eq $_->[2]) {
+	  $el->setAttribute($_->[0],$_->[1]) unless ($_->[1] eq $ns);
+	}
+      } elsif ($_->[0]=~/^([^:>]+):/) {
+	my $lprefix=$1;
+	if ($_->[2] ne "") {
+	  $el->setAttributeNS($_->[2],$_->[0],$_->[1]);
+	} else {
+	  # add the attribute anyway (may have wrong qname!)
+	  $el->setAttribute($_->[0],$_->[1]);
+	}
       } else {
 	next if ($_->[0] eq "xmlns:$prefix" and $_->[1] eq $ns);
 	$el->setAttribute($_->[0],$_->[1]); # what about other namespaces?
@@ -2147,7 +2162,8 @@ sub create_nodes {
   if ($type eq 'attribute') {
     foreach (create_attributes($exp)) {
       my $at;
-      if  ($ns ne "" and $_->[0]=~/:/) {
+      if  ($_->[0]=~/^([^:]+):/ and $1 ne 'xmlns') {
+	die "Error: undefined namespace prefix `$1'\n"  if ($ns eq "");
 	$at=$doc->createAttributeNS($ns,$_->[0],$_->[1]);
       } else {
 	$at=$doc->createAttribute($_->[0],$_->[1]);
@@ -2161,9 +2177,10 @@ sub create_nodes {
       print STDERR "attributes=$2\n" if $DEBUG;
       my ($elt,$att)=($1,$2);
       my $el;
-      if ($ns ne "" and $elt=~/^([^>]+):(.*)$/) {
+      if ($elt=~/^([^:>]+):(.*)$/) {
 	print STDERR "NS: $ns\n" if $DEBUG;
 	print STDERR "Name: $elt\n" if $DEBUG;
+	die "Error: undefined namespace prefix `$1'\n"  if ($ns eq "");
 	$el=$doc->createElementNS($ns,$elt);
       } else {
 	$el=$doc->createElement($elt);
@@ -2172,8 +2189,9 @@ sub create_nodes {
 	$att=~s/\/?\>?$//;
 	foreach (create_attributes($att)) {
 	  print STDERR "atribute: ",$_->[0],"=",$_->[1],"\n" if $DEBUG;
-	  if ($ns ne "" and $elt=~/:/) {
+	  if ($elt=~/^([^:]+):/ and $1 ne 'xmlns') {
 	    print STDERR "NS: $ns\n" if $DEBUG;
+	    die "Error: undefined namespace prefix `$1'\n"  if ($ns eq "");
 	    $el->setAttributeNS($ns,$_->[0],$_->[1]);
 	  } else {
 	    $el->setAttribute($_->[0],$_->[1]);
