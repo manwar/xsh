@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_help.pl,v 1.4 2002-05-22 16:48:43 pajas Exp $
+# $Id: gen_help.pl,v 1.5 2002-08-30 17:14:46 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -28,7 +28,7 @@ my $ruledoc;
 my $title;
 my @aliases;
 my @seealso;
-my $usage;
+my @usage;
 my $desc;
 
 
@@ -58,9 +58,15 @@ foreach my $r ($rules->findnodes('./rule')) {
   ($title)=$ruledoc->findnodes('./title');
   print get_text($title),"\n\n" if ($title);
 
-  ($usage)=$ruledoc->findnodes('./usage');
-  if ($usage) {
-    print "usage:       ",get_text($usage),"\n\n";
+  @usage=$ruledoc->findnodes('./usage');
+  if (@usage) {
+    print "usage:       ";
+    foreach (@usage) {
+      my $usage=get_text($_);
+      $usage=~s/\s+/ /;
+      print $usage,"\n             ";
+    }
+    print "\n";
   }
   @aliases=grep {defined($_)} $r->findnodes('./aliases/alias');
   if (@aliases) {
@@ -69,8 +75,8 @@ foreach my $r ($rules->findnodes('./rule')) {
   }
   ($desc)=$ruledoc->findnodes('./description');
   if ($desc) {
-    print "description:";
-    print_description($desc," "," "x(13));
+    print "description:\n";
+    print_description($desc," "x(13)," "x(13));
   }
   @seealso=grep {defined($_)} $ruledoc->findnodes('./description/see-also/ruleref');
   if (@seealso) {
@@ -82,7 +88,7 @@ foreach my $r ($rules->findnodes('./rule')) {
   print "END\n\n";
 
   foreach (@aliases) {
-    print "\$HELP{'",get_name($_),"'}=\$HELP{$name};\n";
+    print "\$HELP{'",get_name($_),"'}=\$HELP{'$name'};\n";
   }
   print "\n";
 

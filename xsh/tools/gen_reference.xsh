@@ -8,13 +8,21 @@ validation 0;
 #quiet;
 
 def transform_section {
+  map { s/^[ \t]+//; s/\n[ \t]+/\n/g; } %section//code/text();
   map { $_='programlisting' } %section//code;
   foreach %section//xref {
     $linkend=string(@linkend);
-    if X:(id('$linkend')/@name) {
-      assign $content=X:string(id('$linkend')/@name)
-    } else {
-      assign $content="$linkend";
+    foreach X:(id("$linkend")) {
+      echo "FOUND: $linkend ---------";
+      if (name()='section') {
+	$content=string(title);
+      } else {
+	if (@name) {
+	  $content=string(@name);
+	} else {
+	  $content="$linkend";
+	}
+      }
     }
     add chunk "<ulink url='s_$linkend.html'>$content</ulink>" replace .;
   };
@@ -32,7 +40,7 @@ def transform_section {
     xmove ./node() after .;
   }
   for %section/@id {
-    saveas H "doc/s_${{string(.)}}.html";
+    save_HTML H "doc/s_${{string(.)}}.html";
     saveas S "doc/s_${{string(.)}}.xml";
   }
   close H;
@@ -99,7 +107,10 @@ foreach X:/recdescent-xml/doc/section {
     %section=S:section;
   }
   xcopy ./node() into %section;
-  add element "variablelist" into %section;
+  add chunk "<simplesect>
+               <title>Related Commands and Argument Types</title>
+               <variablelist/>
+             </simplesect>" into %section;
 
   %rules=X:(//rule[documentation[id(@sections)[@id='$id']]]);
   sort { $a=string(@name) } { $b=string(@name) } { $a cmp $b } %rules;
@@ -107,9 +118,9 @@ foreach X:/recdescent-xml/doc/section {
     add chunk "<varlistentry>
       <term><xref linkend='${{string(./@id)}}'/></term>
       <listitem></listitem>
-    </varlistentry>" into %section/variablelist;
+    </varlistentry>" into %section/simplesect[last()]/variablelist;
     copy ./documentation/shortdesc/node()
-      into %section/variablelist/varlistentry[last()]/listitem;
+      into %section/simplesect[last()]/variablelist/varlistentry[last()]/listitem;
   }
   call transform_section;
 }
@@ -183,11 +194,14 @@ foreach { qw(command type) } {
     #SECTIONS
     if (./documentation/@sections) {
       add chunk "<simplesect><title>Sections</title><para/></simplesect>" into %section;
-      foreach (id(./documentation/@sections)) {
-	add chunk "<link linkend='${{string(@id)}}'>${{string(title)}}</link>"
+      $s=string(./documentation/@sections);
+      foreach { split /\s+/, $s } {
+	add chunk "<xref linkend='$__'/>"
 	  into %section/simplesect[last()]/para;
-	if (following-sibling::ruleref) {
-	  add text ", " into %section/simplesect[last()]/para;
+      };
+      foreach %section/simplesect[last()]/para/xref {
+	if (following-sibling::xref) {
+	  add text ", " after .;
 	}
       }
     }
