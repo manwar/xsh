@@ -1,90 +1,14 @@
-# $Id: Completion.pm,v 1.1 2002-03-05 13:50:11 pajas Exp $
+# $Id: Completion.pm,v 1.2 2002-03-06 08:32:13 pajas Exp $
 
 package XML::XSH::Completion;
 
+use XML::XSH::CompletionList;
 use strict;
-use vars qw(@commands);
-
-@commands=qw(
-!
-add
-assign
-call
-cd
-clone
-close
-complete_attributes
-copy
-count
-cp
-create
-debug
-def
-define
-defs
-delete
-dtd
-echo
-enc
-encoding
-eval
-exec
-exit
-files
-foreach
-help
-chdir
-if
-include
-insert
-keep_blanks
-list
-load_ext_dtd
-ls
-move
-mv
-new
-nodebug
-on
-open
-parser_expands_entities
-parser_expands_xinclude
-pedantic_parser
-perl
-print
-process_xinclude
-process_xincludes
-query-encoding
-quiet
-remove
-run-mode
-save
-saveas
-sed
-select
-system
-test-mode
-transform
-unless
-valid
-validate
-validation
-variables
-verbose
-version
-while
-xadd
-xcopy
-xcp
-xinsert
-xmv
-xslt
-);
 
 sub cpl {
   my($word,$line,$pos) = @_;
   if ($line=~/^\s*\S*$/) {
-    return grep { index($_,$word)==0 } @commands;
+    return grep { index($_,$word)==0 } @XML::XSH::XSH_COMMANDS;
   } else {
     return readline::rl_filename_list(@_);
   }
