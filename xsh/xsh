@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.18 2003-03-12 13:53:47 pajas Exp $
+# $Id: xsh,v 1.19 2003-04-14 13:10:35 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -27,16 +27,16 @@ use XML::XSH qw(&xsh_set_output &xsh_get_output &xsh &xsh_init
 require Term::ReadLine if $opt_i;
 
 BEGIN {
-  getopts('atscqgvwdfhViTE:e:l:');
-  $VERSION='0.9';
-   $REVISION='$Revision: 1.18 $';
+  getopts('atscqvwdfhViTE:e:l:');
+  $VERSION='0.10';
+   $REVISION='$Revision: 1.19 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
 if ($opt_h) {
   print "Usage: $0 [options] [<commands>]\n";
   print "or $0 -h or $0 -V\n\n";
-  print "   -g   use XML::GDOME instead of XML::LibXML\n";
+#  print "   -g   use XML::GDOME instead of XML::LibXML\n";
   print "   -e   output encoding (default is the document encoding)\n";
   print "   -E   query encoding (default is the output encoding)\n\n";
   print "   -q   quiet\n\n";
@@ -78,11 +78,11 @@ $::RD_HINT   = 1; # Give out hints to help fix problems.
 $::RD_TRACE   = $opt_T; # Give out hints to help fix problems.
 
 my $module;
-if ($opt_g) {
-  $module="XML::XSH::GDOMECompat";
-} else {
-  $module="XML::XSH::LibXMLCompat"
-}
+#if ($opt_g) {
+#  $module="XML::XSH::GDOMECompat";
+#} else {
+  $module="XML::XSH::LibXMLCompat";
+#}
 xsh_init($module);
 
 set_quiet($opt_q);
