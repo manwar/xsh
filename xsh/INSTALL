@@ -1,6 +1,6 @@
 xsh - an XML Editing Shell
 --------------------------
-Copyright (c) 2002 Petr Pajas
+Copyright (c) 2002,2003,2004 Petr Pajas
 
 To install xsh, first install all required modules as described below.
 Then install xsh either 
@@ -13,10 +13,10 @@ From CPAN:
 $ perl -MCPAN -e shell
 cpan> install XML::XSH2
 
-From tar-ball
+From tar-ball:
 
-$ unzip xsh-1.??.tar.gz
-$ cd xsh-1.??
+$ unzip XML-XSH-XXXXX.tar.gz
+$ cd XML-XSH-XXXXX
 $ perl Makefile.PL  
 $ make
 $ make install
@@ -24,10 +24,19 @@ $ make install
 you may use `perl Makefile.PL PREFIX=<prefix>' to install to a
 directory tree different from /usr
 
+From CVS:
+$ cvs -d:pserver:anonymous@cvs.xsh.sourceforge.net -z3 co -P xsh
+$ cd xsh
+$ perl Makefile.PL
+$ make cvs
+$ perl Makefile.PL
+$ make
+$ make install
+
 or 
 
-manually:
---------
+manually (doesn't work for CVS checkouts):
+------------------------------------------
 
 1) copy xsh to some location in your PATH 
 2) copy lib/XSH subdirectory and its content into one of the following
@@ -53,28 +62,21 @@ o Perl version 5.6 (may work with earlier Perl5, but wasn't tested)
 o The following modules, available at CPAN http://www.cpan.org:
 
   Parse::RecDescent          (>=1.80)
-  Text::Iconv                (>=1.2)
-  XML::LibXML                (>=1.31)
-  XML::LibXSLT               (>=1.31)
+  XML::LibXML::Common        (>=0.13)
+  XML::LibXML                (>=1.57)
+  XML::LibXSLT               (>=1.53)
+  XML::LibXML::XPathContext  (>=0.06)
+  
   Term::ReadLine::Perl
 
 A bundle of all this modules and below mentioned libraries may be
-downloaded from author's homepage at: http://www.matfyz.cz/pajas
+downloaded from http://xsh.sourceforge.net/download.html
 
 Other Dependencies:
 -------------------
 
-Modules XML::LibXML and XML::LibXSLT require the following libraries
-available at http://www.xmlsoft.org:
+For the full list of dependences, see http://xsh.sourceforge.net/requirements.html
 
-  libxml2
-  libxslt 
-
-and also seem to depend on the following Perl modules (avalable at
-CPAN http://www.cpan.org):
-
-  XML::SAX::Base             (>=1.00)
-  XML::SAX                   (>=0.02)
 
 Installing modules from CPAN
 ----------------------------

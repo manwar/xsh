@@ -1,6 +1,5 @@
 Artistic
 BUGS
-ChangeLog
 Changes
 INSTALL
 lib/XML/XSH2.pm
@@ -44,3 +43,4 @@ tools/gen_reference.xsh
 tools/html.xsl
 xsh
 XSH2.pod
+META.yml                                 Module meta-data (added by MakeMaker)
