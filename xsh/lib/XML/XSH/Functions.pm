@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.68 2003-08-25 12:53:11 pajas Exp $
+# $Id: Functions.pm,v 1.69 2003-08-25 13:56:01 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -31,7 +31,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8';
-  $REVISION='$Revision: 1.68 $';
+  $REVISION='$Revision: 1.69 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -437,7 +437,7 @@ sub nodelist_vars {
 sub variables {
   no strict;
   foreach (keys %{"XML::XSH::Map::"}) {
-    out("\$$_='",${"XML::XSH::Map::$_"},"';\n") if defined(${"XML::XSH::Map::$_"});
+    out("\$$_='",fromUTF8($ENCODING,${"XML::XSH::Map::$_"}),"';\n") if defined(${"XML::XSH::Map::$_"});
   }
   return 1;
 }
@@ -446,13 +446,13 @@ sub variables {
 sub print_var {
   no strict;
   if ($_[0]=~/^\$?(.*)/) {
-    out("\$$1='",${"XML::XSH::Map::$1"},"';\n") if defined(${"XML::XSH::Map::$1"});
+    out("\$$1='",fromUTF8($ENCODING,${"XML::XSH::Map::$1"}),"';\n") if defined(${"XML::XSH::Map::$1"});
     return 1;
   }
   return 0;
 }
 
-sub echo { out((join " ",expand(@_)),"\n"); return 1; }
+sub echo { out(fromUTF8($ENCODING,join " ",expand(@_)),"\n"); return 1; }
 sub set_quiet { $QUIET=$_[0]; return 1; }
 sub set_debug { $DEBUG=$_[0]; return 1; }
 sub set_compile_only_mode { $TEST_MODE=$_[0]; return 1; }
@@ -1311,7 +1311,12 @@ sub save_doc {
 	$doc->toFH($F,$INDENT);
 	close $F;
       } elsif ($target eq 'string') {
-	out($doc->toString($INDENT));
+	if ($file =~ /^\$?([a-zA-Z_][a-zA-Z0-9_]*)$/) {
+	  no strict qw(refs);
+	  ${"XML::XSH::Map::$1"}=$doc->toString($INDENT);
+	} else {
+	  out($doc->toString($INDENT));
+	}
       }
     } elsif ($format eq 'html') {
       my $F;
