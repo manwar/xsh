@@ -2500,6 +2500,13 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</see-also>
       </documentation>
     </rule>
+    <rule id="store_or_append_nl">
+      <production>
+	<regexp>store|append</regexp>
+	<ruleref ref="nodelist_variable"/>
+	<action>[$item[1],$item[2]]</action>
+      </production>
+    </rule>
     <rule id="copy_command" type="command" name="copy" inline="yes">
       <aliases>
 	<alias name="cp"/>
@@ -2510,7 +2517,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<ruleref ref="loc"/>
 	<ruleref ref="xpath"/>
-	<action>[\&amp;XML::XSH::Functions::copy,@item[3,5,4]]</action>
+	<ruleref ref="sore_or_append_nl" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::copy,@item[3,5,4,6]]</action>
       </production>
       <documentation sections="Manipulation">
 	<usage>copy <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/></usage>

@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.74 2003-10-17 15:06:08 pajas Exp $
+# $Id: Functions.pm,v 1.75 2003-10-19 20:50:39 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -31,7 +31,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8.2';
-  $REVISION='$Revision: 1.74 $';
+  $REVISION='$Revision: 1.75 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -1839,8 +1839,7 @@ sub safe_insert {
 # insert given node to given destination performing
 # node-type conversion if necessary
 sub insert_node {
-  my ($node,$dest,$dest_doc,$where,$ns)=@_;
-
+  my ($node,$dest,$dest_doc,$where,$ns,$rl)=@_;
   if ($_xml_module->is_document($node)) {
     die "Error: Can't insert/copy/move document nodes!";
   }
@@ -1859,15 +1858,18 @@ sub insert_node {
 	$val=~s/^\s+|\s+$//g;
 	# xcopy will replace the value several times, which may not be intended
 	set_attr_ns($dest->ownerElement(),$dest->namespaceURI(),$dest->getName(),$val);
+	push @$rl,$dest->ownerElement()->getAttributeNodeNS($dest->namespaceURI(),$dest->getName()) if $rl;
 	return 'keep'; # as opposed to 'remove'
       } elsif ($where eq 'before' or $where eq 'prepend') {
 	$val=~s/^\s+//g;
 	set_attr_ns($dest->ownerElement(),$dest->namespaceURI(),$dest->getName(),
 		    $val.$dest->getValue());
+	push @$rl,$dest->ownerElement()->getAttributeNodeNS($dest->namespaceURI(),$dest->getName()) if $rl;
       } elsif ($where eq 'after' or $where eq 'append') {
 	$val=~s/\s+$//g;
 	set_attr_ns($dest->ownerElement(),$dest->namespaceURI(),$dest->getName(),
 		    $dest->getValue().$val);
+	push @$rl,$dest->ownerElement()->getAttributeNodeNS($dest->namespaceURI(),$dest->getName()) if $rl;
       }
 
     }
@@ -1884,6 +1886,7 @@ sub insert_node {
 	# --
 	my $elem=$dest->ownerElement();
 	set_attr_ns($elem,"$ns",$name,$value);
+	push @$rl,$elem->getAttributeNodeNS("$ns",$name) if $rl;
 	if ($where eq 'replace' and $name ne $dest->getName()) {
 	  return 'remove'; # remove the destination node in the end
 	} else {
@@ -1900,6 +1903,7 @@ sub insert_node {
 	} elsif ($where eq 'prepend') {
 	  set_attr_ns($dest->ownerElement(),"$ns",$dest->getName(),$value.$dest->getValue());
 	}
+	push @$rl,$dest->ownerElement()->getAttributeNodeNS("$ns",$dest->getName()) if $rl;
       }
     } else {
       _err("Warning: Ignoring incompatible nodes in insert/copy/move operation:\n",
@@ -1933,6 +1937,7 @@ sub insert_node {
 	     ref($node)," $where ",ref($dest),"!");
 	return 1;
       }
+      push @$rl,$copy if $rl;
       if ($destnode) {
 	return safe_insert($copy,$destnode,$newwhere);
       } else {
@@ -1946,8 +1951,10 @@ sub insert_node {
 	# rather than appendChild which does not work
 	# for Chunks!
 	$dest->insertAfter($copy,$dest->lastChild());
+	push @$rl,$copy if $rl;
       } elsif ($where =~ /^(?:before|prepend)/) {
 	$dest->insertBefore($copy,$dest->firstChild());
+	push @$rl,$copy if $rl;
       } elsif ($where eq 'replace') {
 	_err("Warning: Ignoring incompatible nodes in insert/copy/move operation:\n",
 	     ref($node)," $where ",ref($dest),"!");
@@ -1967,10 +1974,12 @@ sub insert_node {
       # --
       if ($where eq 'into' or $where eq 'append' or $where eq 'prepend') {
 	set_attr_ns($dest,"$ns",$node->getName(),$node->getValue());
+	push @$rl,$dest->getAttributeNodeNS("$ns",$node->getName()) if $rl;
       } elsif ($where eq 'replace') {
 	my $parent=$dest->parentNode();
 	if ($_xml_module->is_element($parent)) {
 	  set_attr_ns($dest,"$ns",$node->getName(),$node->getValue());
+	  push @$rl,$dest->getAttributeNodeNS("$ns",$node->getName()) if $rl;
 	} else {
 	  _err("Warning: Cannot replace ",ref($node)," with ",ref($parent),
                ": parent node is not an element!");
@@ -2000,15 +2009,18 @@ sub insert_node {
     else {
       my $copy=node_copy($node,$ns,$dest_doc,$dest);
       if ($where eq 'after' or $where eq 'before' or $where eq 'replace') {
+	push @$rl,$copy if $rl;
 	return safe_insert($copy,$dest,$where);
       } elsif ($where eq 'into' or $where eq 'append') {
 	$dest->appendChild($copy);
+	push @$rl,$copy if $rl;
       } elsif ($where eq 'prepend') {
 	if ($dest->hasChildNodes()) {
 	  $dest->insertBefore($copy,$dest->firstChild());
 	} else {
 	  $dest->appendChild($copy);
 	}
+	push @$rl,$copy if $rl;
       }
     }
   }
@@ -2030,14 +2042,17 @@ sub insert_node {
       my $value=$_xml_module->is_element($node) ?
 	$node->textContent() : $node->getData();
       $dest->setData($value);
+      push @$rl,$dest if $rl;
     } elsif ($where eq 'append') {
       my $value=$_xml_module->is_element($node) ?
 	$node->textContent() : $node->getData();
       $dest->setData($dest->getData().$value);
+      push @$rl,$dest if $rl;
     } elsif ($where eq 'prepend') {
       my $value=$_xml_module->is_element($node) ?
 	$node->textContent() : $node->getData();
       $dest->setData($value.$dest->getData());
+      push @$rl,$dest if $rl;
     }
     # replace + source: Attribute
     elsif ($where eq 'replace' and $_xml_module->is_attribute($node)) {
@@ -2050,6 +2065,7 @@ sub insert_node {
       # --
       if ($_xml_module->is_element($parent)) {
 	set_attr_ns($dest,"$ns",$node->getName(),$node->getValue());
+	push @$rl,$dest->getAttributeNodeNS("$ns",$node->getName()) if $rl;
       }
       return 'remove';
     } else {
@@ -2075,6 +2091,7 @@ sub insert_node {
 	$new=node_copy($node,$ns,$dest_doc,$dest);
       }
       if ($where =~ /^(?:after|before|replace)$/) {
+	push @$rl,$new if $rl;
 	return safe_insert($new,$dest,$where);
       }
     }
@@ -2087,9 +2104,11 @@ sub insert_node {
 # copy nodes matching one XPath expression to locations determined by
 # other XPath expression
 sub copy {
-  my ($fxp,$txp,$where,$all_to_all)=@_;
+  my ($fxp,$txp,$where,$all_to_all,$nodelist_var,$append_nodelist_var)=@_;
   my ($fid,$fq,$fdoc)=_xpath($fxp); # from xpath
   my ($tid,$tq,$tdoc)=_xpath($txp); # to xpath
+
+  my $rl;
 
   unless (ref($fdoc)) {
     die "No such document '$fid'!\n";
@@ -2097,6 +2116,13 @@ sub copy {
   unless (ref($tdoc)) {
     die "No such document '$tid'!\n";
   }
+  if ($nodelist_var ne "") {
+    unless (exists($_nodelist{$name}) or $append_nodelist_var) {
+      nodelist_assign($name,undef);
+    }
+    $rl = $_nodelist{$nodelist_var}->[1];
+  }
+
   my ($fl,$tl);
 
   $fl=find_nodes($fxp);
@@ -2111,7 +2137,8 @@ sub copy {
     foreach my $tp (@$tl) {
       my $replace=0;
       foreach my $fp (@$fl) {
-	$replace = ((insert_node($fp,$tp,$tdoc,$where) eq 'remove') || $replace);
+	$replace = ((insert_node($fp,$tp,$tdoc,$where,undef,$rl)
+		     eq 'remove') || $replace);
       }
       if ($replace) {
 	$some_nodes_removed=1;
@@ -2120,7 +2147,7 @@ sub copy {
     }
   } else {
     while (ref(my $fp=shift @$fl) and ref(my $tp=shift @$tl)) {
-      my $replace=insert_node($fp,$tp,$tdoc,$where);
+      my $replace=insert_node($fp,$tp,$tdoc,$where,undef,$rl);
       if ($replace eq 'remove') {
 	$some_nodes_removed=1;
 	remove_node($tp);
@@ -2277,14 +2304,23 @@ sub create_nodes {
 # create new nodes from an expression and insert them to locations
 # identified by XPath
 sub insert {
-  my ($type,$exp,$xpath,$where,$ns,$to_all)=@_;
+  my ($type,$exp,$xpath,$where,$ns,$to_all,$nodelist_var,$append_nodelist_var)=@_;
 
   $exp = expand($exp);
   $ns  = expand($ns);
 
   my ($tid,$tq,$tdoc)=_xpath($xpath); # destination(s)
 
-  return 0 unless ref($tdoc);
+  if ($nodelist_var ne "") {
+    unless (exists($_nodelist{$name}) or $append_nodelist_var) {
+      nodelist_assign($name,undef);
+    }
+    $rl = $_nodelist{$nodelist_var}->[1];
+  }
+
+  unless (ref($tdoc)) {
+    die "No such document '$tid'!\n";
+  }
 
   my @nodes;
   $ns=toUTF8($QUERY_ENCODING,$ns);
@@ -2304,7 +2340,7 @@ sub insert {
     foreach my $tp (@$tl) {
       my $replace=0;
       foreach my $node (@nodes) {
-	$replace = (insert_node($node,$tp,$tdoc,$where) eq 'remove') || $replace;
+	$replace = (insert_node($node,$tp,$tdoc,$where,undef,$rl) eq 'remove') || $replace;
       }
       if ($replace) {
 	$some_nodes_removed=1;
@@ -2314,7 +2350,7 @@ sub insert {
   } elsif ($tl->[0]) {
     foreach my $node (@nodes) {
       if (ref($tl->[0])) {
-	if (insert_node($node,$tl->[0],$tdoc,$where) eq 'remove') {
+	if (insert_node($node,$tl->[0],$tdoc,$where,undef,$rl) eq 'remove') {
 	  $some_nodes_removed=1;
 	  remove_node($tl->[0]);
 	}

@@ -10,6 +10,15 @@ TODO:
 * xsh-grammar: parse xslt parameters as XPATH instead of XSH expressions ??
 * check the XML::LibXML module for XPath-ruled tree additions
 
+
+- add new "wrap" command:
+wrap document /*            (wrap root element into <document>)
+wrap "foo bar='baz'" //para (wrap all <para> elements to <foo bar="baz">, 
+                             so that they become 
+                             <foo bar="baz"><para>...</para></foo>)
+
+
+
 - add different examples for using namespaces:
 
 	1) if the ttt prefix is aready declared in the context of ., you may
