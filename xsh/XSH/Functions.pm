@@ -9,7 +9,7 @@ use XSH::Help;
 use Exporter;
 use vars qw/@ISA @EXPORT_OK $VERSION $OUT $LAST_ID $LOCAL_ID $LOCAL_NODE
             $_xsh $_parser $_encoding $_qencoding
-            $_quiet $_debug $_test $_newdoc
+            $_quiet $_debug $_test $_newdoc $_indent
             %_doc %_files %_iconv %_defs/;
 
 BEGIN {
@@ -22,7 +22,7 @@ BEGIN {
 	       );
 
   $LAST_ID='';
-
+  $_indent=1;
   $_encoding='iso-8859-2';
   $_qencoding='iso-8859-2';
 
@@ -61,6 +61,7 @@ sub set_pedantic_parser { $_parser->pedantic_parser($_[0]); }
 sub set_load_ext_dtd { $_parser->load_ext_dtd($_[0]); }
 sub set_complete_attributes { $_parser->complete_attributes($_[0]); }
 sub set_expand_xinclude { $_parser->expand_xinclude($_[0]); }
+sub set_indent { $_indent=$_[0]; }
 
 sub xsh {
   return $_xsh->startrule($_[0]) if ref($_xsh);
@@ -199,6 +200,7 @@ sub xpath_assign {
 
 sub create_doc {
   my ($id,$root_element)=expand @_;
+  $id=_id($id);
   my $doc;
   $root_element="<$root_element/>" unless ($root_element=~/^\s*</);
   $root_element=mkconv($_encoding,'utf-8')->convert($root_element);
@@ -266,7 +268,7 @@ sub save_as {
 #  if ($enc=~/^utf-?8$/i) {
 #    eval {
 #      local $SIG{INT}=\&sigint;
-#      print F $doc->toString(1);
+#      print F $doc->toString($_indent);
 #    }; print STDERR "$@" if ($@);
 #    print STDERR "saved $id=$_files{$id} as $file in $enc encoding\n" unless "$_quiet";
 #  } else {
@@ -275,10 +277,10 @@ sub save_as {
       my $conv=mkconv($doc->getEncoding(),$enc);
       my $t;
       if ($conv) {
-	$t=$conv->convert($doc->toString(1));
+	$t=$conv->convert($doc->toString($_indent));
 	$t=~s/(\<\?xml(?:\s+[^<]*)\s+)encoding=(["'])[^'"]+/$1encoding=$2${enc}/;
       } else {
-	$t=$doc->toString(1);
+	$t=$doc->toString($_indent);
       }
       print F $t;
       close F;
@@ -416,7 +418,7 @@ sub perlmap {
 }
 
 sub insert_node {
-  my ($node,$dest,$dest_doc,$where)=@_;
+  my ($node,$dest,$dest_doc,$where,$ns)=@_;
   if ($node->nodeType == XML_TEXT_NODE           ||
       $node->nodeType == XML_CDATA_SECTION_NODE  ||
       $node->nodeType == XML_COMMENT_NODE        ||
@@ -425,21 +427,22 @@ sub insert_node {
       and $dest->nodeType == XML_ATTRIBUTE_NODE) {
     my $val=$node->getData();
     $val=~s/^\s+|\s+$//g;
-    $dest->getParentNode()->setAttribute($dest->getName(),$val);
+    $dest->getParentNode()->setAttributeNS("$ns",$dest->getName(),$val);
   } elsif ($node->nodeType == XML_ATTRIBUTE_NODE) {
     if ($dest->nodeType == XML_ATTRIBUTE_NODE) {
+      my ($name,$value);
       if ($where eq 'replace') {
-	$dest->getParentNode()->setAttribute($node->getName(),$node->getValue());
+	$dest->getParentNode()->setAttributeNS("$ns",$node->getName(),$node->getValue());
 	$dest->unbindNode();
       } elsif ($where eq 'after') {
-	$dest->getParentNode()->setAttribute($dest->getName(),$dest->getValue().$node->getValue());
+	$dest->getParentNode()->setAttributeNS("$ns",$dest->getName(),$dest->getValue().$node->getValue());
       } elsif ($where eq "as_child") {
-	$dest->getParentNode()->setAttribute($dest->getName(),$node->getValue());
+	$dest->getParentNode()->setAttributeNS("$ns",$dest->getName(),$node->getValue());
       } else { #before
-	$dest->getParentNode()->setAttribute($dest->getName(),$node->getValue().$dest->getValue());
+	$dest->getParentNode()->setAttributeNS("$ns",$dest->getName(),$node->getValue().$dest->getValue());
       }
     } elsif ($dest->nodeType == XML_ELEMENT_NODE) {
-      $dest->setAttribute($node->getName(),$node->getValue());
+      $dest->setAttributeNS("$ns",$node->getName(),$node->getValue());
     } elsif ($dest->nodeType == XML_TEXT_NODE          ||
 	     $dest->nodeType == XML_CDATA_SECTION_NODE ||
 	     $dest->nodeType == XML_COMMENT_NODE       ||
@@ -491,18 +494,20 @@ sub copy {
   }
   eval {
     local $SIG{INT}=\&sigint;
-
+    my $ns;
     if ($all_to_all) {
       my $to=($where eq 'replace' ? 'after' : $where);
       foreach my $tp (@tp) {
 	foreach my $fp (@fp) {
-	  insert_node($fp,$tp,$tdoc,$to);
+	  $ns=$fp->getNamespaceURI();
+	  insert_node($fp,$tp,$tdoc,$to,$ns);
 	}
 	$tp->unbindNode() if $where eq 'replace';
       }
     } else {
       while (ref(my $fp=shift @fp) and ref(my $tp=shift @tp)) {
-	insert_node($fp,$tp,$tdoc,$where);
+	$ns=$fp->getNamespaceURI();
+	insert_node($fp,$tp,$tdoc,$where,$ns);
       }
     }
   }; print STDERR "$@\n" if ($@);
@@ -533,23 +538,33 @@ sub create_attributes {
 }
 
 sub create_nodes {
-  my ($type,$exp,$doc)=@_;
+  my ($type,$exp,$doc,$ns)=@_;
   my @nodes=();
 #  return undef unless ($exp ne "" and ref($doc));
   if ($type eq 'attribute') {
     foreach (create_attributes($exp)) {
-      push @nodes,XML::LibXML::Attr->new($_->[0],$_->[1]);
+      push @nodes,
+       ($ns ne "") 
+	 ? $doc->createAttribute($_->[0],$_->[1])
+	 : $doc->createAttributeNS($ns,$_->[0],$_->[1]);
+
     }
   } elsif ($type eq 'element') {
     my ($name,$attributes);
     if ($exp=~/^\<?(\S+)(\s+.*)?(?:\/?\>?)?\s*$/) {
       print STDERR "element_name=$1\n" if $_debug;
       print STDERR "attributes=$2\n" if $_debug;
-      my $el=XML::LibXML::Element->new($1);
+      my $el= ($ns ne "") 
+	? $doc->createElement($1)
+	 : $doc->createElementNS($ns,$1);
       if ($2 ne "") {
 	foreach (create_attributes($2)) {
 	  print "atribute: ",$_->[0],"=",$_->[1],"\n";
-	  $el->setAttribute($_->[0],$_->[1]);
+	  if ($ns ne "") {
+	    $el->setAttributeNS($ns,$_->[0],$_->[1]);
+	  } else {
+	    $el->setAttribute($_->[0],$_->[1]);
+	  }
 	}
       }
       push @nodes,$el;
@@ -557,10 +572,10 @@ sub create_nodes {
       print STDERR "invalid element $exp\n" unless "$_quiet";
     }
   } elsif ($type eq 'text') {
-    push @nodes,XML::LibXML::Text->new($exp);
+    push @nodes,$doc->createTextNode($exp);
     print STDERR "text=$exp\n" if $_debug;
   } elsif ($type eq 'cdata') {
-    push @nodes,XML::LibXML::CDATASection->new($exp);
+    push @nodes,$doc->createCDATASection($exp);
     print STDERR "cdata=$exp\n" if $_debug;
   } elsif ($type eq 'pi') {
     my ($name,$data)=split /\s/,$exp,2;
@@ -570,15 +585,19 @@ sub create_nodes {
     push @nodes,$pi;
 #    print STDERR "cannot add PI yet\n" if $_debug;
   } elsif ($type eq 'comment') {
-    push @nodes,XML::LibXML::Comment->new($exp);
+    push @nodes,$doc->createComment($exp);
     print STDERR "comment=$exp\n" if $_debug;
   }
   return @nodes;
 }
 
 sub insert {
-  my ($type,$exp,$xpath,$where,$to_all)=@_;
-  $exp=expand($exp);
+  my ($type,$exp,$xpath,$where,$ns,$to_all)=@_;
+  $exp = expand($exp);
+  $ns  = expand($ns);
+
+  print STDERR "NAMESPACE: @_\n";
+
   my ($tid,$tq)=expand @{$xpath}; # to ID, to query
 
   ($tid,my $tdoc)=_id($tid);
@@ -587,7 +606,7 @@ sub insert {
   eval {
     my @nodes;
     unless ($type eq 'chunk') {
-      @nodes=grep {ref($_)} create_nodes($type,$exp,$tdoc);
+      @nodes=grep {ref($_)} create_nodes($type,$exp,$tdoc,$ns);
       return unless @nodes;
     }
     local $SIG{INT}=\&sigint;
@@ -606,7 +625,7 @@ sub insert {
 	  }
 	} else {
 	  foreach my $node (@nodes) {
-	    insert_node($node,$tp,$tdoc,$to);
+	    insert_node($node,$tp,$tdoc,$to,$ns);
 	  }
 	}
 	$tp->unbindNode() if $where eq 'replace';
@@ -620,7 +639,7 @@ sub insert {
 	}
       } else {
 	foreach my $node (@nodes) {
-	  insert_node($node,$tp[0],$tdoc,$where) if ref($tp[0]);
+	  insert_node($node,$tp[0],$tdoc,$where,$ns) if ref($tp[0]);
 	}
       }
     }
@@ -699,7 +718,8 @@ sub list_dtd {
     local $SIG{INT}=\&sigint;
     if ($dtd) {
     my $conv=mkconv($doc->getEncoding(),$_encoding);
-      print $OUT ($conv ? $conv->convert($dtd->toString()) : $dtd->toString()),"\n";
+      print $OUT ($conv ? $conv->convert($dtd->toString($_indent)) : 
+		  $dtd->toString($_indent)),"\n";
     }
   };
   print STDERR "$@\n" if ($@);
