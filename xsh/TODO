@@ -1,10 +1,10 @@
 * support DTD modification
 * better support for namespaces
-* allow entity reference insertion
++ allow entity reference insertion
 * allow parameters for user defined functions
 * split element
 * 'locate' - allow use also nearest id() 
-* external xinclude save support
++ external xinclude save support
 * untag/split element
 * comment-out node (?? uncomment ??)
 * fold/unfold command (fold/unfold elements for subsequent ls commands)
