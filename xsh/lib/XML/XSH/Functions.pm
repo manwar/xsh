@@ -1,9 +1,9 @@
-# $Id: Functions.pm,v 1.23 2002-08-30 17:13:23 pajas Exp $
+# $Id: Functions.pm,v 1.24 2002-09-02 15:46:28 pajas Exp $
 
 package XML::XSH::Functions;
 
 use strict;
-eval "no warnings";
+no warnings;
 
 use XML::XSH::Help;
 use IO::File;
@@ -20,7 +20,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $OUT $LOCAL_ID $LOCAL_NODE
 	  /;
 
 BEGIN {
-  $VERSION='1.4';
+  $VERSION='1.5';
 
   @ISA=qw(Exporter);
   @EXPORT_OK=qw(&xsh_init &xsh &xsh_get_output
@@ -199,7 +199,7 @@ sub files {
 sub variables {
   no strict;
   foreach (keys %{"XML::XSH::Map::"}) {
-    out("\$$_=",${"XML::XSH::Map::$_"},"\n") if defined(${"XML::XSH::Map::$_"});
+    out("\$$_='",${"XML::XSH::Map::$_"},"';\n") if defined(${"XML::XSH::Map::$_"});
   }
   return 1;
 }
@@ -208,7 +208,7 @@ sub variables {
 sub print_var {
   no strict;
   if ($_[0]=~/^\$?(.*)/) {
-    out("\$$1=",${"XML::XSH::Map::$1"},"\n") if defined(${"XML::XSH::Map::$1"});
+    out("\$$1='",${"XML::XSH::Map::$1"},"';\n") if defined(${"XML::XSH::Map::$1"});
     return 1;
   }
   return 0;
@@ -510,7 +510,7 @@ sub _find_nodes {
     return [] unless exists($_nodelist{$name});
     if ($query ne "") {
       if ($query =~m|^\s*\[(\d+)\](.*)$|) { # index on a node-list
-	return $_nodelist{$name}->[1]->[$1] ?
+	return $_nodelist{$name}->[1]->[$1+1] ?
 	  [ grep {defined($_)} $_nodelist{$name}->[1]->[$1]->findnodes('./self::*'.$2) ] : [];
       } elsif ($query =~m|^\s*\[|) { # filter in a nodelist
 	return [ grep {defined($_)} map { ($_->findnodes('./self::*'.$query)) }
@@ -933,9 +933,13 @@ sub to_string {
 
 # list nodes matching given XPath argument to a given depth
 sub list {
-  my ($xp,$depth,$folding)=@_;
+  my ($xp,$depth)=@_;
   my ($id,$query,$doc)=_xpath($xp);
-  $folding = 1;
+  my $folding;
+  if ($depth=~/^fold/) {
+    $folding = 1;
+    $depth=-1;
+  }
   return 0 unless ref($doc);
   print STDERR "listing $query from $id=$_files{$id}\n\n" if "$_debug";
   eval {
@@ -952,6 +956,37 @@ sub list {
   };
   return _check_err($@);
 }
+
+sub mark_fold {
+  my ($xp,$depth)=@_;
+  $depth=_expand($depth);
+  $depth=0 if $depth eq "";
+  eval {
+    local $SIG{INT}=\&sigint;
+    my $l=find_nodes($xp);
+    foreach my $node (@$l) {
+      if ($_xml_module->is_element($node)) {
+	$node->setAttributeNS($XML::XSH::xshNS,'xsh:fold',$depth);
+      }
+    }
+  };
+  return _check_err($@);
+}
+
+sub mark_unfold {
+  my ($xp)=@_;
+  eval {
+    local $SIG{INT}=\&sigint;
+    my $l=find_nodes($xp);
+    foreach my $node (@$l) {
+      if ($_xml_module->is_element($node) and $node->hasAttributeNS($XML::XSH::xshNS,'fold')) {
+	remove_node($node->getAttributeNodeNS($XML::XSH::xshNS,'fold'));
+      }
+    }
+  };
+  return _check_err($@);
+}
+
 
 # print canonical xpaths identifying nodes matching given XPath
 sub locate {
@@ -1911,7 +1946,13 @@ sub echo {
 
 # make this command available from perl expressions
 sub xsh {
-  &XML::XSH::Functions::xsh(@_);
+  &XML::XSH::Functions::xsh(join "",@_);
+}
+
+sub count {
+  my $xp=$_[0];
+  $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):)?((?:.|\n)*)$/;
+  return &XML::XSH::Functions::count([$1,$2]);
 }
 
 #######################################################################
