@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_help.pl,v 1.9 2002-11-04 13:12:37 pajas Exp $
+# $Id: gen_help.pl,v 1.10 2002-12-11 13:56:17 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -137,6 +137,15 @@ foreach my $sec ($dom->findnodes('/recdescent-xml/doc/section')) {
 
   print_description($sec," "x(2)," "x(2));
 
+  my @commands=$dom->findnodes("//rules/rule[\@type='command' and ".
+			       "documentation[contains(\@sections,'$name')]]");
+  if (@commands) {
+    print "\nRelated commands:\n";
+    print wrap("  ","  ",
+	       join ", ", sort map { get_name($_) }
+	       @commands),
+	       "\n\n";
+  }
   print "END\n\n";
 }
 
