@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 1.19 2003-08-13 13:39:21 pajas Exp $
+# $Id: Makefile.PL,v 1.20 2003-08-25 12:16:34 pajas Exp $
 
 use strict;
 
@@ -37,7 +37,7 @@ xml:
 	tools/gen_help.pl src/xsh_grammar.xml > lib/XML/XSH/Help.pm
 	tools/gen_pod.pl src/xsh_grammar.xml > XSH.pod
 	tools/gen_completions.pl src/xsh_grammar.xml > lib/XML/XSH/CompletionList.pm
-	cd lib/XML/XSH; perl -MGrammar -e XML::XSH::Grammar::compile
+	cd lib/XML/XSH; env LC_ALL=C LANG=C perl -MGrammar -e XML::XSH::Grammar::compile
 
 docs: all
 	pod2html --noindex --title "xsh - XML Editing Shell" < xsh > doc/xsh.html
