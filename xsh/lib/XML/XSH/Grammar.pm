@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Sun Nov  3 21:23:38 2002
+# Fri Dec  6 09:51:27 2002
 
 
 package XML::XSH::Grammar;
@@ -244,6 +244,9 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(unfold)\s/ xpath
 		{ [\&XML::XSH::Functions::mark_unfold,$item[2]] }
   	
+	  | /(normalize)\s/ <commit> xpath
+		{ [\&XML::XSH::Functions::normalize_nodes,$item[3]] }
+  	
 	  | call_command
 
   statement:
@@ -259,6 +262,9 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 	  | /(foreach|for)\s/ <commit> condition block
 		{ [\&XML::XSH::Functions::foreach_statement,$item[3],$item[4]] }
+  	
+	  | /(try)\s/ <commit> block 'catch' variable(?) block
+		{ [\&XML::XSH::Functions::try_catch,$item[3],$item[6],@{$item[5]}] }
   	
 
   complex_command:

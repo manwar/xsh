@@ -65,6 +65,7 @@ mv
 new
 nobackups
 nodebug
+normalize
 open
 options
 parser-completes-attributes
@@ -104,6 +105,7 @@ system
 test-mode
 test_mode
 transform
+try
 unfold
 unless
 valid

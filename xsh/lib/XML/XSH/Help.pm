@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Sun Nov  3 21:23:38 2002
+# Fri Dec  6 09:51:28 2002
 
 package XML::XSH::Help;
 use strict;
@@ -71,11 +71,11 @@ Help items:
     assign, backups, call, cd, clone, close, copy, count, create, debug,
     def, defs, dtd, enc, encoding, exec, exit, files, fold, foreach, help,
     if, include, indent, insert, keep-blanks, lcd, load-ext-dtd, local,
-    locate, ls, map, move, nobackups, nodebug, open, options,
+    locate, ls, map, move, nobackups, nodebug, normalize, open, options,
     parser-completes-attributes, parser-expands-entities,
     parser-expands-xinclude, pedantic-parser, perl, print,
     process-xinclude, pwd, query-encoding, quiet, recovering, remove,
-    run-mode, save, select, sort, switch-to-new-documents, test-mode,
+    run-mode, save, select, sort, switch-to-new-documents, test-mode, try,
     unfold, unless, valid, validate, validation, variables, verbose,
     version, while, xcopy, xinsert, xmove, xslt, xupdate
 
@@ -94,13 +94,14 @@ description:
 	     debug, def, defs, dtd, enc, encoding, exec, exit, files, fold,
 	     foreach, help, if, include, indent, insert, keep-blanks, lcd,
 	     load-ext-dtd, local, locate, ls, map, move, nobackups,
-	     nodebug, open, options, parser-completes-attributes,
-	     parser-expands-entities, parser-expands-xinclude,
-	     pedantic-parser, perl, print, process-xinclude, pwd,
-	     query-encoding, quiet, recovering, remove, run-mode, save,
-	     select, sort, switch-to-new-documents, test-mode, unfold,
-	     unless, valid, validate, validation, variables, verbose,
-	     version, while, xcopy, xinsert, xmove, xslt, xupdate
+	     nodebug, normalize, open, options,
+	     parser-completes-attributes, parser-expands-entities,
+	     parser-expands-xinclude, pedantic-parser, perl, print,
+	     process-xinclude, pwd, query-encoding, quiet, recovering,
+	     remove, run-mode, save, select, sort, switch-to-new-documents,
+	     test-mode, try, unfold, unless, valid, validate, validation,
+	     variables, verbose, version, while, xcopy, xinsert, xmove,
+	     xslt, xupdate
 
 END
 
@@ -236,6 +237,35 @@ Example:     Open a document and count all sections containing a subsection
              xsh v:/> open k = mydocument2.xml;
              xsh k:/> count //section[subsection]; # searches k
              xsh k:/> count v://section[subsection]; # searches v
+
+END
+
+
+$HELP{'try'}=[<<'END'];
+usage:       try <command-block> catch [$<id>] <command-block>
+             
+description:
+	     Execute <command-block> following the `try' keyword. If an
+	     error occures during the evaluation, execute the `catch'
+	     <command-block>. If the variable $<id> is specified and the
+	     `try' block fails, an error message of the error that caused
+	     the failure is stored to it before the `catch' block is
+	     executed.
+
+Example:     Handle parse errors
+
+             local $error;
+             try {
+               open XML doc=$input;
+             } catch {
+               try {
+                 echo "XML parser failed, trying HTML";
+                 open HTML doc=$input;
+               } catch $error {
+                 echo "Stopping due to errors: $error";
+                 exit 1;
+               }
+             }
 
 END
 
@@ -703,10 +733,10 @@ usage:       xcopy <xpath> <location> <xpath>
 aliases:     xcp
 
 description:
-	     xcopy is similar to copy, but copies *all* nodes matching the
-	     first <xpath> to *all* destinations determined by the
-	     <location> directive relative to the second <xpath>. See copy
-	     for detailed description of xcopy arguments.
+	     xcopy is similar to <copy>, but copies *all* nodes matching
+	     the first <xpath> to *all* destinations determined by the
+	     <location> directive relative to the second <xpath>. See
+	     <copy> for detailed description of `xcopy' arguments.
 
 Example:     Copy all middle-earth creatures within the document a into
 	     every world of the document b.
@@ -933,6 +963,20 @@ END
 
 $HELP{'dup'}=$HELP{'clone'};
 
+$HELP{'normalize'}=[<<'END'];
+usage:       normalize <xpath>
+             
+description:
+	     `normalize' puts all text nodes in the full depth of the
+	     sub-tree underneath each node selected by the given <xpath>,
+	     into a ""normal"" form where only structure (e.g., elements,
+	     comments, processing instructions, CDATA sections, and entity
+	     references) separates text nodes, i.e., there are neither
+	     adjacent Text nodes nor empty Text nodes.
+
+END
+
+
 $HELP{'ls'}=[<<'END'];
 usage:       ls <xpath> [<expression>]
              
@@ -1006,7 +1050,7 @@ usage:       eval <perl-code>
 aliases:     eval
 
 description:
-	     Evaluate the given perl expression and print the return value.
+	     Evaluate the given perl expression.
 
 END
 
@@ -1224,10 +1268,10 @@ description:
 	     sections back to their original files while replacing them
 	     with <xi:include> tags in the main XML file. Moreover, all
 	     material included within <include> elements from the
-	     `http://www.w3.org/2001/XInclude' namespace is saved to
-	     separate files too according to the `href' attribute, leaving
-	     only empty <include> element in the root file. This feature
-	     may be used to split the document to new XInclude fragments.
+	     http://www.w3.org/2001/XInclude namespace is saved to separate
+	     files too according to the `href' attribute, leaving only
+	     empty <include> element in the root file. This feature may be
+	     used to split the document to new XInclude fragments.
 
 	     The encoding keyword followed by a <enc-string> can be used to
 	     convert the document from its original encoding to a different

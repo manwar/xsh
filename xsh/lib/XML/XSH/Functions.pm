@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.39 2002-11-07 09:43:19 pajas Exp $
+# $Id: Functions.pm,v 1.40 2002-12-09 13:29:52 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -22,7 +22,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.6';
-  $REVISION='$Revision: 1.39 $';
+  $REVISION='$Revision: 1.40 $';
   @ISA=qw(Exporter);
   @EXPORT_OK=qw(&xsh_init &xsh &xsh_get_output
                 &xsh_set_output &xsh_set_parser
@@ -1836,7 +1836,12 @@ sub copy {
   my ($fid,$fq,$fdoc)=_xpath($fxp); # from xpath
   my ($tid,$tq,$tdoc)=_xpath($txp); # to xpath
 
-  return unless (ref($fdoc) and ref($tdoc));
+  unless (ref($fdoc)) {
+    die "No such document '$fid'!\n";
+  }
+  unless (ref($tdoc)) {
+    die "No such document '$tid'!\n";
+  }
   my ($fl,$tl);
 
   $fl=find_nodes($fxp);
@@ -2044,6 +2049,22 @@ sub insert {
   return 1;
 }
 
+# normalize nodes
+sub normalize_nodes {
+  my ($xp)=@_;
+  my ($id,$query,$doc)=_xpath($xp);
+
+  print STDERR "normalizing $query from $id=$_files{$id}\n\n" if "$_debug";
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+  my $ql=find_nodes($xp);
+  foreach (@$ql) {
+    $_->normalize();
+  }
+  return 1;
+}
+
 # fetch document's DTD
 sub get_dtd {
   my ($doc)=@_;
@@ -2224,11 +2245,12 @@ sub perl_eval {
   }
 }
 
-# evaluate a perl expression and print out the result
+# evaluate a perl expression
+# (OBSOLETE! and print out the result)
 sub print_eval {
   my ($expr)=@_;
   my $result=perl_eval($expr);
-  out("$result\n") unless "$_quiet";
+#  out("$result\n") unless "$_quiet";
   return 1;
 }
 
@@ -2347,6 +2369,24 @@ sub while_statement {
     }
   }
   return $result;
+}
+
+sub try_catch {
+  my ($try,$catch,$var)=@_;
+  eval {
+    local $TRAP_SIGPIPE=1;
+    local $SIG{INT}=\&sigint;
+    local $SIG{PIPE}=\&sigpipe;
+    run_commands($try);
+  };
+  if ($@) {
+    if ($@ =~ /^SIGINT/) {
+      die $@; # propagate sigint
+    } else {
+      _assign($var,$@);
+      run_commands($catch);
+    }
+  }
 }
 
 # call methods on every node matching an XPath

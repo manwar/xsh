@@ -745,6 +745,7 @@ sub new {
       <ruleref ref="open_command"/>
       <ruleref ref="fold_command"/>
       <ruleref ref="unfold_command"/>
+      <ruleref ref="normalize_command"/>
       <production>
 	<ruleref ref="call_command"/>
       </production>
@@ -767,6 +768,7 @@ sub new {
       <ruleref ref="unless"/>
       <ruleref ref="while"/>
       <ruleref ref="foreach"/>
+      <ruleref ref="try_catch"/>
     </rule>
 
     <rule id="complex_command">
@@ -1369,6 +1371,50 @@ sub new {
 	<directive type="uncommit"/>
 	<directive type="error">Parse error near keyword else: "}.substr(0,40,$text).qq{ ..."</directive>
       </production>
+    </rule>
+    <!-- try/catch -->
+    <rule id="try_catch" type="command" name="try" inline="yes">
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="block"/>
+	<string>catch</string>
+	<ruleref ref="variable" rep="?"/>
+	<ruleref ref="block"/>
+	<action>[\&amp;XML::XSH::Functions::try_catch,$item[3],$item[6],@{$item[5]}]</action>
+      </production>
+      <documentation sections="flow">
+	<usage>try <xref linkend="block"/> catch [$<xref linkend="ID"/>] <xref linkend="block"/></usage>
+	<shortdesc>try/catch statement</shortdesc>
+	<description>
+	  <para>
+	    Execute <xref linkend="block"/> following the
+	    <literal>try</literal> keyword.  If an error occures
+	    during the evaluation, execute the
+	    <literal>catch</literal> <xref linkend="block"/>.  If the
+	    variable $<xref linkend="ID"/> is specified and the
+	    <literal>try</literal> block fails, an error message of
+	    the error that caused the failure is stored to it before
+	    the <literal>catch</literal> block is executed.
+	  </para>
+	  <example>
+	    <title>Handle parse errors</title>
+	    <code>local $error;
+	      try {
+	      <tab/>open XML doc=$input;
+	      } catch {
+	      <tab/>try {
+	      <tab count="2"/>echo "XML parser failed, trying HTML";
+	      <tab count="2"/>open HTML doc=$input;
+	      <tab/>} catch $error {
+	      <tab count="2"/>echo "Stopping due to errors: $error";
+	      <tab count="2"/>exit 1;
+	      <tab/>}
+	      }
+	    </code>
+	  </example>
+	</description>
+      </documentation>
     </rule>
     <!-- if -->
     <rule id="if" type="command" name="if" inline="yes">
@@ -2616,6 +2662,29 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</see-also>
       </documentation>
     </rule>
+    <rule id="normalize_command" type="command" name="normalize" inline="yes">
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="xpath"/>
+	<action>[\&amp;XML::XSH::Functions::normalize_nodes,$item[3]]</action>
+      </production>
+      <documentation sections="manipulation">
+	<usage>normalize <xref linkend="xpath"/></usage>
+	<shortdesc>normalizes adjacent textnodes</shortdesc>
+	<description>
+	  <para><literal>normalize</literal> 
+	    puts all text nodes in the full depth of the sub-tree
+	      underneath each node selected by the given <xref
+	      linkend="xpath"/>,
+	    into a "normal" form where only structure (e.g., elements,
+	    comments, processing instructions, CDATA sections, and
+	    entity references) separates text nodes, i.e., there are
+	    neither adjacent Text nodes nor empty Text nodes.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
     <rule id="list_command" type="command" name="ls" inline="yes">
       <aliases>
 	<alias name="list"/>
@@ -2746,7 +2815,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<usage>eval <xref linkend="perl_code"/></usage>
 	<shortdesc>evaluate in-line Perl code</shortdesc>
 	<description>
-	  <para>Evaluate the given perl expression and print the return value.</para>
+	  <para>Evaluate the given perl expression.</para>
 	</description>
 	<see-also>
 	  <ruleref ref="count_command"/>
