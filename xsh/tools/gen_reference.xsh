@@ -163,7 +163,7 @@ foreach { qw(command type) } {
   }
   if ('$__'='type') $__='argtype';
   %rules=X:(//rule[@type='$__']);
-  sort documentation/title|@name|@id) { lc($a) cmp lc($b) } %rules;
+  sort (documentation/title|@name|@id) { lc($a) cmp lc($b) } %rules;
   foreach %rules {
     $ref=string(@id);
     new S "<section id='$ref'/>";
