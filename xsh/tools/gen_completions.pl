@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_completions.pl,v 1.1 2002-03-06 08:31:04 pajas Exp $
+# $Id: gen_completions.pl,v 1.2 2002-03-06 08:51:27 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -17,7 +17,7 @@ EOF
 }
 
 print <<'EOF';
-package XSH::CompletionList;
+package XML::XSH::CompletionList;
 
 use strict;
 use vars qw(@XSH_COMMANDS);
