@@ -24,12 +24,14 @@ Argument types:
 
 Available commands:
 
-  add, assign, call, cd, clone, close, copy, count, create, debug,
-  def, dtd, echo, enc, encoding, eval, exec, exit, files, foreach,
-  help, if, include, list, map, move, nodebug, open, print,
+  add, assign, call, cd, clone, close, complete_attributes, copy,
+  count, create, debug, def, dtd, echo, enc, encoding, eval, exec,
+  exit, files, foreach, help, if, include, keep_blanks, list,
+  load_ext_dtd, map, move, nodebug, open, parser_expands_entities,
+  parser_expands_xinclude, pedantic_parser, print, process_xinclude,
   query-encoding, quiet, remove, run-mode, save, saveas, test-mode,
-  unless, valid, validate, variables, verbose, while, xadd, xcopy,
-  xmove, xslt
+  unless, valid, validate, validation, variables, verbose, version,
+  while, xadd, xcopy, xmove, xslt
 
 Type help <command|type> to get more information on a given command or
 argument type.
@@ -162,10 +164,14 @@ H1
 
 node-type argument type
 
-description: one of: element, attribute, text, cdata, comment.
+description: One of: element, attribute, text, cdata, comment, chunk.
+             A chunk is a character string which forms a well-balanced
+             peace of XML.
 
 examples:  add element hobbit into //middle-earth/creatures;
            add attribute 'name="Bilbo"' into //middle-earth/creatures/hobbit[last()];
+           add chunk '<hobbit name="Frodo">A small guy from <place>Shire</place>.</hobbit>' \
+               into //middle-earth/creatures;
 
 H1
 'location' => <<'H1',
@@ -821,6 +827,96 @@ aliases:     print
 description: Prints the result of the expression expansion.
 
 example:     xsh> $dolly=Dolly; echo hallo $dolly
+
+H1
+'version' => <<'H1',
+
+usage:       version
+
+description: Prints program version as well as versions of
+             XSH::Functions, XML::LibXML, and XML::LibXSLT modules
+             used.
+
+H1
+'validation' => <<'H1',
+
+usage:       validation <expression>
+
+description: Turn on validation during the parse process if the
+             <expression> is non-zero or off otherwise.
+	     Defaults to on.
+
+H1
+'parser_expands_entities' => <<'H1',
+
+usage:       parser_expands_entities <expression>
+
+description: Turn on the entity expansion during the parse process if
+	     the <expression> is non-zero on or off otherwise.  If
+	     entity expansion is off, any external parsed entities in
+	     the document are left as entities. Defaults to on.
+
+H1
+'keep_blanks' => <<'H1',
+
+usage:	     keep_blanks <expression>
+
+description: Allows you to turn off XML::LibXML's default behaviour of
+             maintaining whitespace in the document. Non-zero
+             expression forces the XML parser to preserve all
+             whitespace.
+
+H1
+'pedantic_parser' => <<'H1',
+
+usage:       pedantic_parser <expression>
+
+description: If you wish, you can make XML::LibXML more pedantic by
+             passing a non-zero <expression> to this command.
+
+H1
+
+'load_ext_dtd' => <<'H1',
+
+usage:       load_ext_dtd <expression>
+
+description: If the expression is non-zero, XML parser loads external
+             DTD subsets while parsing. By default, this option is
+             enabled.
+
+H1
+
+'complete_attributes' => <<'H1',
+
+usage:       complete_attributes <expression>
+
+description: If the expression is non-zero, this command allows XML
+      	     parser to complete the elements attributes lists with the
+      	     ones defaulted from the DTDs.  By default, this option is
+      	     enabled.
+
+H1
+'parser_expands_xinclude' => <<'H1',
+
+usage:       parser_expands_xinclude <expression>
+
+description: If the <expression> is non-zero, the parser is allowed to
+             expand XIinclude tags imidiatly while parsing the
+             document.
+
+see also:    process_xinclude
+
+H1
+'process_xinclude' => <<'H1',
+
+usage:       process_xinclude <id>
+
+aliases:     process_xincludes, load_xincludes, load_xinclude,
+             xinclude, xincludes
+
+description: Process any xinclude tags in the document <id>.
+
+see also:    parser_expands_xinclude
 
 H1
 );
