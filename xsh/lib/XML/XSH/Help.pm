@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Wed Sep 10 15:49:51 2003
+# Wed Sep 10 16:27:47 2003
 
 package XML::XSH::Help;
 use strict;
@@ -706,7 +706,7 @@ description:
 	     Include a file named <filename> and execute all XSH commands
 	     therein.
 
-see also:     include
+see also:     ifinclude
 
 END
 
