@@ -52,21 +52,28 @@ def transform_section {
     add attribute url=${{string(@linkend)}} replace @linkend;
     map { $_="s_".$_.".html" } @url;
   }
+#  clone SS=S;
+#  xslt SS $db_stylesheet H params html.stylesheet="'$html_stylesheet'";
   xslt S $db_stylesheet H params html.stylesheet="'$html_stylesheet'";
-  clone H=H;
+#  close SS;
+#  clone H=H;
   xadd attribute target=_self into H://*[name()='a'];
   # move content of <a name="">..</a> out, so that it does not behave
   # as a link in browsers
   foreach H://*[name()='a' and not(@href)] {
     xmove ./node() after .;
   }
+  echo "saving";
   for %section/@id {
+    echo "saving doc/frames/s_${{string(.)}}.html";
     save_HTML H "doc/frames/s_${{string(.)}}.html";
+    echo "saving doc/frames/s_${{string(.)}}.xml";
     saveas S "doc/frames/s_${{string(.)}}.xml";
   }
   close H;
 }
 
+echo 'index';
 $toc_template="<html>
   <head>
     <title>Table of contents</title>
@@ -104,6 +111,7 @@ new I "<html>
 save_HTML I 'doc/frames/index.html';
 close I;
 
+echo 'sections';
 new S "<section id='intro'><title>Getting Started</title></section>";
 %section=S://section;
 xcopy X:/recdescent-xml/doc/description/node() into %section;
@@ -113,6 +121,7 @@ close S;
 # SYNTAX TOC
 new T $toc_template;
 for T:(/html/body/font/a[contains(@href,'syntax')]) {
+  echo 'sec';
   add chunk "<u><b/></u>" before .;
   move . into preceding-sibling::u/b;
 }
@@ -121,6 +130,7 @@ add chunk "<a href='s_intro.html' target='mainWindow'>Getting started</a><br/>"
 
 foreach X:/recdescent-xml/doc/section {
   $id=string(@id);
+  echo $id;
   add chunk "<a href='s_${id}.html' target='mainWindow'>${{string(title)}}</a><br/>"
     into T:/html/body/small;
   for (.) { # avoid selecting S:/
@@ -155,6 +165,7 @@ close T;
 
 # COMMANDS AND TYPES
 foreach { qw(command type) } {
+  echo $__;
   new T $toc_template;
 
   for T:(/html/body/font/a[contains(@href,'$__')]) {
@@ -166,6 +177,7 @@ foreach { qw(command type) } {
   sort (documentation/title|@name|@id) { lc($a) cmp lc($b) } %rules;
   foreach %rules {
     $ref=string(@id);
+    echo "rule: $ref";
     new S "<section id='$ref'/>";
     cd X:id('$ref');
     %section=S:section;
@@ -238,6 +250,7 @@ foreach { qw(command type) } {
     call transform_section;
     close S;
   }
+  echo "writing doc/frames/t_${__}.html";
   save_HTML T "doc/frames/t_${__}.html";
   close T;
 };
