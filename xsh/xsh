@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.16 2002-12-09 13:30:33 pajas Exp $
+# $Id: xsh,v 1.17 2003-01-22 14:54:39 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -21,15 +21,15 @@ use vars qw/$VERSION $REVISION/;
 use IO::Handle;
 
 use XML::XSH qw(&xsh_set_output &xsh_get_output &xsh &xsh_init
-		&xsh_pwd &xsh_local_id &set_opt_q &set_opt_d
-		&set_opt_c);
+		&xsh_pwd &xsh_local_id &set_quiet &set_debug
+		&set_compile_only_mode);
 
 require Term::ReadLine if $opt_i;
 
 BEGIN {
   getopts('atscqgvwdfhViTE:e:l:');
   $VERSION='0.9';
-   $REVISION='$Revision: 1.16 $';
+   $REVISION='$Revision: 1.17 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -82,9 +82,9 @@ if ($opt_g) {
 }
 xsh_init($module);
 
-set_opt_q($opt_q);
-set_opt_d($opt_d);
-set_opt_c($opt_c);
+set_quiet($opt_q);
+set_debug($opt_d);
+set_compile_only_mode($opt_c);
 
 $XML::XSH::Functions::SIGSEGV_SAFE=$opt_s;
 
