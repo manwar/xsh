@@ -8,6 +8,7 @@
 <xsl:param name="toc.section.depth" select="1"/>
 <xsl:param name="section.autolabel" select="0"/>
 <xsl:param name="generate.section.toc.level" select="1"/>
+<xsl:param name="base.dir" select="'chunks/'"/>
 
 <xsl:attribute-set name="body.attrs">
   <xsl:attribute name="bgcolor">white</xsl:attribute>
