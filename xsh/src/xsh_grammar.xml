@@ -70,7 +70,7 @@
       </para>
       <para>
 	Every opened document is associated with an identifier (<xref linkend="ID"/>), that is a symbolic name for the document in
-	  XSH and can be used for example as a prefix of <link linkend="xpath">XPath expressions</link>.
+	  XSH and can be used for example as a prefix of <xref linkend="xpath"/>.
       </para>
       <para>
 	In the current version, XSH is only able to save documents
@@ -747,6 +747,12 @@ sub new {
       <ruleref ref="unfold_command"/>
       <ruleref ref="normalize_command"/>
       <ruleref ref="strip_ws_command"/>
+      <ruleref ref="last_command"/>
+      <ruleref ref="next_command"/>
+      <ruleref ref="redo_command"/>
+      <ruleref ref="return_command"/>
+      <ruleref ref="throw_command"/>
+      <ruleref ref="catalog_command"/>
       <production>
 	<ruleref ref="call_command"/>
       </production>
@@ -887,8 +893,9 @@ sub new {
 	<action>
 	  local $_=$item[1];
 	  s/^\'|\'$//g;
-	  s{(\\)(.|\n)|([\$])}{ ($3 eq "\$") ? "\\\$" : (($2 eq "\\")
-	  ? "\\\\" : (($2 eq "'") ? "'" : ( ($2 eq "\$") ? "\\\\\\$2" : "\\\\$2"))) }eg;
+	  s{(\\)(.|\n)|(\$)}{ ($3 eq '$') ? "\\\$" : (($2 eq "\\")
+	  ? "\\\\" : (($2 eq "'") ? "'" : ( ($2 eq '$') ? "\\\\\\$2" :
+	  "\\\\$2"))) }eg;
 	  $_;
 	</action>
       </production>
@@ -1374,40 +1381,59 @@ sub new {
       </production>
     </rule>
     <!-- try/catch -->
+    <rule id="local_var">
+      <production>
+	<group rep="?">
+	  <production>
+	    <regexp>local\s</regexp>
+	  </production>
+	</group>
+	<ruleref ref="variable"/>
+	<action>[$item[2],@{$item[1]}]</action>
+      </production>
+    </rule>
     <rule id="try_catch" type="command" name="try" inline="yes">
       <production>
 	<selfref/>
 	<directive type="commit"/>
 	<ruleref ref="block"/>
 	<string>catch</string>
-	<ruleref ref="variable" rep="?"/>
+	<ruleref ref="local_var" rep="?"/>
 	<ruleref ref="block"/>
 	<action>[\&amp;XML::XSH::Functions::try_catch,$item[3],$item[6],@{$item[5]}]</action>
       </production>
       <documentation sections="flow">
-	<usage>try <xref linkend="block"/> catch [$<xref linkend="ID"/>] <xref linkend="block"/></usage>
+	<usage>try <xref linkend="block"/> catch [[local] $<xref linkend="ID"/>] <xref linkend="block"/></usage>
 	<shortdesc>try/catch statement</shortdesc>
 	<description>
 	  <para>
 	    Execute <xref linkend="block"/> following the
-	    <literal>try</literal> keyword.  If an error occures
-	    during the evaluation, execute the
-	    <literal>catch</literal> <xref linkend="block"/>.  If the
-	    variable $<xref linkend="ID"/> is specified and the
+	    <literal>try</literal> keyword.  If an error or exception
+	    occures during the evaluation, execute the
+	    <literal>catch</literal> <xref linkend="block"/>.  If a
+	    variable follows <literal>catch</literal> and the
 	    <literal>try</literal> block fails, an error message of
-	    the error that caused the failure is stored to it before
-	    the <literal>catch</literal> block is executed.
+	    the exception occured is stored to the variable before the
+	    <literal>catch</literal> block is executed.  Optionally,
+	    the variable name may be preceded with the keyword
+	    <literal>local</literal> in order to make the assignment
+	    local to the <literal>catch</literal> block (see <xref
+	    linkend="local_command"/>).
+	  </para>
+	  <para>
+	    The <xref linkend="throw_command"/> command and the equivalent
+	    perl construction <literal>perl { die "error message"
+	    }</literal> allow user to throw custom exceptions.
 	  </para>
 	  <example>
 	    <title>Handle parse errors</title>
-	    <code>local $error;
-	      try {
+	    <code>try {
 	      <tab/>open XML doc=$input;
 	      } catch {
 	      <tab/>try {
 	      <tab count="2"/>echo "XML parser failed, trying HTML";
 	      <tab count="2"/>open HTML doc=$input;
-	      <tab/>} catch $error {
+	      <tab/>} catch local $error {
 	      <tab count="2"/>echo "Stopping due to errors: $error";
 	      <tab count="2"/>exit 1;
 	      <tab/>}
@@ -1415,6 +1441,9 @@ sub new {
 	    </code>
 	  </example>
 	</description>
+	<see-also>
+	  <ruleref ref="throw_command"/>
+	</see-also>
       </documentation>
     </rule>
     <!-- if -->
@@ -1737,6 +1766,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</description>
 	<see-also>
 	  <ruleref ref="call_command"/>
+	  <ruleref ref="return_command"/>
 	  <ruleref ref="local_command"/>
 	</see-also>
       </documentation>
@@ -2047,6 +2077,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</description>
 	<see-also>
 	  <ruleref ref="def"/>
+	  <ruleref ref="return_command"/>
 	</see-also>
       </documentation>
     </rule>
@@ -3448,13 +3479,15 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
     <rule id="verbose" type="command" name="verbose" inline="yes">
       <production>
 	<selfref/>
-	<action>[\&amp;XML::XSH::Functions::set_opt_q,0]</action>
+	<action>[\&amp;XML::XSH::Functions::set_quiet,0]</action>
       </production>
       <documentation sections="configuration">
 	<usage>verbose</usage>
 	<shortdesc>make XSH print many messages</shortdesc>
 	<description>
 	  <para>Turn on verbose messages (default).</para>
+	  <para>This is equivalent to setting
+	    <literal>$QUIET</literal> variable to 0.</para>
 	</description>
 	<see-also>
 	  <ruleref ref="quiet"/>
@@ -3477,6 +3510,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    Switch into test mode in which no commands are actually
 	    executed and only command syntax is checked.
 	  </para>
+	  <para>This is equivalent to setting
+	    <literal>$TEST_MODE</literal> variable to 1.</para>
 	</description>
 	<see-also>
 	  <ruleref ref="run_mode"/>
@@ -3499,6 +3534,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    Switch into normal XSH mode in which all commands are
 	    executed.
 	  </para>
+	  <para>This is equivalent to setting
+	    <literal>$TEST_MODE</literal> variable to 0.</para>
 	</description>
 	<see-also>
 	  <ruleref ref="test_mode"/>
@@ -3508,13 +3545,15 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
     <rule id="debug" type="command" name="debug" inline="yes">
       <production>
 	<selfref/>
-	<action>[\&amp;XML::XSH::Functions::set_opt_d,1]</action>
+	<action>[\&amp;XML::XSH::Functions::set_debug,1]</action>
       </production>
       <documentation sections="configuration">
 	<usage>debug</usage>
 	<shortdesc>display many annoying debugging messages</shortdesc>
 	<description>
 	  <para>Turn on debugging messages.</para>
+	  <para>This is equivalent to setting
+	    <literal>$DEBUG</literal> variable to 1.</para>
 	</description>
 	<see-also>
 	  <ruleref ref="nodebug"/>
@@ -3524,13 +3563,15 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
     <rule id="nodebug" type="command" name="nodebug" inline="yes">
       <production>
 	<selfref/>
-	<action>[\&amp;XML::XSH::Functions::set_opt_d,0]</action>
+	<action>[\&amp;XML::XSH::Functions::set_debug,0]</action>
       </production>
       <documentation sections="configuration">
 	<usage>nodebug</usage>
 	<shortdesc>turn off debugging messages</shortdesc>
 	<description>
 	  <para>Turn off debugging messages.</para>
+	  <para>This is equivalent to setting
+	    <literal>$DEBUG</literal> variable to 0.</para>
 	</description>
 	<see-also>
 	  <ruleref ref="debug"/>
@@ -3570,6 +3611,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    <xref linkend="expression"/> is non-zero or off otherwise.
 	    In XSH version 1.6 and later, defaults to off.
 	  </para>
+	  <para>This command is equivalent to setting the
+	    <literal>$VALIDATION</literal> variable.</para>
 	</description>
       </documentation>
     </rule>
@@ -3596,6 +3639,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  documents that are almost well-formed. This for example
 	  includes documents without a close tag for the document
 	  element (or any other element inside the document).</para>
+	  <para>This command is equivalent to setting the
+	    <literal>$RECOVERING</literal> variable.</para>
 	</description>
       </documentation>
     </rule>
@@ -3619,6 +3664,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    expansion is off, any external parsed entities in the
 	    document are left as entities. Defaults to on.
 	  </para>
+	  <para>This command is equivalent to setting the
+	    <literal>$PARSER_EXPANDS_ENTITIES</literal> variable.</para>
 	</description>
       </documentation>
     </rule>
@@ -3641,6 +3688,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    maintaining whitespace in the document. Non-zero expression
 	    forces the XML parser to preserve all whitespace.
 	  </para>
+	  <para>This command is equivalent to setting the
+	    <literal>$KEEP_BLANKS</literal> variable.</para>
 	</description>
       </documentation>
     </rule>
@@ -3662,6 +3711,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    If you wish, you can make XML::LibXML more pedantic by passing
 	    a non-zero <xref linkend="expression"/> to this command.
 	  </para>
+	  <para>This command is equivalent to setting the
+	    <literal>$PEDANTIC_PARSER</literal> variable.</para>
 	</description>
       </documentation>
     </rule>
@@ -3686,6 +3737,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    to complete the elements attributes lists with the ones
 	    defaulted from the DTDs.  By default, this option is enabled.
 	  </para>
+	  <para>This command is equivalent to setting the
+	    <literal>$PARSER_COMPLETES_ATTRIBUTES</literal> variable.</para>
 	</description>
       </documentation>
     </rule>
@@ -3712,6 +3765,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    whitespace used for indentation can not be
 	    altered on runtime.
 	  </para>
+	  <para>This command is equivalent to setting the
+	    <literal>$INDENT</literal> variable.</para>
 	</description>
       </documentation>
     </rule>
@@ -3734,6 +3789,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    allowed to expand XIinclude tags imidiatly while parsing the
 	    document.
 	  </para>
+	  <para>This command is equivalent to setting the
+	    <literal>$PARSER_EXPANDS_XINCLUDE</literal> variable.</para>
 	</description>
 	<see-also>
 	  <ruleref ref="process_xinclude_command"/>
@@ -3758,6 +3815,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    If the expression is non-zero, XML parser loads external DTD
 	    subsets while parsing. By default, this option is enabled.
 	  </para>
+	  <para>This command is equivalent to setting the
+	    <literal>$LOAD_EXT_DTD</literal> variable.</para>
 	</description>
       </documentation>
     </rule>
@@ -3773,6 +3832,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<shortdesc>choose output charset</shortdesc>
 	<description>
 	  <para>Set the default output character encoding.</para>
+	  <para>This command is equivalent to setting the
+	    <literal>$ENCODING</literal> variable.</para>
 	</description>
       </documentation>
     </rule>
@@ -3791,19 +3852,23 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<shortdesc>declare the charset of XSH source files and terminal input</shortdesc>
 	<description>
 	  <para>Set the default query character encoding.</para>
+	  <para>This command is equivalent to setting the
+	    <literal>$QUERY_ENCODING</literal> variable.</para>
 	</description>
       </documentation>
     </rule>
     <rule id="quiet" type="command" name="quiet" inline="yes">
       <production>
 	<selfref/>
-	<action>[\&amp;XML::XSH::Functions::set_opt_q,1]</action>
+	<action>[\&amp;XML::XSH::Functions::set_quiet,1]</action>
       </production>
       <documentation sections="configuration">
 	<usage>quiet</usage>
 	<shortdesc>turn off many XSH messages</shortdesc>
 	<description>
 	  <para>Turn off verbose messages.</para>
+	  <para>This command is equivalent to setting the
+	    <literal>$QUIET</literal> variable.</para>
 	</description>
 	<see-also>
 	  <ruleref ref="verbose"/>
@@ -3832,6 +3897,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    linkend="create_command"/>.
 	    Default value for this option is 1. 
 	  </para>
+	  <para>This command is equivalent to setting the
+	    <literal>$SWITCH_TO_NEW_DOCUMENTS</literal> variable.</para>
 	</description>
       </documentation>
     </rule>
@@ -3845,6 +3912,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<shortdesc>turn on backup file creation</shortdesc>
 	<description>
 	  <para>Enable creating backup files on save (default).</para>
+	  <para>This command is equivalent to setting the
+	    <literal>$BACKUPS</literal> variable to 1.</para>
 	</description>
 	<see-also>
 	  <ruleref ref="nobackups"/>
@@ -3861,6 +3930,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<shortdesc>turn off backup file creation</shortdesc>
 	<description>
 	  <para>Disable creating backup files on save.</para>
+	  <para>This command is equivalent to setting the
+	    <literal>$BACKUPS</literal> variable to 0.</para>
 	</description>
 	<see-also>
 	  <ruleref ref="nobackups"/>
@@ -3934,6 +4005,194 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</see-also>
       </documentation>
     </rule>
+    <rule id="redo_command" type="command" name="redo" inline="yes">
+      <production>
+	<selfref sep="no"/>
+	<directive type="commit"/>
+	<ruleref ref="optional_expression" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::loop_redo,@{$item[3]}]</action>
+      </production>
+      <documentation sections="navigation">
+	<usage>redo [<xref linkend="expression"/>]</usage>
+	<shortdesc>restart the innermost enclosing loop block</shortdesc>
+	<description>
+	  <para>
+	    The redo command restarts a loop block without evaluating
+	    the conditional again. The optional <xref
+	    linkend="expression"/> argument may evaluate
+	    to a positive integer number that indicates which
+	    level of the nested loops should be restarted.
+	    If omitted, it defaults to 1, i.e. the innermost loop.
+	  </para>
+	  <para>
+	    Using this command outside a loop causes an immediate
+	    run-time error.
+	  </para>
+	  <example>
+	    <title>Restart a higher level loop from an inner one</title>
+	    <code>while ($i&lt;100) { 
+	      <tab/># ...
+	      <tab/>foreach //para {
+	      <tab/><tab/># some code
+	      <tab/><tab/>if $param { 
+	      <tab/><tab/><tab/>redo; # redo foreach loop
+	      <tab/><tab/>} else {
+	      <tab/><tab/><tab/>redo 2; # redo while loop
+	      <tab/><tab/>}
+	      <tab/>}
+	      }
+	    </code>
+	  </example>
+	</description>
+	<see-also>
+	  <ruleref ref="foreach"/>
+	  <ruleref ref="while"/>
+	  <ruleref ref="next_command"/>
+	  <ruleref ref="last_command"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="next_command" type="command" name="next" inline="yes">
+      <production>
+	<selfref sep="no"/>
+	<directive type="commit"/>
+	<ruleref ref="optional_expression" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::loop_next,,@{$item[3]}]</action>
+      </production>
+      <documentation sections="flow">
+	<usage>next [<xref linkend="expression"/>]</usage>
+	<shortdesc>start the next iteration of the innermost enclosing
+	loop</shortdesc>
+	<description>
+	  <para>
+	    The next command is like the continue statement in C; it starts the
+	    next iteration of an enclosing loop. The optional <xref
+	    linkend="expression"/> argument may evaluate
+	    to a positive integer number that indicates which
+	    level of the nested loops should be restarted.
+	    If omitted, it defaults to 1, i.e. the innermost loop.
+	  </para>
+	  <para>
+	    Using this command outside a loop causes an
+	    immediate run-time error.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="foreach"/>
+	  <ruleref ref="while"/>
+	  <ruleref ref="redo_command"/>
+	  <ruleref ref="last_command"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="last_command" type="command" name="last" inline="yes">
+      <production>
+	<selfref sep="no"/>
+	<directive type="commit"/>
+	<ruleref ref="optional_expression" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::loop_last,@{$item[3]}]</action>
+      </production>
+      <documentation sections="flow">
+	<usage>last [<xref linkend="expression"/>]</usage>
+	<shortdesc>immediately exit the innermost enclosing loop</shortdesc>
+	<description>
+	  <para>
+	    The last command is like the break statement in C (as used
+	    in loops); it immediately exits an enclosing loop.  The
+	    optional <xref linkend="expression"/> argument may
+	    evaluate to a positive integer number that indicates which
+	    level of the nested loops to quit.  If this argument is
+	    omitted, it defaults to 1, i.e. the innermost loop.
+	  </para>
+	  <para>
+	    Using this command outside a subroutine causes an
+	    immediate run-time error.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="foreach"/>
+	  <ruleref ref="while"/>
+	  <ruleref ref="next_command"/>
+	  <ruleref ref="last_command"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="return_command" type="command" name="return" inline="yes">
+      <production>
+	<selfref/>
+	<action>[\&amp;XML::XSH::Functions::call_return]</action>
+      </production>
+      <documentation sections="flow">
+	<usage>return</usage>
+	<shortdesc>return from a subroutine</shortdesc>
+	<description>
+	  <para>
+	    This command immediatelly stops the execution of a
+	    procedure it occurs in and returns the execution to the
+	    place of the script from which the subroutine was called.
+	  </para>
+	  <para>
+	    Using this command outside a subroutine causes an
+	    immediate run-time error.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="def"/>
+	  <ruleref ref="call_command"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="throw_command" type="command" name="throw" inline="yes">
+      <production>
+	<selfref/>
+	<ruleref ref="expression"/>
+	<action>[\&amp;XML::XSH::Functions::throw_exception,$item[2]]</action>
+      </production>
+      <documentation sections="flow">
+	<usage>throw <xref linkend="expression"/></usage>
+	<shortdesc>throw an exception</shortdesc>
+	<description>
+	  <para>
+	    This command throws and exception containing error message
+	    given by the obligatory <xref linkend="expression"/>
+	    argument. If the exception is not handled 
+	    by some surrounding <xref linkend="try_catch"/> block,
+	    the execution is stopped immediatelly and the error
+	    message is printed.
+	  </para>
+	  <para>
+	    Note: There is a special class of internal exceptions with
+	    error message starting with a word 'UNCATCHABLE'. Such
+	    exceptions are not trapped by <xref
+	    linkend="try_catch"/> constructions and should be avoided
+	    in ordinary XSH scripts.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="try_catch"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="catalog_command" type="command" name="catalog" inline="yes">
+      <production>
+	<selfref/>
+	<ruleref ref="expression"/>
+	<action>[\&amp;XML::XSH::Functions::load_catalog,$item[2]]</action>
+      </production>
+      <documentation sections="documents">
+	<usage>catalog <xref linkend="expression"/></usage>
+	<shortdesc>use a catalog file during all parsing processes</shortdesc>
+	<description>
+	  <para>
+	    Will use given catalog file as a catalog during all parsing
+	    processes. Using a catalog will significantly speed up
+	    parsing processes if many external ressources are loaded
+	    into the parsed documents (such as DTDs or XIncludes)
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+
   </rules>  
 </recdescent-xml>
 <!-- Keep this comment at the end of the file
