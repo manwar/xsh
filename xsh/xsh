@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.13 2002-11-01 17:36:36 pajas Exp $
+# $Id: xsh,v 1.14 2002-11-04 13:29:05 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -15,7 +15,7 @@ use strict;
 
 use Getopt::Std;
 use vars qw/$opt_q $opt_w $opt_i $opt_h $opt_V $opt_E $opt_e $opt_d $opt_c $opt_s
-            $opt_f $opt_g $opt_v $opt_T/;
+            $opt_f $opt_g $opt_v $opt_t $opt_T/;
 use vars qw/$VERSION $REVISION/;
 
 use IO::Handle;
@@ -27,9 +27,9 @@ use XML::XSH qw(&xsh_set_output &xsh_get_output &xsh &xsh_init
 require Term::ReadLine if $opt_i;
 
 BEGIN {
-  getopts('scqgvwdfhViTE:e:');
+  getopts('tscqgvwdfhViTE:e:');
   $VERSION='0.9';
-   $REVISION='$Revision: 1.13 $';
+   $REVISION='$Revision: 1.14 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -41,6 +41,8 @@ if ($opt_h) {
   print "   -E   query encoding (default is the output encoding)\n\n";
   print "   -q   quiet\n\n";
   print "   -i   interactive\n\n";
+  print "   -t   read commands from stdin\n",
+        "        (default is on unless there are commands on the command-line)\n\n";
   print "   -f   ignore ~/.xshrc\n\n";
   print "   -d   print debug messages\n\n";
   print "   -c   compile (parse) only and report errors\n\n";
@@ -189,8 +191,7 @@ if ($opt_i) {
     }
   }
 
-} elsif ($string eq "") {
-
+} elsif ($string eq "" or $opt_t) {
   xsh(join "",<STDIN>);
 }
 
