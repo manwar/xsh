@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.28 2003-08-08 14:02:47 pajas Exp $
+# $Id: xsh,v 1.29 2003-08-11 14:18:57 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -55,7 +55,7 @@ BEGIN {
 			) or $usage=1;
 #  getopts('atscqvwdfhVinTE:e:l:pP');
   $VERSION='0.12';
-   $REVISION='$Revision: 1.28 $';
+   $REVISION='$Revision: 1.29 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -92,7 +92,7 @@ if ($opt_p) {
 }
 
 unless ($opt_n || $opt_i) {
-  $opt_i=((-t STDIN) && !$string) ? 1 : 0;
+  $opt_i=((-t STDIN) && !$opt_l && !$string) ? 1 : 0;
 }
 
 require Term::ReadLine if $opt_i;
