@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.21 2003-05-30 15:14:39 pajas Exp $
+# $Id: xsh,v 1.22 2003-06-04 11:26:47 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -15,7 +15,7 @@ use strict;
 
 use Getopt::Std;
 use vars qw/$opt_q $opt_w $opt_i $opt_h $opt_V $opt_E $opt_e $opt_d $opt_c $opt_s
-            $opt_f $opt_g $opt_v $opt_t $opt_T $opt_a $opt_l/;
+            $opt_f $opt_g $opt_v $opt_t $opt_T $opt_a $opt_l $opt_n/;
 use vars qw/$VERSION $REVISION/;
 
 use IO::Handle;
@@ -24,12 +24,10 @@ use XML::XSH qw(&xsh_set_output &xsh_get_output &xsh &xsh_init
 		&xsh_pwd &xsh_local_id &set_quiet &set_debug
 		&set_compile_only_mode);
 
-require Term::ReadLine if $opt_i;
-
 BEGIN {
-  getopts('atscqvwdfhViTE:e:l:');
+  getopts('atscqvwdfhVinTE:e:l:');
   $VERSION='0.10';
-   $REVISION='$Revision: 1.21 $';
+   $REVISION='$Revision: 1.22 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -41,6 +39,7 @@ if ($opt_h) {
   print "   -E   query encoding (default is the output encoding)\n\n";
   print "   -q   quiet\n\n";
   print "   -i   interactive\n\n";
+  print "   -n   non-interactive\n\n";
   print "   -a   command-line contains arguments to be stored to XSH::Map::ARGV\n";
   print "        rather than XSH commands\n\n";
   print "   -l   file containing XSH commands to execute\n",
@@ -61,6 +60,12 @@ if ($opt_h) {
   print "   -h   help\n\n";
   exit 1;
 }
+
+unless ($opt_n || $opt_i || $^O eq 'MSWin32') {
+  $opt_i=(system("tty 2>/dev/null >/dev/null")==0);
+}
+
+require Term::ReadLine if $opt_i;
 
 if ($opt_V) {
   my $rev=$REVISION;
