@@ -755,6 +755,11 @@ sub new {
       <ruleref ref="return_command"/>
       <ruleref ref="throw_command"/>
       <ruleref ref="catalog_command"/>
+      <ruleref ref="registerns_command"/>
+      <ruleref ref="registerns_xhtml_command"/>
+      <ruleref ref="registerfunc_command"/>
+      <ruleref ref="stream_process_command"/>
+      <!-- ADD NEW COMMANDS HERE -->
       <production>
 	<ruleref ref="call_command"/>
       </production>
