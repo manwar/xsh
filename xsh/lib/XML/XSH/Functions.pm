@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.44 2003-01-22 15:02:11 pajas Exp $
+# $Id: Functions.pm,v 1.45 2003-03-12 14:00:24 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -6,6 +6,7 @@ use strict;
 no warnings;
 
 use XML::XSH::Help;
+use XML::XSH::Iterators;
 use IO::File;
 
 use Exporter;
@@ -25,7 +26,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.7';
-  $REVISION='$Revision: 1.44 $';
+  $REVISION='$Revision: 1.45 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -1405,43 +1406,26 @@ sub eval_substitution {
 
 # sort given nodelist according to the given xsh code and perl code
 sub perlsort {
-  my ($codea,$codeb,$perl,$var)=@_;
+  my ($crit,$perl,$var)=@_;
   $var=expand($var);
   return 1 unless (exists($_nodelist{$var}));
   return 1 unless ref(my $list=$_nodelist{$var});
   my $doc=$list->[0];
-#  store_variables(1,qw($a $b));
-#  _assign('$a',undef);
-#  _assign('$b',undef);
-#  eval {
-    @{$list->[1]} = sort {
-      my $old_local=$LOCAL_NODE;
-      my $old_id=$LOCAL_ID;
-      eval {
-	foreach ([$a,$codea],[$b,$codeb]) {
-	  $LOCAL_NODE=$_->[0];
-	  $LOCAL_ID=_find_id($_->[0]);
-	  run_commands($_->[1]);
-	}
-      };
-      do {
-	local $SIG{INT}=\&flagsigint;
-	$LOCAL_NODE=$old_local;
-	$LOCAL_ID=$old_id;
-	propagate_flagsigint();
-      };
-      die $@ if ($@); # propagate
+
+  my @list = map {
+      local $LOCAL_NODE=$_;
+      local $LOCAL_ID=_find_id($_);
+      [$_, (ref($crit) eq 'ARRAY') ? eval_xpath_literal($crit) : scalar(perl_eval($crit))]
+    } @{$list->[1]};
+
+  @{$list->[1]} = map { $_->[0] }
+    sort {
+      local $XML::XSH::Map::a = $a->[1];
+      local $XML::XSH::Map::b = $b->[1];
       my $result=eval "package XML::XSH::Map; no strict 'vars'; $perl";
       die $@ if ($@); # propagate
       $result;
-    } @{$list->[1]};
-#  };
-#  do {
-#    local $SIG{INT}=\&flagsigint;
-#    restore_variables();
-#    propagate_flagsigint();
-#  };
-#  die $@ if $@; # propagate
+    } @list;
 
   return 1;
 }
@@ -1477,7 +1461,33 @@ sub perlmap {
       $node->setData(eval_substitution("$val",$expr));
     }
   }
+  return 1;
+}
 
+sub perlrename {
+  my ($q, $expr)=@_;
+  my ($id,$query,$doc)=_xpath($q);
+
+  print STDERR "Executing $expr on $query in $id=$_files{$id}\n" if "$DEBUG";
+  unless ($doc) {
+    die "No such document $id\n";
+  }
+
+  my $sdoc=get_local_node($id);
+
+  my $ql=_find_nodes($sdoc, toUTF8($QUERY_ENCODING,$query));
+  foreach my $node (@$ql) {
+    if ($_xml_module->is_attribute($node) ||
+	$_xml_module->is_element($node) ||
+	$_xml_module->is_pi($node)) {
+      if ($node->can('setName')) {
+	my $val=$node->getName();
+	$node->setName(eval_substitution("$val",$expr));
+      } else {
+	_err "Node renaming not supported by ",ref($node);
+      }
+    }
+  }
   return 1;
 }
 
@@ -1562,9 +1572,8 @@ sub safe_insert {
     if ($_xml_module->is_element($source)) {
       if ($where eq 'after') {
 	if ($parent->getDocumentElement()) {
-	  _err("Error: cannot insert another element into /:\n",
+	  die("Error: cannot insert another element into /:\n",
 	       "  there's one document element already!");
-	  return 1;
 	} else {
 	  new_document_element($parent,$source,
 			       get_following_siblings($dest));
@@ -1572,9 +1581,8 @@ sub safe_insert {
 	return 'keep';
       } elsif ($where eq 'before') {
 	if ($parent->getDocumentElement()) {
-	  _err("Error: cannot insert another element into /:\n",
+	  die("Error: cannot insert another element into /:\n",
 	       "  there's one document element already!");
-	  return 1;
 	} else {
 	  new_document_element($parent,$source,
 			       $dest,get_following_siblings($dest));
@@ -1588,9 +1596,8 @@ sub safe_insert {
 	    new_document_element($parent,$source,
 				 $dest,get_following_siblings($dest));
 	  } else {
-	    _err("Error: cannot insert another element into /:\n",
+	    die("Error: cannot insert another element into /:\n",
 	         "  there's one document element already!");
-	    return 1;
 	  }
 	} else {
 	  new_document_element($parent,$source,
@@ -1616,8 +1623,7 @@ sub safe_insert {
 	return 'remove';
       }
     } else {
-      _err("Error: cannot insert node ",ref($source)," on a document level");
-      return 1;
+      die("Error: cannot insert node ",ref($source)," on a document level");
     }
   } else {
     if ($where eq 'after') {
@@ -1801,7 +1807,11 @@ sub insert_node {
       } elsif ($where eq 'into' or $where eq 'append') {
 	$dest->appendChild($copy);
       } elsif ($where eq 'prepend') {
-	$dest->insertBefore($copy,$dest->firstChild());
+	if ($dest->hasChildNodes()) {
+	  $dest->insertBefore($copy,$dest->firstChild());
+	} else {
+	  $dest->appendChild($copy);
+	}
       }
     }
   }
@@ -2214,7 +2224,7 @@ sub valid_doc {
   if ($doc->can('is_valid')) {
     out(($doc->is_valid() ? "yes\n" : "no\n"));
   } else {
-    _err("Vaidation not supported by ",ref($doc));
+    die("Vaidation not supported by ",ref($doc));
   }
 
   return 1;
@@ -2231,7 +2241,7 @@ sub validate_doc {
   if ($doc->can('validate')) {
     $doc->validate();
   } else {
-    _err("Vaidation not supported by ",ref($doc));
+    die("Vaidation not supported by ",ref($doc));
   }
 
   return 1;
@@ -2508,6 +2518,8 @@ sub while_statement {
 	  last;
 	} elsif ($@->label eq 'redo') {
 	  redo;
+	} else {
+	  die $@; # propagate
 	}
       } elsif ($@) {
 	die $@; # propagate
@@ -2529,6 +2541,8 @@ sub while_statement {
 	  last;
 	} elsif ($@->label eq 'redo') {
 	  redo;
+	} else {
+	  die $@; # propagate
 	}
       } elsif ($@) {
 	die $@; # propagate
@@ -2581,6 +2595,9 @@ sub try_catch {
 sub loop_next {
   die XML::XSH::Internal::LoopTerminatingException->new('next',expand(@_));
 }
+sub loop_prev {
+  die XML::XSH::Internal::LoopTerminatingException->new('prev',expand(@_));
+}
 sub loop_redo {
   die XML::XSH::Internal::LoopTerminatingException->new('redo',expand(@_));
 }
@@ -2617,6 +2634,8 @@ sub foreach_statement {
 	    last;
 	  } elsif ($@->label eq 'redo') {
 	    redo;
+	  } else {
+	    die $@; # propagate
 	  }
 	} elsif ($@) {
 	  die $@; # propagate
@@ -2646,6 +2665,8 @@ sub foreach_statement {
 	  last;
 	} elsif ($@->label eq 'redo') {
 	  redo;
+	} else {
+	  die $@; # propagate
 	}
       } elsif ($@) {
 	die $@; # propagate
@@ -2878,6 +2899,96 @@ sub load_catalog {
   return 1;
 }
 
+sub iterate {
+  my ($code,$axis,$nodefilter,$filter)=@_;
+
+  return unless get_local_node(_id());
+
+  $axis =~ s/::$//;
+  $axis=~s/-/_/g;
+
+  __debug("iteration axis: $axis\n");
+
+  $filter =~ s/^\[\s*((?:.|\n)*?)\s*\]$/$1/ if defined $filter;
+  my $test;
+  if ($nodefilter eq "comment()") {
+    $test = q{ $_xml_module->is_comment($_[0]) }
+  } if ($nodefilter eq "text()") {
+    $test = q{ $_xml_module->is_text_or_cdata($_[0]) }
+  } elsif ($nodefilter =~ /processing-instruction\((\s*['"]([^'"]+)['"]\s*)?\)$/) {
+    $test = q{ $_xml_module->is_pi($_[0]) };
+    $test .= qq{ && (\$_[0]->nodeName eq '$1') } if $1 ne "";
+  } elsif ($nodefilter eq 'node()') {
+    $test = '1 ';
+  } elsif ($nodefilter =~ /^(?:([^:]+):)?(.+)$/) {
+    $test = q{ $_xml_module->is_element($_[0]) };
+    $test .= qq{ && (\$_[0]->getLocalName() eq '$2') } unless ($2 eq '*');
+    if ($1 ne "") {
+      my $ns = get_local_node(_id())->lookupNamespaceURI($1);
+      die("Unrecognized namespace prefix '$1:'!") if ($ns eq "");
+      $test .= qq{ && (\$_[0]->namespaceURI() eq '$ns') };
+    }
+  }
+
+  die("Position index filter not supported for iteration ([$filter])") if $filter =~ /^\d+$/;
+  if ($filter ne '') {
+    $filter =~ s/\\/\\\\/g;
+    $filter =~ s/'/\\'/g;
+    $test .= qq{ && \$_xml_module->count_xpath(\$_[0],'$filter') };
+  }
+
+  my $filter_sub = eval "sub { $test }";
+  __debug( "Filter sub: $filter_sub\nsub { $test }\n" );
+  my $iterator;
+  do {
+    my $start=get_local_node(_id());
+    $iterator=XML::XSH::Iterators->create_iterator($start,$axis,$filter_sub);
+  };
+  return 1 unless defined $iterator;
+
+  my $old_local=$LOCAL_NODE;
+  my $old_id=$LOCAL_ID;
+
+  eval {
+  ITER: while ($iterator->current()) {
+      $LOCAL_NODE=$iterator->current();
+      eval {
+	run_commands($code);
+      };
+      if (ref($@) and $@->isa('XML::XSH::Internal::LoopTerminatingException')) {
+	if ($@->label =~ /^(?:next|last|redo|prev)$/ and $@->[1]>1) {
+	  $@->[1]--;
+	  die $@; # propagate to a higher level
+	}
+	if ($@->label eq 'next') {
+	  $iterator->next() || last;
+	  next;
+	} elsif ($@->label eq 'prev') {
+	  $iterator->prev() || die("No previous node to iterate to!");
+	  next;
+	} elsif ($@->label eq 'last') {
+	  last;
+	} elsif ($@->label eq 'redo') {
+	  redo;
+	} else {
+	  die $@; # propagate
+	}
+      } elsif ($@) {
+	die $@; # propagate
+      }
+      $iterator->next() || last;
+    }
+  };
+  do {
+    local $SIG{INT}=\&flagsigint;
+    $LOCAL_NODE=$old_local;
+    $LOCAL_ID=$old_id;
+    propagate_flagsigint();
+  };
+  die $@ if $@; # propagate
+  return 1;
+}
+
 # quit
 sub quit {
   if (ref($_on_exit)) {
@@ -2885,7 +2996,6 @@ sub quit {
   }
   exit(int($_[0]));
 }
-
 
 #######################################################################
 #######################################################################
@@ -2934,6 +3044,49 @@ sub literal {
   my $xp=$_[0];
   $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):(?!:))?((?:.|\n)*)$/;
   return &XML::XSH::Functions::eval_xpath_literal([$1,$2]);
+}
+
+sub type {
+  my ($xp)=@_;
+  $xp='.' if $xp eq "";
+  $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):(?!:))?((?:.|\n)*)$/;
+  my ($id,$query,$doc)=&XML::XSH::Functions::_xpath([$1,$2]);
+
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+  my $ql=&XML::XSH::Functions::find_nodes([$id,$query]);
+
+
+  my $xm=$XML::XSH::Functions::_xml_module;
+  my @result;
+  foreach (@$ql) {
+    if ($xm->is_element($_)) {
+      push @result, 'element';
+    } elsif ($xm->is_attribute($_)) {
+      push @result, 'attribute';
+    } elsif ($xm->is_text($_)) {
+      push @result, 'text';
+    } elsif ($xm->is_cdata_section($_)) {
+      push @result, 'cdata';
+    } elsif ($xm->is_pi($_)) {
+      push @result, 'pi';
+    } elsif ($xm->is_entity_reference($_)) {
+      push @result, 'entity_reference';
+    } elsif ($xm->is_document($_)) {
+      push @result, 'document';
+    } elsif ($xm->is_document_fragment($_)) {
+      push @result, 'chunk';
+    } elsif ($xm->is_comment($_)) {
+      push @result, 'comment';
+    } elsif ($xm->is_namespace($_)) {
+      push @result, 'namespace';
+    } else {
+      push @result, 'unknown';
+    }
+    return $result[0] unless (wantarray);
+  }
+  return @result;
 }
 
 #######################################################################
