@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.28 2002-10-22 16:56:56 pajas Exp $
+# $Id: Functions.pm,v 1.29 2002-10-23 09:15:55 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -1376,10 +1376,10 @@ sub get_subelements {
 sub get_following_siblings {
   my ($node)=@_;
   my @siblings;
-  $node=$node->followingSibling();
+  $node=$node->nextSibling();
   while ($node) {
     push @siblings,$node;
-    $node=$node->followingSibling();
+    $node=$node->nextSibling();
   }
   return @siblings;
 }
@@ -1404,13 +1404,11 @@ sub safe_insert {
   my ($source,$dest,$where) = @_;
   my $parent=$dest->parentNode();
   return unless $parent;
-#  __debug("using safe insert: $where\n");
   if ($_xml_module->is_document($parent)) {
-#    __debug("target: document\n");
-    # placing a node into a document
+
+    # placing a node on the document-level
     # SOURCE: Element
     if ($_xml_module->is_element($source)) {
-#      __debug("source: element\n");
       if ($where eq 'after') {
 	if ($parent->getDocumentElement()) {
 	  _err("Error: cannot insert another element into /:\n",
@@ -1450,7 +1448,6 @@ sub safe_insert {
     elsif ($_xml_module->is_pi($source) ||
 	   $_xml_module->is_comment($source) ||
 	   $_xml_module->is_document_fragment($source)) {
-#      __debug("source: not element\n");
       # placing a node into an element
       if ($where eq 'after') {
 	$parent->insertAfter($source,$dest);
@@ -1467,7 +1464,6 @@ sub safe_insert {
       _err("Error: cannot insert node ",ref($source)," on a document level");
     }
   } else {
-#    __debug("target: element\n");
     if ($where eq 'after') {
       $parent->insertAfter($source,$dest);
       return 'keep';
@@ -1485,6 +1481,10 @@ sub safe_insert {
 # node-type conversion if necessary
 sub insert_node {
   my ($node,$dest,$dest_doc,$where,$ns)=@_;
+
+  if ($_xml_module->is_document($node)) {
+    die "Error: Can't insert/copy/move document nodes!";
+  }
 
   # destination: Attribute
   if ($_xml_module->is_attribute($dest)) {
@@ -1543,8 +1543,57 @@ sub insert_node {
 	}
       }
     } else {
-      _err("Warning: Ignoring incompatible source ",ref($node),
-	    " and destination ",ref($dest),"!");
+      _err("Warning: Ignoring incompatible nodes in insert/copy/move operation:\n",
+            ref($node)," $where ",ref($dest),"!");
+      return 1;
+    }
+  }
+  # destination: Document
+  elsif ($_xml_module->is_document($dest)) {
+    # source: Attribute, Text, CDATA
+    if ($_xml_module->is_attribute($node) or
+	$_xml_module->is_text($node) or
+	$_xml_module->is_cdata_section($node)
+       ) {
+      _err("Warning: Ignoring incompatible nodes in insert/copy/move operation:\n",
+            ref($node)," $where ",ref($dest),"!");
+      return 1;
+    } elsif ($_xml_module->is_element($node)) {
+    # source: Element
+      my $copy=node_copy($node,$ns,$dest_doc,$dest);
+      my $destnode;
+      my $newwhere;
+      if ($where =~ /^(?:after|append|into)/) {
+	$newwhere='after';
+	$destnode=$dest->lastChild();
+      } elsif ($where =~ /^(?:before|prepend)/) {
+	$newwhere='before';
+	$destnode=$dest->firstChild();
+      } elsif ($where eq 'replace') {
+	_err("Warning: Ignoring incompatible nodes in insert/copy/move operation:\n",
+	     ref($node)," $where ",ref($dest),"!");
+	return 1;
+      }
+      if ($destnode) {
+	return safe_insert($copy,$destnode,$newwhere);
+      } else {
+	new_document_element($dest,$copy);
+	return 1;
+      }
+    } else {
+    # source: Chunk, PI, Comment
+      my $copy=node_copy($node,$ns,$dest_doc,$dest);
+      if ($where =~ /^(?:after|append|into)/) {
+	# rather than appendChild which does not work
+	# for Chunks!
+	$dest->insertAfter($copy,$dest->lastChild());
+      } elsif ($where =~ /^(?:before|prepend)/) {
+	$dest->insertBefore($copy,$dest->firstChild());
+      } elsif ($where eq 'replace') {
+	_err("Warning: Ignoring incompatible nodes in insert/copy/move operation:\n",
+	     ref($node)," $where ",ref($dest),"!");
+	return 1;
+      }
     }
   }
   # destination: Element
