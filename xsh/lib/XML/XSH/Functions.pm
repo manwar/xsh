@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.72 2003-09-10 14:34:33 pajas Exp $
+# $Id: Functions.pm,v 1.73 2003-09-10 15:54:09 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -31,7 +31,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8.2';
-  $REVISION='$Revision: 1.72 $';
+  $REVISION='$Revision: 1.73 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -192,6 +192,7 @@ sub set_complete_attributes  { $PARSER_COMPLETES_ATTRIBUTES=$_[0]; 1; }
 sub set_expand_xinclude	     { $PARSER_EXPANDS_XINCLUDE=$_[0]; 1; }
 sub set_indent		     { $INDENT=$_[0]; 1; }
 sub set_empty_tags           { $EMPTY_TAGS=$_[0]; 1; }
+sub set_skip_dtd             { $SKIP_DTD=$_[0]; 1; }
 sub set_backups		     { $BACKUPS=$_[0]; 1; }
 sub set_cdonopen	     { $SWITCH_TO_NEW_DOCUMENTS=$_[0]; 1; }
 sub set_xpath_completion     { $XPATH_COMPLETION=$_[0]; 1; }
@@ -211,6 +212,7 @@ sub get_complete_attributes  { $PARSER_COMPLETES_ATTRIBUTES }
 sub get_expand_xinclude	     { $PARSER_EXPANDS_XINCLUDE }
 sub get_indent		     { $INDENT }
 sub get_empty_tags           { $EMPTY_TAGS }
+sub get_skip_dtd             { $SKIP_DTD }
 sub get_backups		     { $BACKUPS }
 sub get_cdonopen	     { $SWITCH_TO_NEW_DOCUMENTS }
 sub get_xpath_completion     { $XPATH_COMPLETION }
@@ -279,6 +281,8 @@ sub list_flags {
   print "load_ext_dtd ".(get_load_ext_dtd() or "0").";\n";
   print "complete_attributes ".(get_complete_attributes() or "0").";\n";
   print "indent ".(get_indent() or "0").";\n";
+  print "empty_tags ".(get_empty_tags() or "0").";\n";
+  print "skip_dtd ".(get_skip_dtd() or "0").";\n";
   print ((get_backups() ? "backups" : "nobackups"),";\n");
   print (($QUIET ? "quiet" : "verbose"),";\n");
   print (($DEBUG ? "debug" : "nodebug"),";\n");
@@ -1404,7 +1408,8 @@ sub to_string {
 		'?>'."\n";
 	}
 	$result.=
-	  join("\n",map { to_string($_,$depth-1,$folding) } $node->childNodes);
+	  join("\n",map { to_string($_,$depth-1,$folding) }
+	       grep { $SKIP_DTD ? !$_xml_module->is_dtd($_) : 1 } $node->childNodes);
       } else {
 	$result=$_xml_module->toStringUTF8($node,$INDENT);
       }
