@@ -17,7 +17,7 @@ use vars qw/$VERSION $REVISION $ERR $OUT $LAST_ID $LOCAL_ID $LOCAL_NODE
 require Term::ReadLine if $opt_i;
 
 $VERSION='0.5';
-$REVISION='$Revision: 1.2 $';
+$REVISION='$Revision: 1.3 $';
 $ERR='';
 $LAST_ID='';
 $OUT=\*STDOUT;
@@ -162,14 +162,22 @@ sub count {
   my ($id,$query)=@{$_[0]};
   return if ($id eq "" or $query eq "");
   return unless ref($doc{$id});
-  my $count=0;
+  my $result=undef;
   eval {
     local $SIG{INT}=\&sigint;
     my $qconv=mkconv($qencoding,"utf-8");
-    my @l=get_local_element($id)->findnodes($qconv ? $qconv->convert($query) : $query);
-    $count=scalar(@l);
+    $result=get_local_element($id)->find($qconv ? $qconv->convert($query) : $query);
   }; print STDERR "$@\n" if ($@);
-  return $count;
+  if ($result) {
+    return $result->size() if ($result->isa('XML::LibXML::NodeList'));
+    return $result->value() if (
+				$result->isa('XML::LibXML::Number') or
+				$result->isa('XML::LibXML::Literal') or
+				$result->isa('XML::LibXML::Boolean')
+			       );
+  } else {
+    return undef;
+  }
 }
 
 sub prune {
@@ -793,7 +801,7 @@ my $xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_'
 
   list_command : /list\s|ls\s/ xpath    { [\&main::list,$item[2]]; }
 
-  count_command : /count\s/ xpath       { [\&main::print_count,$item[2]];}
+  count_command : /count\s|eval\s/ xpath       { [\&main::print_count,$item[2]];}
 
   prune_command : /rm\s|remove\s|prune\s|delete\s|del\s/ xpath  { [\&main::prune,$item[2]]; }
 
@@ -1052,7 +1060,9 @@ H1
 'while' => <<'H1',
 usage:       while <xpath> <command>
 
-description: Execute <command> as long as there is any node matching <xpath>
+description: Execute <command> as long as the given <xpath> expression
+             evaluates to a non-emtpty node-list, true boolean-value,
+             non-zero number or non-empty literal.
 
 example:     the result of 
              xsh> while /table/row del /table/row[1]
@@ -1066,14 +1076,18 @@ usage:       unless <xpath> <command>
 
 aliases:     "if !"
 
-description: Execute <command> only if no node matches <xpath>.
+description: Like if but negating the result of the <xpath> expression.
+
+see also:    if
 
 H1
 
 'if' => <<'H1',
 usage:       if <xpath> <command>
 
-description: Execute <command> if there is a match for <xpath>.
+description: Execute <command> if the given <xpath> expression
+             evaluates to a non-emtpty node-list, true boolean-value,
+             non-zero number or non-empty literal.
 
 H1
 
@@ -1125,7 +1139,17 @@ H1
 'count' => <<'H1',
 usage:       count <xpath>
 
-description: print number of nodes matching <xpath>
+aliases:     eval
+
+description: Calculate the given <xpath> expression. If the result
+             is a node-list, return number of nodes in the node-list.
+             If the <xpath> results in a boolean, numeric or literal value,
+             return the value.
+
+WARNING:     Evaluation of <xpath> is done by XML::LibXML library. If the
+             expression is not a valid XPath expression, the library may
+             (but also may not) cause segmentation fault which results in
+             loss of any unsaved xsh data.
 
 see also:    list
 
