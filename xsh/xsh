@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.17 2003-01-22 14:54:39 pajas Exp $
+# $Id: xsh,v 1.18 2003-03-12 13:53:47 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -29,7 +29,7 @@ require Term::ReadLine if $opt_i;
 BEGIN {
   getopts('atscqgvwdfhViTE:e:l:');
   $VERSION='0.9';
-   $REVISION='$Revision: 1.17 $';
+   $REVISION='$Revision: 1.18 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -51,7 +51,10 @@ if ($opt_h) {
   print "   -f   ignore ~/.xshrc\n\n";
   print "   -d   print debug messages\n\n";
   print "   -c   compile (parse) only and report errors\n\n";
-  print "   -v   start with validation 1 and load_ext_dtd 1\n\n";
+  print "   -v   start with validation, load_ext_dtd, parser_expands_entities,\n".
+        "        and parser_completes_attributes 1 (on)\n\n";
+  print "   -w   start with validation, load_ext_dtd, parser_expands_entities,\n".
+        "        and parser_completes_attributes 0 (off)\n\n";
   print "   -w   start with validation 0 and load_ext_dtd 0\n\n";
   print "   -V   print version\n\n";
   print "   -T   trace grammar\n\n";
@@ -95,9 +98,13 @@ XML::XSH::Functions::set_local_xpath(['scratch','/']);
 if ($opt_w) {
   XML::XSH::Functions::set_validation(0);
   XML::XSH::Functions::set_load_ext_dtd(0);
+  XML::XSH::Functions::set_expand_entities(0);
+  XML::XSH::Functions::set_complete_attributes(0);
 } elsif ($opt_v) {
   XML::XSH::Functions::set_validation(1);
   XML::XSH::Functions::set_load_ext_dtd(1);
+  XML::XSH::Functions::set_expand_entities(1);
+  XML::XSH::Functions::set_complete_attributes(1);
 }
 
 my $string;
@@ -164,6 +171,7 @@ if ($opt_i) {
 	 open HIST,"> $ENV{HOME}/.xsh_history" || die "cannot open $ENV{HOME}/.xsh_history";
 	 print HIST join("\n",$term->GetHistory()),"\n";
 	 close HIST;
+	 print STDERR "done\n";
        };
        if ($@) {
 	 print STDERR "Error occured while writing to ~/.xsh_history\n";
