@@ -138,7 +138,7 @@ foreach X:/recdescent-xml/doc/section {
                  <title>Related $t</title>
                  <variablelist/>
                </simplesect>" into %section;
-  sort { $a=string(@name|@id) } { $b=string(@name|@id) } { $a cmp $b } %rules;
+  sort (@name|@id) { $a cmp $b } %rules;
   foreach %rules {
     add chunk "<varlistentry>
       <term><xref linkend='${{string(./@id)}}'/></term>
@@ -163,10 +163,7 @@ foreach { qw(command type) } {
   }
   if ('$__'='type') $__='argtype';
   %rules=X:(//rule[@type='$__']);
-  sort
-    { $a=string(./documentation/title|@name|@id) }
-    { $b=string(./documentation/title|@name|@id) }
-    { lc($a) cmp lc($b) } %rules;
+  sort documentation/title|@name|@id) { lc($a) cmp lc($b) } %rules;
   foreach %rules {
     $ref=string(@id);
     new S "<section id='$ref'/>";

@@ -49,7 +49,7 @@ foreach d:/article/section[@id='intro']/section {
                </simplesect>" append .;
   local %varlist=./simplesect[last()]/variablelist;
   local $a $b;
-  sort { $a=string(@name|@id) } { $b=string(@name|@id) } { $a cmp $b } %rules;
+  sort (@name|@id) { $a cmp $b } %rules;
   foreach %rules {
     add chunk "<varlistentry>
       <term><xref linkend='${{string(./@id)}}'/></term>
