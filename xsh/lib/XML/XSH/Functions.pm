@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.63 2003-08-11 14:21:11 pajas Exp $
+# $Id: Functions.pm,v 1.64 2003-08-13 09:53:09 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -28,7 +28,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8';
-  $REVISION='$Revision: 1.63 $';
+  $REVISION='$Revision: 1.64 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -1048,7 +1048,7 @@ sub open_doc {
       $root_element="<$root_element/>" unless ($root_element=~/^\s*</);
       $root_element=toUTF8($QUERY_ENCODING,$root_element);
       $root_element=~s/^\s+//;
-      xsh_parse_string($root_element,$format);
+      $doc=xsh_parse_string($root_element,$format);
       set_doc($id,$doc,"new_document$_newdoc.xml");
       $_newdoc++;
     } else  {
@@ -1310,7 +1310,7 @@ sub save_doc {
     }
   }
 
-  print STDERR "Document $id saved.\n" unless ($@ or "$QUIET");
+  print STDERR "Document $id written.\n" unless ($@ or "$QUIET");
   return 1;
 }
 
@@ -1318,7 +1318,8 @@ sub save_doc {
 # create start tag for an element
 
 ###
-### Workaround of a bug in XML::LibXML (no getNamespaces, getName returns prefix only,
+### Workaround of a bug in XML::LibXML:
+### getNamespaces, getName returns prefix only,
 ### prefix returns prefix not xmlns, getAttributes contains also namespaces
 ### findnodes('namespace::*') returns (namespaces,undef)
 ###
@@ -3153,34 +3154,49 @@ sub stream_process_node {
 
 sub stream_process {
   my ($itype, $input, $otype, $output, $process)=@_;
+  ($input,$output)=expand($input,$output);
   require XML::Filter::DOMFilter::LibXML;
   require XML::LibXML::SAX;
   require XML::SAX::Writer;
 
   my $out;
+  my $termout;
   my $i=1;
   $i++ while (exists($_doc{"_stream_$i"}));
   if ($otype =~ /pipe/i) {
     open $out,"| $output";
     $out || die "Cannot open pipe to $output\n";
   } elsif ($otype =~ /string/i) {
-    $out = $OUT;
+    if ($output =~ /^\$?([a-zA-Z_][a-zA-Z0-9_]*)$/) {
+      no strict qw(refs);
+      $out=\${"XML::XSH::Map::$1"};
+    } elsif (ref($OUT)=~/Term::ReadLine/) {
+      $out = *$OUT;
+      $termout=1;
+    } else {
+      $out = $OUT;
+      $termout=1;
+    }
   } else {
     $out = $output;
   }
   my $parser=XML::LibXML::SAX
     ->new( Handler =>
 	   XML::Filter::DOMFilter::LibXML
-	   ->new(Handler => XML::SAX::Writer::XML->new( Output => $out,
-							Writer => 'XML::SAX::Writer::XMLEnc'
-						      ),
+	   ->new(Handler =>
+		 XML::SAX::Writer::XML
+		 ->new(
+		       Output => $out,
+		       Writer => 'XML::SAX::Writer::XMLEnc'
+		      ),
 		 XPathContext => $_xpc,
 		 Process => [
 			     map {
 			       $_->[0] => [\&stream_process_node,$_->[1],
 					   $input,"_stream_$i"] }
 			     @$process
-			    ])
+			    ]
+		)
 	 );
   if ($itype =~ /pipe/i) {
     open my $F,"$input|";
@@ -3188,13 +3204,15 @@ sub stream_process {
     $parser->parse_fh($F);
     close $F;
   } elsif ($itype =~ /string/i) {
-    xsh_parse_string($input);
+    $parser->parse_string($input);
   } else  { #file
     $parser->parse_uri($input);
   }
   if ($otype =~ /pipe/i) {
     close($out);
   }
+  if ($termout) { out("\n"); }
+  return 1;
 }
 
 sub iterate {
