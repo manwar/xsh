@@ -1,4 +1,4 @@
-# $Id: LibXMLCompat.pm,v 1.3 2002-08-26 14:40:25 pajas Exp $
+# $Id: LibXMLCompat.pm,v 1.4 2002-08-30 17:10:37 pajas Exp $
 
 package XML::XSH::LibXMLCompat;
 
@@ -19,7 +19,7 @@ sub toStringUTF8 {
   if ($class->is_document($node)) {
     return encodeToUTF8($node->getEncoding(),$node->toString($mode));
   } else {
-    return $node->toString($mode);
+    return $node->can('toString') ? $node->toString($mode) : $node->to_literal();
   }
 }
 
@@ -157,9 +157,19 @@ sub is_document {
   return $node->nodeType == XML_DOCUMENT_NODE();
 }
 
+sub is_document_fragment {
+  my ($class,$node)=@_;
+  return $node->nodeType == XML_DOCUMENT_FRAG_NODE();
+}
+
 sub is_comment {
   my ($class,$node)=@_;
   return $node->nodeType == XML_COMMENT_NODE;
+}
+
+sub is_namespace {
+  my ($class,$node)=@_;
+  return $node->nodeType == XML_NAMESPACE_DECL;
 }
 
 sub get_dtd {

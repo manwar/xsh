@@ -1,4 +1,4 @@
-# $Id: GDOMECompat.pm,v 1.3 2002-08-26 14:40:25 pajas Exp $
+# $Id: GDOMECompat.pm,v 1.4 2002-08-30 17:10:37 pajas Exp $
 
 package XML::XSH::GDOMECompat;
 
@@ -169,9 +169,19 @@ sub is_document {
   return $node->nodeType == DOCUMENT_NODE;
 }
 
+sub is_document {
+  my ($class,$node)=@_;
+  return $node->nodeType == DOCUMENT_FRAGMENT_NODE;
+}
+
 sub is_comment {
   my ($class,$node)=@_;
   return $node->nodeType == COMMENT_NODE;
+}
+
+sub is_namespace {
+  my ($class,$node)=@_;
+  return $node->nodeType == XPATH_NAMESPACE_NODE;
 }
 
 sub get_dtd {
