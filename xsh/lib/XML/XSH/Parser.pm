@@ -1427,7 +1427,7 @@ sub Parse::RecDescent::namespace000001::count_command
 	while (!$_matched && !$commit)
 	{
 		
-		Parse::RecDescent::_trace(q{Trying production: [/(count|print_value)\\s/ xpath]},
+		Parse::RecDescent::_trace(q{Trying production: [/(count|print_value|get)\\s/ xpath]},
 					  Parse::RecDescent::_tracefirst($_[1]),
 					  q{count_command})
 						if defined $::RD_TRACE;
@@ -1439,14 +1439,14 @@ sub Parse::RecDescent::namespace000001::count_command
 		my $repcount = 0;
 
 
-		Parse::RecDescent::_trace(q{Trying terminal: [/(count|print_value)\\s/]}, Parse::RecDescent::_tracefirst($text),
+		Parse::RecDescent::_trace(q{Trying terminal: [/(count|print_value|get)\\s/]}, Parse::RecDescent::_tracefirst($text),
 					  q{count_command})
 						if defined $::RD_TRACE;
 		$lastsep = "";
 		$expectation->is(q{})->at($text);
 		
 
-		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(count|print_value)\s)//)
+		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(count|print_value|get)\s)//)
 		{
 			
 			$expectation->failed();
@@ -1511,7 +1511,7 @@ sub Parse::RecDescent::namespace000001::count_command
 		
 
 
-		Parse::RecDescent::_trace(q{>>Matched production: [/(count|print_value)\\s/ xpath]<<},
+		Parse::RecDescent::_trace(q{>>Matched production: [/(count|print_value|get)\\s/ xpath]<<},
 					  Parse::RecDescent::_tracefirst($text),
 					  q{count_command})
 						if defined $::RD_TRACE;
@@ -27907,8 +27907,8 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                                 'line' => undef,
                                                                                 'items' => [
                                                                                              bless( {
-                                                                                                      'description' => '/(count|print_value)\\\\s/',
-                                                                                                      'pattern' => '(count|print_value)\\s',
+                                                                                                      'description' => '/(count|print_value|get)\\\\s/',
+                                                                                                      'pattern' => '(count|print_value|get)\\s',
                                                                                                       'mod' => '',
                                                                                                       'hashname' => '__PATTERN1__',
                                                                                                       'lookahead' => 0,

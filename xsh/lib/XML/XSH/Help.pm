@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Thu Mar 21 15:30:19 2002
+# Wed May 22 16:30:46 2002
 
 package XML::XSH::Help;
 use strict;
@@ -54,8 +54,7 @@ description: assign, call, cd, clone, close, complete_attributes, copy, count, c
 	     print_enc_command, process_xinclude, pwd, query-encoding,
 	     quiet, remove, run-mode, save, save_HTML, saveas, select,
 	     test-mode, unless, valid, validate, validation, variables,
-	     verbose, version, while, xcopy, xinsert, xmove_command, xslt,
-	     xupdate
+	     verbose, version, while, xcopy, xinsert, xmove, xslt, xupdate
 
 END
 
@@ -533,7 +532,7 @@ END
 
 $HELP{'mv'}=$HELP{move};
 
-$HELP{'xmove_command'}=[<<'END'];
+$HELP{'xmove'}=[<<'END'];
 usage:       xmove <xpath> <location> <xpath>
 
 aliases:     xmv
@@ -543,7 +542,7 @@ description: Like xcopy, except that xmove removes the source nodes after a succ
 
 END
 
-$HELP{'xmv'}=$HELP{xmove_command};
+$HELP{'xmv'}=$HELP{xmove};
 
 $HELP{'clone'}=[<<'END'];
 usage:       clone <id>=<id>
@@ -578,6 +577,8 @@ $HELP{'ls'}=$HELP{list};
 $HELP{'count'}=[<<'END'];
 usage:       count <xpath>
 
+aliases:     print_value get
+
 description: Calculate the given <xpath> expression. If the result is a node-list,
 	     return number of nodes in the node-list. If the <xpath>
 	     results in a boolean, numeric or literal value, return the
@@ -593,6 +594,8 @@ description: Calculate the given <xpath> expression. If the result is a node-lis
 
 END
 
+$HELP{'print_value'}=$HELP{count};
+$HELP{'get'}=$HELP{count};
 
 $HELP{'perl-code'}=[<<'END'];
 Perl-code argument type

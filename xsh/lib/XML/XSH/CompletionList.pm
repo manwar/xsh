@@ -35,6 +35,7 @@ exit
 files
 for
 foreach
+get
 help
 if
 include

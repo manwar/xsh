@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Tue May 21 17:05:01 2002
+# Wed May 22 16:30:46 2002
 
 
 package XML::XSH::Grammar;
@@ -498,7 +498,7 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 
   count_command:
-	    /(count|print_value)\s/ xpath
+	    /(count|print_value|get)\s/ xpath
 		{ [\&XML::XSH::Functions::print_count,$item[2]] }
   	
 
