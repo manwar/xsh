@@ -757,6 +757,7 @@ sub new {
       <ruleref ref="catalog_command"/>
       <ruleref ref="registerns_command"/>
       <ruleref ref="registerns_xhtml_command"/>
+      <ruleref ref="registerns_xsh_command"/>
       <ruleref ref="registerfunc_command"/>
       <ruleref ref="stream_process_command"/>
       <ruleref ref="namespaces_command"/>
@@ -1121,10 +1122,42 @@ sub new {
 	<shortdesc>XPath expression</shortdesc>
 	<description>
 	  <para>
-	    Any XPath expression as defined in W3C recommendation at
-	    <ulink url="http://www.w3.org/TR/xpath">http://www.w3.org/TR/xpath</ulink> optionally preceded with
-	    a document identifier followed by colon. If no identifier
-	    is used, the current document is used.
+	    XSH supports arbitrary XPath expression as defined in W3C
+	    recommendation at <ulink
+	    url="http://www.w3.org/TR/xpath">http://www.w3.org/TR/xpath</ulink>.
+	    In XSH, XPath expressoin may be optionally preceded with a
+	    document identifier followed by colon. If no document
+	    identifier is used, the current document is used.
+	  </para>
+	  <para>
+	    The following XPath extension functions are defined in
+	    the XSH namespace:
+	  </para>
+	  <para>
+	    <literal>xsh:doc(id-string)</literal> -
+	    returns a nodelist consisting of the document node
+	    associated in XSH with an identifier given in
+	    <literal>id-string</literal>.	    
+	  </para>
+	  <para>
+	    <literal>xsh:matches(match-string,regexp-string)</literal> -
+	    returns <literal>true</literal> if <literal>match-string</literal>
+	    matches the regular expression given in
+	    <literal>regexp-string</literal>.
+	    Otherwise returns <literal>false</literal>.
+	  </para>
+	  <para>
+	    <literal>xsh:grep(node-set, regexp-string)</literal> -
+	    returns a node set consisting of nodes of the
+	    given <literal>node-set</literal> whose content (as
+	    returned by the built-in XPath function <literal>string()</literal>
+	    matches the regular expression given in <literal>regexp-string</literal>.
+	  </para>
+	  <para>
+	    <literal>xsh:same(node-set, node-set)</literal> -
+	    returns <literal>true</literal> if the given node sets
+	    contain exactly one node each and these nodes are the same
+	    (equivallent to <literal>count(node-set|node-set)</literal>).
 	  </para>
 	  <example>
 	    <title>Open a document and count all sections containing a
@@ -4474,6 +4507,32 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</description>
       </documentation>
     </rule>
+    <rule id="registerns_xsh_command" type="command" 
+      name="register-xsh-namespace"
+      inline="yes">
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="expression"/>
+	<action>[\&amp;XML::XSH::Functions::register_ns,
+                 $item[3],$XML::XSH::xshNS]</action>
+      </production>
+      <documentation sections="Documents">
+	<usage>register-xsh-namespace <xref linkend="expression"/></usage>
+	<shortdesc>register XSH namespace prefix to use XPath expressions</shortdesc>
+	<description>
+	  <para>
+	    Registers a new prefix for the XSH namespace.  The prefix
+	    can later be used in XPath expressions.  Note, that XSH
+	    namespace is by default registered with
+	    <literal>xsh</literal> prefix. This command is thus, in
+	    general, useful only when some document uses
+	    <literal>xsh</literal> prefix for a different namespace.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+
     <rule id="registerfunc_command" type="command" 
       name="register-function"
       inline="yes">
