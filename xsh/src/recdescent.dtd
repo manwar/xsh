@@ -6,13 +6,23 @@
 
 <!--                    Paragraph Content                          -->
 <!--                    Content allowed inside paragraphs          -->
-<!ENTITY % paracont    "#PCDATA | xref | link | typeref"             >
+<!ENTITY % paracont    "#PCDATA | xref | ulink | link | typeref | emphasis">
 
 
 <!--                    RecDescent                                 -->
 <!--                    RecDescent grammar and documentation
                         definition                                 -->
-<!ELEMENT  recdescent-xml (description?, preamb?, postamb?, rules+)  >
+<!ELEMENT  recdescent-xml (doc?, preamb?, postamb?, rules+)  >
+
+<!--                    documentation                              -->
+<!--                    Global documentation is stored here        -->
+<!ELEMENT  doc          (title?, shortdesc?, description?, section*) >
+
+<!--                    Section                                    -->
+<!ELEMENT  section      (title, (para | code | example)*)            >
+<!--         id         section identifier                         -->
+<!ATTLIST  section
+             id         ID                                 #REQUIRED >
 
 <!--                    Preambule                                  -->
 <!--                    Code to be inserted before the grammar.    -->
@@ -33,7 +43,7 @@
                         optionally, documentation                  -->
 <!ELEMENT  rule        (aliases?, (production|ruleref)+, comment?, documentation?) >
 <!--         id         rule identificator
-             type       rule type (you may categorize your rules
+             type       rule type (you may categorize your rules)
              name       rule/command descriptive name             
              regexp     (optional) formal way to match the command
              inline     if yes, do not create recdescent top-level
@@ -109,7 +119,14 @@
 
 <!--                    Documentation                              -->
 <!--                    Rule documentation                         -->
-<!ELEMENT  documentation (title?, usage?, description?, see-also?)   >
+<!ELEMENT  documentation (title?, usage*, shortdesc?, 
+                          description?, see-also?)                   >
+
+<!--                    shortdesc                                  -->
+<!ELEMENT  shortdesc    (#PCDATA | xref | link | ulink | emphasis)*             >
+
+<!ATTLIST  documentation
+             sections   CDATA                              #IMPLIED  >
 
 
 
@@ -134,12 +151,22 @@
 <!--                    A comment                                  -->
 <!ELEMENT  comment      (#PCDATA)                                    >
 
+<!--                    emphasis                                   -->
+<!--                    Emphasized text                            -->
+<!ELEMENT  emphasis     (#PCDATA)                                    >
 
 <!--                    Xref                                       -->
 <!--                    Automatic cross-reference                  -->
 <!ELEMENT  xref         EMPTY                                        >
 <!ATTLIST  xref
              linkend    IDREF                              #REQUIRED >
+
+<!--                    URL Link                                   -->
+<!--                    External cross-reference                   -->
+<!ELEMENT  ulink        (#PCDATA)                                    >
+<!ATTLIST  ulink
+             url        CDATA                              #REQUIRED >
+
 
 <!--                    TypeRef                                    -->
 <!--                    Reference to all rules of a given type     -->
@@ -188,7 +215,10 @@
 
 <!--                    Code                                       -->
 <!--                    A block of formatted programming code      -->
-<!ELEMENT  code         (#PCDATA)                                    >
+<!ELEMENT  code         (#PCDATA | userinput)*                       >
+<!--                    userinput                                  -->
+<!ELEMENT  userinput    (#PCDATA)                                    >
+
 
 
 <!-- ============================================================= -->
