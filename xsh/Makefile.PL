@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 1.1 2002-03-05 13:54:11 pajas Exp $
+# $Id: Makefile.PL,v 1.2 2002-03-06 08:31:41 pajas Exp $
 
 use strict;
 
@@ -31,6 +31,7 @@ sub MY::postamble {
 recompile-xml:
 	tools/gen_grammar.pl src/xsh_grammar.xml > lib/XML/XSH/Grammar.pm
 	tools/gen_help.pl src/xsh_grammar.xml > lib/XML/XSH/Help.pm
+	tools/gen_completions.pl src/xsh_grammar.xml > lib/XML/XSH/CompletionList.pm
 	cd lib/XML/XSH; perl -MGrammar -e XML::XSH::Grammar::compile
 '
 }
