@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 1.13 2003-04-14 13:24:10 pajas Exp $
+# $Id: Makefile.PL,v 1.14 2003-08-06 08:54:34 pajas Exp $
 
 use strict;
 
@@ -14,8 +14,8 @@ WriteMakefile(
 		    'XML::LibXML' => 1.54,
 		    'XML::LibXML::Iterator' => 0,
 		    'Parse::RecDescent' => 1.79,
-		    'XML::XUpdate::LibXML' => 0.3.0,
-		    'XML::LibXML::XPathContext' => 0.02,
+		    'XML::XUpdate::LibXML' => "0.4.0",
+		    'XML::LibXML::XPathContext' => 0.04,
 		   },
      AUTHOR       => 'Petr Pajas (pajas@matfyz.cz)',
      ABSTRACT     => 'XML Editing Shell',

@@ -1,7 +1,7 @@
 TODO:
 
 * get rid of the XSH subdirectory in the CVS tree
-* alias 'help commands' for 'help commands'?
+* alias 'help commands' for 'help command'?
 * document the installation process for ActiveState perl
 * support DTD modification
 * 'locate' - allow use also nearest id() 
@@ -30,7 +30,7 @@ TODO:
 
 - rename the command files to documents, make files and docs aliases
 
-- check that cd reports error on trying to enter a non-existing node
++ check that cd reports error on trying to enter a non-existing node
 
 
 USER-LEVEL IMPLEMENTABLE
