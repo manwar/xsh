@@ -2931,10 +2931,10 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::strip_ws,$item[3]]</action>
       </production>
       <documentation sections="Manipulation">
-	<usage>strip <xref linkend="xpath"/></usage>
+	<usage>strip-whitespace <xref linkend="xpath"/></usage>
 	<shortdesc>strip leading and trailing whitespace</shortdesc>
 	<description>
-	  <para><literal>strip</literal> removes all leading and
+	  <para><literal>strip-whitespace</literal> removes all leading and
 	    trailing whitespace from given nodes. If applied to an
 	    element node, it removes all leading and trailing child
 	    text nodes and CDATA sections that consist entirely of
