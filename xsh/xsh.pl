@@ -25,7 +25,7 @@ use vars qw/$VERSION $REVISION $ERR $OUT $LAST_ID $LOCAL_ID $LOCAL_NODE
 require Term::ReadLine if $opt_i;
 
 $VERSION='0.6';
-$REVISION='$Revision: 1.9 $';
+$REVISION='$Revision: 1.10 $';
 $ERR='';
 $LAST_ID='';
 $OUT=\*STDOUT;
@@ -1073,7 +1073,8 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
                                          [\&main::valid_doc,$item[2]]; }
                 | /valid(\s|$)/        { [\&main::valid_doc,$main::LAST_ID] }
 
-  exit_command : /exit|quit/ expression { [\&main::quit,$item[2]]; }
+  exit_command : /exit\s|quit\s/ expression { [\&main::quit,$item[2]]; }
+               | /exit|quit/           { [\&main::quit,0]; }
 
   filename : expression
 
