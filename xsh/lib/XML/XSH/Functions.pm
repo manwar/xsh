@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.13 2002-04-19 17:40:43 pajas Exp $
+# $Id: Functions.pm,v 1.14 2002-04-19 17:41:25 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -8,6 +8,7 @@ no warnings;
 use XML::LibXML;
 use Text::Iconv;
 use XML::XSH::Help;
+use IO::File;
 
 use Exporter;
 use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $OUT $LOCAL_ID $LOCAL_NODE
