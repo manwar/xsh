@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Wed Jan 22 10:34:42 2003
+# Tue Mar 11 15:02:58 2003
 
 package XML::XSH::Help;
 use strict;
@@ -70,15 +70,15 @@ Help items:
 
     assign, backups, call, catalog, cd, clone, close, copy, count, create,
     debug, def, defs, dtd, enc, encoding, exec, exit, files, fold, foreach,
-    help, if, include, indent, insert, keep-blanks, last, lcd,
+    help, if, include, indent, insert, iterate, keep-blanks, last, lcd,
     load-ext-dtd, local, locate, ls, map, move, next, nobackups, nodebug,
     normalize, open, options, parser-completes-attributes,
     parser-expands-entities, parser-expands-xinclude, pedantic-parser,
-    perl, print, process-xinclude, pwd, query-encoding, quiet, recovering,
-    redo, remove, return, run-mode, save, select, sort, strip-whitespace,
-    switch-to-new-documents, test-mode, throw, try, unfold, unless, valid,
-    validate, validation, variables, verbose, version, while, xcopy,
-    xinsert, xmove, xslt, xupdate
+    perl, prev, print, process-xinclude, pwd, query-encoding, quiet,
+    recovering, redo, remove, rename, return, run-mode, save, select, sort,
+    strip-whitespace, switch-to-new-documents, test-mode, throw, try,
+    unfold, unless, valid, validate, validation, variables, verbose,
+    version, while, xcopy, xinsert, xmove, xslt, xupdate
 
   XSH Argument Types:
 
@@ -94,12 +94,12 @@ description:
 	     assign, backups, call, catalog, cd, clone, close, copy, count,
 	     create, debug, def, defs, dtd, enc, encoding, exec, exit,
 	     files, fold, foreach, help, if, include, indent, insert,
-	     keep-blanks, last, lcd, load-ext-dtd, local, locate, ls, map,
-	     move, next, nobackups, nodebug, normalize, open, options,
-	     parser-completes-attributes, parser-expands-entities,
-	     parser-expands-xinclude, pedantic-parser, perl, print,
+	     iterate, keep-blanks, last, lcd, load-ext-dtd, local, locate,
+	     ls, map, move, next, nobackups, nodebug, normalize, open,
+	     options, parser-completes-attributes, parser-expands-entities,
+	     parser-expands-xinclude, pedantic-parser, perl, prev, print,
 	     process-xinclude, pwd, query-encoding, quiet, recovering,
-	     redo, remove, return, run-mode, save, select, sort,
+	     redo, remove, rename, return, run-mode, save, select, sort,
 	     strip-whitespace, switch-to-new-documents, test-mode, throw,
 	     try, unfold, unless, valid, validate, validation, variables,
 	     verbose, version, while, xcopy, xinsert, xmove, xslt, xupdate
@@ -1047,7 +1047,7 @@ description:
 	     defined in XSH are visible in perl code as well. Since, in the
 	     interactive mode, XSH redirects output to the terminal, you
 	     cannot simply use perl print function for output if you want
-	     to filter the result with a shell command. Instead use
+	     to filter the result with a shell command. Instead use the
 	     predefined perl routine `echo(...)' which is equivalent to
 	     Perl's `print $::OUT ...'. The `$::OUT' perl-variable stores
 	     the reference to the terminal file handle.
@@ -1109,29 +1109,46 @@ END
 $HELP{'echo'}=$HELP{'print'};
 
 $HELP{'sort'}=[<<'END'];
-usage:       sort <command-block> <command-block> <perl-code> %<id>
+usage:       sort <xpath>|<perl-code> <perl-code> %<id>
              
 description:
 	     EXPERIMENTAL! This command is not yet guaranteed to remain in
 	     the future releases.
 
-	     This command may be used to sort the node-list stored in the
-	     node-list variable <id>. On each comparizon, first the two
-	     <command-block> are evaluated, each in a context of one of the
-	     nodes to compare. These <command-block> are supposed to
-	     prepair any variables needed for later order comparizon in the
-	     <perl-code>. It is the <perl-code> that is responsible for
-	     deciding which node comes first by returning either -1 (the
-	     first node should come first), 0 (no precedence - e.g. the
-	     nodes gave the same value for comparizon), or 1 (the second
-	     node should come first).
+	     DOCUMENTATION OBSOLETE! Syntax changed!
 
-Example:     Sort creatures by name
+	     !!!!TODO!!!! This command may be used to sort the node-list
+	     stored in the node-list variable <id>. First, for each node in
+	     the node-list, the first <xpath> or <perl-code> expression is
+	     evaluated in its context and the resulting value is remembered
+	     for the node. (In case of <xpath>, the result of whatever type
+	     is cast to a string). Now perl sorting algorithm is used to
+	     sort the nodelist, consulting the second argument <perl-code>
+	     to compare nodes. Before each comparison, the values obtained
+	     from the previous evaluation of the first argument expression
+	     on the two nodes being compared are stored into `$a' and `$b'
+	     variables in respective order. Now, the <perl-code> being
+	     consulted is supposed to be either -1 (the first node should
+	     come first), 0 (no order precedence), or 1 (the second node
+	     should come first). Note, that Perl provides very convenient
+	     operators `cmp' and `<=>' for string and numeric comparison of
+	     this kind as shown in the examples below.
 
-             xsh> local $a; local $b;
+	     Note that here, unlike in <assign>, <if>, or <while>, the
+	     evaluation of an <xpath> expression always results in a
+	     string. Thus you need not to bother with wrapping node-queries
+	     with a `string()' function.
+
+Example:     Sort creatures by name (XPath-based sort) in ascending order
+	     using current locale settings
+
              xsh> local %c=/middle-earth[1]/creatures
-             xsh> sort { $a=string(@name) }{ $b=string(@name) }{ $a cmp $b } %c
+             xsh> sort @name { use locale; lc($a) cmp lc($b) } %c
              xsh> xmove %c into /middle-earth[1]# replaces the creatures
+
+Example:     Sort (descending order) a node-list by score (Perl-based sort)
+
+             xsh> sort { $scores{ literal('@name') } } { $b <=> $a } %players
 
 END
 
@@ -1142,17 +1159,19 @@ usage:       map <perl-code> <xpath>
 aliases:     sed
 
 description:
-	     Each of the nodes matching <xpath> is processed with the
-	     <perl-code> in the following way: if the node is an element,
-	     its name is processed, if it is an attribute, its value is
-	     used, if it is a cdata section, text node, comment or
-	     processing instruction, its data is used. The expression
-	     should expect the data in the $_ variable and should use the
-	     same variable to store the modified data.
+	     This command provides an easy way to modify node's data
+	     (content) using arbitrary Perl code.
 
-Example:     Renames all hobbits to halflings
+	     Each of the nodes matching <xpath> is passes its data to the
+	     <perl-code> via the `$_' variable and receives the (possibly)
+	     modified data using the same variable.
 
-             xsh> map $_='halfling' //hobbit
+	     Since element nodes do not really have any proper content
+	     (they are only a storage for other nodes), node's name (tag)
+	     is used in case of elements. Note, however, that recent
+	     versions of XSH provide a special command <rename> with a very
+	     similar syntax to `map', that should be used for renaming
+	     element, attribute, and processing instruction nodes.
 
 Example:     Capitalises all hobbit names
 
@@ -1160,11 +1179,34 @@ Example:     Capitalises all hobbit names
 
 Example:     Changes goblins to orcs in all hobbit tales.
 
-             xsh> on s/goblin/orc/gi //hobbit/tale/text()
+             xsh> map { s/goblin/orc/gi } //hobbit/tale/text()
 
 END
 
 $HELP{'sed'}=$HELP{'map'};
+
+$HELP{'rename'}=[<<'END'];
+usage:       rename <perl-code> <xpath>
+             
+description:
+	     This command is very similar to the <map> command, except that
+	     it operates on nodes' names rather than their data/values. For
+	     every element, attribute or processing-instruction matched by
+	     the <xpath> expression the following procedure is used: 1) the
+	     name of the node is stored into Perl's `$_' variable, 2) the
+	     <perl-code> is evaluated, and 3) the (posibly changed) content
+	     of the `$_' variable is used as a new name for the node.
+
+Example:     Renames all hobbits to halflings
+
+             xsh> map $_='halfling' //hobbit
+
+Example:     Make all elements and attributes uppercase
+
+             xsh> map { $_=uc($_) } (//*|//@*)
+
+END
+
 
 $HELP{'close'}=[<<'END'];
 usage:       close <id>
@@ -1833,6 +1875,19 @@ description:
 END
 
 
+$HELP{'prev'}=[<<'END'];
+usage:       prev [<expression>]
+             
+description:
+	     This command is only allowed inside an `iterate' loop. It
+	     returns the iteration one step back, to the previous node on
+	     the iterated axis. The optional <expression> argument may be
+	     used to indicate to which level of nested loops the command
+	     applies to.
+
+END
+
+
 $HELP{'last'}=[<<'END'];
 usage:       last [<expression>]
              
@@ -1890,6 +1945,72 @@ description:
 	     processes. Using a catalog will significantly speed up parsing
 	     processes if many external ressources are loaded into the
 	     parsed documents (such as DTDs or XIncludes)
+
+END
+
+
+$HELP{'iterate'}=[<<'END'];
+usage:       iterate <xpath> <command-block>
+             
+description:
+	     Iterate works very much like the XPath variant of <foreach>,
+	     except that `iterate' evaluates the <command-block> as soon as
+	     a new node matching given <xpath> is found. As a limitation,
+	     the <xpath> expresion used with `iterate' may only consist of
+	     one XPath step, i.e. it cannot contain an XPath step separator
+	     `/'.
+
+	     What are the benefits of `iterate' over a `foreach' loop,
+	     then? Well, under some circumstances it is efficiency, under
+	     other there are none. To clarify this, we have to go a bit
+	     deaper into the details of XPath implementation. By
+	     definition, the node-list resulting from evaluation of an
+	     XPath has to be ordered in the canonical document order. That
+	     means that an XPath implementation must contain some kind of
+	     sorting algorighm. This would not itself be much trouble if a
+	     relative document order of two nodes of a DOM tree could be
+	     determined in constant time. Unfortunately, the libxml2
+	     library, used behind XSH, does not implement mechanisms that
+	     would allow this complexity restriction. (This is, however,
+	     quite reasonable approach if all the consequences are
+	     conserned.) Thus, when comparing two nodes, libxml2 traverses
+	     the tree to find their nearest common ancestor and at that
+	     point determines the relative order of the two subtrees by
+	     trying to seek one of them in a list of right siblings of the
+	     other. This of course cannot be handled in a constant time. As
+	     a result, the sorting algorithm, which would otherwise be
+	     itself quite fast becomes very inefficient when applied on a
+	     huge node-list (in a huge DOM tree).
+
+	     The `iterate' command provides a way to avoid sorting the
+	     resulting nodelist by limiting allowed XPath expression to one
+	     step (and thus one axis) at a time. On the other hand, since
+	     `iterate' is implemented in Perl, a proxy object glueing the C
+	     and Perl layers has to be created for every node the iterator
+	     passes by. This makes it about two to three times slower
+	     compared to a similar tree-traversing algorithm used by
+	     libxml2 itself during XPath evaluation.
+
+	     Our experience shows, that `iterate' beats `foreach' in
+	     performance on large node-lists (>=1500 nodes, but your milage
+	     may vary) while foreach wins on small node-lists.
+
+	     The following two examples give equivallent results. However,
+	     the one using iterate may be faster esp. if the number of
+	     nodes being counted is very large.
+
+Example:     Count inhabitants of the kingdom of Rohan in productive age
+
+             cd rohan/inhabitants;
+             iterate child::*[@age>=18 and @age<60] { perl $productive++ };
+             echo "$productive inhabitants in productive age";
+
+Example:     Using XPath
+
+             $productive=count(rohan/inhabitants/*[@age>=18 and @age<60]);
+             echo "$productive inhabitants in productive age";
+
+	     To benchmark a XSH command on a UNIX system, follow the
 
 END
 
@@ -2099,8 +2220,8 @@ Flow control
 
 
 Related commands:
-  call, def, exit, foreach, if, include, last, next, return, run-mode,
-  test-mode, throw, try, unless, while
+  call, def, exit, foreach, if, include, iterate, last, next, prev, return,
+  run-mode, test-mode, throw, try, unless, while
 
 END
 
@@ -2428,7 +2549,7 @@ Example: The same on Windows 2000/XP systems
 
 
 Related commands:
-  exec, lcd, map, perl
+  exec, lcd, map, perl, rename
 
 END
 
