@@ -10,7 +10,6 @@ TODO:
 
 * check the XML::LibXML module for XPath-ruled tree additions
 * document installation proces in ActiveState perl
-* document new location argument-type semantics
 * support DTD modification
 * better support for namespaces (e.g. registering as soon as it's available
   in XML::LibXML(::XPath?)
@@ -29,6 +28,7 @@ o fold/unfold command (fold/unfold elements for subsequent ls commands)
 
 
 IMPLEMENTED:
++ document new location argument-type semantics
 + check adding fragments into /
 + adding into/appending/prepending /
 + better Ctrl+C handling
