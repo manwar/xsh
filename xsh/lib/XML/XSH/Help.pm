@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Wed Jun  4 11:50:49 2003
+# Tue Aug  5 10:13:55 2003
 
 package XML::XSH::Help;
 use strict;
@@ -79,9 +79,9 @@ Help items:
     register-function, register-namespace, register-xhtml-namespace,
     register-xsh-namespace, remove, rename, return, run-mode, save, select,
     sort, stream, strip-whitespace, switch-to-new-documents, test-mode,
-    throw, try, unfold, unless, valid, validate, validation, variables,
-    verbose, version, while, xcopy, xinsert, xmove, xpath-axis-completion,
-    xpath-completion, xslt, xupdate
+    throw, try, undef, unfold, unless, valid, validate, validation,
+    variables, verbose, version, while, xcopy, xinsert, xmove,
+    xpath-axis-completion, xpath-completion, xslt, xupdate
 
   XSH Argument Types:
 
@@ -106,7 +106,7 @@ description:
 	     register-namespace, register-xhtml-namespace,
 	     register-xsh-namespace, remove, rename, return, run-mode,
 	     save, select, sort, stream, strip-whitespace,
-	     switch-to-new-documents, test-mode, throw, try, unfold,
+	     switch-to-new-documents, test-mode, throw, try, undef, unfold,
 	     unless, valid, validate, validation, variables, verbose,
 	     version, while, xcopy, xinsert, xmove, xpath-axis-completion,
 	     xpath-completion, xslt, xupdate
@@ -125,7 +125,7 @@ Example:     Count paragraphs in each chapter
 
              $i=0;
              foreach //chapter {
-               $c=./para;
+               $c=count(./para);
                $i=$i+1;
                print "$c paragraphs in chapter no.$i";
              }
@@ -400,6 +400,32 @@ Example:     List content of all XML files in current directory
 END
 
 $HELP{'for'}=$HELP{'foreach'};
+
+$HELP{'undef'}=[<<'END'];
+usage:       undef <expression>
+             
+aliases:     undefine
+
+description:
+	     This command can be used to undefine previously defined XSH
+	     subroutines. The <expression> is evaluated as a Perl regular
+	     expression. All subroutines whose names match are undefined.
+	     Note, that like `def', all `undef' commands are processed
+	     during the compilation of the source code, not at run-time, so
+	     it doesn't matter how deep in the code is a `undef' command
+	     nested.
+
+Example:
+             xsh> include my_defs.xsh
+             xsh> call my_sub1 //foo;
+             xsh> call my_sub2 //bar;
+             xsh> undefine 'my_sub.*'
+             xsh> # change/edit the definitions in my_defs.xsh and reload
+             xsh> include my_defs.xsh
+
+END
+
+$HELP{'undefine'}=$HELP{'undef'};
 
 $HELP{'def'}=[<<'END'];
 usage:       def <id> [$<id> | %<id>]* <command-block>
@@ -2422,7 +2448,7 @@ Flow control
 
 Related commands:
   call, def, exit, foreach, if, include, iterate, last, next, prev, redo,
-  return, run-mode, stream, test-mode, throw, try, unless, while
+  return, run-mode, stream, test-mode, throw, try, undef, unless, while
 
 END
 

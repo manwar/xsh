@@ -125,6 +125,8 @@ test_mode
 throw
 transform
 try
+undef
+undefine
 unfold
 unless
 valid

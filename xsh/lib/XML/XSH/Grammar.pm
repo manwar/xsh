@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Wed Jun  4 11:50:48 2003
+# Tue Aug  5 10:13:54 2003
 
 
 package XML::XSH::Grammar;
@@ -148,6 +148,9 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 	  | /save(as|_as|-as)?((\s*|_|-)(HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?((\s*|_|-)(FILE|file|STRING|string))?/ <commit> expression encoding_param(?)
 		{ [\&XML::XSH::Functions::save_doc,@item[1,3],undef,$item[4]] }
+  	
+	  | /save(as|_as|-as)?([-_](HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?/
+		{ [\&XML::XSH::Functions::save_doc,$item[1]] }
   	
 	  | /(documents|files|docs)/
 		{ [\&XML::XSH::Functions::files] }
@@ -360,6 +363,7 @@ $grammar=<<'_EO_GRAMMAR_';
 
   statement_or_command:
 	    def
+	  | undef
 	  | complex_command
 
   block:
@@ -409,7 +413,19 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /\$\{\{([^{].*?)\}\}/
 
   expression:
-	    exp_part <skip:""> expression(?)
+	    /<</ /(\'|\")?/ ID /$item[2]/ <skip:""> /.*\n/ /(.|\n)*?\n$item[3]\s*(\n|$)/
+		{ 
+	    $text=$item[6].$text;
+	    local $_=$item[7]; s/\n$item[3]\s*$//;
+	    if ($item[2] eq "'") {
+	      s{(\\)(.|\n)|(\$)}{ ($3 eq '$') ? "\\\$" : (($2 eq "\\")
+	      ? "\\\\" : (($2 eq "'") ? "'" : ( ($2 eq '$') ? "\\\\\\$2" :
+	      "\\\\$2"))) }eg;
+          }
+	    $_;
+	   }
+  	
+	  | exp_part <skip:""> expression(?)
 		{ $item[1].join("",@{$item[3]}) }
   	
 
@@ -603,6 +619,13 @@ $grammar=<<'_EO_GRAMMAR_';
   typedvariable:
 	    /[\$\%]/ <skip:""> ID
 		{ "$item[1]$item[3]" }
+  	
+
+  undef:
+	    /(undef|undefine)\s/ <commit> expression
+		{ 
+	  &XML::XSH::Functions::undef_sub($item[3]);
+	 }
   	
 
   def:
