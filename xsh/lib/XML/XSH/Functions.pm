@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.66 2003-08-25 12:24:04 pajas Exp $
+# $Id: Functions.pm,v 1.67 2003-08-25 12:38:07 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -31,7 +31,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8';
-  $REVISION='$Revision: 1.66 $';
+  $REVISION='$Revision: 1.67 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -2513,6 +2513,8 @@ sub set_doc_standalone {
   unless (ref($doc)) {
     die "No such document '$id'!\n";
   }
+  $standalone=1 if $standalone=~/yes/i;
+  $standalone=0 if $standalone=~/no/i;
   $_xml_module->set_standalone($doc,$standalone);
   return 1;
 }
