@@ -123,7 +123,7 @@ foreach X:/recdescent-xml/doc/section {
   }
   xcopy ./node() into %section;
 
-  %rules=X:(//rule[documentation[id(@sections)[@id='$id']]]);
+  %rules=X:(/recdescent-xml/rules/rule[documentation[id(@sections)[@id='$id']]]);
   if %rules[@type='command'] { $c='Commands' } else { $c='' }
   if %rules[@type='argtype'] { $a='Argument Types' } else { $a='' }
   if ('$c' != '' and '$a' != '') { $t='$a and $c' } else { $t='$a$c' }
