@@ -1,7 +1,10 @@
-# $Id: Functions.pm,v 1.65 2003-08-13 13:20:28 pajas Exp $
+# -*- cperl -*-
+# $Id: Functions.pm,v 1.66 2003-08-25 12:24:04 pajas Exp $
 
 package XML::XSH::Functions;
 
+eval "no encoding";
+undef $@;
 use strict;
 no warnings;
 
@@ -17,7 +20,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
             $TRAP_SIGINT $TRAP_SIGPIPE $_die_on_err $_on_exit
             %_doc %_files %_defs %_chr %_ns
 	    $ENCODING $QUERY_ENCODING
-	    $INDENT $BACKUPS $SWITCH_TO_NEW_DOCUMENTS
+	    $INDENT $BACKUPS $SWITCH_TO_NEW_DOCUMENTS $EMPTY_TAGS $SKIP_DTD
 	    $QUIET $DEBUG $TEST_MODE
 	    $VALIDATION $RECOVERING $PARSER_EXPANDS_ENTITIES $KEEP_BLANKS
 	    $PEDANTIC_PARSER $LOAD_EXT_DTD $PARSER_COMPLETES_ATTRIBUTES
@@ -28,11 +31,13 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8';
-  $REVISION='$Revision: 1.65 $';
+  $REVISION='$Revision: 1.66 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
 		    $INDENT
+                    $EMPTY_TAGS
+                    $SKIP_DTD
 		    $BACKUPS
 		    $SWITCH_TO_NEW_DOCUMENTS
 		    $QUIET
@@ -50,6 +55,8 @@ BEGIN {
 		    $PARSER_EXPANDS_XINCLUDE
 		    $DEFAULT_FORMAT
 		    /;
+  *EMPTY_TAGS=*XML::LibXML::setTagCompression;
+  *SKIP_DTD=*XML::LibXML::skipDTD;
   @EXPORT_OK=(qw(&xsh_init &xsh &xsh_get_output
                 &xsh_set_output &xsh_set_parser
                 &set_quiet &set_debug &set_compile_only_mode
@@ -66,10 +73,12 @@ BEGIN {
   $TRAP_SIGINT=0;
   $_xml_module='XML::XSH::LibXMLCompat';
   $INDENT=1;
+  $EMPTY_TAGS=1; # no effect (reseted by XML::LibXML)
+  $SKIP_DTD=0;   # no effect (reseted by XML::LibXML)
   $BACKUPS=1;
   $SWITCH_TO_NEW_DOCUMENTS=1;
-  $ENCODING='iso-8859-2';
-  $QUERY_ENCODING='iso-8859-2';
+  $ENCODING='utf-8';
+  $QUERY_ENCODING='utf-8';
   $QUIET=0;
   $DEBUG=0;
   $TEST_MODE=0;
@@ -136,8 +145,15 @@ sub xsh_init {
     exit 1;
   }
   my $mod=$_xml_module->module();
-  *encodeToUTF8=\&{"$mod"."::encodeToUTF8"};
-  *decodeFromUTF8=\&{"$mod"."::decodeFromUTF8"};
+  if ($] >= 5.008) {
+    require Encode;
+    *encodeToUTF8=*Encode::decode;
+    *decodeFromUTF8=*Encode::encode;
+  } else {
+    *encodeToUTF8=*{"$mod"."::encodeToUTF8"};
+    *decodeFromUTF8=*{"$mod"."::decodeFromUTF8"};
+  }
+
 
   $_parser = $_xml_module->new_parser();
   set_load_ext_dtd(1);
@@ -145,6 +161,10 @@ sub xsh_init {
   set_keep_blanks(1);
 
   xpc_init();
+  xsh_rd_parser_init();
+}
+
+sub   xsh_rd_parser_init {
   if (eval { require XML::XSH::Parser; }) {
     $_xsh=XML::XSH::Parser->new();
   } else {
@@ -175,6 +195,7 @@ sub set_load_ext_dtd	     { $LOAD_EXT_DTD=$_[0]; 1; }
 sub set_complete_attributes  { $PARSER_COMPLETES_ATTRIBUTES=$_[0]; 1; }
 sub set_expand_xinclude	     { $PARSER_EXPANDS_XINCLUDE=$_[0]; 1; }
 sub set_indent		     { $INDENT=$_[0]; 1; }
+sub set_empty_tags           { $EMPTY_TAGS=$_[0]; 1; }
 sub set_backups		     { $BACKUPS=$_[0]; 1; }
 sub set_cdonopen	     { $SWITCH_TO_NEW_DOCUMENTS=$_[0]; 1; }
 sub set_xpath_completion     { $XPATH_COMPLETION=$_[0]; 1; }
@@ -193,6 +214,7 @@ sub get_load_ext_dtd	     { $LOAD_EXT_DTD }
 sub get_complete_attributes  { $PARSER_COMPLETES_ATTRIBUTES }
 sub get_expand_xinclude	     { $PARSER_EXPANDS_XINCLUDE }
 sub get_indent		     { $INDENT }
+sub get_empty_tags           { $EMPTY_TAGS }
 sub get_backups		     { $BACKUPS }
 sub get_cdonopen	     { $SWITCH_TO_NEW_DOCUMENTS }
 sub get_xpath_completion     { $XPATH_COMPLETION }
@@ -219,7 +241,7 @@ sub xpc_init {
 			    die "Document does not exist!" unless (exists($_doc{$id}));
 			    return $_doc{$id};
 			  });
-  $_xpc->registerFunction('matches',$XML::XSH::xshNS,
+  $_xpc->registerFunctionNS('matches',$XML::XSH::xshNS,
 			  sub {
 			    die "Wrong number of arguments for function matches(string,regexp)!" if (@_!=2);
 			    my ($string,$regexp)=@_;
@@ -229,7 +251,7 @@ sub xpc_init {
 			      XML::LibXML::Boolean->True : XML::LibXML::Boolean->False;
 			    $ret;
 			  });
-  $_xpc->registerFunction('grep',$XML::XSH::xshNS,
+  $_xpc->registerFunctionNS('grep',$XML::XSH::xshNS,
 			  sub {
 			    die "Wrong number of arguments for function grep(list,regexp)!" if (@_!=2);
 			    my ($nodelist,$regexp)=@_;
@@ -238,7 +260,7 @@ sub xpc_init {
 			    use utf8; 
 			    [grep { $_->to_literal=~m{$regexp} } @$nodelist];
 			  });
-  $_xpc->registerFunction('same',$XML::XSH::xshNS,
+  $_xpc->registerFunctionNS('same',$XML::XSH::xshNS,
 			  sub {
 			    die "Wrong number of arguments for function same(node,node)!" if (@_!=2);
 			    my ($nodea,$nodeb)=@_;
@@ -1268,7 +1290,10 @@ sub save_doc {
     }
   } else {
     if ($format eq 'xml') {
-      if (lc($_xml_module->doc_encoding($doc)) ne lc($enc)) {
+      if (lc($_xml_module->doc_encoding($doc)) ne lc($enc)
+	  and not($_xml_module->doc_encoding($doc) eq "" and
+	  lc($enc) eq 'utf-8')
+	 ) {
 	$_xml_module->set_encoding($doc,$enc);
       }
       if ($target eq 'file') {
@@ -2469,6 +2494,26 @@ sub print_enc {
     die "No such document '$id'!\n";
   }
   out($_xml_module->doc_encoding($doc),"\n");
+  return 1;
+}
+
+sub set_doc_enc {
+  my ($encoding,$id)=expand @_;
+  ($id, my $doc)=_id($id);
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+  $_xml_module->set_encoding($doc,$encoding);
+  return 1;
+}
+
+sub set_doc_standalone {
+  my ($standalone,$id)=expand @_;
+  ($id, my $doc)=_id($id);
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+  $_xml_module->set_standalone($doc,$standalone);
   return 1;
 }
 
