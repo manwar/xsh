@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 1.15 2003-06-05 10:41:07 pajas Exp $
+# $Id: Completion.pm,v 1.16 2003-08-05 08:02:23 pajas Exp $
 
 package XML::XSH::Completion;
 
@@ -8,29 +8,34 @@ use strict;
 
 sub cpl {
   my($word,$line,$pos) = @_;
+  my $endpos=$pos+length($word);
+#  print STDERR "---",substr($line,0,$endpos),"---\n";
   if ($line=~/\$([a-zA-Z0-9_]*)$/) {
     return grep { index($_,$1)==0 } XML::XSH::Functions::string_vars;
-  } elsif ($line=~/\%([a-zA-Z0-9_]*)$/) {
+  } elsif (substr($line,0,$endpos)=~/\%([a-zA-Z0-9_]*)$/) {
     return map {'%'.$_} grep { index($_,$1)==0 } XML::XSH::Functions::nodelist_vars;
-  } elsif (substr($line,0,$pos)=~/^\s*[^=\s]*$/) {
+  } elsif (substr($line,0,$pos)=~/(?:^|[;}])\s*[^=\s]*$/) {
     return grep { index($_,$word)==0 } @XML::XSH::CompletionList::XSH_COMMANDS;
-  } elsif ($line=~/^\s*call\s+(\S*)$|[;}]\s*call\s+(\S*)$/) {
+  } elsif (substr($line,0,$endpos)=~/(?:^|[;}])\s*call\s+(\S*)$/) {
     return grep { index($_,$1)==0 } XML::XSH::Functions::defs;
-  } elsif ($line=~/^\s*x?(?:insert|add)\s+(\S*)$|[;}]\s*x?(?:insert|add)\s+(\S*)$/) {
+  } elsif (substr($line,0,$endpos)=~/(?:^|[;}])\s*x?(?:insert|add)\s+(\S*)$/) {
     return grep { index($_,$1)==0 } qw(element attribute attributes text
                                        cdata pi comment chunk entity_reference);
-  } elsif ($line=~/^\s*help\s+(\S*)$|[;}]\s*help\s+(\S*)$/) {
+  } elsif (substr($line,0,$endpos)=~/(?:^|[;}])\s*help\s+(\S*)$/) {
     return grep { index($_,$1)==0 } keys %XML::XSH::Help::HELP;
-  } elsif (substr($line,0,$pos)=~
+  } elsif (substr($line,0,$endpos)=~
 	   /(?:^|[;}])\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?([a-zA-Z0-9_]*)$/) {
     return grep { index($_,$word)==0 } XML::XSH::Functions::docs;
-  } elsif (substr($line,0,$pos)=~
+  } elsif (substr($line,0,$endpos)=~
 	   /(?:^|[;}])\s*(?:open(?:\s+|_|-)(?:(?:html|xml|docbook|HTML|XML|DOCBOOK)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?)?[a-zA-Z0-9_]+\s*=\s*(\S*)$/
 	   ||
-	   substr($line,0,$pos)=~
+	   substr($line,0,$endpos)=~
 	   /(?:^|[;}])\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?[a-zA-Z0-9_]+\s+(\S*)$/
+	   ||
+	   substr($line,0,$endpos)=~
+	   /(?:^|[;}])\s*(?:\.|include)\s+(\S*)$/
 	  ) {
-    my @results=eval { map { s:\@$::; $_ } readline::rl_filename_list($_[0]); };
+    my @results=eval { map { s:\@$::; $_ } readline::rl_filename_list($word); };
     if (@results==1 and -d $results[0]) {
       $readline::rl_completer_terminator_character='';
     }
@@ -66,6 +71,9 @@ sub gnu_cpl {
 	     ||
 	     substr($line,0,$end)=~
 	     /(?:^|[;}])\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?[a-zA-Z0-9_]+\s+(\S*)$/
+	   ||
+	   substr($line,0,$end)=~
+	   /(?:^|[;}])\s*(?:\.|include)\s+(\S*)$/
 	    ) {
       @perlret = eval { map { s:\@$::; $_ } Term::ReadLine::GNU::XS::rl_filename_list($_[0]) };
       if (@perlret==1 and -d $perlret[0]) {
