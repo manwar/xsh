@@ -1,0 +1,30 @@
+body, td, th {
+  color: #050510; 
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+}
+a {
+  color: #000080;
+  font-weight: bold;
+  text-decoration: none
+}
+a:active {
+  color: #000080; 
+  font-weight: bold;
+  text-decoration: none
+}
+a:visited {
+  color: #000080;
+  font-WEIGHT: bold;
+  text-decoration: none
+}
+a:hover {
+  color: #000080;
+  font-weight: bold;
+  text-decoration: underline
+}
+tt {
+  color: #003030;
+}
+.programlisting {
+  color: #003030;
+}
