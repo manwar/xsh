@@ -1,5 +1,11 @@
 TODO XSH2:
 
+- xsh:... function completion
+- --xx and :x (parameter/flag) completion
+- xsh:filename(doc) function
+- reopen . command
+
+
 - support name-like and XPath expressions for rename
 - split [after|before] ...
 - split text on a given character???
