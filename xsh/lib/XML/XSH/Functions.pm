@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.1 2002-03-05 13:36:30 pajas Exp $
+# $Id: Functions.pm,v 1.2 2002-03-05 14:40:31 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -610,8 +610,6 @@ sub insert {
   my ($type,$exp,$xpath,$where,$ns,$to_all)=@_;
   $exp = expand($exp);
   $ns  = expand($ns);
-
-  print STDERR "NAMESPACE: @_\n";
 
   my ($tid,$tq)=expand @{$xpath}; # to ID, to query
 
