@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.8 2002-08-30 17:08:13 pajas Exp $
+# $Id: xsh,v 1.9 2002-09-12 15:25:33 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -29,7 +29,7 @@ require Term::ReadLine if $opt_i;
 BEGIN {
   getopts('scqgwdfhViE:e:');
   $VERSION='0.9';
-  $REVISION='$Revision: 1.8 $';
+  $REVISION='$Revision: 1.9 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -135,7 +135,7 @@ if ($opt_i) {
        eval {
 	 print STDERR "saving $ENV{HOME}/.xsh_history\n";
 	 open HIST,"> $ENV{HOME}/.xsh_history" || die "cannot open $ENV{HOME}/.xsh_history";
-	 print HIST join("\n",@readline::rl_History),"\n";
+	 print HIST join("\n",$term->GetHistory()),"\n";
 	 close HIST;
        };
        if ($@) {
