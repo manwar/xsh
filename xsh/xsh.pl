@@ -15,8 +15,8 @@ use XML::LibXML;
 use Text::Iconv;
 
 use Getopt::Std;
-getopts('qdhViE:e:');
-use vars qw/$opt_q $opt_i $opt_h $opt_V $opt_E $opt_e $opt_d/;
+getopts('cqdhViE:e:');
+use vars qw/$opt_q $opt_i $opt_h $opt_V $opt_E $opt_e $opt_d $opt_c/;
 use vars qw/$VERSION $REVISION $ERR $OUT $LAST_ID $LOCAL_ID $LOCAL_NODE
             $HELP %HELP
             $_xsh $_parser $_encoding $_qencoding
@@ -24,8 +24,8 @@ use vars qw/$VERSION $REVISION $ERR $OUT $LAST_ID $LOCAL_ID $LOCAL_NODE
 
 require Term::ReadLine if $opt_i;
 
-$VERSION='0.5';
-$REVISION='$Revision: 1.8 $';
+$VERSION='0.6';
+$REVISION='$Revision: 1.9 $';
 $ERR='';
 $LAST_ID='';
 $OUT=\*STDOUT;
@@ -61,7 +61,7 @@ sub print_var {
 
 sub echo { print $OUT (join " ",expand(@_)),"\n"; }
 sub set_opt_q { $opt_q=$_[0]; }
-sub set_opt_d { $opt_q=$_[0]; }
+sub set_opt_d { $opt_d=$_[0]; }
 sub set_encoding { $_encoding=expand($_[0]); }
 sub set_qencoding { $_qencoding=expand($_[0]); }
 
@@ -258,7 +258,7 @@ sub count {
     my $qconv=mkconv($_qencoding,"utf-8");
     $result=get_local_element($id)->find($qconv ? $qconv->convert($query) : $query);
   }; print STDERR "$@\n" if ($@);
-  if ($result) {
+  if (ref($result)) {
     return $result->size() if ($result->isa('XML::LibXML::NodeList'));
     return $result->value() if (
 				$result->isa('XML::LibXML::Number') or
@@ -690,7 +690,10 @@ sub cd {
 }
 
 sub run_commands {
+  return 1 if $opt_c;
+
   my @cmds=@{$_[0]};
+
   my ($cmd,@params);
   foreach my $run (@cmds) {
     if (ref($run) eq 'ARRAY') {
@@ -701,7 +704,10 @@ sub run_commands {
 }
 
 sub pipe_command {
+  return 1 if $opt_c;
+
   my ($cmd,$pipe)=@_;
+
   return unless (ref($cmd) eq 'ARRAY' and $pipe ne '');
 
   if ($pipe ne '') {
@@ -758,7 +764,7 @@ sub xslt {
   print STDERR "running xslt on @_\n";
   return unless $_doc{$id};
   eval {
-    my %params=map { split /=/,$_,2 } split /\s+/,$params;
+    my %params=@$params;
     local $SIG{INT}=\&sigint;
     if (-f $stylefile) {
       require XML::LibXSLT;
@@ -844,6 +850,7 @@ if ($opt_h) {
   print "   -q   quiet\n\n";
   print "   -i   interactive\n\n";
   print "   -d   print debug messages\n\n";
+  print "   -c   compile (parse) only and report errors\n\n";
   print "   -V   print version\n\n";
   print "   -h   help\n\n";
   exit 1;
@@ -866,7 +873,7 @@ printflush STDERR "Plase wait, parsing grammar...";
 $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
   TOKEN: /\S+/
 
-  STRING: /([^'"$\\ \t\n\r;|\$[^{]|\$\{[^{]|]|\\.)+/
+  STRING: /([^'"\$\\ \t\n\r;]|\$[^{]|\$\{[^{]|]|\\.)+/
      { local $_=$item[1];
        s/\\([^\$])/$1/g;
        $_;
@@ -915,6 +922,8 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
 
   option :  /quiet/ { [\&main::set_opt_q,1] }
             | /verbose/ { [\&main::set_opt_q,0] }
+            | /test-mode/ { $main::opt_c=1; }
+            | /run-mode/ { $main::opt_c=0; }
             | /debug/ { [\&main::set_opt_d,1] }
             | /nodebug/ { [\&main::set_opt_d,0] }
             | /encoding\s/ expression { [\&main::set_encoding,$item[2]]; }
@@ -949,6 +958,7 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
             | /def\s|define\s/ ID (command|block) { [\&main::def,$item[2],$item[3]] }
 
   assign_command : variable '=' xpath     { [\&main::xpath_assign,$item[1],$item[3]]; }
+                 | /assign\s/ variable '=' xpath  { [\&main::xpath_assign,$item[2],$item[4]]; }
 
   print_var_command : variable { [\&main::print_var,$item[1]] }
 
@@ -967,10 +977,10 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
                | xslt_alias ID filename ID
                { [\&main::xslt,@item[2,3,4]]; }
 
-  paramlist    : param paramlist
+  paramlist    : param paramlist { [@{$item[1]},@{$item[2]}]; }
                | param
 
-  param        : /[^=\s]+/ '=' expression
+  param        : /[^=\s]+/ '=' expression { [$item[1],$item[2]]; }
 
   xslt_alias : /transform\s|xslt?\s|xsltproc\s|process\s/
 
@@ -1063,7 +1073,7 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
                                          [\&main::valid_doc,$item[2]]; }
                 | /valid(\s|$)/        { [\&main::valid_doc,$main::LAST_ID] }
 
-  exit_command : /exit|quit/ /-?[0-9]*/ { [\&main::quit,$item[2]]; }
+  exit_command : /exit|quit/ expression { [\&main::quit,$item[2]]; }
 
   filename : expression
 
@@ -1147,10 +1157,12 @@ if ($opt_i) {
   $_xsh->startrule(join "",<STDIN>);
 }
 
-print STDERR "Good bye!\n" unless "$opt_q";
+print STDERR "Good bye!\n" if $opt_i and not "$opt_q";
 
 sub _help {
   return <<'EOH';
+
+
 General notes:
  - More than one command may be used on one line. In that case
    the commands must be separated by semicolon which has to be
@@ -1162,158 +1174,220 @@ General notes:
 
    counts any attributes that contain string foo in its name or value.
  - Many commands have aliases. See help <command> for a list.
- - Parameters containing spaces *must* be quoted with single- or
-   double-quotes; thus for example: list "//words[text() and
-   @foo='\"bar\"']" is correct but list //words[text() and @foo='bar']
-   is not.
- - Use slash in the end of line to indicate that the command follows
-   on next line.
+ - In the interactive shell use slash in the end of line to indicate
+   that the command follows on next line.
 
-Parameter types:
-  <command>                  - one of the commands described bellow.
-  <block>                    - a command or a block of semicolon-separated
-                               commands enclosed in curly brackets.
-  <id>                       - an identifier consisting of letters, digits
-                               and underscore starting the first character
-                               of which is a letter or underscore.
-  <xpath>                    - an XPath expression optionally preceded with
-                               <id> followed by a colon to address
-                               a specific document (<id>:xpath-expression). If
-                               no <id> is given, the most recently addressed or
-                               opened document is used.
-  <filename>                 - a filename (if it should contain spaces,
-                               use single- or double-quotes).
-  <loc>                      - location: one of after, before, into, replace
-  <type>                     - node type: one of element, attribute, text,
-                               cdata, comment
-  <encoding>                 - like encoding string in XML declaration
-                               (e.g. utf-8)
+Argument types:
+  id, expression, xpath, command-block, perl-code,
+  node-type, location, encoding, filename, parameter-list
 
 Available commands:
-  [open] <id>=<filename>     - Open and parse given XML document. The document
-                               may be later addressed by its <id>.
-  $<id>=<xpath>              - Create a new variable named $<id> and
-                               assign the result of the <xpath> expression
-                               to it. See help on count for more detail on
-                               how XPath expressions are evaluated in these
-                               contexts.
-  close <id>                 - Close document identified by <id>.
-  clone <id>=<id>            - duplicate an existing document under a new
-                               identifier
-  save <id> [encoding <enc>] - save given document in given or its original
-                               encoding
-  saveas <id> <filename> [encoding <enc>]
-                             - save document identified by <id> in a given file
 
-  files                      - list open files and their identifiers.
-  variables                  - list all variables and their values.
+  add, assign, call, cd, clone, close, copy, count, debug, def, dtd,
+  enc, encoding, eval, exec, exit, files, foreach, help, if, include,
+  list, map, move, nodebug, open, print, query-encoding, quiet,
+  remove, run-mode, save, saveas, test-mode, unless, valid, validate,
+  variables, verbose, while, xadd, xcopy, xmove, xslt
 
-  ! shell-command            - execute a given shell command (as ! in ftp).
-                               The shell command is considered to span
-                               to the end of line
+Type help <command|type> to get more information on a given command or
+argument type.
 
-  exec "shell-command"       - execute a given shell command. If the
-                               command-line should contain whitespace
-                               (i.e. to specify arguments), you must
-                               enclose it into single- or double-quotes.
-
-  copy <xpath> <loc> <xpath> - copy nodes (one-to-one)
-  xcopy <xpath> <loc> <xpath>- copy nodes (every-to-every)
-  move <xpath> <loc> <xpath> - move nodes (one-to-one)
-  xmove <xpath> <loc> <xpath>- move nodes (every-to-every)
-
-  add <type> <node> <loc> <xpath> - create a new node (in the first
-                                    matched location)
-  xadd <type> <node> <loc> <xpath> - create new node(s) (in all
-                                     matched locations)
-  remove <xpath>             - delete all matching nodes
-
-  on <xpath> <perl-code>     - process every matched text or cdata node,
-                               attribute value, element name or
-                               command by given perl-code
-
-  transform <id> <file> <id> [params <expression>]
-                             - transform the first document using a
-                               XSLT stylesheet file <file> and create
-                               a new document with the <id> specified
-                               in the third parameter. To pass
-                               parameters to the stylesheet follow the
-                               command with: params "name1='value1'
-                               name2='value2'..."
-
-  list <xpath>               - list all matching nodes
-  count <xpath>              - print number of matching nodes
-  dtd <id>                   - print DTD for a given document
-  enc <id>                   - print the document encoding string
-
-  valid <id>                 - return yes/no string if the document is
-                               valid or not.
-
-  validate <id>              - validate the given document and output
-                               any error messages.
-
-  if <xpath> <block>         - run commands if <xpath> matches at least
-                               one element.
-  unless <xpath> <block>     - run commands if <xpath> matches no element.
-  while <xpath> <block>      - repeat commands while <xpath> matches at least
-                               one element.
-  foreach <xpath> <block>    - run a commands on each of the nodes matching
-                               given xpath.
-
-  help <command>             - get more detailed help on a command.
-                               (Sorry, no help on aliases yet).
-  exit                       - exit xsh.
 EOH
 }
 
 sub _cmd_help {
   return ('help' => <<'H1',
-usage:       help <command>
+usage:       help command|type
 
 aliases:     help, ?
 
-description: Print help on a given command.
+description: Print help on a given command or argument type.
 
 H1
 
+'id' => <<'H1',
+
+id argument type
+
+description: an identifier, that is, a string beginning with a letter or
+             underscore, and containing letters, underscores, and digits.
+
+H1
+'parameter-list' => <<'H1',
+
+parameter-list argument type
+
+description: a non-empty whitespace separated list of name = value pairs
+             where name is a string of non-whitespace characters containing
+             no equal sign character and value is any expression. Any whitespace
+             surrounding the equal sign between name and value is ignored.
+
+H1
+'expression' => <<'H1',
+
+filename argument type
+
+description: an expression which interpolates to a valid file name.
+
+H1
+'expression' => <<'H1',
+
+expression argument type
+
+description: a string consisting of unquoted characters other than
+             whitespace or semicolon, single quote or double quote
+             characters or quoted characters of any kind. By quoting
+             we mean preceding a single character with a backslash or
+             enclosing a part of the string into single quotes '...'
+             or double quotes "...". Quoting characters are removed
+             from the string so they must be quoted themselves if they
+             are a part of the expression: \\, \' or "'", \" or '"'.
+
+             Variable interpolation is performed on expressions, which
+             means that any substrings of the forms $id or ${id} where
+             $ is unquoted and id is an identifier are substituted
+             with the value of the variable named $id.
+
+             XPath interpolation is performed on expressions, which
+             means that any substring enclosed in between ${{ and }}
+             is evaluated in the same way as in the count command and
+             the result of the evaluation is substituted in its place.
+
+examples: print 'say "cheese"'               # prints: say "cheese"
+          print \\\;\$\'\"                   # prints: \;$'"
+          print ";";                         # prints: ;
+          print chapters:\ ${{//chapter}}    # prints number of chapters
+          print 'chapters: ${{//chapter}}'   # same as above
+H1
+
+'xpath' => <<'H1',
+
+xpath argument type
+
+description: any XPath expression as defined in W3C recommendation at
+             http://www.w3.org/TR/xpath optionaly preceded with
+             a document identifier followed by colon. If no identifier
+             is used, the most recently adressed or opened document is
+             used.
+
+example:
+             open v = mydocument.xml;
+             count v://chapter[subsection];  # count all chapters containing
+                                             # a subsection
+H1
+'command-block' => <<'H1',
+
+command-block argument type
+
+description: XSH command or a block of semicolon-separated
+             commands enclosed within curly brackets.
+
+example:     $i=0;                # count paragraphs in each chapter
+             foreach //chapter {
+               $c=./para;
+               $i=$i+1;
+               print "$c paragraphs in chapter no.$i";
+             }
+H1
+'perl-code' => <<'H1',
+
+perl-code argument type
+
+description: a block of perl code enclosed in curly brackets or an
+             expression which interpolates to a perl
+             expression. Variables defined in XSH are visible in perl
+             code as well. Since XSH redirects output to the terminal,
+             you cannot simply use perl print function for output if
+             you want to filter the result with a shell
+             command. Instead use predefined perl routine `echo ...'
+             which is equivalent to `print $::OUT ...'. The $::OUT
+             perl-variable stores the referenc to the terminal file
+             handle.
+
+examples:    $i="foo";
+
+             eval { echo "$i-bar\n"; } # prints foo-bar
+
+             eval 'echo "\$i-bar\n";'  # exactly the same as above
+
+             eval 'echo "$i-bar\n";'   # prints foo-bar too, but $i is
+                                       # interpolated by XSH, so perl
+                                       # actually evaluates
+                                       #  echo "foo-bar\n";
+
+H1
+'node-type' => <<'H1',
+
+node-type argument type
+
+description: one of: element, attribute, text, cdata, comment.
+
+examples:  add element hobbit into //middle-earth/creatures;
+           add attribute 'name="Bilbo"' into //middle-earth/creatures/hobbit[last()];
+
+H1
+'location' => <<'H1',
+
+location argument type
+
+description: one of: after, before, into, replace.
+
+             Aliases `to', `as child' and `as child of' may be used
+             instead of `into'. Aliases `instead' and `instead of' may
+             be used instead of `replace'.
+
+H1
+'encoding' => <<'H1',
+
+encoding argument type
+
+description: an expression which interpolates to a valid encoding
+             string, e.g. to utf-8, utf-16, iso-8859-1, iso-8859-2,
+             windows-1250 etc.
+H1
+
 'exit' => <<'H1',
-usage:       exit [<exit-code>]
+usage:       exit [<expression>]
 
 aliases:     exit, quit
 
-description: Exit xsh immediately with the optional exit-code (no files are saved).
+description: Exit xsh immediately, optionaly with the exit-code
+             resulting from the given expression.
+
+warning:     No files are saved on exit.
 
 H1
 
 'foreach' => <<'H1',
-usage:       foreach <xpath> <command>
+usage:       foreach <xpath> <command-block>
 
-description: Execute the command for each of the nodes matching the given
-             XPath expression so that all relative XPath expressions
-             of the command relate to the selected node.
+description: Execute the command-block for each of the nodes matching
+             the given XPath expression so that all relative XPath
+             expressions of the command relate to the selected node.
 
-example:     xsh> foreach //company xmove ./employee into ./staff
-             moves all employee elements in a company element into
-             a staff subelement of the same company
+example:     xsh> foreach //company xmove ./employee into ./staff;
+
+             # moves all employee elements in a company element into a
+             # staff subelement of the same company
 
 H1
 
 'while' => <<'H1',
-usage:       while <xpath> <command>
+usage:       while <xpath> <command-block>
 
-description: Execute <command> as long as the given <xpath> expression
-             evaluates to a non-emtpty node-list, true boolean-value,
-             non-zero number or non-empty literal.
+description: Execute <command-block> as long as the given <xpath>
+             expression evaluates to a non-emtpty node-list, true
+             boolean-value, non-zero number or non-empty literal.
 
-example:     the result of 
-             xsh> while /table/row del /table/row[1]
-             is equivalent to the result of
-             xsh> del /table/row
+example:     the following commands have the same results:
+
+             xsh> while /table/row remove /table/row[1];
+             xsh> remove /table/row;
 
 H1
 
 'unless' => <<'H1',
-usage:       unless <xpath> <command>
+usage:       unless <xpath> <command-block>
 
 aliases:     "if !"
 
@@ -1324,9 +1398,9 @@ see also:    if
 H1
 
 'if' => <<'H1',
-usage:       if <xpath> <command>
+usage:       if <xpath> <command-block>
 
-description: Execute <command> if the given <xpath> expression
+description: Execute <command-block> if the given <xpath> expression
              evaluates to a non-emtpty node-list, true boolean-value,
              non-zero number or non-empty literal.
 
@@ -1335,11 +1409,10 @@ H1
 'validate' => <<'H1',
 usage:       validate [<id>]
 
-description: Try to validate given document according to its DTD,
-             report all validity errors.
-             If no document identifier is given, the document
-             last used in an Xpath expression or a command
-             is used.
+description: Try to validate the document identified with <id>
+             according to its DTD, report all validity errors.  If no
+             document identifier is given, the document last used in
+             an Xpath expression or a command is used.
 
 see also:    valid, dtd
 
@@ -1368,7 +1441,7 @@ description: Print external or internal DTD for the given document.
 see also:    valid, validate
 
 H1
-'dtd' => <<'H1',
+'enc' => <<'H1',
 usage:       enc [<id>]
 
 description: Print the original document encoding string.
@@ -1398,7 +1471,7 @@ see also:    list, eval
 
 H1
 'eval' => <<'H1',
-usage:       eval <xpath>
+usage:       eval <perl-code>
 
 aliases:     perl
 
@@ -1419,18 +1492,17 @@ see also:    count
 
 H1
 'transform' => <<'H1',
-usage:       transform <id> <file> <id> [params <expression>]
+usage:       transform <id> <filename> <id> [params <parameter-list>]
 
 aliases:     xslt, xsl, xsltproc, process
 
-description: Load an XSLT stylesheet from <file> and use it to
+description: Load an XSLT stylesheet from a file and use it to
              transform the document of the first <id> into a new
              document named <id>. Parameters may be passed to a
-             stylesheet after params keyword in the form name='value'.
-             However, if the parameter values contain spaces or there
-             is more than one parameter passed, you must enclose the
-             whole <expression> into single- or double-quotes (and
-             backslash-quote all quotes within).
+             stylesheet after params keyword in the form of a
+             list of name=value pairs where name is the parameter
+             name and value is an expression interpolating to
+             its value.
 
 H1
 'on' => <<'H1',
@@ -1439,16 +1511,12 @@ usage:       map <perl-code> <xpath>
 aliases:     sed
 
 description: Each of the nodes matching <xpath> is processed with the
-             <perl-expression> in the following way: if the node is an
+             <perl-code> in the following way: if the node is an
              element, its name is processed, if it is an attribute,
              its value is used, if it is a cdata section, text node,
              comment or processing instruction, its data is used.  The
              expression should expect the data in the $_ variable and
              should use the same variable to store the modified data.
-             If <perl-expression> should contain spaces, you must
-             enclose the whole <expression> into single- or
-             double-quotes (and backslash-quote all quotes within)
-             or use curly braces to delimit it as a perl-code block.
 
 examples:    xsh> map $_='halfling' //hobbit
              renames all hobbits to halflings
@@ -1472,40 +1540,55 @@ example:     xsh> del //creature[@manner='evil']
 
 H1
 'xadd' => <<'H1',
-usage:       xadd <type> <node> <loc> <xpath>
+usage:       xadd <node-type> <expression> <location> <xpath>
 
 aliases:     xinsert
 
-description: Create new nodes of type <type> in the location <loc>
-             related to every node matching <xpath>. If the type is
-             element, the format of <node> expression should be
-             "<element-name [att-name='attvalue' ...]>".  To create an
-             element without attributes, use just element-name. Note,
-             that quotes are always obligatory if <node> expression
-             contains spaces.  Attribute nodes use the following
-             syntax: "att-name='attvalue' [...]"  For other types of
-             nodes (text, cdata, comments) the <node> expression
-             should contain their literal content data and should be
-             quoted unless it contains no whitespace.  The <loc>
-             directive should be one of: after, before, into and
-             replace. To attach an attribute to an element, into
-             should be used as <loc>. The into <loc> may also be used
-             to append data to a text, cdata or comment node.  Note
-             also, that the after and before <loc> directives do not
-             apply to attributes.
+description: Use the <expression> to create a new node of a given
+             <node-type> in the <location> relative to the given
+             <xpath>.
 
-example:     xsh> xadd element "<creature race='hobbit' manner='good'> \
-                  into /middle-earth/creatures
-             append a new hobbit element to the list of middle-earth creatures
+             For element nodes, the format of the <expression> should
+             look like
+
+             "<element-name att-name='attvalue' ...>"
+
+             If no attributes are used, the expression may simply
+             consist the element name. Note, that in the first case,
+             the quotes are required since the expression contains
+             spaces.
+
+             Attribute nodes use the following syntax:
+             "att-name='attvalue' [...]".
+
+             For the other types of nodes (text, cdata, comments) the
+             expression should contain the node's literal
+             content. Again, it is necessary to quote all whitespace
+             and special characters as in any expression argument.
+
+             The <location> argument should be one of: `after',
+             `before', `into' and `replace'. You may use `into'
+             location also to attach an attribute to an element or to
+             append some data to a text, cdata or comment node. Note
+             also, that `after' and `before' locations may be used to
+             append or prepend a string to a value of an existing
+             attribute. In that case, attribute name is ignored.
+
+example:     # append a new Hobbit element to the list of middle-earth
+             # creatures
+
+             xsh> xadd element "<creature race='hobbit' manner='good'> \
+                    into /middle-earth/creatures
+
+             # name him Bilbo
 
              xsh> xadd attribute "name='Bilbo'" \
-                  into /middle-earth/creatures/creature[@race='hobbit'][last()]
-             name the last hobbit Bilbo
+                    into /middle-earth/creatures/creature[@race='hobbit'][last()]
 
 see also:    add, move, xmove
 H1
-'xadd' => <<'H1',
-usage:       add <type> <node> <loc> <xpath>
+'add' => <<'H1',
+usage:       add <node-type> <expression> <location> <xpath>
 
 aliases:     insert
 
@@ -1515,24 +1598,24 @@ description: Works just like xadd, except that the new node
 see also:    xadd, move, xmove
 H1
 'copy' => <<'H1',
-usage:       copy <xpath> <loc> <xpath>
+usage:       copy <xpath> <location> <xpath>
 
 aliases:     cp
 
 description: Copies nodes matching the first <xpath> to the
-             destinations determined by the <loc> directive relative
-             to the second <xpath>. If more than one node matches the
-             first <xpath> than it is copied to the position relative
-             to the corresponding node matched by the second <xpath>
-             according to the order in which are nodes matched. Thus,
-             the n'th node matching the first <xpath> is copied to the
-             location relative to the n'th node matching the second
-             <xpath>. The possible values for <loc> are: after,
-             before, into, replace and cause copying the source nodes
-             after, before, into (as the last child-node).  the
-             destination nodes. If replace <loc> is used, the source
-             node is copied before the destination node and the
-             destination node is removed.
+             destinations determined by the <location> directive
+             relative to the second <xpath>. If more than one node
+             matches the first <xpath> than it is copied to the
+             position relative to the corresponding node matched by
+             the second <xpath> according to the order in which are
+             nodes matched. Thus, the n'th node matching the first
+             <xpath> is copied to the location relative to the n'th
+             node matching the second <xpath>. The possible values for
+             <location> are: after, before, into, replace and cause
+             copying the source nodes after, before, into (as the last
+             child-node).  the destination nodes. If replace
+             <location> is used, the source node is copied before the
+             destination node and the destination node is removed.
 
              Some kind of type conversion is used when the types of
              the source and destination nodes are not equal.  Thus,
@@ -1555,20 +1638,20 @@ description: Copies nodes matching the first <xpath> to the
              or before, after or instead (replace) other nodes of any
              type except attributes.
 
-examples:    xsh> copy a://creature replace b://living-thing
-             replace every libing-thing element in the document b
-             with the coresponding creature element of the document a.
+examples:    # replace living-thing elements in the document b with
+             # the coresponding creature elements of the document a.
+             xsh> copy a://creature replace b://living-thing
 
 see also:    xcopy, add, xadd, move, xmove
 H1
 'xcopy' => <<'H1',
-usage:       xcopy <xpath> <loc> <xpath>
+usage:       xcopy <xpath> <location> <xpath>
 
 aliases:     xcp
 
 description: xcopy is similar to copy, but copies *all* nodes matching
              the first <xpath> to *all* destinations determined by the
-             <loc> directive relative to the second <xpath>. See copy
+             <location> directive relative to the second <xpath>. See copy
              for detailed description of xcopy arguments.
 
 examples:    xsh> xcopy a:/middle-earth/creature into b://world
@@ -1578,7 +1661,7 @@ examples:    xsh> xcopy a:/middle-earth/creature into b://world
 see also:    copy, add, xadd, move, xmove
 H1
 'move' => <<'H1',
-usage:       move <xpath> <loc> <xpath>
+usage:       move <xpath> <location> <xpath>
 
 aliases:     mv
 
@@ -1588,7 +1671,7 @@ description: like copy, except that move removes the source nodes
 see also:    copy, xmove, add, xadd
 H1
 'xcopy' => <<'H1',
-usage:       xmove <xpath> <loc> <xpath>
+usage:       xmove <xpath> <location> <xpath>
 
 aliases:     xmv
 
@@ -1598,17 +1681,18 @@ description: like xcopy except that xmove removes the source nodes
 see also:    xcopy, move, add, xadd
 H1
 'exec' => <<'H1',
-usage:       exec <expression>
+usage:       exec <expression> [<expression> ...]
 
 aliases:     system
 
-description: execute the system command(s) in <expression>.
-             If <expression> should contain spaces, it must
-             be quoted in single- or double- quotes.
+description: execute the system command(s) in <expression>s.
 
-examples:    exec "echo hallo word | wc"; exec uname
-             count words in "hallo wold" string, then print
-             name of your machine's operating system.
+examples:    # count words in "hallo wold" string, then print
+             # name of your machine's operating system.
+
+             exec echo hallo world       # prints hallo world
+             exec "echo hallo word | wc" # counts words in hallo world
+             exec uname;                 # prints operating system name
 
 see also:    !
 H1
@@ -1619,11 +1703,13 @@ description: execute the given system command(s). The arguments
              of ! are considered to begin just after the ! character
              and span across the whole line.
 
-examples:    !ls
-             list current directory
-             !ls | grep \\.xml$
-             is equivalent to
-             !ls *.xml
+examples:    # list current directory
+             xsh> !ls
+             # the follwoing commands are equivalent
+             xsh> !ls | grep \\.xml$
+             xsh> !ls *.xml
+             # semicolon is a part of the command:
+             xsh> exec echo -n hallo; echo "world " # prints hallo world
 
 see also:    exec
 H1
@@ -1642,20 +1728,20 @@ description: List all defined variables and their values.
 see also:    files
 H1
 'saveas' => <<'H1',
-usage:       saveas <id> <filename> [encoding <enc>]
+usage:       saveas <id> <filename> [encoding <encoding>]
 
 description: Save the document identified by <id> as a XML file named
-             <filename>, possibly converting it from its original encoding
-             to <enc>.
+             <filename>, possibly converting it from its original
+             encoding to <encoding>.
 
 see also:    open, close, enc
 H1
 'save' => <<'H1',
-usage:       save <id> [encoding <enc>]
+usage:       save <id> [encoding <encoding>]
 
 description: Save the document identified by <id> to its original XML
              file, possibly converting it from its original encoding
-             to <enc>.
+             to <encoding>.
 
 see also:    open, close, enc, files
 H1
@@ -1687,40 +1773,156 @@ description: Open a new document assigning it a symbolic name of <id>.
              work on document nodes, use <id>: prefix is XPath
              expressions to point the XPath into the document.
 
-examples:    xsh> open x=mydoc.xml
-             open a document
+examples:    xsh> open x=mydoc.xml # open a document
 
+             # quote file name if it contains whitespace
              xsh> open y="document with a long name with spaces.xml"
-             quote file name if it contains whitespace
 
+             # you may omit the word open (I'm clever enough to find out).
              xsh> z=mybook.xml
-             you may omit the word open (I'm clever enough to find out).
 
+             # use z: prefix to identify the document opened with the
+             # previous comand in an XPath expression.
              xsh> list z://chapter/title
-             use z: prefix to identify the document opened with the previous
-             comand in an XPath expression.
 
 see also:    save, close, clone
 H1
 'cd' => <<'H1',
-usage:       cd <directory>
+usage:       cd <expression>
 
 aliases:     chdir
 
-description: Changes the working directory to <directory>, if possible.
-	     If <directory> is omitted, changes to the directory
-	     specified in HOME environment variable, if set; if not,
-             changes to the directory specified by LOGDIR environment
-             variable.
+description: Changes the working directory to <expression>, if
+	     possible.  If <expression> is omitted, changes to the
+	     directory specified in HOME environment variable, if set;
+	     if not, changes to the directory specified by LOGDIR
+	     environment variable.
+
 H1
-'print' => <<'H1',
-usage:       print [<expression>]*
+'print' => <<'H1', 
+
+usage:       print <expression> [<expression> ...]
 
 aliases:     echo
 
 description: Interpolate and print given expression(s).
+
 H1
+'assign' => <<'H1', 
 
+usage:       assign $<id>=<expression>
 
+aliases:     $<id>=<expression>
+
+description: Store the result of interpolation of the <expression> in
+             a variable named $<id>. The variable may be later used in
+             other expressions or even in perl-code as $<id> or
+             ${<id>}.
+
+see also   : variables
+
+H1
+'call' => <<'H1', 
+
+usage:       call <id>
+
+description: Call an XSH subroutine named <id> previously created
+             using def.
+
+see also:    def
+
+H1
+'debug' => <<'H1', 
+
+usage:       debug
+
+description: Turn on debugging messages.
+
+see also:    nodebug
+
+H1
+'nodebug' => <<'H1', 
+
+usage:       nodebug
+
+description: Turn off debugging messages.
+
+see also:    debug
+
+H1
+'def' => <<'H1', 
+
+usage:       def <id> <command-block>
+
+aliases:     define
+
+description: Define a new XSH routine named <id>. The <command-block>
+             may be later invoked using the `call <id>' command.
+
+see also:    call
+
+H1
+'include' => <<'H1', 
+
+usage:       include <filename>
+
+aliases:     .
+
+description: Include a file named <filename> and execute all XSH
+             commands therein.
+
+H1
+'encoding' => <<'H1', 
+
+usage:       encoding <encoding>
+
+description: Set the default output character encoding.
+
+H1
+'query-encoding' => <<'H1', 
+
+usage:       query-encoding <encoding>
+
+description: Set the default query character encoding.
+
+H1
+'quiet' => <<'H1', 
+
+usage:       quiet
+
+description: Turn off verbose messages.
+
+see also:    verbose
+
+H1
+'verbose' => <<'H1',
+
+usage:       verbose
+
+description: Turn on verbose messages.
+
+see also:    quiet
+
+H1
+'run-mode' => <<'H1',
+
+usage:       run-mode
+
+description: Switch into normal XSH mode in which all commands are
+             executed.
+
+see also:    test-mode
+
+H1
+'test-mode' => <<'H1',
+
+usage:       test-mode
+
+description: Switch into test mode in which no commands are actually
+             executed and only command syntax is checked.
+
+see also:    run-mode
+
+H1
 );
 }
