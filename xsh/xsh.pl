@@ -23,7 +23,7 @@ require Term::ReadLine if $opt_i;
 BEGIN {
   getopts('cqdhViE:e:');
   $VERSION='0.8';
-  $REVISION='$Revision: 1.13 $';
+  $REVISION='$Revision: 1.14 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -65,11 +65,13 @@ unless (eval { require XSH::Parser; } ) {
 
 
 xsh_init();
-XSH::Functions::create_doc("scratch","scratch");
-XSH::Functions::set_last_id("scratch");
+
 set_opt_q($opt_q);
 set_opt_d($opt_d);
 set_opt_c($opt_c);
+my $doc=XSH::Functions::create_doc("scratch","scratch");
+XSH::Functions::set_last_id("scratch");
+
 
 my $string=join " ",@ARGV;
 my $l;
@@ -110,6 +112,7 @@ if ($opt_i) {
     }
   }
 } elsif ($string eq "") {
+
   xsh(join "",<STDIN>);
 }
 
