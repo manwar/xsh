@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.4 2002-03-14 17:39:10 pajas Exp $
+# $Id: Functions.pm,v 1.5 2002-03-15 14:55:48 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -22,7 +22,7 @@ BEGIN {
                 &xsh_set_output &xsh_set_parser
                 &set_opt_q &set_opt_d &set_opt_c
 		&create_doc &open_doc &set_doc
-		&xsh_pwd &xsh_local_id
+		&xsh_pwd &xsh_local_id &get_doc
 	       );
   %EXPORT_TAGS = (default => [@EXPORT_OK]);
 
@@ -32,6 +32,10 @@ BEGIN {
   $_qencoding='iso-8859-2';
   $_newdoc=1;
   %_nodelist=();
+}
+
+sub __debug {
+  print STDERR @_;
 }
 
 # initialize XSH and XML parsers
@@ -258,7 +262,7 @@ sub node_address {
   my ($node)=@_;
   my $name;
   if ($node->nodeType == XML_ELEMENT_NODE) {
-    $name=$node->nodeName();
+    $name=$node->getName();
   } elsif ($node->nodeType == XML_TEXT_NODE or
 	   $node->nodeType == XML_CDATA_SECTION_NODE) {
     $name="text()";
@@ -267,7 +271,7 @@ sub node_address {
   } elsif ($node->nodeType == XML_PI_NODE) {
     $name="processing-instruction()";
   } elsif ($node->nodeType == XML_ATTRIBUTE_NODE) {
-    return "@".$node->nodeName();
+    return "@".$node->getName();
   }
   if ($node->parentNode) {
     my @children=$node->parentNode->findnodes("./$name");
@@ -468,6 +472,11 @@ sub set_doc {
   return $doc;
 }
 
+# return DOM of the document identified by given id
+sub get_doc {
+  return $_doc{$_[0]};
+}
+
 # create a new document by parsing a file
 sub open_doc {
   my ($id,$file)=@_;
@@ -548,8 +557,8 @@ sub save_as {
 # create start tag for an element
 sub start_tag {
   my ($element)=@_;
-  return "<".$element->nodeName().
-    join("",map { " ".$_->nodeName()."=".$_->getValue() } 
+  return "<".$element->getName().
+    join("",map { " ".$_->getName()."=\"".$_->getValue()."\"" } 
 	 $element->attributes)
     .($element->hasChildNodes() ? ">" : "/>");
 }
@@ -557,7 +566,7 @@ sub start_tag {
 # create close tag for an element
 sub end_tag {
   my ($element)=@_;
-  return $element->hasChildNodes() ? "</".$element->nodeName().">" : "";
+  return $element->hasChildNodes() ? "</".$element->getName().">" : "";
 }
 
 # convert a subtree to an XML string to the given depth
@@ -756,6 +765,7 @@ sub perlmap {
 # node-type conversion if necessary
 sub insert_node {
   my ($node,$dest,$dest_doc,$where,$ns)=@_;
+
   if ($node->nodeType == XML_TEXT_NODE           ||
       $node->nodeType == XML_CDATA_SECTION_NODE  ||
       $node->nodeType == XML_COMMENT_NODE        ||
@@ -881,10 +891,13 @@ sub create_nodes {
 #  return undef unless ($exp ne "" and ref($doc));
   if ($type eq 'attribute') {
     foreach (create_attributes($exp)) {
-      push @nodes,
-       ($ns ne "") 
-	 ? $doc->createAttribute($_->[0],$_->[1])
-	 : $doc->createAttributeNS($ns,$_->[0],$_->[1]);
+      my $at;
+      if  ($ns ne "" and $_->[0]=~/:/) {
+	$at=$doc->createAttributeNS($ns,$_->[0],$_->[1]);
+      } else {
+	$at=$doc->createAttribute($_->[0],$_->[1]);
+      }
+      push @nodes,$at;
     }
   } elsif ($type eq 'element') {
     my ($name,$attributes);
@@ -892,14 +905,18 @@ sub create_nodes {
       print STDERR "element_name=$1\n" if $_debug;
       print STDERR "attributes=$2\n" if $_debug;
       my ($elt,$att)=($1,$2);
-      my $el= ($ns ne "") 
-	? $doc->createElement($elt)
-	 : $doc->createElementNS($ns,$elt);
+      my $el;
+      if ($ns ne "" and $elt=~/:/) {
+	print STDERR "NS: $ns\n" if $_debug;
+	$el=$doc->createElementNS($ns,$elt)
+      } else {
+	$el=$doc->createElement($elt);
+      }
       if ($att ne "") {
 	$att=~s/\/?\>?$//;
 	foreach (create_attributes($att)) {
 	  print STDERR "atribute: ",$_->[0],"=",$_->[1],"\n" if $_debug;
-	  if ($ns ne "") {
+	  if ($ns ne "" and $elt=~/:/) {
 	    print STDERR "NS: $ns\n" if $_debug;
 	    $el->setAttributeNS($ns,$_->[0],$_->[1]);
 	  } else {
