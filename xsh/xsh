@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.15 2002-11-07 09:43:00 pajas Exp $
+# $Id: xsh,v 1.16 2002-12-09 13:30:33 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -15,7 +15,7 @@ use strict;
 
 use Getopt::Std;
 use vars qw/$opt_q $opt_w $opt_i $opt_h $opt_V $opt_E $opt_e $opt_d $opt_c $opt_s
-            $opt_f $opt_g $opt_v $opt_t $opt_T/;
+            $opt_f $opt_g $opt_v $opt_t $opt_T $opt_a $opt_l/;
 use vars qw/$VERSION $REVISION/;
 
 use IO::Handle;
@@ -27,22 +27,27 @@ use XML::XSH qw(&xsh_set_output &xsh_get_output &xsh &xsh_init
 require Term::ReadLine if $opt_i;
 
 BEGIN {
-  getopts('tscqgvwdfhViTE:e:');
+  getopts('atscqgvwdfhViTE:e:l:');
   $VERSION='0.9';
-   $REVISION='$Revision: 1.15 $';
+   $REVISION='$Revision: 1.16 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
 if ($opt_h) {
-  print "Usage: $0 [options] <commands>\n";
+  print "Usage: $0 [options] [<commands>]\n";
   print "or $0 -h or $0 -V\n\n";
   print "   -g   use XML::GDOME instead of XML::LibXML\n";
   print "   -e   output encoding (default is the document encoding)\n";
   print "   -E   query encoding (default is the output encoding)\n\n";
   print "   -q   quiet\n\n";
   print "   -i   interactive\n\n";
-  print "   -t   read commands from stdin\n",
+  print "   -a   command-line contains arguments to be stored to XSH::Map::ARGV\n";
+  print "        rather than XSH commands\n\n";
+  print "   -l   file containing XSH commands to execute\n",
         "        (default is on unless there are commands on the command-line)\n\n";
+  print "   -t   read commands from stdin\n",
+        "        (this is default behaviour unless -i or -l are used or\n";
+        "        there are commands on the command-line)\n\n";
   print "   -f   ignore ~/.xshrc\n\n";
   print "   -d   print debug messages\n\n";
   print "   -c   compile (parse) only and report errors\n\n";
@@ -95,7 +100,13 @@ if ($opt_w) {
   XML::XSH::Functions::set_load_ext_dtd(1);
 }
 
-my $string=join " ",@ARGV;
+my $string;
+
+if ($opt_a) {
+  @XML::XSH::ARGV=@ARGV;
+} else {
+  $string=join " ",@ARGV;
+}
 my $l;
 
 eval {
@@ -133,6 +144,13 @@ if ($string) {
   print "xsh> $string\n" if ($opt_i and not $opt_q);
   xsh($string);
   print "\n" if ($opt_i and not $opt_q);
+}
+
+if ($opt_l) {
+  my $load;
+  open($load,"$opt_l") || do { print STDERR "Error loading $opt_l: $!\n"; exit 1 };
+  xsh(join "",<$load>);
+  close $load;
 }
 
 if ($opt_i) {
@@ -193,8 +211,7 @@ if ($opt_i) {
 #      $term->addhistory($l);
     }
   }
-
-} elsif ($string eq "" or $opt_t) {
+} elsif (($string eq "" and $opt_l eq "") or $opt_t) {
   xsh(join "",<STDIN>);
 }
 
