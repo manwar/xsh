@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Aug  8 12:57:31 2003
+# Fri Aug  8 16:12:50 2003
 
 package XML::XSH::Help;
 use strict;
@@ -520,8 +520,6 @@ Example:     Commenting and un-commenting pieces of document
                  %n      # nodes to move to comments
                  $mark   # maybe some handy mark to recognize such comments
              {
-               echo "MARK: $mark\n";
-             
                foreach %n {
                  if ( . = ../@* ) {
                    echo "Warning: attribute nodes are not supported!";
@@ -736,7 +734,7 @@ Example:     Count words in "hallo wold" string, then print name of your
 	     machine's operating system.
 
              exec echo hallo world;                 # prints hallo world
-             exec "echo hallo word | wc"; # counts words in hallo world
+             exec "echo hallo word" | wc; # counts words in hallo world
              exec uname;                            # prints operating system name
 
 END
