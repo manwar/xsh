@@ -31,17 +31,19 @@
 <!--                    Rule                                       -->
 <!--                    RecDescent grammar rule, its action and,
                         optionally, documentation                  -->
-<!ELEMENT  rule        (aliases?, production+, comment?, documentation?) >
+<!ELEMENT  rule        (aliases?, (production|ruleref)+, comment?, documentation?) >
 <!--         id         rule identificator
              type       rule type (you may categorize your rules
              name       rule/command descriptive name             
              regexp     (optional) formal way to match the command
-                        name                                       -->
+             inline     if yes, do not create recdescent top-level
+                        rule                                       -->
 <!ATTLIST  rule                                                      
              id         ID                                 #REQUIRED
              type       CDATA                              #IMPLIED
              name       CDATA                              #IMPLIED
-             regexp     CDATA                              #IMPLIED  >
+             regexp     CDATA                              #IMPLIED
+             inline     (yes|no)                              'no'  >
 
 
 <!--                    Aliases                                    -->
@@ -59,8 +61,12 @@
 
 <!--                    Production                                 -->
 <!--                    The rule production                        -->
-<!ELEMENT  production   (selfref | group | regexp | directive | ruleref | literal | action)*    >
+<!ELEMENT  production   (selfref | group | regexp | directive | ruleref | literal | lookahead | action)*    >
 
+<!--                    lookahead                                  -->
+<!ELEMENT  lookahead    EMPTY                                        >
+<!ATTLIST  lookahead
+             negative   (yes|no)                           'no'      >
 
 
 <!--                    RegExp                                     -->
@@ -82,6 +88,7 @@
 <!--                    Ruleref reference                          -->
 <!ELEMENT  ruleref      EMPTY                                        >
 <!--         rep        repetition suffix                          -->
+<!--         sepre      leftop separator regexp                    -->
 <!ATTLIST  ruleref
              ref        IDREF                              #REQUIRED
              rep        CDATA                              #IMPLIED  >
@@ -160,12 +167,19 @@
 <!--                    Group                                      -->
 <!--                    Group of alternative productions           -->
 <!ELEMENT  group        (production+)                                >
+<!--         sepre      leftop separator regexp                    -->
+<!ATTLIST  group
+             rep        CDATA                               #IMPLIED >
 
 
 <!--                    SelfRef                                    -->
 <!--                    Inserts a production item which is matched
                         by command name or any alias               -->
 <!ELEMENT  selfref      EMPTY                                        >
+<!--         sep        require whitespace to separate arguments   -->
+<!ATTLIST  selfref
+             sep        (yes|no)                           'yes'     >
+
 
 
 <!--                    Example                                    -->
