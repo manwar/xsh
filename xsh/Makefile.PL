@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 1.14 2003-08-06 08:54:34 pajas Exp $
+# $Id: Makefile.PL,v 1.15 2003-08-07 13:44:56 pajas Exp $
 
 use strict;
 
@@ -19,6 +19,7 @@ WriteMakefile(
 		   },
      AUTHOR       => 'Petr Pajas (pajas@matfyz.cz)',
      ABSTRACT     => 'XML Editing Shell',
+     MAN3PODS     => { 'XSH.pod' => 'blib/man3/XSH.3' },
     'dist' => {
          COMPRESS  => 'gzip',
          SUFFIX    => 'gz',
@@ -32,10 +33,12 @@ sub MY::postamble {
 xml:
 	tools/gen_grammar.pl src/xsh_grammar.xml > lib/XML/XSH/Grammar.pm
 	tools/gen_help.pl src/xsh_grammar.xml > lib/XML/XSH/Help.pm
+	tools/gen_pod.pl src/xsh_grammar.xml > XSH.pod
 	tools/gen_completions.pl src/xsh_grammar.xml > lib/XML/XSH/CompletionList.pm
 	cd lib/XML/XSH; perl -MGrammar -e XML::XSH::Grammar::compile
 
-docs:
+docs: all
+	pod2html --noindex --title "xsh - XML Editing Shell" < xsh > doc/xsh.html
 	./xsh < tools/gen_reference.xsh
 	./xsh < tools/gen_doc.xsh
 '
