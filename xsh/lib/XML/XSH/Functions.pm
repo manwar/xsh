@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.27 2002-09-27 09:53:49 pajas Exp $
+# $Id: Functions.pm,v 1.28 2002-10-22 16:56:56 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -10,9 +10,10 @@ use IO::File;
 
 use Exporter;
 use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $OUT $LOCAL_ID $LOCAL_NODE
-            $_xml_module
+            $_xml_module $_sigint
             $_xsh $_parser $_encoding $_qencoding %_nodelist @stored_variables
-            $_quiet $_debug $_test $_newdoc $_indent $_backups $SIGSEGV_SAFE $TRAP_SIGINT
+            $_quiet $_debug $_test $_newdoc $_indent $_backups $_cdonopen $SIGSEGV_SAFE
+            $TRAP_SIGINT $_die_on_err
             %_doc %_files %_defs %_chr
 	    $VALIDATION $RECOVERING $EXPAND_ENTITIES $KEEP_BLANKS
 	    $PEDANTIC_PARSER $LOAD_EXT_DTD $COMPLETE_ATTRIBUTES
@@ -20,14 +21,15 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $OUT $LOCAL_ID $LOCAL_NODE
 	  /;
 
 BEGIN {
-  $VERSION='1.5';
+  $VERSION='1.6';
 
   @ISA=qw(Exporter);
   @EXPORT_OK=qw(&xsh_init &xsh &xsh_get_output
                 &xsh_set_output &xsh_set_parser
                 &set_opt_q &set_opt_d &set_opt_c
 		&create_doc &open_doc &set_doc
-		&xsh_pwd &xsh_local_id &get_doc
+		&xsh_pwd &xsh_local_id &get_doc &out
+		&toUTF8 &fromUTF8 &set_local_doc
 	       );
   %EXPORT_TAGS = (default => [@EXPORT_OK]);
 
@@ -36,14 +38,18 @@ BEGIN {
   $_xml_module='XML::XSH::LibXMLCompat';
   $_indent=1;
   $_backups=1;
+  $_cdonopen=1;
   $_encoding='iso-8859-2';
   $_qencoding='iso-8859-2';
   $_newdoc=1;
+  $_die_on_err=0;
   %_nodelist=();
 
   %_chr = ( n => "\n", t => "\t", r => "\r",
 	    f => "\f", b => "\b", a => "\a",
 	    e => "\e" );
+  autoflush STDOUT;
+  autoflush STDERR;
 }
 
 sub min { $_[0] > $_[1] ? $_[1] : $_[0] }
@@ -57,11 +63,11 @@ sub out {
 }
 
 sub __debug {
-  print STDERR @_;
+  _err(@_);
 }
 
 sub __bug {
-  print STDERR "BUG: ",@_;
+  _err("BUG: ",@_);
 }
 
 
@@ -76,14 +82,23 @@ sub xsh_init {
   }
   $_xml_module=$module if $module;
   eval "require $_xml_module;";
+  if ($@) {
+    _err(
+      "\n------------------------------------------------------------\n",
+      $@,
+      "\n------------------------------------------------------------.\n",
+      "I suspect you have not installed XML::LibXML properly.\n",
+      "Please install and try again. If you are 100% sure you have, send\n",
+      "a full bug report to <pajas".'@'."users.sourceforge.net>\n");
+    exit 1;
+  }
   my $mod=$_xml_module->module();
   *encodeToUTF8=\&{"$mod"."::encodeToUTF8"};
   *decodeFromUTF8=\&{"$mod"."::decodeFromUTF8"};
 
-  die $@ if $@;
   $_parser = $_xml_module->new_parser();
   set_load_ext_dtd(1);
-  set_validation(1);
+  set_validation(0);
   set_keep_blanks(1);
 
   if (eval { require XML::XSH::Parser; }) {
@@ -117,7 +132,7 @@ sub set_complete_attributes  { $COMPLETE_ATTRIBUTES=$_[0]; 1; }
 sub set_expand_xinclude	     { $EXPAND_XINCLUDE=$_[0]; 1; }
 sub set_indent		     { $_indent=$_[0]; 1; }
 sub set_backups		     { $_backups=$_[0]; 1; }
-
+sub set_cdonopen	     { $_cdonopen=$_[0]; 1; }
 
 sub get_validation	     { $VALIDATION }
 sub get_recovering	     { $RECOVERING }
@@ -129,6 +144,7 @@ sub get_complete_attributes  { $COMPLETE_ATTRIBUTES }
 sub get_expand_xinclude	     { $EXPAND_XINCLUDE }
 sub get_indent		     { $_indent }
 sub get_backups		     { $_backups }
+sub get_cdonopen	     { $_cdonopen }
 
 sub list_flags {
   print "validation ".(get_validation() or "0").";\n";
@@ -152,6 +168,11 @@ sub toUTF8 {
   # encode/decode from UTF8 returns undef if string not marked as utf8
   # by perl (for example ascii)
   my $res=eval { encodeToUTF8($_[0],$_[1]) };
+  if ($@ =~ /^SIGINT/) {
+    die $@
+  } else {
+    undef $@;
+  }
   return defined($res) ? $res : $_[1];
 }
 
@@ -159,6 +180,11 @@ sub fromUTF8 {
   # encode/decode from UTF8 returns undef if string not marked as utf8
   # by perl (for example ascii)
   my $res=eval { decodeFromUTF8($_[0],$_[1]) };
+  if ($@ =~ /^SIGINT/) {
+    die $@
+  } else {
+    undef $@;
+  }
   return defined($res) ? $res : $_[1];
 }
 
@@ -166,7 +192,8 @@ sub fromUTF8 {
 sub xsh {
   xsh_init() unless (ref($_xsh));
   if (ref($_xsh)) {
-    return ($_[0]=~/^\s*$/) ? 1 : $_xsh->startrule($_[0]);
+    my $code=join "",@_;
+    return ($code=~/^\s*$/) ? 1 : $_xsh->startrule($code);
   } else {
     die "XSH init failed!\n";
   }
@@ -247,7 +274,7 @@ sub test_enc {
       defined(fromUTF8($enc,''))) {
     return 1;
   } else {
-    print STDERR "Error: Cannot convert between $enc and utf-8\n";
+    _err("Error: Cannot convert between $enc and utf-8\n");
     return 0;
   }
 }
@@ -271,23 +298,50 @@ sub print_qencoding { print "$_qencoding\n"; return 1; }
 
 sub sigint {
   if ($TRAP_SIGINT) {
-    out("\nCtrl-C pressed. \n");
-    die "Interrupted by user.";
+    print STDERR "\nCtrl-C pressed. \n";
+    die "SIGINT";
   } else {
     print STDERR "\nCtrl-C pressed. \n";
     exit 1;
   }
-};
+}
+
+sub flagsigint {
+  print STDERR "\nCtrl-C pressed. \n";
+  $_sigint=1;
+}
+
+sub propagate_flagsigint {
+  if ($_sigint) {
+    $_sigint=0;
+    die 'SIGINT';
+  }
+}
+
 
 sub convertFromDocEncoding ($$\$) {
   my ($doc,$encoding,$str)=@_;
   return fromUTF8($encoding, toUTF8($_xml_module->doc_encoding($doc), $str));
 }
 
+sub _err {
+  print STDERR @_,"\n";
+}
+
 # if the argument is non-void then print it and return 0; return 1 otherwise
 sub _check_err {
-  if ($_[0]) {
-    print STDERR "$_[0]\n";
+  my ($err,$survive_int)=@_;
+  if ($err) {
+    if ($err=~/^SIGINT/) {
+      if ($survive_int) {
+	$err=~s/ at (?:.|\n)*$//;
+	_err($err);
+      } else {
+	die $err; # propagate
+      }
+    } else {
+      _err($err);
+    }
     return 0;
   } else {
     return 1;
@@ -339,17 +393,18 @@ sub _id {
 # try to find a document ID by its node
 sub _find_id {
   my ($node)=@_;
-  if ($node->can('ownerDocument')) {
-    my $doc=$node->ownerDocument();
+  if (ref($node)) {
+    my $doc=$_xml_module->owner_document($node);
     foreach my $id (keys %_doc) {
       if ($_xml_module->xml_equal($_doc{$id},$doc)) {
 	print STDERR "FOUND ID: $id\n" if $_debug;
 	return $id;
       }
     }
+    print STDERR "Error: no document found for current node\n";
     my $uri=$_xml_module->doc_URI($doc);
     if ($uri ne "") {
-      print STDERR "ID NOT FOUND, USING: document('$uri')\n" if $_debug;
+      pirnt STDERR "Using document('$uri')\n" if $_debug;
       return "document('$uri')";
     }
   }
@@ -363,33 +418,45 @@ sub _xpath {
   return ($id,$query,$doc);
 }
 
-# make given document and node current (no checking!)
+# make given node current (no checking!)
 sub set_local_node {
-  my ($id,$node)=@_;
-  $LOCAL_ID=$id;
-  $LOCAL_NODE=$node;
+  my ($node)=@_;
+  if (ref($node)) {
+    $LOCAL_NODE=$node;
+    $LOCAL_ID=_find_id($node);
+  } else {
+    $LOCAL_NODE=undef;
+    $LOCAL_ID=undef;
+  }
 }
+
+# make root of the document the current node (no checking!)
+sub set_local_doc {
+  my ($id)=@_;
+  $LOCAL_NODE=$_doc{$id};
+  $LOCAL_ID=$id;
+}
+
 
 # set current node to given XPath
 sub set_local_xpath {
   my ($xp)=@_;
   my ($id,$query,$doc)=_xpath($xp);
+
   if ($query eq "") {
-    set_local_node($id,$_doc{$id});
+    set_local_doc($id);
     return 1;
   }
   return 0 unless ref($doc);
   my ($newlocal);
-  eval {
-    local $SIG{INT}=\&sigint;
-    $newlocal=find_nodes($xp)->[0];
-  };
+  $newlocal=find_nodes($xp)->[0];
   unless ($@) {
     if (ref($newlocal)) {
-      set_local_node($id,$newlocal);
+      set_local_node($newlocal);
     }
   }
-  return _check_err($@);
+
+  return 1;
 }
 
 # return XPath identifying a node within its parent's subtree
@@ -456,14 +523,7 @@ sub xsh_pwd {
   my $pwd;
   my ($id, $doc)=_id();
   return undef unless $doc;
-  eval {
-    local $SIG{INT}=\&sigint;
-    $pwd=fromUTF8($_encoding,pwd());
-  };
-  if ($@) {
-    _check_err($@);
-    return undef;
-  }
+  $pwd=fromUTF8($_encoding,pwd());
   return $pwd;
 }
 
@@ -496,7 +556,7 @@ sub _expand {
     } elsif ($l=~/\G\$\{([a-zA-Z_-][a-zA-Z0-9_-]*)\}/gsco
 	     or $l=~/\G\$([a-zA-Z_-][a-zA-Z0-9_-]*)/gsco) {
       $k.=${"XML::XSH::Map::$1"};
-    } elsif ($l=~/\G\$\{\{([a-zA-Z_][a-zA-Z0-9_]*):(\\.|[^}]*|\}[^}]*)\}\}/gsco) {
+    } elsif ($l=~/\G\$\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*):(\\.|[^}]*|\}[^}]*)\}\}/gsco) {
       $k.=count([$1,$2]);
     } elsif ($l=~/\G\$\{\{((?:\\.|[^}]*|\}[^}])*)\}\}/gsco) {
       $k.=count([undef,$1]);
@@ -523,7 +583,7 @@ sub _assign {
 }
 
 sub _undef {
-  my ($name,$value)=@_;
+  my ($name)=@_;
   no strict 'refs';
   $name=~/^\$(.+)/;
   undef ${"XML::XSH::Map::$1"};
@@ -562,22 +622,24 @@ sub store_variables {
   my $pool;
   if ($new) {
     $pool=[];
-    push @stored_variables, $pool;
-  } elsif (@stored_variables and ref($stored_variables[0])) {
-    $pool=$stored_variables[0];
+  } elsif (@stored_variables and ref($stored_variables[$#stored_variables])) {
+    $pool=$stored_variables[$#stored_variables];
   } else {
     print STDERR "WARNING: Ignoring attempt to make a local variable outside a localizable context!\n";
     return 0;
   }
+
   foreach (@vars) {
     my $value=var_value($_);
     push @$pool, $_ => $value;
   }
+  push @stored_variables, $pool if ($new);
+
   return 1;
 }
 
 sub restore_variables {
-  my $pool=shift @stored_variables;
+  my $pool=pop @stored_variables;
   unless (ref($pool)) {
     __bug("Local variable pool is empty, which was not expected!\n");
     return 0;
@@ -588,7 +650,7 @@ sub restore_variables {
       if (defined($value)) {
 	_assign($name,$value);
       } else {
-	_undef($name,$value);
+	_undef($name);
       }
     } elsif ($name =~ m/^\%(.*)$/) {
       if (defined($value)) {
@@ -635,6 +697,7 @@ sub find_nodes {
   my ($id,$query,$doc)=_xpath($_[0]);
   if ($id eq "" or $query eq "") { $query="."; }
   return undef unless ref($doc);
+
   return _find_nodes(get_local_node($id),toUTF8($_qencoding,$query));
 }
 
@@ -644,8 +707,12 @@ sub nodelist_assign {
   $name=expand($name);
   my ($id,$query,$doc)=_xpath($xp);
   if ($doc) {
-    $_nodelist{$name}=[$doc,find_nodes($xp)];
-    print STDERR "\nStored ",scalar(@{$_nodelist{$name}->[1]})," node(s).\n" unless "$_quiet";
+    if ($query eq "") {
+      $_nodelist{$name}=[$doc,[]];
+    } else {
+      $_nodelist{$name}=[$doc,find_nodes($xp)];
+      print STDERR "\nStored ",scalar(@{$_nodelist{$name}->[1]})," node(s).\n" unless "$_quiet";
+    }
   }
 }
 
@@ -669,18 +736,13 @@ sub create_doc {
   $root_element=~s/^\s+//;
   my $xmldecl;
   $xmldecl="<?xml version='1.0' encoding='utf-8'?>" unless $root_element=~/^\s*\<\?xml /;
-  eval {
-    local $SIG{INT}=\&sigint;
-    $doc=$_xml_module->parse_string($_parser,$xmldecl.$root_element);
-    set_doc($id,$doc,"new_document$_newdoc.xml");
-    $_newdoc++;
-  };
-  if (_check_err($@)) {
-    set_local_node($id,$doc);
-    return $doc;
-  } else {
-    return undef;
-  }
+
+  $doc=$_xml_module->parse_string($_parser,$xmldecl.$root_element);
+  set_doc($id,$doc,"new_document$_newdoc.xml");
+  $_newdoc++;
+
+  set_local_doc($id) if $_cdonopen;
+  return $doc;
 }
 
 # bind a document with a given id and filename
@@ -699,7 +761,15 @@ sub get_doc {
 # create a new document by parsing a file
 sub open_doc {
   my ($id,$file)=expand @_[0,1];
-  my $format=$_[2];
+  my $format;
+  my $source;
+  if ($_[2]=~/open(?:(?:\s*|_|-)(HTML|XML|DOCBOOK|html|xml|docbook))?(?:(?:\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?/) {
+    $format = lc($1) || 'xml';
+    $source = lc($2) || 'file';
+  } else {
+    $format='xml';
+    $source='file';
+  }
   $file=expand($file);
   $id=_id($id);
   print STDERR "open [$file] as [$id]\n" if "$_debug";
@@ -707,30 +777,62 @@ sub open_doc {
     print STDERR "hint: open identifier=file-name\n" unless "$_quiet";
     return;
   }
-  if ($format eq 'pipe' || -f $file || $file=~/^[a-z]+:/) { # || (-f ($file="$file.gz"))) {
+  if ($source ne 'file' || -f $file || $file=~/^[a-z]+:/) { # || (-f ($file="$file.gz"))) {
     print STDERR "parsing $file\n" unless "$_quiet";
-    eval {
-      local $SIG{INT}=\&sigint;
-      my $doc;
-      if ($format eq 'html') {
-	$doc=$_xml_module->parse_html_file($_parser,$file);
-      } elsif ($format eq 'pipe') {
-	local *F;
-	open F,"$file|";
-	$doc=$_xml_module->parse_fh($_parser,\*F);
-	close F;
+
+    my $doc;
+    if ($source eq 'pipe') {
+      open my $F,"$file|";
+      $F || die "Cannot open pipe to $file: $!\n";
+      if ($format eq 'xml') {
+	$doc=$_xml_module->parse_fh($_parser,$F);
+      } elsif ($format eq 'html') {
+	$doc=$_xml_module->parse_html_fh($_parser,$F);
       } elsif ($format eq 'docbook') {
-	$doc=$_xml_module->parse_sgml_file($_parser,\*F);
-      } else {
-	$doc=$_xml_module->parse_file($_parser,$file);
+	$doc=$_xml_module->parse_sgml_fh($_parser,$F,$_qencoding);
       }
-      print STDERR "done.\n" unless "$_quiet";
-      set_doc($id,$doc,$file);
-      set_local_node($id,$doc);
-    };
-    return _check_err($@);
+      close $F;
+    } elsif ($source eq 'string') {
+      my $root_element=$file;
+      $root_element="<$root_element/>" unless ($root_element=~/^\s*</);
+      $root_element=toUTF8($_qencoding,$root_element);
+      $root_element=~s/^\s+//;
+      if ($format eq 'xml') {
+	my $xmldecl;
+	$xmldecl="<?xml version='1.0' encoding='utf-8'?>" unless $root_element=~/^\s*\<\?xml /;
+	$doc=$_xml_module->parse_string($_parser,$xmldecl.$root_element);
+      } elsif ($format eq 'html') {
+	$doc=$_xml_module->parse_html_string($_parser,$root_element);
+      } elsif ($format eq 'docbook') {
+	$doc=$_xml_module->parse_sgml_string($_parser,$root_element);
+	}
+
+      set_doc($id,$doc,"new_document$_newdoc.xml");
+      $_newdoc++;
+    } else  {
+      if ($format eq 'xml') {
+	$doc=$_xml_module->parse_file($_parser,$file);
+      } elsif ($format eq 'html') {
+	$doc=$_xml_module->parse_html_file($_parser,$file);
+      } elsif ($format eq 'docbook') {
+	$doc=$_xml_module->parse_sgml_file($_parser,$file,$_qencoding);
+      }
+    }
+    print STDERR "done.\n" unless "$_quiet";
+    set_doc($id,$doc,$file);
+    set_local_doc($id) if $_cdonopen;
+    
+#     if ($@ =~ /^'' at /) {
+#       print STDERR 
+# 	"\nError: ",
+# 	"Parsing failed. LibXML returned no error message!\n";
+#       print STDERR "Hint: Maybe you are trying to parse with validation on,\n".
+# 	"but your document has no DTD? Consider 'validation 0'.\n" if get_validation();
+#       return 0;
+#     }
+#     return _check_err($@);
   } else {
-    print STDERR "file not exists: $file\n";
+    die "file not exists: $file";
     return 0;
   }
 }
@@ -751,7 +853,7 @@ sub close_doc {
     if ($_doc{'scratch'}) {
       set_local_xpath(['scratch','/']);
     } else {
-      set_local_node(undef,undef);
+      set_local_node(undef);
     }
   }
   return 1;
@@ -780,6 +882,7 @@ sub is_xinclude {
 sub xinclude_start_tag {
   my ($xi)=@_;
   my %xinc = map { $_->nodeName() => $_->value() } $xi->attributes();
+  $xinc{parse}='xml' if ($xinc{parse} eq "");
   return "<".$xi->nodeName()." href='".$xinc{href}."' parse='".$xinc{parse}."'>";
 }
 
@@ -841,7 +944,7 @@ sub xinclude_print {
 	} else {
 	  $F->print(fromUTF8($enc,xinclude_start_tag($child)));
 	  save_xinclude_chunk($doc,\@nodes,$xinc{href},$xinc{parse},$xinc{encoding});
-	  $F->print(fromUTF8($enc,xinclude_end_tag($node)));
+	  $F->print(fromUTF8($enc,xinclude_end_tag($child)));
 	  $child=$node if ($expanded); # jump to XINCLUDE end node
 	}
       } elsif ($_xml_module->is_xinclude_end($child)) {
@@ -853,7 +956,7 @@ sub xinclude_print {
     }
     $F->print(fromUTF8($enc,end_tag($node))) if $_xml_module->is_element($node);
   } else {
-    $F->print(fromUTF8($enc,$_xml_module->toStringUTF8($node)));
+    $F->print(fromUTF8($enc,$_xml_module->toStringUTF8($node,$_indent)));
   }
 }
 
@@ -884,82 +987,81 @@ sub save_xinclude_chunk {
   $F->close();
 }
 
-sub save_xinclude {
-  my ($id,$enc)= expand(@_);
-  ($id,my $doc)=_id($id);
-  return unless ref($doc);
-  my $file=$_files{$id};
-  $enc=$enc || $_xml_module->doc_encoding($doc) || 'utf-8';
-  eval {
-    local $SIG{INT}=\&sigint;
-    save_xinclude_chunk($doc,[$doc->childNodes()],$file,'xml',$enc);
-  };
-  print STDERR "saved $id=$_files{$id} as $file in $enc encoding\n" unless ($@ or "$_quiet");
-  return _check_err($@);
-}
+# save a document
+sub save_doc {
+  my $type=$_[0];
+  my ($id,$file,$enc)=expand($_[1],$_[2],@{$_[3]});
 
-
-# close a document and destroy all nodelists that belong to it
-sub save_as {
-  my ($id,$file,$enc)= expand(@_);
   ($id,my $doc)=_id($id);
-  return unless ref($doc);
-  if ($file eq "") {
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+
+  my $format='xml';
+  my $target='file';
+  if ($type=~/save(?:as|_as|-as)?(?:(?:\s*|_|-)(HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?(?:(?:\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?/) {
+    $format = lc($1) if $1;
+    $target = lc($2) if $2;
+  }
+
+  if ($target eq 'file' and $file eq "") {
     $file=$_files{$id};
     if ($_backups) {
       eval { rename $file, $file."~"; };
       _check_err($@);
     }
   }
-  $enc=$_xml_module->doc_encoding($doc) unless ($enc ne "");
-  print STDERR "$id=$_files{$id} --> $file ($enc)\n" unless "$_quiet";
-  eval {
-    local $SIG{INT}=\&sigint;
-    my $F=open_io_file($file);
-    $F || die "Cannot open $file\n";
-    if (lc($_xml_module->doc_encoding($doc)) ne lc($enc)) {
-      my $t=$_xml_module->toStringUTF8($doc,$_indent);
-      $t=~s/(\<\?xml(?:\s+[^<]*)\s+)encoding=(["'])[^'"]+/$1encoding=$2${enc}/;
-      $F->print(fromUTF8($enc,$t));
+
+  $enc = $enc || $_xml_module->doc_encoding($doc) || 'utf-8';
+  print STDERR "saving $id=$_files{$id} to $file as $format (encoding $enc)\n" if "$_debug";
+
+  if ($format eq 'xinclude') {
+    if ($format ne 'file') {
+      print STDERR "Saving to a ".uc($target)." not supported for XInclude\n";
     } else {
-      $F->print($doc->toString($_indent)); # should be document-encoding encoded
+      save_xinclude_chunk($doc,[$doc->childNodes()],$file,'xml',$enc);
     }
-    $F->close();
-    $_files{$id}=$file unless $file=~/^\s*[|>]/; # no change in case of pipe
-  };
-  print STDERR "saved $id=$_files{$id} as $file in $enc encoding\n" unless ($@ or "$_quiet");
-  return _check_err($@);
-}
+  } else {
+    if ($format eq 'xml') {
+      if (lc($_xml_module->doc_encoding($doc)) ne lc($enc)) {
+	$_xml_module->set_encoding($doc,$enc);
+      }
+      if ($target eq 'file') {
+	$doc->toFile($file,$_indent); # should be document-encoding encoded
+	$_files{$id}=$file;
+      } elsif ($target eq 'pipe') {
+	$file=~s/^\s*\|?//g;
+	open my $F,"| $file" || die "Cannot open pipe to $file\n";
+	$doc->toFH($F,$_indent);
+	close $F;
+      } elsif ($target eq 'string') {
+	out($doc->toString($_indent));
+      }
+    } elsif ($format eq 'html') {
+      my $F;
+      if ($target eq 'file') {
+	($F=open_io_file($file)) || die "Cannot open $file\n";
+	$_files{$id}=$file;
+      } elsif ($target eq 'pipe') {
+	$file=~s/^\s*\|?//g;
+	open $F,"| $file";
+	$F || die "Cannot open pipe to $file\n";
+      } elsif ($target eq 'string') {
+	$F=$OUT;
+      }
+      $F->print("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n")
+	unless ($_xml_module->has_dtd($doc));
+      $F->print(fromUTF8($enc, toUTF8($_xml_module->doc_encoding($doc),
+				      $doc->toStringHTML())));
 
-sub save_as_html {
-  my ($id,$file,$enc)= expand(@_);
-  ($id,my $doc)=_id($id);
-  return unless ref($doc);
-  unless ($doc->can('toStringHTML')) {
-    print STDERR "HTML not supported by ",ref($doc),"\n";
-    return 1;
-  }
-  if ($file eq "") {
-    $file=$_files{$id};
-    if ($_backups) {
-      eval { rename $file, $file."~"; };
-      _check_err($@);
+      $F->close() unless $target eq 'string';
+    } elsif ($format eq 'docbook') {
+      print STDERR "Docbook output not yet supported!\n";
     }
   }
-  print STDERR "$id=$_files{$id} --HTML--> $file ($enc)\n" unless "$_quiet";
-  $enc=$_xml_module->doc_encoding($doc) unless ($enc ne "");
 
-  eval {
-    local $SIG{INT}=\&sigint;
-    my $F=open_io_file($file);
-    $F || die "Cannot open $file\n";
-    $F->print("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n");
-    $F->print(fromUTF8($enc, toUTF8($_xml_module->doc_encoding($doc),
-					  $doc->toStringHTML())));
-    $F->close();
-  };
-  print STDERR "saved $id=$_files{$id} as HTML $file in $enc encoding\n" unless ($@ or "$_quiet");
-  return _check_err($@);
+  print STDERR "Document saved.\n" unless ($@ or "$_quiet");
+  return 1;
 }
 
 
@@ -1007,7 +1109,7 @@ sub to_string {
     }
 
     if ($depth<0 and !$folding) {
-      $result=ref($node) ? $_xml_module->toStringUTF8($node) : $node;
+      $result=ref($node) ? $_xml_module->toStringUTF8($node,$_indent) : $node;
     } elsif (ref($node) and $_xml_module->is_element($node) and $depth==0) {
       $result=start_tag($node).
 	($node->hasChildNodes() ? "...".end_tag($node) : "");
@@ -1027,10 +1129,10 @@ sub to_string {
 	$result.=
 	  join("\n",map { to_string($_,$depth-1,$folding) } $node->childNodes);
       } else {
-	$result=$_xml_module->toStringUTF8($node);
+	$result=$_xml_module->toStringUTF8($node,$_indent);
       }
     } else {
-      $result = ref($node) ? $_xml_module->toStringUTF8($node) : $node;
+      $result = ref($node) ? $_xml_module->toStringUTF8($node,$_indent) : $node;
     }
   }
   return $result;
@@ -1045,51 +1147,47 @@ sub list {
     $folding = 1;
     $depth=-1;
   }
-  return 0 unless ref($doc);
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
   print STDERR "listing $query from $id=$_files{$id}\n\n" if "$_debug";
-  eval {
-    local $SIG{INT}=\&sigint;
-    my $ql=find_nodes($xp);
-    foreach (@$ql) {
-      print STDERR "checking for folding\n" if "$_debug";
-      my $fold=$folding && ($_xml_module->is_element($_) || $_xml_module->is_document($_)) &&
-	$_->findvalue("count(.//\@*[local-name()='fold' and namespace-uri()='$XML::XSH::xshNS'])");
-      print STDERR "folding: $fold\n" if "$_debug";
-      out (fromUTF8($_encoding,to_string($_,$depth,$fold)),"\n");
-    }
-    print STDERR "\nFound ",scalar(@$ql)," node(s).\n" unless "$_quiet";
-  };
-  return _check_err($@);
+
+  my $ql=find_nodes($xp);
+  foreach (@$ql) {
+    print STDERR "checking for folding\n" if "$_debug";
+    my $fold=$folding && ($_xml_module->is_element($_) || $_xml_module->is_document($_)) &&
+      $_->findvalue("count(.//\@*[local-name()='fold' and namespace-uri()='$XML::XSH::xshNS'])");
+    print STDERR "folding: $fold\n" if "$_debug";
+    out (fromUTF8($_encoding,to_string($_,$depth,$fold)),"\n");
+  }
+  print STDERR "\nFound ",scalar(@$ql)," node(s).\n" unless "$_quiet";
+
+  return 1;
 }
 
 sub mark_fold {
   my ($xp,$depth)=@_;
   $depth=expand($depth);
   $depth=0 if $depth eq "";
-  eval {
-    local $SIG{INT}=\&sigint;
-    my $l=find_nodes($xp);
-    foreach my $node (@$l) {
-      if ($_xml_module->is_element($node)) {
-	$node->setAttributeNS($XML::XSH::xshNS,'xsh:fold',$depth);
-      }
+
+  my $l=find_nodes($xp);
+  foreach my $node (@$l) {
+    if ($_xml_module->is_element($node)) {
+      $node->setAttributeNS($XML::XSH::xshNS,'xsh:fold',$depth);
     }
-  };
-  return _check_err($@);
+  }
+  return 1;
 }
 
 sub mark_unfold {
   my ($xp)=@_;
-  eval {
-    local $SIG{INT}=\&sigint;
-    my $l=find_nodes($xp);
-    foreach my $node (@$l) {
-      if ($_xml_module->is_element($node) and $node->hasAttributeNS($XML::XSH::xshNS,'fold')) {
-	remove_node($node->getAttributeNodeNS($XML::XSH::xshNS,'fold'));
-      }
+  my $l=find_nodes($xp);
+  foreach my $node (@$l) {
+    if ($_xml_module->is_element($node) and $node->hasAttributeNS($XML::XSH::xshNS,'fold')) {
+      remove_node($node->getAttributeNodeNS($XML::XSH::xshNS,'fold'));
     }
-  };
-  return _check_err($@);
+  }
+  return 1;
 }
 
 
@@ -1099,14 +1197,15 @@ sub locate {
   my ($id,$query,$doc)=_xpath($xp);
 
   print STDERR "locating $query from $id=$_files{$id}\n\n" if "$_debug";
-  return 0 unless ref($doc);
-  eval {
-    local $SIG{INT}=\&sigint;
-    my $ql=find_nodes($xp);
-    foreach (@$ql) { out(fromUTF8($_encoding,pwd($_)),"\n"); }
-    print STDERR "\nFound ",scalar(@$ql)," node(s).\n" unless "$_quiet";
-  };
-  return _check_err($@);
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+  my $ql=find_nodes($xp);
+  foreach (@$ql) {
+    out(fromUTF8($_encoding,pwd($_)),"\n");
+  }
+  print STDERR "\nFound ",scalar(@$ql)," node(s).\n" unless "$_quiet";
+  return 1;
 }
 
 # evaluate given xpath and output the result
@@ -1116,25 +1215,20 @@ sub count {
 
   return if ($id eq "" or $query eq "");
   unless (ref($doc)) {
-    print STDERR "No such document: $id\n";
-    return undef;
+    die "No such document: $id\n";
   }
   print STDERR "Query $query on $id=$_files{$id}\n" if $_debug;
   my $result=undef;
-  eval {
-    local $SIG{INT}=\&sigint;
-    if ($query=~/^%/) {
-      $result=find_nodes($xp);
-      $result=scalar(@$result);
-    } else {
-      $query=toUTF8($_qencoding,$query);
-      $result=fromUTF8($_encoding,$_xml_module->count_xpath(get_local_node($id),
-						 $query));
-    }
-  };
-  if ($@) {
-    print STDERR "ERROR: $@\n";
-    return undef;
+
+  if ($query=~/^%/) {
+    $result=find_nodes($xp);
+    $result=scalar(@$result);
+  } else {
+    $query=toUTF8($_qencoding,$query);
+    print STDERR "query: $query\n" if "$_debug";
+    $result=fromUTF8($_encoding,$_xml_module->count_xpath(get_local_node($id),
+							  $query));
+    print STDERR "result: $result" if "$_debug";
   }
   return $result;
 }
@@ -1144,18 +1238,18 @@ sub count {
 sub prune {
   my ($xp)=@_;
   my ($id,$query,$doc)=_xpath($xp);
-  return unless ref($doc);
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
   my $i=0;
-  eval {
-    local $SIG{INT}=\&sigint;
-    my $ql=find_nodes($xp);
-    foreach my $node (@$ql) {
-      remove_node($node,get_keep_blanks());
-      $i++;
-    }
-    print STDERR "$i node(s) removed from $id=$_files{$id}\n" unless "$_quiet";
-  };
-  return _check_err($@);
+
+  my $ql=find_nodes($xp);
+  foreach my $node (@$ql) {
+    remove_node($node,get_keep_blanks());
+    $i++;
+  }
+  print STDERR "$i node(s) removed from $id=$_files{$id}\n" unless "$_quiet";
+  return 1;
 }
 
 # evaluate given perl expression
@@ -1164,11 +1258,7 @@ sub eval_substitution {
   $_ = fromUTF8($_qencoding,$val) if defined($val);
 
   eval "package XML::XSH::Map; no strict 'vars'; $expr";
-
-  if ($@) {
-    print STDERR "$@\n";
-    return "";
-  }
+  die $@ if $@; # propagate
   return toUTF8($_qencoding,$_);
 }
 
@@ -1179,23 +1269,30 @@ sub perlsort {
   return 1 unless (exists($_nodelist{$var}));
   return 1 unless ref(my $list=$_nodelist{$var});
   my $doc=$list->[0];
-  eval {
-    local $SIG{INT}=\&sigint;
-    @{$list->[1]} = sort {
-      my $old_local=$LOCAL_NODE;
-      my $old_id=$LOCAL_ID;
+
+  @{$list->[1]} = sort {
+    my $old_local=$LOCAL_NODE;
+    my $old_id=$LOCAL_ID;
+    eval {
       foreach ([$a,$codea],[$b,$codeb]) {
 	$LOCAL_NODE=$_->[0];
 	$LOCAL_ID=_find_id($_->[0]);
 	run_commands($_->[1]);
-      };
+      }
+    };
+    do {
+      local $SIG{INT}=\&flagsigint;
       $LOCAL_NODE=$old_local;
       $LOCAL_ID=$old_id;
+      propagate_flagsigint();
+    };
+    die $@ if ($@); # propagate
+    my $result=eval "package XML::XSH::Map; no strict 'vars'; $perl";
+    die $@ if ($@); # propagate
+    $result;
+  } @{$list->[1]};
 
-      eval "package XML::XSH::Map; no strict 'vars'; $perl";
-    } @{$list->[1]};
-  };
-  return _check_err($@);
+  return 1;
 }
 
 # Evaluate given perl expression over every element matching given XPath.
@@ -1207,33 +1304,30 @@ sub perlmap {
 
   print STDERR "Executing $expr on $query in $id=$_files{$id}\n" if "$_debug";
   unless ($doc) {
-    print STDERR "No such document $id\n";
-    return;
+    die "No such document $id\n";
   }
-  eval {
-    local $SIG{INT}=\&sigint;
 
-    my $sdoc=get_local_node($id);
+  my $sdoc=get_local_node($id);
 
-    my $ql=_find_nodes($sdoc, toUTF8($_qencoding,$query));
-    foreach my $node (@$ql) {
-      if ($_xml_module->is_attribute($node)) {
-	my $val=$node->getValue();
-	$node->setValue(eval_substitution("$val",$expr));
-      } elsif ($_xml_module->is_element($node)) {
-	my $val=$node->getName();
-	if ($node->can('setName')) {
-	  $node->setName(eval_substitution("$val",$expr));
-	} else {
-	  print STDERR "Node renaming not supported by ",ref($node),"\n";
-	}
-      } elsif ($node->can('setData') and $node->can('getData')) {
-	my $val=$node->getData();
-	$node->setData(eval_substitution("$val",$expr));
+  my $ql=_find_nodes($sdoc, toUTF8($_qencoding,$query));
+  foreach my $node (@$ql) {
+    if ($_xml_module->is_attribute($node)) {
+      my $val=$node->getValue();
+      $node->setValue(eval_substitution("$val",$expr));
+    } elsif ($_xml_module->is_element($node)) {
+      my $val=$node->getName();
+      if ($node->can('setName')) {
+	$node->setName(eval_substitution("$val",$expr));
+      } else {
+	_err "Node renaming not supported by ",ref($node);
       }
+    } elsif ($node->can('setData') and $node->can('getData')) {
+      my $val=$node->getData();
+      $node->setData(eval_substitution("$val",$expr));
     }
-  };
-  return _check_err($@);
+  }
+
+  return 1;
 }
 
 sub set_attr_ns {
@@ -1252,6 +1346,141 @@ sub name_prefix {
   }
 }
 
+# try to safely clone a node
+sub node_copy {
+  my ($node,$ns,$dest_doc,$dest)=@_;
+
+  my $copy;
+  if ($_xml_module->is_element($node) and !$node->hasChildNodes) {
+    # -- prepare NS
+    $ns=$node->namespaceURI() if ($ns eq "");
+    if ($ns eq "" and name_prefix($node->getName) ne "") {
+      $ns=$dest->lookupNamespaceURI(name_prefix($node->getName));
+    }
+    # --
+    $copy=new_element($dest_doc,$node->getName(),$ns,
+		      [map { [$_->nodeName(),$_->nodeValue()] } $node->attributes]);
+  } elsif ($_xml_module->is_document_fragment($node)) {
+    $copy=$_parser->parse_xml_chunk($node->toString());
+  } else {
+    $copy=$_xml_module->clone_node($dest_doc,$node);
+  }
+}
+
+# get element-children of a node (e.g. of a document fragment)
+sub get_subelements {
+  my ($docfrag)=@_;
+  return grep { $_xml_module->is_element($_) } $docfrag->childNodes();
+}
+
+sub get_following_siblings {
+  my ($node)=@_;
+  my @siblings;
+  $node=$node->followingSibling();
+  while ($node) {
+    push @siblings,$node;
+    $node=$node->followingSibling();
+  }
+  return @siblings;
+}
+
+# create new document element before the given nodelist
+sub new_document_element {
+  my ($doc,$node,@nodelist)=@_;
+  $doc->setDocumentElement($node);
+  foreach my $n (reverse @nodelist) {
+    $doc->removeChild($n);
+    $doc->insertAfter($n,$node);
+  }
+}
+
+# safely insert source node after, before or instead of the
+# destination node. Safety means here that nodes inserted on the
+# document level are given special care.  the source node may only be
+# a document fragment, element, text, CDATA, Comment, Entity or
+# a PI (i.e. not an attribute).
+
+sub safe_insert {
+  my ($source,$dest,$where) = @_;
+  my $parent=$dest->parentNode();
+  return unless $parent;
+#  __debug("using safe insert: $where\n");
+  if ($_xml_module->is_document($parent)) {
+#    __debug("target: document\n");
+    # placing a node into a document
+    # SOURCE: Element
+    if ($_xml_module->is_element($source)) {
+#      __debug("source: element\n");
+      if ($where eq 'after') {
+	if ($parent->getDocumentElement()) {
+	  _err("Error: cannot insert another element into /:\n",
+	       "  there's one document element already!");
+	} else {
+	  new_document_element($parent,$source,
+			       get_following_siblings($dest));
+	}
+	return 'keep';
+      } elsif ($where eq 'before') {
+	if ($parent->getDocumentElement()) {
+	  _err("Error: cannot insert another element into /:\n",
+	       "  there's one document element already!");
+	} else {
+	  new_document_element($parent,$source,
+			       $dest,get_following_siblings($dest));
+	}
+	return 'keep';
+      } elsif ($where eq 'replace') {
+	# maybe we are loosing the document element here !
+	if ($parent->getDocumentElement()) {
+	  if ($_xml_module->is_element($dest)) {
+	    my $nextnode = $parent->getDocumentElement()->nextSibling();
+	    new_document_element($parent,$source,
+				 $dest,get_following_siblings($dest));
+	  } else {
+	    _err("Error: cannot insert another element into /:\n",
+	         "  there's one document element already!");
+	  }
+	} else {
+	  new_document_element($parent,$source,
+			       $dest,get_following_siblings($dest));
+	}
+	return 'remove';
+      }
+    } # SOURCE: PI or Comment or DocFragment with PI's or Comments
+    elsif ($_xml_module->is_pi($source) ||
+	   $_xml_module->is_comment($source) ||
+	   $_xml_module->is_document_fragment($source)) {
+#      __debug("source: not element\n");
+      # placing a node into an element
+      if ($where eq 'after') {
+	$parent->insertAfter($source,$dest);
+	return 'keep';
+      } elsif ($where eq 'before') {
+	$parent->insertBefore($source,$dest);
+	return 'keep';
+      } elsif ($where eq 'replace') {
+	# maybe we are loosing the document element here !
+	$parent->insertBefore($source,$dest);
+	return 'remove';
+      }
+    } else {
+      _err("Error: cannot insert node ",ref($source)," on a document level");
+    }
+  } else {
+#    __debug("target: element\n");
+    if ($where eq 'after') {
+      $parent->insertAfter($source,$dest);
+      return 'keep';
+    } elsif ($where eq 'before') {
+      $parent->insertAfter($source,$dest);
+      return 'keep';
+    } elsif ($where eq 'replace') {
+      $parent->insertBefore($source,$dest);
+      return 'remove';
+    }
+  }
+}
+
 # insert given node to given destination performing
 # node-type conversion if necessary
 sub insert_node {
@@ -1259,11 +1488,10 @@ sub insert_node {
 
   # destination: Attribute
   if ($_xml_module->is_attribute($dest)) {
-    # source: Text, CDATA, Comment, PI, Entity
+    # source: Text, CDATA, Comment, Entity
     if ($_xml_module->is_text($node)           ||
 	$_xml_module->is_cdata_section($node)  ||
 	$_xml_module->is_comment($node)        ||
-	$_xml_module->is_pi($node)             ||
 	$_xml_module->is_entity($node)) {
       my $val=$node->getData();
       if ($where eq 'replace' or $where eq 'into') {
@@ -1284,11 +1512,11 @@ sub insert_node {
     }
     # source: attribute, element
     elsif ($_xml_module->is_attribute($node) ||
-	   $_xml_module->is_element($node)) {
+	   $_xml_module->is_element($node) ||
+	   $_xml_module->is_pi($node)) {
       my $name=$node->getName();
-      my $value = $_xml_module->is_attribute($node) ? $node->getValue()
-	: $node->textContent();
-      if ($where eq 'replace') {
+      my $value = $_xml_module->is_element($node) ? $node->textContent() : $node->getValue();
+      if ($where eq 'replace' or $where eq 'after' or $where eq 'before') {
 	# -- prepare NS
 	$ns=$node->namespaceURI() if ($ns eq "");
 	if ($ns eq "" and name_prefix($name) ne "") {
@@ -1297,7 +1525,7 @@ sub insert_node {
 	# --
 	my $elem=$dest->ownerElement();
 	set_attr_ns($elem,"$ns",$name,$value);
-	if ($name ne $dest->getName()) {
+	if ($where eq 'replace' and $name ne $dest->getName()) {
 	  return 'remove'; # remove the destination node in the end
 	} else {
 	  return 'keep'; # no need to remove the destination node
@@ -1306,18 +1534,17 @@ sub insert_node {
 	# -- prepare NS
 	$ns=$dest->namespaceURI(); # given value of $ns is ignored here
 	# --
-	if ($where eq 'after' or $where eq 'append') {
+	if ($where eq 'append') {
 	  set_attr_ns($dest->ownerElement(),"$ns",$dest->getName,$dest->getValue().$value);
 	} elsif ($where eq 'into') {
 	  set_attr_ns($dest->ownerElement(),"$ns",$dest->getName(),$value);
-	} elsif ($where eq 'before' or $where eq 'prepend') {
+	} elsif ($where eq 'prepend') {
 	  set_attr_ns($dest->ownerElement(),"$ns",$dest->getName(),$value.$dest->getValue());
 	}
       }
     } else {
-      print STDERR
-	"Warning: Ignoring incompatible source ",ref($node),
-	  " and destination ",ref($dest),"!\n";
+      _err("Warning: Ignoring incompatible source ",ref($node),
+	    " and destination ",ref($dest),"!");
     }
   }
   # destination: Element
@@ -1344,10 +1571,8 @@ sub insert_node {
 	$new->appendText($node->getValue());
 	my $parent=$dest->parentNode();
 	if ($_xml_module->is_element($parent)) {
-	  if ($where eq 'before') {
-	    $parent->insertBefore($new,$dest);
-	  } elsif ($where eq 'after') {
-	    $parent->insertAfter($new,$dest);
+	  if ($where eq 'before' or $where eq 'after') {
+	    safe_insert($new,$dest,$where);
 	  }
 	} elsif ($where eq 'append') {
 	  $dest->appendChild($new);
@@ -1358,38 +1583,13 @@ sub insert_node {
     }
     # source: Any but Attribute
     else {
-      my $copy;
-      if ($_xml_module->is_element($node) and !$node->hasChildNodes) {
-	# -- prepare NS
-	$ns=$node->namespaceURI() if ($ns eq "");
-	if ($ns eq "" and name_prefix($node->getName) ne "") {
-	  $ns=$dest->lookupNamespaceURI(name_prefix($node->getName));
-	}
-	# --
-	$copy=new_element($dest_doc,$node->getName(),$ns,
-			  [map { [$_->nodeName(),$_->nodeValue()] } $node->attributes]);
-      } elsif ($_xml_module->is_document_fragment($node)) {
-	$copy=$_parser->parse_xml_chunk($node->toString());
-      } else {
-	$copy=$_xml_module->clone_node($dest_doc,$node);
-      }
-      if ($where eq 'after') {
-	$dest->parentNode()->insertAfter($copy,$dest)
-	  unless ($_xml_module->is_document_fragment($node) and
-		  !$_xml_module->is_element($dest->parentNode()));
-      } elsif ($where eq 'before') {
-	$dest->parentNode()->insertBefore($copy,$dest)
-	  unless ($_xml_module->is_document_fragment($node) and
-		  !$_xml_module->is_element($dest->parentNode()));
+      my $copy=node_copy($node,$ns,$dest_doc,$dest);
+      if ($where eq 'after' or $where eq 'before' or $where eq 'replace') {
+	return safe_insert($copy,$dest,$where);
       } elsif ($where eq 'into' or $where eq 'append') {
 	$dest->appendChild($copy);
       } elsif ($where eq 'prepend') {
 	$dest->insertBefore($copy,$dest->firstChild());
-      } elsif ($where eq 'replace') {
-	$dest->parentNode()->insertBefore($copy,$dest)
-	  unless ($_xml_module->is_document_fragment($node) and
-		  !$_xml_module->is_element($dest->parentNode()));
-	return 'remove';
       }
     }
   }
@@ -1427,34 +1627,25 @@ sub insert_node {
       return 'remove';
     } else {
       my $parent=$dest->parentNode();
-      unless (!$_xml_module->is_element($parent) and
-	      ($_xml_module->is_element($node) ||
-	       $_xml_module->is_attribute($node) ||
-	       $_xml_module->is_text($node) ||
-	       $_xml_module->is_cdata_section($node))) {
-	my $new;
-	# source: Attribute
-	if ($_xml_module->is_attribute($node)) {
-	  # -- prepare NS
-	  $ns=$node->namespaceURI() if ($ns eq "");
-	  if ($ns eq "" and name_prefix($node->getName) ne "") {
-	    $ns=$parent->lookupNamespaceURI(name_prefix($node->getName));
-	  }
-	  # --
-	  $new=new_element($dest_doc,$node->getName(),$ns);
-	  $new->appendText($node->getValue());
+      my $new;
+      # source: Attribute
+      if ($_xml_module->is_attribute($node)) {
+	# implicit conversion of attribute to element
+	# -- prepare NS
+	$ns=$node->namespaceURI() if ($ns eq "");
+	if ($ns eq "" and name_prefix($node->getName) ne "") {
+	  $ns=$parent->lookupNamespaceURI(name_prefix($node->getName));
 	}
-	# source: All other
-	else {
-	  $new = $node;
-	}
-	if ($where eq 'after') {
-	  $parent->insertAfter($new,$dest)
-	} elsif ($where eq 'before') {
-	  $parent->insertBefore($new,$dest);
-	} elsif ($where eq 'replace') {
-	  $parent->insertBefore($new,$dest);
-	}
+	# --
+	$new=new_element($dest_doc,$node->getName(),$ns);
+	$new->appendText($node->getValue());
+      }
+      # source: All other
+      else {
+	$new=node_copy($node,$ns,$dest_doc,$dest);
+      }
+      if ($where =~ /^(?:after|before|replace)$/) {
+	return safe_insert($new,$dest,$where);
       }
     }
   } else {
@@ -1472,35 +1663,35 @@ sub copy {
 
   return unless (ref($fdoc) and ref($tdoc));
   my ($fl,$tl);
-  eval {
-    local $SIG{INT}=\&sigint;
-    $fl=find_nodes($fxp);
-    $tl=find_nodes($txp);
-  };
-  return _check_err($@) if ($@);
+
+  $fl=find_nodes($fxp);
+  $tl=find_nodes($txp);
+
   unless (@$tl) {
     print STDERR "No matching nodes found for $tq in $tid=$_files{$tid}\n" unless "$_quiet";
     return 0;
   }
-  eval {
-    local $SIG{INT}=\&sigint;
-    if ($all_to_all) {
-      foreach my $tp (@$tl) {
-	my $replace=0;
-	foreach my $fp (@$fl) {
-	  $replace = (insert_node($fp,$tp,$tdoc,$where) eq 'replace') && $replace;
-	}
-	remove_node($tp) if $replace;
+
+  if ($all_to_all) {
+    foreach my $tp (@$tl) {
+      my $replace=0;
+      foreach my $fp (@$fl) {
+	$replace = ((insert_node($fp,$tp,$tdoc,$where) eq 'remove') || $replace);
       }
-    } else {
-      while (ref(my $fp=shift @$fl) and ref(my $tp=shift @$tl)) {
-	if (insert_node($fp,$tp,$tdoc,$where) eq 'replace') {
-	  remove_node($tp);
-	}
+      if ($replace) {
+	remove_node($tp);
       }
     }
-  };
-  return _check_err($@);
+  } else {
+    while (ref(my $fp=shift @$fl) and ref(my $tp=shift @$tl)) {
+      my $replace=insert_node($fp,$tp,$tdoc,$where);
+      if ($replace eq 'remove') {
+	remove_node($tp);
+      }
+    }
+  }
+
+  return 1;
 }
 
 # parse a string and create attribute nodes
@@ -1608,10 +1799,10 @@ sub create_nodes {
     push @nodes,$doc->createCDATASection($exp);
     print STDERR "cdata=$exp\n" if $_debug;
   } elsif ($type eq 'pi') {
-    my ($name,$data)=split /\s/,$exp,2;
+    my ($name,$data)=($exp=~/^\s*(?:\<\?)?(\S+)(?:\s+(.*?)(?:\?\>)?)?$/);
     my $pi = $doc->createProcessingInstruction($name);
     $pi->setData($data);
-    print STDERR "pi=$name $data\n" if $_debug;
+    print STDERR "pi=<?$name ... $data?>\n" if $_debug;
     push @nodes,$pi;
 #    print STDERR "cannot add PI yet\n" if $_debug;
   } elsif ($type eq 'comment') {
@@ -1632,7 +1823,8 @@ sub insert {
   my ($tid,$tq,$tdoc)=_xpath($xpath); # destination(s)
 
   return 0 unless ref($tdoc);
-  eval {
+# eval {
+#    local $SIG{INT}=\&sigint;
     my @nodes;
     $ns=toUTF8($_qencoding,$ns);
     unless ($type eq 'chunk') {
@@ -1645,109 +1837,109 @@ sub insert {
       }
       @nodes=grep {ref($_)} ($_parser->parse_xml_chunk($exp));
     }
-    local $SIG{INT}=\&sigint;
     my $tl=find_nodes($xpath);
 
     if ($to_all) {
       foreach my $tp (@$tl) {
 	my $replace=0;
 	foreach my $node (@nodes) {
-	  $replace = (insert_node($node,$tp,$tdoc,$where) eq 'replace') && $replace;
+	  $replace = (insert_node($node,$tp,$tdoc,$where) eq 'remove') || $replace;
 	}
-	remove_node($tp) if $replace;
+	if ($replace) {
+	  remove_node($tp);
+	}
       }
     } elsif ($tl->[0]) {
       foreach my $node (@nodes) {
 	if (ref($tl->[0])) {
-	  if (insert_node($node,$tl->[0],$tdoc,$where) eq 'replace') {
+	  if (insert_node($node,$tl->[0],$tdoc,$where) eq 'remove') {
 	    remove_node($tl->[0]);
 	  }
 	}
       }
     }
-  };
-  return _check_err($@);
+#  };
+  return 1;
 }
 
 # fetch document's DTD
 sub get_dtd {
   my ($doc)=@_;
   my $dtd;
-  eval {
-    local $SIG{INT}=\&sigint;
-    $dtd=$_xml_module->get_dtd($doc,$_quiet);
-  };
-  return _check_err($@) && $dtd;
+  $dtd=$_xml_module->get_dtd($doc,$_quiet);
+
+  return $dtd;
 }
 
 # check document validity
 sub valid_doc {
   my ($id)=expand @_;
   ($id,my $doc)=_id($id);
-  return unless $doc;
-  eval {
-    local $SIG{INT}=\&sigint;
-    if ($doc->can('is_valid')) {
-      out(($doc->is_valid() ? "yes\n" : "no\n"));
-    } else {
-      print STDERR "Vaidation not supported by ",ref($doc),"\n";
-    }
-  };
-  return _check_err($@);
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+
+  if ($doc->can('is_valid')) {
+    out(($doc->is_valid() ? "yes\n" : "no\n"));
+  } else {
+    _err("Vaidation not supported by ",ref($doc));
+  }
+
+  return 1;
 }
 
 # validate document
 sub validate_doc {
   my ($id)=expand @_;
   ($id, my $doc)=_id($id);
-  return unless $doc;
-  local $SIG{INT}=\&sigint;
-  eval {
-    if ($doc->can('validate')) {
-      $doc->validate();
-    } else {
-      print STDERR "Vaidation not supported by ",ref($doc),"\n";
-    }
-  };
-  return _check_err($@);
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+
+  if ($doc->can('validate')) {
+    $doc->validate();
+  } else {
+    _err("Vaidation not supported by ",ref($doc));
+  }
+
+  return 1;
 }
 
 # process XInclude elements in a document
 sub process_xinclude {
   my ($id)=expand @_;
   ($id, my $doc)=_id($id);
-  return unless $doc;
-  local $SIG{INT}=\&sigint;
-  eval { $_xml_module->doc_process_xinclude($_parser,$doc); };
-  return _check_err($@);
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+  $_xml_module->doc_process_xinclude($_parser,$doc);
+  return 1;
 }
 
 # print document's DTD
 sub list_dtd {
   my ($id)=expand @_;
   ($id, my $doc)=_id($id);
-  return unless $doc;
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
   my $dtd=get_dtd($doc);
 
-  eval {
-    local $SIG{INT}=\&sigint;
-    if ($dtd) {
-      out(fromUTF8($_encoding,$_xml_module->toStringUTF8($dtd)),"\n");
-    }
-  };
-  return _check_err($@);
+  if ($dtd) {
+    out(fromUTF8($_encoding,$_xml_module->toStringUTF8($dtd)),"\n");
+  }
+  return 1;
 }
 
 # print document's encoding
 sub print_enc {
   my ($id)=expand @_;
   ($id, my $doc)=_id($id);
-  return unless $doc;
-  eval {
-    local $SIG{INT}=\&sigint;
-    out($_xml_module->doc_encoding($doc),"\n");
-  };
-  return _check_err($@);
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+  out($_xml_module->doc_encoding($doc),"\n");
+  return 1;
 }
 
 # create an identical copy of a document
@@ -1757,14 +1949,12 @@ sub clone {
 
   return if ($id2 eq "" or $id2 eq "" or !ref($doc));
   print STDERR "duplicating $id2=$_files{$id2}\n" unless "$_quiet";
-  eval {
-    local $SIG{INT}=\&sigint;
-    set_doc($id1,$_xml_module->parse_string($_parser,
-					    $doc->toString($_indent)),
-	    $_files{$id2});
-    print STDERR "done.\n" unless "$_quiet";
-  };
-  return _check_err($@);
+
+  set_doc($id1,$_xml_module->parse_string($_parser,
+					  $doc->toString($_indent)),
+	  $_files{$id2});
+  print STDERR "done.\n" unless "$_quiet";
+  return 1;
 }
 
 # test if $nodea is an ancestor of $nodeb
@@ -1787,7 +1977,7 @@ sub remove_node {
     $LOCAL_NODE=tree_parent_node($node);
   }
   my $doc;
-  $doc=$node->ownerDocument();
+  $doc=$_xml_module->owner_document($node);
   if ($trim_space) {
     my $sibling=$node->nextSibling();
     if ($sibling and
@@ -1807,21 +1997,17 @@ sub move {
   my ($xp)=@_; #source xpath
   my ($id,$query,$doc)= _xpath($xp);
   my $sourcenodes;
-  return unless ref($doc);
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
   my $i=0;
-  eval {
-    local $SIG{INT}=\&sigint;
-    $sourcenodes=find_nodes($xp);
-  };
+  $sourcenodes=find_nodes($xp);
   if (copy(@_)) {
-    eval {
-      local $SIG{INT}=\&sigint;
-      foreach my $node (@$sourcenodes) {
-	remove_node($node);
-	$i++;
-      }
-    };
-    return _check_err($@);
+    foreach my $node (@$sourcenodes) {
+      remove_node($node);
+      $i++;
+    }
+    return 1;
   } else {
     return 0;
   }
@@ -1829,33 +2015,28 @@ sub move {
 
 # call a shell command and print out its output
 sub sh {
-  eval {
-    local $SIG{INT}=\&sigint;
-    my $cmd=expand($_[0]);
-    out(`$cmd`);
-  };
-  return $@ ? 0 : 1;
+  my $cmd=expand($_[0]);
+  out(`$cmd`);
+  return 1;
 }
 
 # print the result of evaluating an XPath expression in scalar context
 sub print_count {
   my $count=count(@_);
   out("$count\n");
-  return $count;
+  return 1;
 }
 
 sub perl_eval {
-  return eval("package XML::XSH::Map; no strict 'vars'; $_[0]");
+  my $result=eval("package XML::XSH::Map; no strict 'vars'; $_[0]");
+  die $@ if $@;
+  return $result;
 }
 
 # evaluate a perl expression and print out the result
 sub print_eval {
   my ($expr)=@_;
   my $result=perl_eval($expr);
-  if ($@) {
-    print STDERR "$@\n";
-    return 0;
-  }
   out("$result\n") unless "$_quiet";
   return 1;
 }
@@ -1875,24 +2056,36 @@ sub cd {
 sub run_commands {
   return 0 unless ref($_[0]) eq "ARRAY";
   my @cmds=@{$_[0]};
+  my $trapsigint=$_[1];
   my $result=0;
 
   my ($cmd,@params);
 
   store_variables(1);
-  foreach my $run (@cmds) {
-    if (ref($run) eq 'ARRAY') {
-      ($cmd,@params)=@$run;
-      if ($cmd eq "test-mode") { $_test=1; $result=1; next; }
+  eval {
+    local $SIG{INT}=\&sigint if $trapsigint;
+    foreach my $run (@cmds) {
+      if (ref($run) eq 'ARRAY') {
+	($cmd,@params)=@$run;
+	if ($cmd eq "test-mode") { $_test=1; $result=1; next; }
       if ($cmd eq "run-mode") { $_test=0; $result=1; next; }
-      next if $_test;
-      $result=&{$cmd}(@params);
-    } else {
-      $result=1;
+	next if $_test;
+	$result=&{$cmd}(@params);
+      } else {
+	$result=1;
+      }
     }
+  };
+  do {
+    local $SIG{INT}=\&flagsigint;
+    restore_variables();
+    propagate_flagsigint();
+  };
+  if (!$trapsigint and $@ =~ /^SIGINT/) {
+    die $@
+  } else {
+    _check_err($@,1);
   }
-  restore_variables();
-
   return $result;
 }
 
@@ -1913,12 +2106,16 @@ sub pipe_command {
       open(PIPE,"| $pipe") || die "cannot open pipe $pipe\n";
       $OUT=\*PIPE;
       run_commands($cmd);
+    };
+    do {
+      local $SIG{INT}=\&flagsigint;
       $OUT=$out;
       close PIPE;
+      propagate_flagsigint();
     };
-    return _check_err($@);
+    die $@ if $@; # propagate
   }
-  return 0;
+  return 1;
 }
 
 # redirect output to a string and call methods from a list
@@ -1932,9 +2129,13 @@ sub string_pipe_command {
     eval {
       run_commands($cmd);
     };
-    _assign($name,$OUT->value());
-    $OUT=$out;
-    return _check_err($@);
+    do {
+      local $SIG{INT}=\&flagsigint;
+      _assign($name,$OUT->value()) unless $@;
+      $OUT=$out;
+      propagate_flagsigint();
+    };
+    die $@ if $@; # propagate
   }
   return 0;
 }
@@ -1961,30 +2162,32 @@ sub foreach_statement {
   my ($xp,$command)=@_;
   if (ref($xp) eq 'ARRAY') {
     my ($id,$query,$doc)=_xpath($xp);
-    return unless ref($doc);
+    unless (ref($doc)) {
+      die "No such document '$id'!\n";
+    }
     my $old_local=$LOCAL_NODE;
     my $old_id=$LOCAL_ID;
     eval {
-      local $SIG{INT}=\&sigint;
       my $ql=find_nodes($xp);
       foreach my $node (@$ql) {
 	$LOCAL_NODE=$node;
 	$LOCAL_ID=_find_id($node);
-#	__debug("FOREACH ID: $LOCAL_ID\n");
 	run_commands($command);
       }
     };
-    $LOCAL_NODE=$old_local;
-    $LOCAL_ID=$old_id;
+    do {
+      local $SIG{INT}=\&flagsigint;
+      $LOCAL_NODE=$old_local;
+      $LOCAL_ID=$old_id;
+      propagate_flagsigint();
+    };
+    die $@ if $@; # propagate
   } else {
-    eval {
-      foreach $XML::XSH::Map::__ (perl_eval($xp)) {
-	run_commands($command);
-      }
-    };
+    foreach $XML::XSH::Map::__ (perl_eval($xp)) {
+      run_commands($command);
+    }
   }
-  return _check_err($@);
-
+  return 1;
 }
 
 # call methods if given XPath holds
@@ -2021,40 +2224,28 @@ sub xslt {
   my $params=$_[3];
   print STDERR "running xslt on @_\n" if "$_debug";
   return unless $_doc{$id};
-  eval {
-    my %params;
-    %params=map { expand($_) } map { @$_ } @$params if ref($params);
-    if ($_debug) {
-      print STDERR map { "$_ -> $params{$_} " } keys %params;
-      print STDERR "\n";
-    }
+  my %params;
+  %params=map { expand($_) } map { @$_ } @$params if ref($params);
+  if ($_debug) {
+    print STDERR map { "$_ -> $params{$_} " } keys %params;
+    print STDERR "\n";
+  }
 
-    local $SIG{INT}=\&sigint;
-    if (-f $stylefile) {
-      require XML::LibXSLT;
+  if (-f $stylefile) {
+    require XML::LibXSLT;
 
-      local *SAVE;
+    local *SAVE;
 
-#      open (SAVE,">&STDERR");
-#      open (STDERR,">/dev/null");
-
-      my $_xsltparser=XML::LibXSLT->new();
-#      unless ($_xsltparser) {
-#	$_xsltparser=XML::LibXSLT->new();
-#      }
-      my $st=$_xsltparser->parse_stylesheet_file($stylefile);
-      $stylefile=~s/\..*$//;
-      my $doc=$st->transform($_doc{$id},%params);
-      set_doc($newid,$doc,
-	      "$stylefile"."_transformed_".$_files{$id});
-#      open (STDERR,">&SAVE");
-#      close SAVE;
-
-    } else {
-      die "File not exists $stylefile\n";
-    }
-  };
-  return _check_err($@);
+    my $_xsltparser=XML::LibXSLT->new();
+    my $st=$_xsltparser->parse_stylesheet_file($stylefile);
+    $stylefile=~s/\..*$//;
+    my $doc=$st->transform($_doc{$id},%params);
+    set_doc($newid,$doc,
+	    "$stylefile"."_transformed_".$_files{$id});
+  } else {
+    die "File not exists $stylefile\n";
+  }
+  return 1;
 }
 
 # perform xupdate processing over a document
@@ -2062,17 +2253,17 @@ sub xupdate {
   my ($xupdate_id,$id)=expand(@_);
   $id=_id($id);
   if (get_doc($xupdate_id) and get_doc($id)) {
-    eval {
-      require XML::XUpdate::LibXML;
-      require XML::Normalize::LibXML;
-      my $xupdate = XML::XUpdate::LibXML->new();
-      $XML::XUpdate::LibXML::debug=1;
-#      XML::Normalize::LibXML::xml_strip_whitespace(get_doc($xupdate_id));
-      $xupdate->process(get_doc($id)->getDocumentElement(),get_doc($xupdate_id));
-    };
-    return _check_err($@);
+    require XML::XUpdate::LibXML;
+    require XML::Normalize::LibXML;
+    my $xupdate = XML::XUpdate::LibXML->new();
+    $XML::XUpdate::LibXML::debug=1;
+    $xupdate->process(get_doc($id)->getDocumentElement(),get_doc($xupdate_id));
   } else {
-    print STDERR "No such document $xupdate_id or $id";
+    if (get_doc($xupdate_id)) {
+      die "No such document $id\n";
+    } else {
+      die "No such document $xupdate_id\n";
+    }
     return 0;
   }
 }
@@ -2082,35 +2273,68 @@ sub call {
   my ($name,$args)=@_;
   $name=expand($name);
   if (exists $_defs{$name}) {
+    my @vars=();
     if (ref($args)) {
-      my @vars=@{ $_defs{$name} };
+      @vars=@{ $_defs{$name} };
       shift @vars;
-      store_variables(1,@vars);
-      my $var;
-      foreach (@$args) {
-	$var=shift @vars;
-	if (defined($var)) {
-	  if ($var =~ /^\$/) {
-	    _assign($var,expand($_)); # string assignment
-	  } elsif ($var =~ /^\%(.*)$/) {
-	    nodelist_assign($1,$_); # nodelist assignment
+    }
+    my $result;
+    store_variables(1,@vars);
+    eval {
+      if (ref($args)) {
+	my $var;
+	foreach (@$args) {
+	  $var=shift @vars;
+	  if (defined($var)) {
+	    if ($var =~ /^\$/) {
+	      _assign($var,expand($_)); # string assignment
+	    } elsif ($var =~ /^\%(.*)$/) {
+	      nodelist_assign($1,$_); # nodelist assignment
+	    }
 	  }
 	}
       }
-    }
-    my $result = run_commands($_defs{$name}->[0]);
-    restore_variables() if (ref($args));
+      $result = run_commands($_defs{$name}->[0]);
+    };
+    do {
+      local $SIG{INT}=\&flagsigint;
+      restore_variables() if (ref($args));
+      propagate_flagsigint();
+    };
+    die $@ if $@; # propagate
     return $result;
   } else {
-    print STDERR "ERROR: $name not defined\n";
-    return 0;
+    die "ERROR: $name not defined\n";
   }
 }
 
 # define a named set of commands
 sub def {
-  my ($name,$command,$args)=@_;
-  $name=expand $name;
+  my ($name,$block,$args)=@_;
+  my ($command)=@$block;
+  if (exists($_defs{$name})) {
+    my ($prevcmd, @prevargs)=@{$_defs{$name}};
+    if ($prevcmd) {
+      _err "Error: Subroutine $name already defined!";
+      return 0;
+    } elsif (!$command) {
+      _err "Error: Subroutine $name already pre-declared!";
+      return 0;
+    } else {
+      if (@$args != @prevargs) {
+	_err "Error: Different number of arguments in declaration and pre-declarartion of $name!";
+	return 0;
+      }
+      my $parg;
+      foreach (@$args) {
+	$parg=shift @prevargs;
+	if (substr($parg,0,1) ne substr($_,0,1)) {
+	  _err "Error: Argument types of $_ and $parg in declarations of $name do not match!";
+	  return 0;
+	}
+      }
+    }
+  }
   $_defs{$name} = [ $command, @$args ];
   return 1;
 }
@@ -2118,7 +2342,7 @@ sub def {
 # list all named commands
 sub list_defs {
   foreach (sort keys (%_defs)) {
-    out($_, join(" ",@{ $_defs{$_} }[1..$#{ $_defs{$_} }] ),"\n" );
+    out(join(" ",$_,@{ $_defs{$_} }[1..$#{ $_defs{$_} }] ),"\n" );
   }
   return 1;
 }
@@ -2132,8 +2356,7 @@ sub load {
   if (open F,"$file") {
     return join "",<F>;
   } else {
-    print STDERR "ERROR: couldn't open input file $file\n";
-    return undef;
+    die "ERROR: couldn't open input file $file";
   }
 }
 
@@ -2176,7 +2399,7 @@ package XML::XSH::Map;
 
 # make this command available from perl expressions
 sub echo {
-  $XML::XSH::Functions::OUT->print(@_);
+  &XML::XSH::Functions::out(@_);
   return 1;
 }
 
@@ -2189,6 +2412,23 @@ sub count {
   my $xp=$_[0];
   $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):)?((?:.|\n)*)$/;
   return &XML::XSH::Functions::count([$1,$2]);
+}
+
+sub xpath {
+  my ($xp)=@_;
+  $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):)?((?:.|\n)*)$/;
+  my ($id,$query,$doc)=&XML::XSH::Functions::_xpath([$1,$2]);
+
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+  my $ql=&XML::XSH::Functions::find_nodes([$id,$query]);
+  my $result='';
+  foreach (@$ql) {
+    $result.=&XML::XSH::Functions::fromUTF8($XML::XSH::Functions::_encoding,
+					    $_->toString());
+  }
+  return $result;
 }
 
 #######################################################################
@@ -2211,6 +2451,10 @@ sub print {
 
 sub value {
   return $_[0]->[0];
+}
+
+sub close {
+  $_[0]->[0]=undef;
 }
 
 1;
