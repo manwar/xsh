@@ -807,8 +807,10 @@ sub new {
       <ruleref ref="throw_command"/>
       <ruleref ref="catalog_command"/>
       <ruleref ref="registerns_command"/>
+      <ruleref ref="unregisterns_command"/>
       <ruleref ref="registerns_xhtml_command"/>
       <ruleref ref="registerns_xsh_command"/>
+      <ruleref ref="unregisterfunc_command"/>
       <ruleref ref="registerfunc_command"/>
       <ruleref ref="stream_process_command"/>
       <ruleref ref="namespaces_command"/>
@@ -1031,17 +1033,19 @@ sub new {
 	<shortdesc>string-like expression</shortdesc>
 	<description>
 	  <para>
-	    A string consisting of unquoted characters other than
-	    whitespace or semicolon, single quote or double quote
-	    characters or quoted characters of any kind. By quoting we
-	    mean preceding a single character with a backslash or
-	    enclosing a part of the string into single quotes '...'
-	    or double quotes &quot;...&quot;. Quoting characters are
-	    removed from the string so they must be quoted themselves
-	    if they are a part of the expression: \\, \' or " ' ", \"
-	    or ' " '.  Unquoted (sub)expressons or (sub)expressions
-	    quoted with double-quotes are subject to variable, Perl,
-	    and XPath expansions.
+	    Expression is a string consisting of unquoted characters
+	    other than whitespace or semicolon, single quote or double
+	    quote characters or quoted characters of any kind (but see
+	    also special case of expression - so called here-documents -
+	    described below). Quoting means either preceding a single
+	    character with a backslash or enclosing a part of the
+	    string into single quotes '...'  or double quotes
+	    &quot;...&quot;. Quoting characters are removed from the
+	    string so they must be quoted themselves if they are a
+	    part of the expression: \\, \' or " ' ", \" or ' " '.
+	    Unquoted (sub)expressons and (sub)expressions quoted with
+	    double-quotes are subject to variable, Perl, and XPath
+	    expansions.
 	  </para>
 	  <para>
 	    Variable expansion replaces substrings of the form $id or
@@ -1089,6 +1093,39 @@ sub new {
 	    <code>echo ${{//creature[1]/@name}}         # !!! prints: 1</code>
 	    <code>echo ${(//creature[1]/@name)}         # prints: Bilbo</code>
 	    <code>echo ${{{ join(",",split(//,$a)) }}}  # prints: b,a,r</code>
+	  </example>
+	  <para>
+	    There is one more special type of expressions, so called
+	    ``here-documents'' following syntax of similar constructs
+	    in Bash and Perl.  Following a <literal>&lt;&lt;</literal>
+	    you specify a string to terminate the quoted material, and
+	    all lines following the current line down to the
+	    terminating string are the value of the expression.  The
+	    terminating string is either quoted or unquoted identifier
+	    (a word).  If quoted, the type of quotes you use
+	    determines the treatment of the text, just as in regular
+	    quoting, i.e. in case of double quotes, the material
+	    contained in the here-document is subject to variable,
+	    Perl, and XPath expansions.  An unquoted identifier works
+	    just like double quotes. There must be no space between
+	    the <literal>&lt;&lt;</literal> and the identifier. The
+	    terminating string must appear by itself (unquoted and
+	    with no surrounding whitespace) on the terminating line.
+	  </para>
+	  <example>
+	    <code>$a="bar"</code>
+	    <code>echo foo &lt;&lt;END baz;
+xx $a yy
+END
+	# prints foo xx bar yy baz</code>
+	    <code>echo foo &lt;&lt;"END" baz;
+xx $a yy
+END
+	# same as above</code>
+	    <code>echo foo &lt;&lt;'END' baz;
+xx $a yy
+END
+	# prints foo xx $a yy baz</code>
 	  </example>
 	</description>
       </documentation>
@@ -1229,7 +1266,7 @@ sub new {
 	  <para>
 	    <literal>xsh:same(node-set1, node-set2)</literal> -
 	    returns <literal>true</literal> if the given node sets
-	    contain exactly one node each and these nodes are the same
+	    both contain the same node
 	    (in XPath, this can also be expressed as
 	    <literal>count(node-set1|node-set2)+count(node-set1)+count(node-set2)=1</literal>).
 	  </para>
@@ -2893,7 +2930,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       </production>
       <documentation sections="Manipulation">
 	<usage>strip <xref linkend="xpath"/></usage>
-	<shortdesc>trip leading and trailing whitespace</shortdesc>
+	<shortdesc>strip leading and trailing whitespace</shortdesc>
 	<description>
 	  <para><literal>strip</literal> removes all leading and
 	    trailing whitespace from given nodes. If applied to an
@@ -4613,6 +4650,31 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</description>
       </documentation>
     </rule>
+    <rule id="unregisterns_command" type="command" name="unregister-namespace"
+      inline="yes">
+      <aliases>
+	<alias name="unregns"/>
+      </aliases>
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="expression"/>
+	<action>[\&amp;XML::XSH::Functions::unregister_ns,
+                 $item[3]]</action>
+      </production>
+      <documentation sections="Navigation Configuration">
+	<usage>unregister-namespace <xref linkend="expression"/></usage>
+	<shortdesc>unregister namespace prefix</shortdesc>
+	<description>
+	  <para>
+	    Unregisters given namespace prefix previously registered
+	    using <xref linkend="registerns_command"/>.  The prefix
+	    can no longer be used in XPath expressions unless declared
+	    within the current scope of the queried document.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
     <rule id="registerns_xhtml_command" type="command" 
       name="register-xhtml-namespace"
       inline="yes">
@@ -4685,10 +4747,38 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<shortdesc>define XPath extension function (EXPERIMENTAL)</shortdesc>
 	<description>
 	  <para>
-	    EXPERIMENTAL!
-	    Register given perl code as a new extension XPath
-	    function. XML::LibXML DOM API may be used in the perl code
-	    for object processing.
+	    EXPERIMENTAL!  Register given perl code as a new XPath
+	    extension function under a name provided in the first
+	    argument (<xref linkend="expression"/>). XML::LibXML DOM
+	    API may be used in the perl code for object processing. If
+	    the name contains a colon, then the first part before the
+	    colon must be a registered namespace prefix (see <xref
+	    linkend="registerns_command"/>) and the function is
+	    registered within the corresponding namespace.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="unregisterfunc_command" type="command" 
+      name="unregister-function"
+      inline="yes">
+      <aliases>
+	<alias name="unregfunc"/>
+      </aliases>
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="expression"/>
+	<action>[\&amp;XML::XSH::Functions::unregister_func, $item[3]]</action>
+      </production>
+      <documentation sections="Navigation Configuration">
+	<usage>unregister-function <xref linkend="expression"/></usage>
+	<shortdesc>undefine extension function (EXPERIMENTAL)</shortdesc>
+	<description>
+	  <para>
+	    EXPERIMENTAL!  Unregiseter XPath extension function of a
+	    given name previously registered using <xref
+	    linkend="registerfunc_command"/>.
 	  </para>
 	</description>
       </documentation>
