@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 1.18 2003-08-07 13:53:03 pajas Exp $
+# $Id: Completion.pm,v 1.19 2003-08-07 15:15:41 pajas Exp $
 
 package XML::XSH::Completion;
 
@@ -15,7 +15,7 @@ our $match_func=qr/${M}(?:call|undef|undefine)\s+(\S*)$/; # function name comple
 our $match_nodetype=qr/${M}x?(?:insert|add)\s+(\S*)$/; # node-type completion
 our $match_doc=qr/${M}(?:close|doc[-_]info|dtd|enc)\s+(\S*)$|${M}clone\s+[a-zA-Z0-9_]*\s*=\s*[a-zA-Z0-9_]*$|${M}create\s+[a-zA-Z0-9_]*/; # docid completion
 our $match_clone_doc=qr/${M}clone\s+[a-zA-Z0-9_]*$/;
-our $match_help=qr/${M}help\s+(\S*)$/; # help topic completion
+our $match_help=qr/${M}(?:\?|help)\s+(\S*)$/; # help topic completion
 our $match_open_flag1=qr/${M}open(?:\s+|([-_]))([A-Z]*)$/;
 our $match_open_flag2=qr/${M}(?:open\s+|(open[-_]))(html|xml|docbook|HTML|XML|DOCBOOK)(?:\s+[A-Z]*|([-_])[A-Za-z]*)$/;
 our $match_open_doc=qr/${M}(open)(?:\s+|_|-)(?:(?:html|xml|docbook|HTML|XML|DOCBOOK)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?([a-zA-Z0-9_]*)$/;
@@ -28,8 +28,8 @@ our $match_save_filename=qr/${M}save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|
 our $match_filename=qr/${M}(?:\.|include)\s+(\S*)$/;
 our $match_dir=qr/${M}(?:lcd)\s+(\S*)$/;
 our $match_path_filename=qr/${M}(?:system\s|exec\s|\!)\s*\S*$|\s\|\s*\S*$/;
-our $match_no_xpath=join "|",@XML::XSH::CompletionList::XSH_NOXPATH_COMMANDS;
-our $match_no=qr/${M}(?:${match_no_xpath}create\s+[a-zA-Z0-9_]*\s)\s*$/;
+our $match_no_xpath=join '|',@XML::XSH::CompletionList::XSH_NOXPATH_COMMANDS;
+our $match_no=qr/${M}(?:${match_no_xpath}|create\s+[a-zA-Z0-9_]*\s)\s*$/;
 
 # PATH-completion: system, !, exec, |, 
 

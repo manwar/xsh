@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_completions.pl,v 1.4 2003-08-07 13:57:43 pajas Exp $
+# $Id: gen_completions.pl,v 1.5 2003-08-07 15:15:41 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -53,7 +53,8 @@ foreach my $r ($doc->findnodes(q{rules/rule[@type='command' and
                                  contains(@id,'_command') and
                                  not(production[*[2]/@type='commit' and contains(*[3]/@ref,'xpath')
    			             or contains(*[2]/@ref,'xpath') ])]})) {
-  foreach (get_name($r), $r->findnodes('aliases/alias')) {
+  foreach (map { get_name($_) } $r,$r->findnodes('aliases/alias')) {
+    s/([.?])/\\$1/;
     print "$_\n";
   }
 }
