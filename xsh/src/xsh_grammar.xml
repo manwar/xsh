@@ -1342,7 +1342,7 @@ sub new {
 	</see-also>
       </documentation>
     </rule>
-    <rule type='command' id="xmove_command" name="xmove_command">
+    <rule type='command' id="xmove_command" name="xmove">
       <aliases>
 	<alias name="xmv"/>
       </aliases>
@@ -1437,6 +1437,10 @@ sub new {
       </documentation>    
     </rule>
     <rule type='command' id="count_command" name="count">
+      <aliases>
+	<alias name="print_value"/>
+	<alias name="get"/>
+      </aliases>
       <production>
 	<selfref/>
 	<ruleref ref="xpath"/>
@@ -2352,7 +2356,7 @@ sub new {
       <production>
 	<selfref/>
 	<ruleref ref="expression"/>
-	<action>[\&amp;XML::XSH::Functions::set_expand_xinclude,$item[2]]</action>
+	<action>[\&amp;XML::XSH::Functions::set_load_ext_dtd,$item[2]]</action>
       </production>
       <documentation>
 	<usage>load_ext_dtd <xref linkend="expression"/></usage>
