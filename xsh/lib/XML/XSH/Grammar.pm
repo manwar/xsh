@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Sun Oct 27 18:38:38 2002
+# Fri Nov  1 16:20:34 2002
 
 
 package XML::XSH::Grammar;
@@ -295,7 +295,7 @@ $grammar=<<'_EO_GRAMMAR_';
           }
 	 }
   	
-	  | <error:Syntax error near: "}.substr($text,0,40).qq{ ...">
+	  | <error:Parse error near: "}.substr($text,0,40).qq{ ...">
 
   statement_or_command:
 	    def
@@ -342,7 +342,9 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | double_quoted_string
 
   exp_inline_count:
-	    /\${{([^}]|}[^}])*}}/
+	    /\${\((.+?)\)}/
+	  | /\${{{(.+?)}}}/
+	  | /\${{([^{].*?)}}/
 
   expression:
 	    exp_part <skip:""> expression(?)
@@ -506,7 +508,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	    /!\s*/ <commit> /.*/
 		{ [[\&XML::XSH::Functions::sh,$item[3]]] }
   	
-	  | <error?:Syntax error near: "! }.substr(0,40,$text).qq{ ..."> <reject>
+	  | <error?:Parse error near: "! }.substr(0,40,$text).qq{ ..."> <reject>
 
   condition:
 	    <perl_codeblock>
@@ -519,7 +521,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | ...! /(elsif)/
 		{ [] }
   	
-	  | <uncommit> <error:Syntax error near keyword elsif: "}.substr(0,40,$text).qq{ ...">
+	  | <uncommit> <error:Parse error near keyword elsif: "}.substr(0,40,$text).qq{ ...">
 
   else_block:
 	    /(else)\s/ <commit> block
@@ -528,7 +530,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | ...! /(else)/
 		{ [] }
   	
-	  | <uncommit> <error:Syntax error near keyword else: "}.substr(0,40,$text).qq{ ...">
+	  | <uncommit> <error:Parse error near keyword else: "}.substr(0,40,$text).qq{ ...">
 
   typedvariable:
 	    /[\$\%]/ <skip:""> ID
@@ -541,7 +543,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  &XML::XSH::Functions::def($item[3],$item[5],$item[4]);
 	 }
   	
-	  | <error?:Syntax error near: "}.substr(0,40,$text).qq{ ..."> <reject>
+	  | <error?:Parse error near: "}.substr(0,40,$text).qq{ ..."> <reject>
 
   match_typedargs:
 	   

@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Sun Oct 27 18:38:38 2002
+# Fri Nov  1 16:20:34 2002
 
 package XML::XSH::Help;
 use strict;
@@ -106,17 +106,47 @@ description:
 	     enclosing a part of the string into single quotes '...' or
 	     double quotes "...". Quoting characters are removed from the
 	     string so they must be quoted themselves if they are a part of
-	     the expression: \\, \' or " ' ", \" or ' " '.
+	     the expression: \\, \' or " ' ", \" or ' " '. Unquoted
+	     (sub)expressons or (sub)expressions quoted with double-quotes
+	     are subject to variable, Perl, and XPath expansions.
 
-	     Variable interpolation is performed on expressions. That means
-	     that any substrings of the forms $id or ${id} where $ is
-	     unquoted and id is an identifier are substituted with the
-	     value of the variable named $id.
+	     Variable expansion replaces substrings of the form $id or
+	     ${id} with the value of the variable named $id, unless the '$'
+	     sign is quoted.
 
-	     XPath interpolation is performed on expressions. That means
-	     that any substring enclosed in between ${{ and }} is evaluated
-	     in the same way as in the count command and the result of the
-	     evaluation is substituted in its place.
+	     Perl expansion evaluates every substring enclosed in between
+	     `${{{' and `}}}' as a Perl expresson (in very much the same
+	     way as the <perl> command) and replaces the whole thing with
+	     the resulting value.
+
+	     XPath interpolation evaluates every substring enclosed in
+	     between `${{' and `}}' as an XPath expression (in very much
+	     the same way as the <count> command) and substitutes the whole
+	     thing with the resul.
+
+	     For convenience, another kind XPath interpolation is performed
+	     on expressions. It replaces any substring occuring between
+	     `${(' and `)}' with a literal result of XPath evaluation of
+	     the string. This means, that if the evaluation results in a
+	     node-list, the textual content of its first node is
+	     substituted rather than the number of nodes in the node-list
+	     (as with `${{ ... }}').
+
+Example:
+             echo foo "bar"                        # prints: foo bar
+             echo foo"bar"                         # prints: foobar
+             echo foo'"bar"'                       # prints: foo"bar"
+             echo foo"'b\\a\"r'"                   # prints: foo'b\a"r'
+             $a="bar"
+             echo foo$a                            # prints: foobar
+             echo foo\$a                           # prints: foo$a
+             echo '$a'                             # prints: '$a'
+             echo "'$a'"                           # prints: 'bar'
+             echo "${{//middle-earth/creatures}}"  # prints: 10
+             echo '${{//middle-earth/creatures}}'  # prints: ${{//middle-earth/creatures}}
+             echo ${{//creature[1]/@name}}         # !!! prints: 1
+             echo ${(//creature[1]/@name)}         # prints: Bilbo
+             echo ${{{ join(",",split(//,$a)) }}}  # prints: b,a,r
 
 END
 
@@ -800,8 +830,17 @@ usage:       move <xpath> <location> <xpath>
 aliases:     mv
 
 description:
-	     Like copy, except that move removes the source nodes after a
-	     succesfull copy. See copy for more detail.
+	     `move' command acts exactly like <copy>, except that it
+	     removes the source nodes after a succesfull copy. Remember
+	     that the moved nodes are actually different nodes from the
+	     original ones (which may not be obvious when moving nodes
+	     within a single document into locations that do not require
+	     type conversion). So, after the move, the original nodes do
+	     not exist neither in the document itself nor any nodelist
+	     variable.
+
+	     See <copy> for more details on how the copies of the moved
+	     nodes are created.
 
 END
 
@@ -813,8 +852,29 @@ usage:       xmove <xpath> <location> <xpath>
 aliases:     xmv
 
 description:
-	     Like xcopy, except that xmove removes the source nodes after a
-	     succesfull copy. See copy for more detail.
+	     Like <xcopy>, except that `xmove' removes the source nodes
+	     after a succesfull copy. Remember that the moved nodes are
+	     actually different nodes from the original ones (which may not
+	     be obvious when moving nodes within a single document into
+	     locations that do not require type conversion). So, after the
+	     move, the original nodes do not exist neither in the document
+	     itself nor any nodelist variable.
+
+	     See <xcopy> for more details on how the copies of the moved
+	     nodes are created.
+
+	     The following example demonstrates how `xcopy' can be used to
+	     get rid of HTML `<font>' elements while preserving their
+	     content. As an exercise, try to find out why simple `foreach
+	     //font { xmove node() replace . }' would not work here.
+
+Example:     Get rid of all <font> tags
+
+             while //font[1] {
+               foreach //font[1] {
+                 xmove ./node() replace .;
+               }
+             }
 
 END
 
@@ -959,9 +1019,9 @@ description:
 
 Example:     Sort creatures by name
 
-             xsh> %c=//creatures
+             xsh> %c=/middle-earth[1]/creatures
              xsh> sort { $a=string(@name) }{ $b=string(@name) }{ $a cmp $b } %c
-             xsh> ls %c/@name
+             xsh> xmove %c into /middle-earth[1]# replaces the creatures
 
 END
 
@@ -1127,8 +1187,12 @@ description:
 	     The encoding keyword followed by a <enc-string> can be used to
 	     convert the document from its original encoding to a different
 	     encoding. In case of XML output, the <?xml?> declaration is
-	     changed accordingly. This encoding is also set as the document
-	     encoding for the particular document.
+	     changed accordingly. The new encoding is also set as the
+	     document encoding for the particular document.
+
+Example:     Use save to preview a HTML document in Lynx
+
+             save HTML PIPE mydoc 'lynx -stdin'
 
 END
 
@@ -1333,7 +1397,8 @@ usage:       validation <expression>
              
 description:
 	     Turn on validation during the parse process if the
-	     <expression> is non-zero or off otherwise. Defaults to on.
+	     <expression> is non-zero or off otherwise. In XSH version 1.6
+	     and later, defaults to off.
 
 END
 
