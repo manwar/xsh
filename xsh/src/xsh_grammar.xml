@@ -816,9 +816,6 @@ sub new {
     </documentation>
   </rule>
   <rule type='command' id="unless" name="unless">
-    <aliases>
-      <alias name="if !" regexp="if\s*!"/>      
-    </aliases>
     <production>
       <selfref/>
       <ruleref ref="xpath"/>
