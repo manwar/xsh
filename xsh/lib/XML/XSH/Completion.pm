@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 1.13 2003-06-04 15:34:35 pajas Exp $
+# $Id: Completion.pm,v 1.14 2003-06-05 10:28:03 pajas Exp $
 
 package XML::XSH::Completion;
 
@@ -240,10 +240,10 @@ sub xpath_complete {
 
   if (($XML::XSH::Functions::XPATH_AXIS_COMPLETION eq 'always' or
        $XML::XSH::Functions::XPATH_AXIS_COMPLETION eq 'when-empty' and !@completions)
-      and $str =~ /[ \n\t\r|\/]([[:alpha:]][-:[:alnum:]]*)?$/) {
+      and $str =~ /[ \n\t\r|\/]([[:alpha:]][-:[:alnum:]]*)?$/ and $1 !~ /::/) {
     # complete XML axis
     my ($pre,$axpart)=($word =~ /^(.*[^[:alnum:]])?([[:alpha:]][-[:alnum:]:]*)/);
-#    print "\nWORD: $word\nPRE: $pre\nPART: $axpart";
+    print "\nWORD: $word\nPRE: $pre\nPART: $axpart\nSTR:$str\n";
     foreach my $axis (qw(following preceding following-or-self preceding-or-self
 			 parent ancestor ancestor-or-self descendant self
 			 descendant-or-self child attribute namespace)) {
