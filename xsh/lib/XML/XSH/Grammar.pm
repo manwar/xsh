@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Mon Aug 26 17:11:49 2002
+# Fri Aug 30 19:09:21 2002
 
 
 package XML::XSH::Grammar;
@@ -25,10 +25,10 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(verbose)/
 		{ [\&XML::XSH::Functions::set_opt_q,0] }
   	
-	  | /(test-mode)/
+	  | /(test-mode|test_mode)/
 		{ ["test-mode"] }
   	
-	  | /(run-mode)/
+	  | /(run-mode|run_mode)/
 		{ ["run-mode"] }
   	
 	  | /(debug)/
@@ -46,31 +46,31 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(recovering)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_recovering,$item[3]] }
   	
-	  | /(parser_expands_entities)\s/ <commit> expression
+	  | /(parser-expands-entities|parser_expands_entities)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_expand_entities,$item[3]] }
   	
-	  | /(keep_blanks)\s/ <commit> expression
+	  | /(keep-blanks|keep_blanks)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_keep_blanks,$item[3]] }
   	
-	  | /(pedantic_parser)\s/ <commit> expression
+	  | /(pedantic-parser|pedantic_parser)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_pedantic_parser,$item[3]] }
   	
-	  | /(complete_attributes)\s/ <commit> expression
+	  | /(complete-attributes|complete_attributes)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_complete_attributes,$item[3]] }
   	
 	  | /(indent)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_indent,$item[3]] }
   	
-	  | /(parser_expands_xinclude)\s/ <commit> expression
+	  | /(parser-expands-xinclude|parser_expands_xinclude)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_expand_xinclude,$item[3]] }
   	
-	  | /(load_ext_dtd)\s/ <commit> expression
+	  | /(load-ext-dtd|load_ext_dtd)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_load_ext_dtd,$item[3]] }
   	
 	  | /(encoding)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_encoding,$item[3]] }
   	
-	  | /(query-encoding)\s/ <commit> expression
+	  | /(query-encoding|query_encoding)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_qencoding,$item[3]] }
   	
 	  | /(options|flags)/ <commit>
@@ -88,13 +88,13 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(xmove|xmv)\s/ <commit> xpath loc xpath
 		{ [\&XML::XSH::Functions::move,@item[3,5,4],1] }
   	
-	  | /(list|ls)\s/ xpath expression
+	  | /(ls|list)\s/ xpath expression
 		{ [\&XML::XSH::Functions::list,$item[2],$item[3]] }
   	
-	  | /(list|ls)\s/ xpath
+	  | /(ls|list)\s/ xpath
 		{ [\&XML::XSH::Functions::list,$item[2],-1] }
   	
-	  | /(list|ls)/
+	  | /(ls|list)/
 		{ [\&XML::XSH::Functions::list,[undef,'.'],1] }
   	
 	  | /(exit|quit)/ <commit> optional_expression(?)
@@ -106,19 +106,16 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(map|sed)\s/ <commit> perl_code xpath
 		{ [\&XML::XSH::Functions::perlmap,@item[4,3]] }
   	
+	  | /(sort)\s/ <commit> block block perl_code nodelistvariable
+		{ [\&XML::XSH::Functions::perlsort,@item[3..6]] }
+  	
 	  | /(close)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::close_doc,$item[3]] }
   	
-	  | /(open)\s/ <commit> id_or_var /\s*=\s*/ filename
-		{ [\&XML::XSH::Functions::open_doc,@item[3,5]] }
-  	
-	  | ID /\s*=\s*/ <commit> filename
-		{ [\&XML::XSH::Functions::open_doc,@item[1,4]] }
-  	
-	  | /(open_HTML)\s/ <commit> id_or_var /\s*=\s*/ filename
+	  | /(open-HTML|open_HTML)\s/ <commit> id_or_var /\s*=\s*/ filename
 		{ [\&XML::XSH::Functions::open_doc,@item[3,5],'html'] }
   	
-	  | /(open_PIPE)\s/ <commit> id_or_var /\s*=\s*/ expression
+	  | /(open-PIPE|open_PIPE)\s/ <commit> id_or_var /\s*=\s*/ expression
 		{ [\&XML::XSH::Functions::open_doc,@item[3,5],'pipe'] }
   	
 	  | /(validate)/ <commit> optional_expression(?)
@@ -130,7 +127,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(dtd)/ <commit> optional_expression(?)
 		{ [\&XML::XSH::Functions::list_dtd,@{$item[3]}] }
   	
-	  | /(print_enc_command)/ <commit> optional_expression(?)
+	  | /(enc)/ <commit> optional_expression(?)
 		{ [\&XML::XSH::Functions::print_enc,@{$item[3]}] }
   	
 	  | /(lcd|chdir)/ <commit> optional_expression(?)
@@ -145,13 +142,13 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(eval|perl)\s/ <commit> perl_code
 		{ [\&XML::XSH::Functions::print_eval,$item[3]] }
   	
-	  | /(saveas|save_as)\s/ <commit> expression filename encoding_param(?)
+	  | /(saveas|save-as|save_as)\s/ <commit> expression filename encoding_param(?)
 		{ [\&XML::XSH::Functions::save_as,@item[3,4],@{$item[5]}] }
   	
-	  | /(save_xinclude)\s/ <commit> expression encoding_param(?)
+	  | /(save-xinclude|save_xinclude)\s/ <commit> expression encoding_param(?)
 		{ [\&XML::XSH::Functions::save_xinclude,@item[3],@{$item[4]}] }
   	
-	  | /(save_HTML)\s/ <commit> expression filename encoding_param(?)
+	  | /(save-HTML|save_HTML)\s/ <commit> expression filename encoding_param(?)
 		{ [\&XML::XSH::Functions::save_as_html,@item[3,4],@{$item[5]}] }
   	
 	  | /(save)\s/ <commit> expression encoding_param(?)
@@ -182,12 +179,12 @@ $grammar=<<'_EO_GRAMMAR_';
 		{ [\&XML::XSH::Functions::include,$item[3]] }
   	
 	  |( /(assign)\s/
-	   )(?) variable <commit> '=' xpath
-		{ [\&XML::XSH::Functions::xpath_assign,$item[2],$item[5]] }
+	   )(?) variable '=' xpath
+		{ [\&XML::XSH::Functions::xpath_assign,$item[2],$item[4]] }
   	
 	  |( /(assign)\s/
-	   )(?) nodelistvariable <commit> '=' xpath
-		{ [\&XML::XSH::Functions::nodelist_assign,$item[2],$item[5]] }
+	   )(?) nodelistvariable '=' xpath
+		{ [\&XML::XSH::Functions::nodelist_assign,$item[2],$item[4]] }
   	
 	  | variable
 		{ [\&XML::XSH::Functions::print_var,$item[1]] }
@@ -222,7 +219,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(def|define)\s/ <commit> ID block
 		{ [\&XML::XSH::Functions::def,$item[3],$item[4]] }
   	
-	  | /(process_xinclude|process_xincludes|xinclude|xincludes|load_xincludes|load_xinclude)/ <commit> optional_expression(?)
+	  | /(process-xinclude|process_xinclude|process-xincludes|process_xincludes|xinclude|xincludes|load_xincludes|load-xincludes|load_xinclude|load-xinclude)/ <commit> optional_expression(?)
 		{ [\&XML::XSH::Functions::process_xinclude,@{$item[3]}] }
   	
 	  | /(cd|chxpath)/ <commit> optional_xpath(?)
@@ -236,6 +233,12 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 	  | /(xupdate)\s/ <commit> expression expression(?)
 		{ [\&XML::XSH::Functions::xupdate,$item[3],@{$item[4]}] }
+  	
+	  | /(open)\s/ <commit> id_or_var /\s*=\s*/ filename
+		{ [\&XML::XSH::Functions::open_doc,@item[3,5]] }
+  	
+	  | ID /\s*=\s*/ <commit> filename
+		{ [\&XML::XSH::Functions::open_doc,@item[1,4]] }
   	
 
   statement:
@@ -470,9 +473,6 @@ $grammar=<<'_EO_GRAMMAR_';
 	    /!\s*/ /.*/
 		{ [[\&XML::XSH::Functions::sh,$item[2]]] }
   	
-
-  perl_codeblock:
-	   
 
   condition:
 	    <perl_codeblock>
