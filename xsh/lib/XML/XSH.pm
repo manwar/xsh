@@ -1,4 +1,4 @@
-# $Id: XSH.pm,v 1.5 2002-08-30 17:08:37 pajas Exp $
+# $Id: XSH.pm,v 1.6 2002-09-12 15:35:04 pajas Exp $
 
 package XML::XSH;
 
@@ -17,3 +17,54 @@ BEGIN {
 }
 
 1;
+
+=head1 NAME
+
+XML::XSH - Powerfull Scripting Language/Shell for XPath-based Editing of XML
+
+=head1 SYNOPSIS
+
+ use XML::XSH qw(&xsh_init &xsh);
+
+ xsh_init();
+
+ xsh(<<'EOXSH');
+
+ ... XSH Language commands ...
+
+ EOXSH
+
+=head1 REQUIRES
+
+XML::LibXML, XML::XUpdate::LibXML
+
+=head1 DESCRIPTION
+
+This module implements XSH sripting language. XSH stands for XML
+(editing) SHell. XSH language is documented on
+http://xsh.sourceforge.net/doc.
+
+The distribution package of XML::XSH module includes XSH shell
+interpreter called C<xsh>. To use interactively, run C<xsh -i>.
+
+=head2 C<xsh_init>
+
+Initialize the XSH language parser and interpreter.
+
+=head2 C<xsh>
+
+Execute commands in XSH language.
+
+=head2 EXPORT
+
+None.
+
+=head1 AUTHOR
+
+Petr Pajas, pajas@matfyz.cz
+
+=head1 SEE ALSO
+
+L<XML::LibXML>, L<XML::XUpdate>, http://xsh.sourceforge.net/doc
+
+=cut
