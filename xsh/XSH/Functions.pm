@@ -131,9 +131,11 @@ sub get_local_element {
 sub _id {
   my ($id)=@_;
   if ($id ne "") {
+    print STDERR "setting last id $id\n" if $_debug;
     $LAST_ID=$id;
   } else {
     $id=$LAST_ID;
+    print STDERR "using last id $id\n" if $_debug;
   }
   return wantarray ? ($id,$_doc{$id}) : $id;
 }
@@ -305,9 +307,12 @@ sub count {
   }; print STDERR "$@\n" if ($@);
   if (ref($result)) {
     return $result->size() if ($result->isa('XML::LibXML::NodeList'));
+    if ($result->isa('XML::LibXML::Literal')) {
+      my $conv=mkconv($doc->getEncoding(),$_encoding);
+      return $conv ? $conv->convert($result->value()) : $result->value();
+    }
     return $result->value() if (
 				$result->isa('XML::LibXML::Number') or
-				$result->isa('XML::LibXML::Literal') or
 				$result->isa('XML::LibXML::Boolean')
 			       );
   } else {
@@ -578,9 +583,10 @@ sub insert {
 sub get_dtd {
   my ($doc)=expand @_;
   my $dtd;
+
   eval {
     local $SIG{INT}=\&sigint;
-    foreach ($doc->childNodes()) {
+    foreach ($doc->getChildnodes) {
       if ($_->nodeType == XML_DTD_NODE) {
 	return $_ if ($_->hasChildNodes());
 	my $str=$_->toString();
@@ -608,13 +614,13 @@ sub valid_doc {
   my ($id)=expand @_;
   ($id,my $doc)=_id($id);
   return unless $doc;
-  my $dtd=get_dtd($doc);
-  print STDERR "got dtd $dtd\n";
+#  my $dtd=get_dtd($doc);
+#  print STDERR "got dtd $dtd\n";
   eval {
     local $SIG{INT}=\&sigint;
-    if ($dtd) {
-      print $OUT ($doc->is_valid($dtd) ? "yes\n" : "no\n");
-    }
+ #   if ($dtd) {
+      print $OUT ($doc->is_valid() ? "yes\n" : "no\n");
+ #   }
   }; print STDERR "$@\n" if ($@);
 }
 
@@ -622,14 +628,14 @@ sub validate_doc {
   my ($id)=expand @_;
   ($id, my $doc)=_id($id);
   return unless $doc;
-  my $dtd=get_dtd($doc);
-  eval {
+#  my $dtd=get_dtd($doc);
+#  eval {
     local $SIG{INT}=\&sigint;
-    if ($dtd) {
-      eval { $doc->validate($dtd); };
+#    if ($dtd) {
+      eval { print $OUT $doc->validate(); };
       print $OUT "$@\n";
-    }
-  }; print STDERR "$@\n" if ($@);
+#    }
+#  }; print STDERR "$@\n" if ($@);
 }
 
 sub list_dtd {
@@ -807,7 +813,8 @@ sub unless_statement {
 }
 
 sub xslt {
-  my ($id,$stylefile,$newid,$params)=expand @_;
+  my ($id,$stylefile,$newid)=expand @_[0..2];
+  my $params=$_[3];
   print STDERR "running xslt on @_\n";
   return unless $_doc{$id};
   eval {
@@ -818,6 +825,7 @@ sub xslt {
 
       local *SAVE;
       local *O=*$OUT;
+
       open (SAVE,">&STDERR");
       open (STDERR,">/dev/null");
 
@@ -853,6 +861,11 @@ sub def {
   $name=expand $name;
   $_defs{$name}=$command;
 }
+
+sub list_defs {
+  print $OUT join("\n",sort keys (%_defs)),"\n";
+}
+
 
 sub load {
   my ($file)=@_;
