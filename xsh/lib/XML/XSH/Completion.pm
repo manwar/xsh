@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 1.8 2003-05-06 13:46:31 pajas Exp $
+# $Id: Completion.pm,v 1.9 2003-05-06 17:35:49 pajas Exp $
 
 package XML::XSH::Completion;
 
@@ -19,16 +19,19 @@ sub cpl {
   } elsif ($line=~/^\s*help\s+(\S*)$|[;}]\s*help\s+(\S*)$/) {
     return grep { index($_,$1)==0 } keys %XML::XSH::Help::HELP;
   } elsif (substr($line,0,$pos)=~
-	   /(?:^|;)\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?([a-zA-Z0-9_]*)$/) {
+	   /(?:^|[;}])\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?([a-zA-Z0-9_]*)$/) {
     return grep { index($_,$word)==0 } XML::XSH::Functions::docs;
   } elsif (substr($line,0,$pos)=~
-	   /(?:^|;)\s*(?:open(?:\s+|_|-)(?:(?:html|xml|docbook|HTML|XML|DOCBOOK)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?)?[a-zA-Z0-9_]+\s*=\s*(\S*)$/
+	   /(?:^|[;}])\s*(?:open(?:\s+|_|-)(?:(?:html|xml|docbook|HTML|XML|DOCBOOK)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?)?[a-zA-Z0-9_]+\s*=\s*(\S*)$/
 	   ||
 	   substr($line,0,$pos)=~
-	   /(?:^|;)\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?[a-zA-Z0-9_]+\s+(\S*)$/
+	   /(?:^|[;}])\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?[a-zA-Z0-9_]+\s+(\S*)$/
 	  ) {
-    $readline::rl_completer_terminator_character='';
-    return eval { map { s:\@$::; $_ } readline::rl_filename_list($_[0]); };
+    my @results=eval { map { s:\@$::; $_ } readline::rl_filename_list($_[0]); };
+    if (@results==1 and -d $results[0]) {
+      $readline::rl_completer_terminator_character='';
+    }
+    return @results;
   } else { # XPath completion
 #    print "\nW:$word\nL:$line\nP:$pos\n";
     $readline::rl_completer_terminator_character='';
@@ -49,10 +52,24 @@ sub gnu_cpl {
       @perlret = grep { index($_,$1)==0 } XML::XSH::Functions::defs;
     } elsif ($line=~/^\s*help\s+(\S*)$|[;}]\s*help\s+(\S*)$/) {
       @perlret = grep { index($_,$1)==0 } keys %XML::XSH::Help::HELP;
-    } else {
-      eval {
-	@perlret = map { s:\@$::; $_ } Term::ReadLine::GNU::XS::rl_filename_list($_[0]);
-      };
+    } elsif (substr($line,0,$end)=~
+	   /(?:^|[;}])\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?([a-zA-Z0-9_]*)$/) {
+      @perlret = grep { index($_,substr($line,$start,$end))==0 } XML::XSH::Functions::docs;
+    } elsif (substr($line,0,$end)=~
+	     /(?:^|[;}])\s*(?:open(?:\s+|_|-)(?:(?:html|xml|docbook|HTML|XML|DOCBOOK)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?)?[a-zA-Z0-9_]+\s*=\s*(\S*)$/
+	     ||
+	     substr($line,0,$end)=~
+	     /(?:^|[;}])\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?[a-zA-Z0-9_]+\s+(\S*)$/
+	    ) {
+      @perlret = eval { map { s:\@$::; $_ } Term::ReadLine::GNU::XS::rl_filename_list($_[0]) };
+      if (@perlret==1 and -d $perlret[0]) {
+	&main::_term()->Attribs->{completion_append_character} = '';
+      } else {
+	&main::_term()->Attribs->{completion_append_character} = ' ';
+      }
+    } else { # XPath completion
+      &main::_term()->Attribs->{completion_append_character} = '';
+      @perlret = XML::XSH::Functions::xpath_complete($line,substr($line,$start,$end),$start);
     }
 
     # find longest common match. Can anybody show me how to persuade
