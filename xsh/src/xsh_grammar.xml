@@ -665,6 +665,12 @@ sub new {
   <rules>
     <!-- ================== commands and options ====================== -->
     <rule id="command" type="list">
+      <production>
+	<lookahead/>
+	<regexp>\s*[}{;]</regexp>
+	<directive type="commit"/>
+	<directive type="reject"/>
+      </production>
       <ruleref ref="cdonopen"/>
       <ruleref ref="backups"/>
       <ruleref ref="nobackups"/>
@@ -725,7 +731,6 @@ sub new {
       <ruleref ref="unless_command"/>
       <ruleref ref="while_command"/>
       <ruleref ref="foreach_command"/>
-      <ruleref ref="def"/>
       <ruleref ref="process_xinclude_command"/>    	
       <ruleref ref="chxpath_command"/>
       <ruleref ref="pwd_command"/>
@@ -747,32 +752,40 @@ sub new {
 
     <rule id="statement">
       <production>
-	<group>
-	  <production><ruleref ref="if"/></production>
-	  <production><ruleref ref="unless"/></production>
-	  <production><ruleref ref="while"/></production>
-	  <production><ruleref ref="foreach"/></production>
-	</group>
-	<action>$item[1]</action>
+	<lookahead/>
+	<regexp>\s*[}{;]</regexp>
+	<directive type="commit"/>
+	<directive type="reject"/>
       </production>
-<!--      <production><directive type="error"/></production> -->
+      <ruleref ref="if"/>
+      <ruleref ref="unless"/>
+      <ruleref ref="while"/>
+      <ruleref ref="foreach"/>
     </rule>
 
-    <rule id="simple_command_or_statement">
-      <production>
-	<ruleref ref="statement"/>
-      </production>
-      <production>
-	<ruleref ref="command"/>
-      </production>
-    </rule>
-    
     <rule id="complex_command">
       <production>
 	<string>;</string>
       </production>
       <production>
-	<ruleref ref="simple_command_or_statement"/>
+	<ruleref ref="statement"/>
+	<directive type="commit"/>
+	<ruleref ref="trail" rep="?"/>
+	<action>
+	  if (scalar(@{$item[3]})) {
+	    if ($item[3][0][0] eq 'pipe') {
+  	      $return=[\&amp;XML::XSH::Functions::pipe_command,[$item[1]],$item[3][0][1]]
+	    } else {
+   	      $return=[\&amp;XML::XSH::Functions::string_pipe_command,[$item[1]],$item[3][0][1]]
+	    }
+          } else {
+            $return=$item[1]
+          }
+	</action>
+      </production>
+      <production>
+	<ruleref ref="command"/>
+	<directive type="commit"/>
 	<ruleref ref="trail" rep="?"/>
 	<group>
 	  <production>
@@ -784,32 +797,32 @@ sub new {
 	  </production>
 	</group>
 	<action>
-	  my $r=$item[1];
-	  if (scalar(@{$item[2]})) {
-	    if ($item[2][0][0] eq 'pipe') {
-  	      $r=[\&amp;XML::XSH::Functions::pipe_command,[$r],$item[2][0][1]]
+	  if (scalar(@{$item[3]})) {
+	    if ($item[3][0][0] eq 'pipe') {
+  	      $return=[\&amp;XML::XSH::Functions::pipe_command,[$item[1]],$item[3][0][1]]
 	    } else {
-   	      $r=[\&amp;XML::XSH::Functions::string_pipe_command,[$r],$item[2][0][1]]
+   	      $return=[\&amp;XML::XSH::Functions::string_pipe_command,[$item[1]],$item[3][0][1]]
 	    }
+          } else {
+            $return=$item[1]
           }
-	  $r
 	</action>
       </production>
-<!--      <production><directive type="error"/></production> -->
+      <production>
+	<directive type="error">Syntax error near: "}.substr($text,0,40).qq{ ..."</directive>
+      </production>
     </rule>
 
     <rule id="statement_or_command">
       <production><ruleref ref="def"/></production>
       <production><ruleref ref="complex_command"/></production>
-      <production><ruleref ref="statement"/></production>
-      <production><directive type="error">Syntax error near "}.substr($text,0,40).qq{"</directive></production>
     </rule>
 
     <rule id="block" type="argtype" name="command-block">
       <production>
 	<string>{</string>
 	<directive type="commit"/>
-	<ruleref ref="statement_or_command" rep="s"/>
+	<ruleref ref="complex_command" rep="s"/>
 	<string>}</string>
 	<action>[grep ref,@{$item[3]}]</action>
       </production>
@@ -1032,7 +1045,7 @@ sub new {
 	<action>[undef,$item[1]]</action>
       </production>
       <production>
-	<directive type="error">ID:XPath or XPath expected!</directive>
+	<directive type="error">expected ID:XPath or XPath, but got "}.substr(0,40,$text).qq{ ..."</directive>
       </production>
       <documentation sections="argtypes navigation manipulation variables">
 	<title>Xpath argument type</title>
@@ -1207,6 +1220,7 @@ sub new {
       </production>
       <production>
 	<ruleref ref="statement_or_command" rep="s"/>
+	<directive type="commit"></directive>
 	<ruleref ref="eof"/>
 	<action>XML::XSH::Functions::run_commands($item[1],1)</action>
       </production>
@@ -1256,8 +1270,13 @@ sub new {
     <rule id="shell">
       <production>
 	<regexp>!\s*</regexp>
+	<directive type="commit"></directive>
 	<regexp>.*</regexp>
-	<action>[[\&amp;XML::XSH::Functions::sh,$item[2]]]</action>
+	<action>[[\&amp;XML::XSH::Functions::sh,$item[3]]]</action>
+      </production>
+      <production>
+	<directive type="error-if-committed">Syntax error near: "! }.substr(0,40,$text).qq{ ..."</directive>
+	<directive type="reject"/>
       </production>
     </rule>
     <!-- ================== STATEMENTS ====================== -->
@@ -1271,7 +1290,17 @@ sub new {
 	<directive type="commit"/>
 	<ruleref ref="condition"/>
 	<ruleref ref="block"/>
-	<action>[$item[3],$item[4]]</action>
+	<ruleref ref="elsif_block"/>
+	<action>[[$item[3],$item[4]],@{$item[5]}]</action>
+      </production>
+      <production>
+	<lookahead negative="yes"/>
+	<selfref/>
+	<action>[]</action>
+      </production>
+      <production>
+	<directive type="uncommit"/>
+	<directive type="error">Syntax error near keyword elsif: "}.substr(0,40,$text).qq{ ..."</directive>
       </production>
     </rule>
     <rule id="else_block" name="else">
@@ -1279,18 +1308,27 @@ sub new {
 	<selfref/>
 	<directive type="commit"/>
 	<ruleref ref="block"/>
-	<action>[undef,$item[3]]</action>
+	<action>[[undef,$item[3]]]</action>
+      </production>
+      <production>
+	<lookahead negative="yes"/>
+	<selfref/>
+	<action>[]</action>
+      </production>
+      <production>
+	<directive type="uncommit"/>
+	<directive type="error">Syntax error near keyword else: "}.substr(0,40,$text).qq{ ..."</directive>
       </production>
     </rule>
     <!-- if -->
-    <rule type="command" id="if" name="if">
+    <rule id="if" type="command" name="if" inline="yes">
       <production>
 	<selfref/>
 	<directive type="commit"/>
 	<ruleref ref="condition"/>
 	<ruleref ref="block"/>
-	<ruleref ref="elsif_block" rep="s?"/>
-	<ruleref ref="else_block" rep="?"/>
+	<ruleref ref="elsif_block"/>
+	<ruleref ref="else_block"/>
 	<action>[\&amp;XML::XSH::Functions::if_statement,[$item[3],$item[4]],@{$item[5]},@{$item[6]}]</action>
       </production>
       <documentation sections="flow">
@@ -1347,7 +1385,7 @@ sub new {
       </production>
     </rule>
     <!-- unless -->
-    <rule type="command" id="unless" name="unless">
+    <rule id="unless" type="command" name="unless" inline="yes">
       <production>
 	<selfref/>
 	<directive type="commit"/>
@@ -1392,7 +1430,7 @@ sub new {
 	<action>[\&amp;XML::XSH::Functions::while_statement,$item[3],[$item[4]]]</action>
       </production>
     </rule>
-    <rule id="while" type="command" name="while">
+    <rule id="while" type="command" name="while" inline="yes">
       <production>
 	<selfref/>
 	<directive type="commit"/>
@@ -1432,7 +1470,7 @@ sub new {
 	<action>[\&amp;XML::XSH::Functions::foreach_statement,$item[3],[$item[4]]]</action>
       </production>
     </rule>
-    <rule id="foreach" type="command" name="foreach">
+    <rule id="foreach" type="command" name="foreach" inline="yes">
       <aliases>
 	<alias name="for"/>
       </aliases>
@@ -1499,6 +1537,10 @@ sub new {
 	<action>
 	  &amp;XML::XSH::Functions::def($item[3],$item[5],$item[4]);
 	</action>
+      </production>
+      <production>
+	<directive type="error-if-committed">Syntax error near: "}.substr(0,40,$text).qq{ ..."</directive>
+	<directive type="reject"/>
       </production>
       <documentation sections="flow">
 	<usage>def <xref linkend="ID"/> [$<xref linkend="ID"/> | %<xref linkend="ID"/>]* <xref linkend="block"/>
@@ -2408,8 +2450,21 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<usage>move <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/></usage>
 	<shortdesc>move nodes (in the one-to-one mode)</shortdesc>
 	<description>
-	  <para>Like copy, except that move removes the source nodes
-	    after a succesfull copy. See copy for more detail.</para>
+	  <para><literal>move</literal> command acts exactly like
+	      <xref linkend="copy_command"/>, except that it
+	      <emphasis>removes</emphasis> the source nodes after a
+	      succesfull copy. Remember that the moved nodes are
+	      actually <emphasis>different nodes</emphasis> from the
+	      original ones (which may not be obvious when moving
+	      nodes within a single document into locations that do
+	      not require type conversion). So, after the move, the
+	      original nodes do not exist neither in the document
+	      itself nor any nodelist variable.
+	  </para>
+	  <para>
+	    See <xref linkend="copy_command"/> for more details on how
+	    the copies of the moved nodes are created.
+	  </para>
 	</description>
 	<see-also>
 	  <ruleref ref="copy_command"/>
@@ -2435,8 +2490,39 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<usage>xmove <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/></usage>
 	<shortdesc>move nodes (in the all-to-every mode)</shortdesc>
 	<description>
-	  <para>Like xcopy, except that xmove removes the source nodes
-	    after a succesfull copy. See copy for more detail.</para>
+	  <para>
+	  <para>Like <xref linkend="xcopy_command"/>, except that
+	    <literal>xmove</literal> <emphasis>removes</emphasis> the
+	    source nodes after a succesfull copy.  Remember that the
+	    moved nodes are actually <emphasis>different
+	    nodes</emphasis> from the original ones (which may not be
+	    obvious when moving nodes within a single document into
+	    locations that do not require type conversion). So, after
+	    the move, the original nodes do not exist neither in the
+	    document itself nor any nodelist variable.
+	  </para>
+	  <para>
+	    See <xref linkend="xcopy_command"/> for more details on
+	    how the copies of the moved nodes are created.
+	  </para>
+	  <para>
+	    The following example demonstrates how <literal>xcopy</literal>
+	    can be used to get rid of HTML <literal>&lt;font&gt;</literal>
+	    elements while preserving their content. As an exercise,
+	    try to find out why simple
+	    <literal>foreach //font { xmove node() replace . }</literal>
+	    would not work here.
+	  </para>
+	  <example>
+	    <title>Get rid of all &lt;font&gt; tags</title>
+	    <code>
+	      while //font[1] {
+	      <tab/>foreach //font[1] {
+	      <tab/><tab/>xmove ./node() replace .;
+	      <tab/>}
+	      }
+	    </code>
+	  </example>
 	</description>
 	<see-also>
 	  <ruleref ref="xcopy_command"/>
@@ -2954,9 +3040,13 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    linkend="enc_string"/> can be used to convert the document
 	    from its original encoding to a different encoding.  In
 	    case of XML output, the &lt;?xml?&gt; declaration is
-	    changed accordingly.  This encoding is also set as the
+	    changed accordingly.  The new encoding is also set as the
 	    document encoding for the particular document.
 	  </para>
+	  <example>
+	    <title>Use save to preview a HTML document in Lynx</title>
+	    <code>save HTML PIPE mydoc 'lynx -stdin'</code>
+	  </example>
 	</description>
 	<see-also>
 	  <ruleref ref="open_command"/>
