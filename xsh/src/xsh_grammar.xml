@@ -27,7 +27,7 @@
       </para>
       <example>
 	<title>Count any attributes that contain string foo in its name or value.</title>
-	<code>xsh&gt; <userinput>list //words/attribute() | grep foo | wc</userinput></code>
+	<code>xsh&gt; <userinput>ls //words/attribute() | grep foo | wc</userinput></code>
       </example>
       <para>
 	In order to store a command's output in a string variable, the
@@ -80,7 +80,7 @@
       </para>
       <example>
 	<title>Store XSH document DOC on a remote machine using Secure Shell</title>
-	<code>xsh&gt; <userinput>list DOC:/ | ssh my.remote.org 'cat &gt; test.xml'</userinput></code>
+	<code>xsh&gt; <userinput>ls DOC:/ | ssh my.remote.org 'cat &gt; test.xml'</userinput></code>
       </example>
     </section>
     <section id="navigation">
@@ -144,7 +144,7 @@
 	stands for &quot;cross&quot;, thus e.g. <xref
 	linkend="xcopy_command"/> should be read as &quot;cross
 	copy&quot;. Let's explain the difference on the
-	example of <xref linkend="xcopy"/>.</para>
+	example of <xref linkend="xcopy_command"/>.</para>
       <para>
 	When you copy, you have to specify what are you copying and
 	where are you copying to, so you have to specify the
@@ -1299,21 +1299,22 @@ sub new {
 	  <example>
 	    <title>Display node type</title>
 	    <code>def node_type %n {
-	      foreach (%n) {
-	        if ( . = self::* ) { # XPath trick to check if . is an element
-	          echo 'element';
-	        } elsif ( . = ../@* ) { # XPath trick to check if . is an attribute
-	          echo 'attribute';
-	        } elsif ( . = ../processing-instruction() ) {
-                  echo 'pi';
-                } elsif ( . = ../text() ) {
-	          echo 'text';
-                } elsif ( . = ../comment() ) {
-                  echo 'comment'
-	        } else { # well, this should not happen, but anyway, ...
-                  echo 'unknown-type';
-                }
-              }
+	      <tab/>foreach (%n) {
+	      <tab count="2"/>if ( . = self::* ) { # XPath trick to check if . is an element
+	      <tab count="3"/>echo 'element';
+	      <tab count="2"/>} elsif ( . = ../@* ) { # XPath trick to check if . is an attribute
+	      <tab count="3"/>echo 'attribute';
+	      <tab count="2"/>} elsif ( . = ../processing-instruction() ) {
+	      <tab count="3"/>echo 'pi';
+              <tab count="2"/>} elsif ( . = ../text() ) {
+	      <tab count="3"/>echo 'text';
+              <tab count="2"/>} elsif ( . = ../comment() ) {
+              <tab count="3"/>echo 'comment'
+	      <tab count="2"/>} else { # well, this should not happen, but anyway, ...
+              <tab count="3"/>echo 'unknown-type';
+              <tab count="2"/>}
+              <tab/>}
+	      }
 	    </code>
 	  </example>
 	</description>
@@ -1493,8 +1494,8 @@ sub new {
 	    Define a new XSH subroutine named <xref linkend="ID"/>.
 	    The subroutine may require zero or more parameters of
 	    nodelist or string type. These are declared as a
-	    whitespace-separated list of so called parametric
-	    variables (of nodelist or string type). The body of the
+	    whitespace-separated list of (so called) <emphasis>parametric
+	    variables</emphasis> (of nodelist or string type). The body of the
 	    subroutine is specified as a <xref linkend="block"/>.
 	    Note, that all subroutine declarations are processed
 	    during the parsing and not at run-time, so it does not
@@ -1508,7 +1509,7 @@ sub new {
 	    given as a (string) <xref linkend="expression"/>.
 	    Resulting node-lists/strings are stored into the
 	    parametric variables before the body is executed. These
-	    variables are local to the subroutine (see also the <xref
+	    variables are local to the subroutine's call tree (see also the <xref
 	    linkend="local_command"/> command). If there is a global
 	    variable using the same name as some parametric variable,
 	    the original value of the global variable is replaced with
@@ -1689,17 +1690,31 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</usage>
 	<usage>
 	  local %<xref linkend="ID"/>=<xref linkend="xpath"/></usage>
-	<shortdesc>define a local variable</shortdesc>
+	<shortdesc>temporarily assign new value to a variable</shortdesc>
 	<description>
 	  <para> 
-	    This function acts in a very similar way as
+	    This command acts in a very similar way as
 	    <xref linkend="assign_command"/> does, except
-	    that first the variable <xref linkend="ID"/>
-	    is made local, that is, its original value is stored,
-	    replaced with the new value. The original
-	    value is restored at the end of
-	    the execution of current subroutine (<xref
-	    linkend="def"/>).
+	    that the variable assignment is done temporarily
+	    and lasts only for the rest of the nearest enclosing
+	    <xref linkend="block"/>. At the end of the
+	    enclosing block or subroutine the original value
+	    is restored.
+	  </para>
+	  <para>Note, that the variable itself is not lexically is
+	    still global in the sense that it is still visible to any
+	    subroutine called subsequently from within the same block.
+	    A local just gives temporary values to global (meaning
+	    package) variables. Unlike C's <literal>auto</literal> or
+	    Perl's <literal>my</literal> declarations it does not
+	    <emphasis>create</emphasis> a local variable.  This is
+	    known as dynamic scoping.  Lexical scoping is not
+	    implemented in XSH, at least so far.
+	  </para>
+	  <para>
+	    To sum up for Perl programmers: <literal>local</literal>
+	    in XSH works exactly the same as <literal>local</literal>
+	    in Perl.
 	  </para>
 	</description>
 	<see-also>
@@ -2166,15 +2181,10 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  <para>
 	    The <xref linkend="loc"/> argument should be one of:
 	    <literal>after</literal>, <literal>before</literal>,
-	    <literal>into</literal> and
-	    <literal>replace</literal>. You may use
-	    <literal>into</literal> location also to attach an
-	    attribute to an element or to append some data to a text,
-	    cdata or comment node. Note also, that
-	    <literal>after</literal> and <literal>before</literal>
-	    locations may be used to append or prepend a string to a
-	    value of an existing attribute. In that case, attribute
-	    name is ignored.
+	    <literal>into</literal>,
+	    <literal>replace</literal>, <literal>append</literal>
+	    or <literal>prepend</literal>. See documentation
+	    of the <xref linkend="loc"/> argument type for more detail.
 	  </para>
 	  <para>
 	    The namespace <xref linkend="expression"/> is only valid for
@@ -2187,10 +2197,10 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    <title>Append a new Hobbit element to the list of
 	      middle-earth creatures and name him Bilbo.</title>
 	    <code>
-	      xsh&gt; <userinput>xadd element &quot;&lt;creature race='hobbit' manner='good'&gt; \
-	      into /middle-earth/creatures</userinput>
+	      xsh&gt; <userinput>xadd element &quot;&lt;creature race='hobbit' manner='good'&gt;&quot; \
+		<tab/>into /middle-earth/creatures</userinput>
 	      xsh&gt; <userinput>xadd attribute &quot;name='Bilbo'&quot; \
-	      into /middle-earth/creatures/creature[@race='hobbit'][last()]</userinput>
+		<tab/>into /middle-earth/creatures/creature[@race='hobbit'][last()]</userinput>
 	    </code>
 	  </example>
 	</description>
@@ -2240,21 +2250,39 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       <production><regexp>before\s</regexp>
 	<action>&quot;before&quot;</action>
 </production>
-      <production><regexp>(to|into|as child( of)?)\s</regexp>
-	<action>&quot;as_child&quot;</action>
+      <production><regexp>(in)?to\s</regexp>
+	<action>&quot;into&quot;</action>
+      </production>
+      <production><regexp>(append(ing)?|as\s+(a\s+)child(\s+of)?)\s</regexp>
+	<action>&quot;append&quot;</action>
+      </production>
+      <production><regexp>(prepend(ing)?|(as\s+)(the\s+)first(\s+child(\s+of)?)?)\s</regexp>
+	<action>&quot;prepend&quot;</action>
       </production>
       <production><regexp>(replace|instead( of)?)\s</regexp>
 	<action>&quot;replace&quot;</action>
       </production>
       <documentation sections="argtypes manipulation">
 	<title>Location argument type</title>
-	<shortdesc>relative location specification (such as after, before, etc.)</shortdesc>
+	<shortdesc>relative destination specification (such as after, before, etc.)</shortdesc>
 	<description>
 	  <para>One of: 
 	    after, 
 	    before, 
-	    into/to/as child/as child of, 
-	    replace/instead/instead of.
+	    (in)to/as child (of),
+	    (as) first (child (of)),
+	    append(ing),
+	    prepend(ing),
+	    replace/instead (of)?.
+	  </para>
+	  <para>
+	    This argument is required by all commands allow inserting
+	    nodes to a document at a destination given by an XPath
+	    expression. The semantics for location argument values
+	    depends types of both the source node and the target node.
+	  </para>
+	  <para>
+	    TO BE DOCUMENTED!
 	  </para>
 	</description>
       </documentation>
@@ -2362,7 +2390,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::list,[undef,'.'],1]</action>
       </production>
       <documentation sections="navigation information">
-	<usage>list <xref linkend="xpath"/> [<xref linkend="expression"/>]</usage>
+	<usage>ls <xref linkend="xpath"/> [<xref linkend="expression"/>]</usage>
 	<shortdesc>list given part of the document as XML</shortdesc>
 	<description>
 	  <para>
@@ -2635,12 +2663,12 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  <example>
 	    <code>
 	      xsh&gt; <userinput>a=mydoc1.xml</userinput>       # opens and selects a
-	      xsh&gt; <userinput>list /</userinput>             # lists a
+	      xsh&gt; <userinput>ls /</userinput>               # lists a
 	      xsh&gt; <userinput>b=mydoc2.xml</userinput>       # opens and selects b
-	      xsh&gt; <userinput>list /</userinput>             # lists b
-	      xsh&gt; <userinput>list a:/</userinput>           # lists and selects a
+	      xsh&gt; <userinput>ls /</userinput>               # lists b
+	      xsh&gt; <userinput>ls a:/</userinput>             # lists and selects a
 	      xsh&gt; <userinput>select b</userinput>           # does nothing except selecting b
-	      xsh&gt; <userinput>list /</userinput>             # lists b
+	      xsh&gt; <userinput>ls /</userinput>               # lists b
 	    </code>
 	  </example>
 	</description>
@@ -2685,7 +2713,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 
 	      # use z: prefix to identify the document opened with the
 	      # previous comand in an XPath expression.
-	      xsh&gt; <userinput>list z://chapter/title	    </userinput>
+	      xsh&gt; <userinput>ls z://chapter/title	    </userinput>
 	    </code>
 	  </example>
 	</description>
