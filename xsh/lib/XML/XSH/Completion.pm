@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 1.20 2003-09-10 13:36:26 pajas Exp $
+# $Id: Completion.pm,v 1.21 2003-11-03 07:11:19 pajas Exp $
 
 package XML::XSH::Completion;
 
@@ -13,7 +13,7 @@ our $match_nv=qr/\%([a-zA-Z0-9_]*)$/; # node-list variable completion
 our $match_command=qr/${M}[^=\s]*$/; # command completion
 our $match_func=qr/${M}(?:call|undef|undefine)\s+(\S*)$/; # function name completion
 our $match_nodetype=qr/${M}x?(?:insert|add)\s+(\S*)$/; # node-type completion
-our $match_doc=qr/${M}(?:close|doc[-_]info|dtd|enc)\s+(\S*)$|${M}clone\s+[a-zA-Z0-9_]*\s*=\s*[a-zA-Z0-9_]*$|${M}create\s+[a-zA-Z0-9_]*/; # docid completion
+our $match_doc=qr/${M}(?:close|doc[-_]info|select|dtd|enc)\s+(\S*)$|${M}clone\s+[a-zA-Z0-9_]*\s*=\s*[a-zA-Z0-9_]*$|${M}create\s+[a-zA-Z0-9_]*/; # docid completion
 our $match_clone_doc=qr/${M}clone\s+[a-zA-Z0-9_]*$/;
 our $match_help=qr/${M}(?:\?|help)\s+(\S*)$/; # help topic completion
 our $match_open_flag1=qr/${M}open(?:\s+|([-_]))([A-Z]*)$/;

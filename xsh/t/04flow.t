@@ -8,7 +8,7 @@ BEGIN {
   autoflush STDERR 1;
 
   @xsh_test=split /\n\n/, <<'EOF';
-
+quiet;
 def p_assert $cond
   {
    perl { xsh("unless {$cond} throw \"Assertion failed \$cond\"") }
@@ -47,7 +47,7 @@ call p_assert '$b == 0';
 $a=0; $b=1; $c=0;
 foreach { 1..3 } {
   perl { $b = ($b+1) % 2 };
-  echo $a $b | cat 1>&2;
+  echo $a $b | cat;
   $a = $a+1;
   unless $b redo;
   $c = 1;
@@ -120,7 +120,7 @@ call p_assert '$b == 0';
 $i=0; $a=0; $b=1; $c=0;
 while { $i++<3 } {
   perl { $b = ($b+1) % 2 };
-  echo $a $b $i | cat 1>&2;
+  echo $a $b $i | cat;
   $a = $a+1;
   unless $b redo;
   $c = 1;
@@ -156,7 +156,7 @@ call p_assert '$b == 0';
 $i=0; $a=0; $b=1; $c=0;
 while ( $i<3 ) {
   perl { $b = ($b+1) % 2 };
-  echo $a $b $i | cat 1>&2;
+  echo $a $b $i | cat;
   $a = $a+1;
   unless $b redo;
   $i=$i+1;
@@ -177,6 +177,8 @@ use XML::XSH qw/&xsh &xsh_init &set_quiet &xsh_set_output/;
 $loaded=1;
 ok(1);
 
+my $verbose=$ENV{HARNESS_VERBOSE};
+
 ($::RD_ERRORS,$::RD_WARN,$::RD_HINT)=(1,1,1);
 
 $::RD_ERRORS = 1; # Make sure the parser dies when it encounters an error
@@ -187,16 +189,16 @@ xsh_set_output(\*STDERR);
 set_quiet(0);
 xsh_init();
 
-print STDERR "\n";
+print STDERR "\n" if $verbose;
 ok(1);
 
-print STDERR "\n";
+print STDERR "\n" if $verbose;
 ok ( XML::XSH::Functions::create_doc("scratch","scratch") );
 
-print STDERR "\n";
+print STDERR "\n" if $verbose;
 ok ( XML::XSH::Functions::set_local_xpath(['scratch','/']) );
 
 foreach (@xsh_test) {
-  print STDERR "\n\n[[ $_ ]]\n";
+  print STDERR "\n\n[[ $_ ]]\n" if $verbose;
   ok( xsh($_) );
 }

@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.77 2003-10-23 17:46:10 pajas Exp $
+# $Id: Functions.pm,v 1.78 2003-11-03 07:11:19 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -18,7 +18,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
             $_xsh $_xpc $_parser %_nodelist @stored_variables
             $_newdoc
             $TRAP_SIGINT $TRAP_SIGPIPE $_die_on_err $_on_exit
-            %_doc %_files %_defs %_includes %_chr %_ns
+            %_doc %_files %_defs %_includes %_chr %_ns %_func
 	    $ENCODING $QUERY_ENCODING
 	    $INDENT $BACKUPS $SWITCH_TO_NEW_DOCUMENTS $EMPTY_TAGS $SKIP_DTD
 	    $QUIET $DEBUG $TEST_MODE
@@ -31,7 +31,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8.2';
-  $REVISION='$Revision: 1.77 $';
+  $REVISION='$Revision: 1.78 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -221,119 +221,291 @@ sub get_xpath_axis_completion { $XPATH_AXIS_COMPLETION }
 
 # initialize global XPathContext
 sub xpc_init {
+  $_xpc=new_xpath_context();
+  $_ns{xsh}=$XML::XSH::xshNS;
+}
+
+sub new_xpath_context {
+  my $xpc;
   unless (eval { require XML::LibXML::XPathContext;
-		 $_xpc=XML::LibXML::XPathContext->new();
+		 $xpc=XML::LibXML::XPathContext->new();
 	       }) {
     require XML::XSH::DummyXPathContext;
     print STDERR ("Warning: XML::LibXML::XPathContext not found!\n".
 		  "XSH will lack namespace and function registering functionality!\n\n");
-    $_xpc=XML::XSH::DummyXPathContext->new();
+    return XML::XSH::DummyXPathContext->new();
   }
-  $_xpc->registerVarLookupFunc(\&xpath_var_lookup,undef);
-  register_ns('xsh',$XML::XSH::xshNS);
-  $_xpc->registerFunctionNS('doc',$XML::XSH::xshNS,
-			  sub {
-			    die "Wrong number of arguments for function doc(id)!" if (@_!=1);
-			    my ($id)=literal_value($_[0]);
-			    die "Wrong number of arguments for function doc(id)!" if (@_!=1);
-			    die "Document does not exist!" unless (exists($_doc{$id}));
-			    return $_doc{$id};
-			  });
-  $_xpc->registerFunctionNS('matches',$XML::XSH::xshNS,
-			  sub {
-			    die "Wrong number of arguments for function matches(string,regexp)!" if (@_!=2);
-			    use utf8;
-			    my ($string,$regexp)=@_;
-			    $string=literal_value($string);
-			    $regexp=literal_value($regexp);
-			    my $ret=$string=~m{$regexp} ?
-			      XML::LibXML::Boolean->True :
-			      XML::LibXML::Boolean->False;
-			    $ret;
-			  });
-  $_xpc->registerFunctionNS('substr',$XML::XSH::xshNS,
-			  sub {
-			    die "Wrong number of arguments for function substr(string,position,[length])!" if (@_<2 or @_>3);
-			    use utf8;
-			    my ($str,$pos,$len)=@_;
-			    return (@_ == 2) ? substr(literal_value($str),
-						      literal_value($pos)) :
-			                       substr(literal_value($str),
-						      literal_value($pos),
-						      literal_value($len));
-			  });
-  $_xpc->registerFunctionNS('reverse',$XML::XSH::xshNS,
-			  sub {
-			    die "Wrong number of arguments for function reverse(string)!" if (@_!=1);
-			    use utf8;
-			    return scalar reverse(literal_value($_[0]));
-			  });
-
-  $_xpc->registerFunctionNS('grep',$XML::XSH::xshNS,
-			  sub {
-			    die "Wrong number of arguments for function grep(list,regexp)!" if (@_!=2);
-			    my ($nodelist,$regexp)=@_;
-			    die "1st argument must be a node-list in grep(list,regexp)!" 
-			      unless (ref($nodelist) and $nodelist->isa('XML::LibXML::NodeList'));
-			    use utf8; 
-			    [grep { $_->to_literal=~m{$regexp} } @$nodelist];
-			  });
-  $_xpc->registerFunctionNS('same',$XML::XSH::xshNS,
-			  sub {
-			    die "Wrong number of arguments for function same(node,node)!" if (@_!=2);
-			    my ($nodea,$nodeb)=@_;
-			    die "1st argument must be a node in grep(list,regexp)!" 
-			      unless (ref($nodea) and $nodea->isa('XML::LibXML::NodeList'));
-			    die "2nd argument must be a node in grep(list,regexp)!" 
-			      unless (ref($nodeb) and $nodeb->isa('XML::LibXML::NodeList'));
-			    return XML::LibXML::Boolean->new($nodea->size() && $nodeb->size() &&
-							     $nodea->[0]->isSameNode($nodea->[0]));
-			  });
-  $_xpc->registerFunctionNS('max', $XML::XSH::xshNS,
-			    sub {
-			      my $r=0;
-			      foreach (cast_objects_to_values(@_)) {
-				$r = $_>$r ? $_ : $r;
-			      }; $r;
-			    });
-  $_xpc->registerFunctionNS('strmax', $XML::XSH::xshNS,
-			    sub {
-			      my $r=0;
-			      foreach (cast_objects_to_values(@_)) {
-				$r = $_ ge $r ? $_ : $r;
-			      }; $r;
-			    });
-  $_xpc->registerFunctionNS('min', $XML::XSH::xshNS,
-			    sub {
-			      my $r=0;
-			      foreach (cast_objects_to_values(@_)) {
-				print "$_\n";
-				$r = $_ < $r ? $_ : $r;
-			      };
-			      print "r=$r\n";
-			      return 0+$r
-			    });
-  $_xpc->registerFunctionNS('strmin', $XML::XSH::xshNS,
-			    sub {
-			      my $r=0;
-			      foreach (cast_objects_to_values(@_)) {
-				$r = $_ le $r ? $_ : $r;
-			      }; $r;
-			    });
-  $_xpc->registerFunctionNS('sum', $XML::XSH::xshNS,
-			    sub {
-			      my $r=0;
-			      foreach (cast_objects_to_values(@_)) {
-				$r += $_;
-			      }; $r;
-			    });
-  $_xpc->registerFunctionNS('join', $XML::XSH::xshNS,
-			    sub {
-			      my ($j)=cast_objects_to_values(shift);
-			      join $j,cast_objects_to_values(@_);
-			    });
-
+  $xpc = XML::LibXML::XPathContext->new();
+  $xpc->registerVarLookupFunc(\&xpath_var_lookup,undef);
+  $xpc->registerNs('xsh',$XML::XSH::xshNS);
+  $xpc->registerFunctionNS('doc',$XML::XSH::xshNS,\&XPATH_doc);
+  $xpc->registerFunctionNS('var',$XML::XSH::xshNS,\&XPATH_var);
+  $xpc->registerFunctionNS('matches',$XML::XSH::xshNS,\&XPATH_matches);
+  $xpc->registerFunctionNS('substr',$XML::XSH::xshNS,\&XPATH_substr);
+  $xpc->registerFunctionNS('reverse',$XML::XSH::xshNS,\&XPATH_reverse);
+  $xpc->registerFunctionNS('grep',$XML::XSH::xshNS,\&XPATH_grep);
+  $xpc->registerFunctionNS('same',$XML::XSH::xshNS,\&XPATH_same);
+  $xpc->registerFunctionNS('max', $XML::XSH::xshNS,\&XPATH_max);
+  $xpc->registerFunctionNS('strmax', $XML::XSH::xshNS,\&XPATH_strmax);
+  $xpc->registerFunctionNS('min', $XML::XSH::xshNS,\&XPATH_min);
+  $xpc->registerFunctionNS('strmin', $XML::XSH::xshNS,\&XPATH_strmin);
+  $xpc->registerFunctionNS('sum', $XML::XSH::xshNS,\&XPATH_sum);
+  $xpc->registerFunctionNS('join', $XML::XSH::xshNS,\&XPATH_join);
+  $xpc->registerFunctionNS('serialize',$XML::XSH::xshNS,\&XPATH_serialize);
+  $xpc->registerFunctionNS('subst',$XML::XSH::xshNS,\&XPATH_subst);
+  $xpc->registerFunctionNS('parse',$XML::XSH::xshNS,\&XPATH_parse);
+  $xpc->registerFunctionNS('sprintf',$XML::XSH::xshNS,\&XPATH_sprintf);
+  $xpc->registerFunctionNS('current',$XML::XSH::xshNS,\&XPATH_current);
+  $xpc->registerFunctionNS('path',$XML::XSH::xshNS,\&XPATH_path);
+  $xpc->registerFunctionNS('map',$XML::XSH::xshNS,\&XPATH_map);
+  return $xpc;
 }
+
+sub clone_xpc {
+  my $xpc = new_xpath_context();
+  foreach (keys(%_ns)) {
+    $xpc->registerNs($_,$_ns{$_});
+  }
+  foreach (keys(%_func)) {
+    if (/\n/) {
+      my ($name,$ns)=/^(.*)\n((?:.|\n)*)$/;
+      $xpc->registerFunctionNS($name, $ns, $_func{$_});
+    } else {
+      $xpc->registerFunction($_, $_func{$_});
+    }
+  }
+  $xpc->setContextNode($_xpc->getContextNode());
+  return $xpc;
+}
+
+# ===================== XPATH EXT FUNC ================
+
+sub XPATH_doc {
+  die "Wrong number of arguments for function xsh:doc(id)!" if (@_!=1);
+  my ($id)=literal_value($_[0]);
+  die "Document does not exist!" unless (exists($_doc{$id}));
+  return $_doc{$id};
+}
+
+sub XPATH_var {
+  die "Wrong number of arguments for function xsh:nl(id)!" if (@_!=1);
+  my ($id)=literal_value($_[0]);
+  $id=~s/^\%//;
+  if (exists($_nodelist{$id})) {
+    return $_nodelist{$id}->[1];
+  } else {
+    return XML::LibXML::NodeList->new();
+  }
+}
+sub XPATH_matches {
+  die "Wrong number of arguments for function xsh:matches(string,regexp)!" if (@_!=2 and @_!=3);
+  use utf8;
+  my ($string,$regexp,$ignore_case)=@_;
+  $string=literal_value($string);
+  $regexp=literal_value($regexp);
+  $ignore_case=literal_value($ignore_case);
+  return ($ignore_case ?
+	  $string=~m{$regexp}i :
+	  $string=~m{$regexp}) ?
+	    XML::LibXML::Boolean->True :
+		XML::LibXML::Boolean->False;
+}
+sub XPATH_substr {
+  die "Wrong number of arguments for function xsh:substr(string,position,[length])!" if (@_<2 or @_>3);
+  use utf8;
+  my ($str,$pos,$len)=@_;
+  my $result = (@_ == 2) ? 
+    substr(literal_value($str),
+	   literal_value($pos)) :
+	     substr(literal_value($str),
+		    literal_value($pos),
+		    literal_value($len));
+  $result = "" unless defined ($result);
+  return $result;
+}
+sub XPATH_reverse {
+  die "Wrong number of arguments for function xsh:reverse(string)!" if (@_!=1);
+  use utf8;
+  return scalar reverse(literal_value($_[0]));
+}
+
+sub XPATH_grep {
+  die "Wrong number of arguments for function xsh:grep(list,regexp)!" if (@_!=2);
+  my ($nodelist,$regexp)=@_;
+  die "1st argument must be a node-list in grep(list,regexp)!" 
+    unless (ref($nodelist) and $nodelist->isa('XML::LibXML::NodeList'));
+  use utf8; 
+  [grep { $_->to_literal=~m{$regexp} } @$nodelist];
+}
+
+sub XPATH_same {
+  die "Wrong number of arguments for function xsh:same(node,node)!" if (@_!=2);
+  my ($nodea,$nodeb)=@_;
+  die "1st argument must be a node in grep(list,regexp)!" 
+    unless (ref($nodea) and $nodea->isa('XML::LibXML::NodeList'));
+  die "2nd argument must be a node in grep(list,regexp)!" 
+    unless (ref($nodeb) and $nodeb->isa('XML::LibXML::NodeList'));
+  return XML::LibXML::Boolean->new($nodea->size() && $nodeb->size() &&
+				   $nodea->[0]->isSameNode($nodeb->[0]));
+}
+
+sub XPATH_max {
+  my $r;
+  foreach (cast_objects_to_values(@_)) {
+    next unless /^\s*(-\s*)?(\d+(\.\d*)?|\.\d+)\s*$/;
+    $r = $_ unless defined($r);
+    $r = $_>$r ? $_ : $r;
+  }
+  ; 0+$r;
+}
+
+sub XPATH_strmax {
+  my $r;
+  foreach (cast_objects_to_values(@_)) {
+    $r = $_ unless defined($r);
+    $r = $_ ge $r ? $_ : $r;
+  }
+  ; defined($r) ? $r : "";
+}
+
+sub XPATH_min {
+  my $r;
+  foreach (cast_objects_to_values(@_)) {
+    next unless /^\s*(-\s*)?(\d+(\.\d*)?|\.\d+)\s*$/;
+    $r = $_ unless defined($r);
+    $r = $_ < $r ? $_ : $r;
+  }
+  ;
+  return 0+$r;
+}
+
+sub XPATH_strmin {
+  my $r;
+  foreach (cast_objects_to_values(@_)) {
+    $r = $_ unless defined($r);
+    $r = $_ le $r ? $_ : $r;
+  }
+  ; defined($r) ? $r : "";
+}
+
+sub XPATH_sum {
+  my $r=0;
+  foreach (cast_objects_to_values(@_)) {
+    $r += $_;
+  }
+  ; $r;
+}
+
+sub XPATH_join {
+  my $j=literal_value(shift @_);
+  join $j,cast_objects_to_values(@_);
+}
+
+sub XPATH_serialize {
+  my $result="";
+  foreach my $obj (@_) {
+    if (ref($obj) and 
+	$obj->isa('XML::LibXML::NodeList')) {
+      foreach my $node (@$obj) {
+	$result.=$node->toString();
+      }
+    } else {
+      $result.=literal_value($obj);
+    }
+  }
+  $result;
+}
+
+sub XPATH_subst {
+  die "Wrong number of arguments for function xsh:subst(string,regexp,replacement,[options])!" if (@_!=3 and @_!=4);
+  use utf8;
+  my ($string,$regexp,$replace,$options)=@_;
+  $string=literal_value($string);
+  $regexp=literal_value($regexp);
+  return $string unless $regexp ne "";
+  $replace=literal_value($replace);
+  $options=literal_value($options);
+  die "Invalid options: $options (should only consist of 'egimsx')!"
+    unless ($options =~ /^[egimsx]*$/);
+  $replace =~ s{\\(.)|(/)|(\\)$}{\\$1$2$3}gs;
+  eval "\$string=~s/\$regexp/$replace/$options";
+  return $string;
+}
+
+sub XPATH_parse {
+  die "Wrong number of arguments for function xsh:parse(string)!" if (@_!=1);
+  use utf8;
+  my ($string)=@_;
+  $string=literal_value($string);
+  my $dom=xsh_parse_string($string,'xml');
+  if ($dom) {
+    return XML::LibXML::NodeList->new(
+				      $dom->childNodes());
+  } else {
+    return XML::LibXML::NodeList->new();
+  }
+}
+
+sub XPATH_sprintf {
+  die "Wrong number of arguments for function xsh:sprintf(format-string,...)!" if (@_<1);
+  use utf8;
+  my @args=map { literal_value($_) } @_;
+  return sprintf(shift(@args),@args);
+}
+
+sub XPATH_current {
+  die "Wrong number of arguments for function xsh:current()!" if (@_);
+  return XML::LibXML::NodeList->new(get_local_node());
+}
+
+sub XPATH_path {
+  die "Wrong number of arguments for function xsh:path(node-list)!" if (@_!=1);
+  die "Wrong type of argument 1 for xsh:path(node-list)!" unless (ref($_[0]) and $_[0]->isa('XML::LibXML::NodeList'));
+  return "" unless $_[0][0];
+  return
+    XML::LibXML::String->new(pwd($_[0][0]));
+}
+
+sub XPATH_map {
+  die "Wrong number of arguments for function xsh:map(node-list,string)!"
+    if (@_!=2);
+  die "Wrong type of argument 1 for xsh:map(node-list,string)!"
+    unless (ref($_[0]) and $_[0]->isa('XML::LibXML::NodeList'));
+  my ($nl,$xpath)=@_;
+  my $res = XML::LibXML::NodeList->new();
+  unless (@{$nl} and $xpath ne "") { return $res; }
+  my $xpc = clone_xpc();
+  my $res_el;
+  my $res_doc;
+  foreach my $node (@{$nl}) {
+# #    my $val = $node->find($xpath);
+     my $val = $xpc->find($xpath,$node);
+     next unless (ref($val));
+     if ($val->isa("XML::LibXML::NodeList")) {
+      push @$res,@$val;
+    } else {
+      unless ($res_el) {
+	$res_doc=XML::LibXML::Document->new();
+	$res_el=$res_doc->createElementNS($XML::XSH::xshNS,'xsh:result');
+	$res_doc->setDocumentElement($res_el);
+      }
+      my $el;
+      if ($val->isa("XML::LibXML::Boolean")) {
+	$el = $res_doc->createElementNS($XML::XSH::xshNS,'xsh:bool');
+      } elsif ($val->isa("XML::LibXML::Number")) {
+	$el = $res_doc->createElementNS($XML::XSH::xshNS,'xsh:float');
+      } elsif ($val->isa("XML::LibXML::Literal")) {
+	$el = $res_doc->createElementNS($XML::XSH::xshNS,'xsh:string');
+      }
+      $el->appendText($val->to_literal->value);
+      $res_el->appendChild($el);
+      push @$res,$el;
+    }
+   }
+  return $res;
+}
+
+# ===================== END OF XPATH EXT FUNC ================
 
 sub list_flags {
   print "validation ".(get_validation() or "0").";\n";
@@ -807,7 +979,7 @@ sub print_pwd {
   }
 }
 
-# evaluate variable and xpath expresions given string
+# evaluate variable and xpath expresions in a given string
 sub _expand {
   my $l=$_[0];
   my $k;
@@ -957,6 +1129,22 @@ sub _xpc_find_nodes {
   my ($node,$query)=@_;
   $_xpc->setContextNode($node);
   return $_xpc->findnodes($query);
+}
+
+sub _prepare_result_nl {
+  my ($nlspec)=@_;
+  return undef unless $nlspec;
+  my $var= $nlspec ? $nlspec->[1] : undef;
+  my $append = $nlspec ? $nlspec->[0] : 0;
+  my $rl;
+  if ($var ne "") {
+    $var =~ s/^%//;
+    unless (exists($_nodelist{$var}) and $append) {
+      nodelist_assign($var,undef);
+    }
+    $rl = $_nodelist{$var}->[1];
+  }
+  return $rl;
 }
 
 # findnodes wrapper which handles both xpaths and nodelist variables
@@ -1826,6 +2014,15 @@ sub new_document_element {
   }
 }
 
+# replace document element with a new one
+sub replace_document_element {
+  my ($old, $new)=@_;
+  my $doc=$_xml_module->owner_document($old);
+  my @after_nodes = $old->findnodes('following::node()');
+  $old->unbindNode();
+  new_document_element($doc,$new,@after_nodes);
+}
+
 # safely insert source node after, before or instead of the
 # destination node. Safety means here that nodes inserted on the
 # document level are given special care.  the source node may only be
@@ -1917,7 +2114,6 @@ sub insert_node {
   if ($_xml_module->is_document($node)) {
     die "Error: Can't insert/copy/move document nodes!";
   }
-
   # destination: Attribute
   if ($_xml_module->is_attribute($dest)) {
     # source: Text, CDATA, Comment, Entity, Element
@@ -2181,25 +2377,13 @@ sub copy {
   my ($fxp,$txp,$where,$all_to_all,$nlspec)=@_;
   my ($fid,$fq,$fdoc)=_xpath($fxp); # from xpath
   my ($tid,$tq,$tdoc)=_xpath($txp); # to xpath
-  my $nodelist_var= $nlspec ? $nlspec->[1] : undef;
-  my $append_nodelist_var = $nlspec ? 0 : $nlspec->[0];
-  my $rl;
-
-  my $rl;
-
   unless (ref($fdoc)) {
     die "No such document '$fid'!\n";
   }
   unless (ref($tdoc)) {
     die "No such document '$tid'!\n";
   }
-  if ($nodelist_var ne "") {
-    $nodelist_var =~ s/^%//;
-    unless (exists($_nodelist{$nodelist_var}) or $append_nodelist_var) {
-      nodelist_assign($nodelist_var,undef);
-    }
-    $rl = $_nodelist{$nodelist_var}->[1];
-  }
+  my $rl=_prepare_result_nl($nlspec);
 
   my ($fl,$tl);
 
@@ -2383,27 +2567,16 @@ sub create_nodes {
 # identified by XPath
 sub insert {
   my ($type,$exp,$xpath,$where,$ns,$to_all,$nlspec)=@_;
-  my $nodelist_var= $nlspec ? $nlspec->[1] : undef;
-  my $append_nodelist_var = $nlspec ? 0 : $nlspec->[0];
 
   $exp = expand($exp);
   $ns  = expand($ns);
 
-
   my ($tid,$tq,$tdoc)=_xpath($xpath); # destination(s)
-  my $rl;
-  if ($nodelist_var ne "") {
-    $nodelist_var =~ s/^%//;
-    unless (exists($_nodelist{$nodelist_var}) or $append_nodelist_var) {
-      nodelist_assign($nodelist_var,undef);
-    }
-    $rl = $_nodelist{$nodelist_var}->[1];
-  }
-
   unless (ref($tdoc)) {
     die "No such document '$tid'!\n";
   }
 
+  my $rl = _prepare_result_nl($nlspec);
   my @nodes;
   $ns=toUTF8($QUERY_ENCODING,$ns);
   unless ($type eq 'chunk') {
@@ -2444,6 +2617,117 @@ sub insert {
   }
   return 1;
 }
+
+# wrap nodes into a given element
+sub wrap {
+  my ($xp, $exp,$ns,$nlspec)=@_;
+
+  $exp = toUTF8($QUERY_ENCODING,expand($exp));
+  $ns  = toUTF8($QUERY_ENCODING,expand($ns));
+
+  my ($id,$query,$doc)=_xpath($xp);
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+
+  my $rl=_prepare_result_nl($nlspec);
+
+  my $ql=find_nodes($xp);
+  foreach my $node (@$ql) {
+    my ($el) = create_nodes('element',$exp,
+			    $_xml_module->owner_document($node),$ns);
+    if ($_xml_module->is_attribute($node)) {
+      $node->ownerElement()->insertAfter($el,undef);
+      set_attr_ns($el,$node->namespaceURI(),
+		  $node->getName(),$node->getValue());
+      $node->unbindNode();
+    } else {
+      my $parent = $node->parentNode();
+      if ($parent) {
+	safe_insert($el,$node,'replace');
+	$el->appendChild($node);
+      } else {
+ 	die "Cannot wrap node: ".pwd($node)." (node has no parent)\n";
+      }
+    }
+    push @$rl, $el if $rl;
+  }
+  1;
+}
+
+# wrap span of nodes into a given element
+sub wrap_span {
+  my ($xp_start,$xp_end,$exp,$ns,$nlspec)=@_;
+
+  $exp = toUTF8($QUERY_ENCODING,expand($exp));
+  $ns  = toUTF8($QUERY_ENCODING,expand($ns));
+
+  my $rl=_prepare_result_nl($nlspec);
+
+  my $ql_start=find_nodes($xp_start);
+  my $ql_end=find_nodes($xp_end);
+  if (@$ql_start != @$ql_end) {
+    die "Error: there are ".scalar(@$ql_start)." start nodes, ".
+      " but ".scalar(@$ql_start)." end nodes!";
+  }
+  for (my $i=0; $i<=$#$ql_start; $i++) {
+    my $node = $ql_start->[$i];
+    my $end_node = $ql_end->[$i];
+    if (not($node->parentNode()) or not($end_node->parentNode())) {
+      die "Error: cannot wrap document node\n";
+    }
+    foreach my $n ($node,$end_node) {
+      if ($_xml_module->is_attribute($n)) {
+	die "Error: attribute node ".pwd($n).
+	  " cannot define a node span boundary\n";
+      }
+    }
+    if (not $node->parentNode()->isSameNode($end_node->parentNode())) {
+      die "Error: start node ".pwd($node)." and end node ".
+	pwd($end_node)." have different parents\n";
+    }
+    my ($el) = create_nodes('element',$exp,
+			    $_xml_module->owner_document($node),$ns);
+    my $parent = $node->parentNode();
+    my @span;
+    my $n=$node;
+    while ($n) {
+      push @span,$n;
+      last if ($n->isSameNode($end_node));
+      $n=$n->nextSibling();
+    }
+    die "Error: End node of span ".pwd($node).
+      " .. ".pwd($end_node)." not reached!\n" unless $n;
+    if ($_xml_module->is_document($parent)) {
+      # check that document element is within the span
+      my $docel=$parent->getDocumentElement();
+      my $found=0;
+      foreach my $n (@span) {
+	if ($n->isSameNode($docel)) {
+	  $found=1;
+	  last;
+	}
+      }
+      die "Cannot wrap span: ".pwd($node).
+	" .. ".pwd($end_node)." (document already has a root element)\n"
+	  unless $found;
+      replace_document_element($docel,$el);
+      foreach my $n (@span) {
+	$n->unbindNode();
+	$el->appendChild($n);
+      }
+    } else {
+      $parent->insertBefore($el,$node);
+      foreach my $n (@span) {
+	$n->unbindNode();
+	$el->appendChild($n);
+      }
+    }
+    push @$rl, $el if $rl;
+  }
+  1;
+}
+
 
 # normalize nodes
 sub normalize_nodes {
@@ -3584,11 +3868,13 @@ sub register_func {
   die $@ if $@;
   if ($name =~ /^([^:]+):(.*)$/) {
     if (exists($_ns{$1})) {
+      $_func{"$2\n$_ns{$1}"}=$sub;
       $_xpc->registerFunctionNS($2, $_ns{$1}, $sub);
     } else {
       die "Registration failed: unknown namespace prefix $1!\n";
     }
   } else {
+    $_func{$name}=$sub;
     $_xpc->registerFunction($name, $sub);
   }
   return 1;
@@ -3596,7 +3882,18 @@ sub register_func {
 
 sub unregister_func {
   my ($name)=expand(@_);
-  $_xpc->unregisterFunction($name);
+
+  if ($name =~ /^([^:]+):(.*)$/) {
+    if (exists($_ns{$1})) {
+      delete $_func{"$2\n$_ns{$1}"};
+      $_xpc->unregisterFunctionNS($2, $_ns{$1});
+    } else {
+      die "Registration failed: unknown namespace prefix $1!\n";
+    }
+  } else {
+    delete $_func{$name};
+    $_xpc->unregisterFunction($name);
+  }
   return 1;
 }
 
@@ -3640,6 +3937,8 @@ sub xml_list {
   }
   return $result;
 }
+
+sub serialize { xml_list(@_) }
 
 sub literal {
   my ($xp)=@_;

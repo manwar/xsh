@@ -8,9 +8,11 @@ BEGIN {
   autoflush STDERR 1;
 
   @xsh_test=split /\n\n/, <<'EOF';
+quiet;
+
 list;
 
-list | wc 1>&2
+list | wc
 
 count /;
 
@@ -42,7 +44,7 @@ exec ls -l;
 
 clone t=scratch;
 
-list | wc 1>&2;
+list | wc;
 
 def myfunc { defs; encoding iso-8859-2; };
 
@@ -54,9 +56,9 @@ foreach scratch://foo { insert text "no. " into .; copy ./@bar append ./text() }
 
 indent 1;
 
-ls //foo | cat 1>&2;
+ls //foo | cat;
 
-ls //foo/text()[starts-with(.,'no. 8')] | cat 1>&2;
+ls //foo/text()[starts-with(.,'no. 8')] | cat;
 
 if count(//foo/text()[starts-with(.,'no. 8')])!=1 { eval die };
 
@@ -76,25 +78,25 @@ test-mode; eval die;
 
 run-mode;
 
-ls scratch://oof[not(@bar)] | cat 1>&2
+ls scratch://oof[not(@bar)] | cat
 
 move scratch://oof[not(@bar)] into t://foo[@bar='1'];
 
 count scratch:count(/scratch/oof)=9;
 
-ls t:/scratch/foo[@bar='1'] | cat 1>&2
+ls t:/scratch/foo[@bar='1'] | cat
 
 count t:count(/scratch/foo/oof)=1;
 
-locate //oof | cat 1>&2
+locate //oof | cat
 
 cd t:/scratch/foo/oof/text()
 
-pwd | cat 1>&2
+pwd | cat
 
 remove t://oof;
 
-pwd | cat 1>&2
+pwd | cat
 
 count t:count(/scratch/foo/oof)=0;
 
@@ -106,7 +108,7 @@ create new1 test
 
 count count(//*)=1;
 
-list / | cat 1>&2;
+list / | cat;
 
 create new2
 "<?xml version='1.0' encoding='iso-8859-1'?>
@@ -125,30 +127,30 @@ count //root;
 count count(//br)=2;
 count //text()[contains(.,'simple')];
 
-dtd | cat 1>&2;
+dtd | cat;
 
 valid;
 
 validate;
 
-list | cat 1>&2
+list | cat
 
 xinsert element silly after //br
 
-list / | cat 1>&2
+list / | cat
 
 count count(//br[./following-sibling::silly])=2
 
-ls scratch:/ | cat 1>&2;
-ls t:/ | cat 1>&2;
-ls new1:/ | cat 1>&2;
-ls new2:/ | cat 1>&2
+ls scratch:/ | cat;
+ls t:/ | cat;
+ls new1:/ | cat;
+ls new2:/ | cat
 
 select t
 
 close t
 
-ls / | cat 1>&2
+ls / | cat
 EOF
 
   plan tests => 4+@xsh_test;
@@ -157,6 +159,8 @@ END { ok(0) unless $loaded; }
 use XML::XSH qw/&xsh &xsh_init &set_quiet &xsh_set_output/;
 $loaded=1;
 ok(1);
+
+my $verbose=$ENV{HARNESS_VERBOSE};
 
 ($::RD_ERRORS,$::RD_WARN,$::RD_HINT)=(1,1,1);
 
@@ -168,16 +172,16 @@ xsh_set_output(\*STDERR);
 set_quiet(0);
 xsh_init();
 
-print STDERR "\n";
+print STDERR "\n" if $verbose;
 ok(1);
 
-print STDERR "\n";
+print STDERR "\n" if $verbose;
 ok ( XML::XSH::Functions::create_doc("scratch","scratch") );
 
-print STDERR "\n";
+print STDERR "\n" if $verbose;
 ok ( XML::XSH::Functions::set_local_xpath(['scratch','/']) );
 
 foreach (@xsh_test) {
-  print STDERR "\n\n[[ $_ ]]\n";
+  print STDERR "\n\n[[ $_ ]]\n" if $verbose;
   ok( xsh($_) );
 }

@@ -32,6 +32,16 @@ def transform_section {
     insert text $ws instead of .;
   }
   map { $_='programlisting' } %section//code;
+  local %typeref;
+  foreach %section//typeref {
+    insert element "simplelist type='inline'" before . result %typeref;
+    local $types=string(@types);
+    foreach { split /\s/,$types } {
+      foreach X:(/recdescent-xml/rules/rule[@type="$__"]) {
+	insert chunk "<member>${(@name|@id)}</member>" into %typedef;
+      }
+    }
+  }
   foreach %section//xref {
     $linkend=string(@linkend);
     foreach X:(id("$linkend")) {
@@ -84,7 +94,8 @@ $toc_template="<html>
     <font color='#000090' size='-2'>
       <a href='t_syntax.html' target='mainIndex'>Syntax</a><br/>
       <a href='t_command.html' target='mainIndex'>Commands</a><br/>
-      <a href='t_argtype.html' target='mainIndex'>Argument types</a><br/>
+      <a href='t_argtype.html' target='mainIndex'>Argument Types</a><br/>
+      <a href='t_function.html' target='mainIndex'>XPath Functions</a><br/>
     </font>
     <hr/>
     <small></small>
@@ -140,12 +151,9 @@ foreach X:/recdescent-xml/doc/section {
   xcopy ./node() into %section;
 
   %rules=X:(/recdescent-xml/rules/rule[documentation[id(@sections)[@id='$id']]]);
-  if %rules[@type='command'] { $c='Commands' } else { $c='' }
-  if %rules[@type='argtype'] { $a='Argument Types' } else { $a='' }
-  if ('$c' != '' and '$a' != '') { $t='$a and $c' } else { $t='$a$c' }
-  if ('$a$c' != '')
+  if %rules
     add chunk "<simplesect>
-                 <title>Related $t</title>
+                 <title>Related Topics</title>
                  <variablelist/>
                </simplesect>" into %section;
   sort (@name|@id) { $a cmp $b } %rules;
@@ -163,8 +171,8 @@ foreach X:/recdescent-xml/doc/section {
 save_HTML T "doc/frames/t_syntax.html";
 close T;
 
-# COMMANDS AND TYPES
-foreach { qw(command type) } {
+# COMMANDS, TYPES AND FUNCTIONS
+foreach { qw(command type function) } {
   echo $__;
   new T $toc_template;
 
@@ -193,8 +201,7 @@ foreach { qw(command type) } {
       add chunk "<a href='s_${ref}.html' target='mainWindow'>${{string(.)}}</a><br/>"
 	into T:/html/body/small;
     }
-    if ('$__'='argtype') { $t = 'argument type' }
-    else { $t = 'command' }
+    if ('${__}'='argtype') { $t = 'argument type' } else { $t='${__}' }
     insert text " $t" into %section/title;
     #USAGE
     if (./documentation/usage) {

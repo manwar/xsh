@@ -8,9 +8,9 @@ BEGIN {
   autoflush STDERR 1;
 
   @xsh_test=grep {!/^\s+#/} split /\n\n/, <<'EOF';
+quiet
 
 # define assert
-
 def p_assert $cond
 { perl { xsh("unless {$cond} throw \"Assertion failed \$cond\"") } }
 
@@ -76,6 +76,8 @@ use XML::XSH qw/&xsh &xsh_init &set_quiet &xsh_set_output/;
 $loaded=1;
 ok(1);
 
+my $verbose=$ENV{HARNESS_VERBOSE};
+
 ($::RD_ERRORS,$::RD_WARN,$::RD_HINT)=(1,1,1);
 
 $::RD_ERRORS = 1; # Make sure the parser dies when it encounters an error
@@ -86,16 +88,16 @@ xsh_set_output(\*STDERR);
 set_quiet(0);
 xsh_init();
 
-print STDERR "\n";
+print STDERR "\n" if $verbose;
 ok(1);
 
-print STDERR "\n";
+print STDERR "\n" if $verbose;
 ok ( XML::XSH::Functions::create_doc("scratch","scratch") );
 
-print STDERR "\n";
+print STDERR "\n" if $verbose;
 ok ( XML::XSH::Functions::set_local_xpath(['scratch','/']) );
 
 foreach (@xsh_test) {
-  print STDERR "\n\n[[ $_ ]]\n";
+  print STDERR "\n\n[[ $_ ]]\n" if $verbose;
   ok( xsh($_) );
 }

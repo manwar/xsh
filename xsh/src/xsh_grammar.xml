@@ -777,6 +777,8 @@ sub new {
       <ruleref ref="save_command"/>
       <ruleref ref="files_command"/>
       <ruleref ref="xslt_command"/>
+      <ruleref ref="wrap_command"/>
+      <ruleref ref="wrap_span_command"/>
       <ruleref ref="insert_command"/>
       <ruleref ref="xinsert_command"/>
       <ruleref ref="help_command"/>
@@ -1301,36 +1303,9 @@ END
 	    identifier is given, the current document is used.
 	  </para>
 	  <para>
-	    As an extension, the following XPath extension functions are defined in
-	    the XSH namespace:
-	  </para>
-	  <para>
-	    <literal>xsh:doc(id-string)</literal> -
-	    returns a nodelist consisting of the document node
-	    associated in XSH with an identifier given in
-	    <literal>id-string</literal>.	    
-	  </para>
-	  <para>
-	    <literal>xsh:matches(match-string,regexp-string)</literal> -
-	    returns <literal>true</literal> if <literal>match-string</literal>
-	    matches the regular expression given in
-	    <literal>regexp-string</literal>.
-	    Otherwise returns <literal>false</literal>.
-	  </para>
-	  <para>
-	    <literal>xsh:grep(node-set, regexp-string)</literal> -
-	    returns a node set consisting of nodes of the
-	    given <literal>node-set</literal> whose content 
-	    (as returned by the built-in XPath 
-	    function <literal>string()</literal>)
-	    matches the regular expression given in <literal>regexp-string</literal>.
-	  </para>
-	  <para>
-	    <literal>xsh:same(node-set1, node-set2)</literal> -
-	    returns <literal>true</literal> if the given node sets
-	    both contain the same node
-	    (in XPath, this can also be expressed as
-	    <literal>count(node-set1|node-set2)+count(node-set1)+count(node-set2)=1</literal>).
+	    XSH provides many powerfull XPath extension functions,
+	    listed below and described in separate sections:
+	    <typeref types="functions"/>.	    
 	  </para>
 	  <example>
 	    <title>Open a document and count all sections containing a
@@ -2722,6 +2697,151 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</description>
 	<see-also>
 	  <ruleref ref="xinsert_command"/>
+	  <ruleref ref="move_command"/>
+	  <ruleref ref="xmove_command"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="wrap_command" type="command" name="wrap" inline="yes">
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="expression"/>
+	<ruleref ref="namespace" rep="?"/>
+	<ruleref ref="xpath"/>
+	<ruleref ref="store_or_append_nl" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::wrap,@item[5,3],$item[4][0],@{$item[6]}]</action>
+      </production>
+      <documentation sections="Manipulation">
+	<usage>wrap <xref linkend="expression"/> [namespace <xref
+	linkend="expression"/>] <xref linkend="xpath"/> [(result|append-result) %<xref linkend="ID"/>]
+	</usage>
+	<shortdesc>wrap given nodes into elements</shortdesc>
+	<description>
+	  <para>
+	    For each node matching <xref linkend="xpath"/>,
+	    this command creates a new element node according to a
+	    given <xref linkend="expression"/> (in the same
+	    way as <xref linkend="xinsert_command"/> does)
+	    to replace the matching node and
+	    moves the matching node into the newly created element.
+	    If namespace <xref linkend="expression"/> is given,
+	    the namespace is applied on the created element.
+	    If <literal>result</literal> or <literal>append-result</literal>
+	    keywords are present, followed by a name
+	    of a <xref linkend="nodelistvariable"/>,
+	    the newly created elements are also stored into the given
+	    node-list (with <literal>result</literal> the
+	    node-list variable is emptied first).
+	  </para>
+	  <example>
+	    <code>xsh scratch:/> ls /;
+&lt;?xml version="1.0" encoding="utf-8"?>
+&lt;scratch/>
+
+xsh scratch:/> wrap 'foo' *;
+xsh scratch:/> insert attribute 'bar=baz' into /foo;
+xsh scratch:/> insert text 'some text' into //scratch;
+xsh scratch:/> wrap 'a:A' namespace 'http://foo/bar' //@*;
+xsh scratch:/> wrap 'text aaa="bbb"' //text() result %wrapper;
+xsh scratch:/> wrap '&lt;elem ccc=ddd>' //*;
+xsh scratch:/> ls /;
+&lt;?xml version="1.0" encoding="utf-8"?>
+&lt;elem ccc="ddd">
+<tab/>&lt;foo xmlns:a="http://foo/bar">
+<tab/><tab/>&lt;elem ccc="ddd">
+<tab/><tab/><tab/>&lt;scratch>
+<tab/><tab/><tab/><tab/>&lt;elem ccc="ddd">
+<tab/><tab/><tab/><tab/><tab/>&lt;text aaa="bbb">some text&lt;/text>
+<tab/><tab/><tab/><tab/>&lt;/elem>
+<tab/><tab/><tab/>&lt;/scratch>
+<tab/><tab/>&lt;/elem>
+<tab/><tab/>&lt;elem ccc="ddd">
+<tab/><tab/><tab/>&lt;a:A xmlns:a="http://foo/bar" bar="baz"/>
+<tab/><tab/>&lt;/elem>
+<tab/>&lt;/foo>
+&lt;/elem>
+
+xsh scratch:/> ls %wrapper;
+&lt;text aaa="bbb">some text&lt;/text>
+ </code>
+	  </example>
+	</description>
+	<see-also>
+	  <ruleref ref="xinsert_command"/>
+	  <ruleref ref="insert_command"/>
+	  <ruleref ref="move_command"/>
+	  <ruleref ref="xmove_command"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="wrap_span_command" type="command" name="wrap-span" inline="yes">
+      <aliases>
+	<alias name="wrap_span"/>
+      </aliases>
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="expression"/>
+	<ruleref ref="namespace" rep="?"/>
+	<ruleref ref="xpath"/>
+	<ruleref ref="xpath"/>
+	<ruleref ref="store_or_append_nl" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::wrap_span,@item[5,6,3],$item[4][0],@{$item[7]}]</action>
+      </production>
+      <documentation sections="Manipulation">
+	<usage>wrap-span <xref linkend="expression"/> [namespace <xref
+	linkend="expression"/>] <xref linkend="xpath"/> <xref linkend="xpath"/> [(result|append-result) %<xref linkend="ID"/>]
+	</usage>
+	<shortdesc>wrap spans of nodes into elements</shortdesc>
+	<description>
+	  <para>
+	    This command is very similar to <xref linkend="wrap_command"/>
+	    command, except that it works on spans of nodes.
+	    A span is a sequence of adjacent nodes between (and including)
+	    a start node and an end node. All nodes within
+	    a span must have the same parent node.
+	    The spans to be wrapped are defined
+	    by two <xref linkend="xpath"/> expressions.
+	    The first one should evaluate to 
+	    a node-set containing start-nodes of the spans.
+	    The other should evaluate to a node-set of span end-nodes.
+	    Thus, the two <xref linkend="xpath"/> expressions
+	    should evaluate do the same number of nodes.
+	    The n'th span is then defined by the 
+	    n'th node matching the first <xref linkend="xpath"/>
+	    expression and the n'th node matching the
+	    second <xref linkend="xpath"/> expression
+	    (in document order).
+	  </para>
+	  <para>
+	    For each span,
+	    a new element node is generated according to a
+	    given <xref linkend="expression"/> (in the same
+	    way as <xref linkend="xinsert_command"/> does)
+	    and all nodes within the span are removed from
+	    the document and placed into the newly generated element.
+	    The element is then placed back into the document tree
+	    at the position previously occupied by the start node
+	    of the node-span.</para>
+	  <para>
+	    If <literal>result</literal> or <literal>append-result</literal>
+	    keywords are present, followed by a name
+	    of a <xref linkend="nodelistvariable"/>,
+	    the newly created elements are also stored into the given
+	    node-list (with <literal>result</literal> the
+	    node-list variable is emptied first).
+	  </para>
+	  <example>
+	    <code>xsh scratch:/> create foo '&lt;root>&lt;a/>&lt;b/>&lt;a/>&lt;b/>&lt;a/>&lt;b/>&lt;/root>';
+xsh foo:/> wrap-span 'span' //a //b;
+xsh foo:/> ls /;
+ </code>
+	  </example>
+	</description>
+	<see-also>
+	  <ruleref ref="xinsert_command"/>
+	  <ruleref ref="insert_command"/>
 	  <ruleref ref="move_command"/>
 	  <ruleref ref="xmove_command"/>
 	</see-also>
@@ -5370,6 +5490,304 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
 	<regexp>Inline::XSH</regexp>
 	<action>1</action>
       </production>
+    </rule>
+    <!-- ================== FUNCTIONS ====================== -->
+    <rule id="doc_function" type="function" name="xsh:doc">
+      <production/>
+      <documentation>
+	<usage>xsh:doc(id-string)</usage>
+	<description>
+	  <para>
+	    Returns a node-set consisting of the document node
+	    associated in XSH with an identifier given in
+	    <literal>id-string</literal>.	    
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="var_function" type="function" name="xsh:var">
+      <production/>
+      <documentation>
+	<usage>xsh:var(name-string)</usage>
+	<description>
+	  <para>
+	    Returns a node-set consisting of nodes stored in a XSH node-list
+	    variable named <literal>name-string</literal>.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="matches_function" type="function" name="xsh:matches">
+      <production/>
+      <documentation>
+	<usage>xsh:matches(match-string,regexp-string)</usage>
+	<description>
+	  <para>
+	    Returns <literal>true</literal> if <literal>match-string</literal>
+	    matches the regular expression given in
+	    <literal>regexp-string</literal>.
+	    Otherwise returns <literal>false</literal>.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="grep_function" type="function" name="xsh:grep">
+      <production/>
+      <documentation>
+	<usage>xsh:grep(node-set, regexp-string)</usage>
+	<description>
+	  <para>
+	    Returns a node set consisting of nodes of the
+	    given <literal>node-set</literal> whose content 
+	    (as returned by the built-in XPath 
+	    function <literal>string()</literal>)
+	    matches the regular expression given in <literal>regexp-string</literal>.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="substr_function" type="function" name="xsh:substr">
+      <production/>
+      <documentation>
+	<usage>xsh:substr(string,offset,[length])</usage>
+	<description>
+	  <para>
+	    Extracts a substring out of <literal>string</literal> 
+	    and returns it. First character is at offset 0.</para>
+	  <para>
+	    If <literal>offset</literal> is negative, starts
+	    that far from the end of the string. </para>
+	  <para>
+	    If <literal>length</literal> is
+	    omitted, returns everything to the end of the
+	    string.  If <literal>length</literal> is negative,
+	    leaves that many characters off the end of the string.</para>
+	  <para>
+	    If <literal>offset</literal> and
+	    <literal>length</literal> specify a substring that is
+	    partly outside the string, only the part within
+	    the string is returned.  If the substring is
+	    beyond either end of the string, substr() returns
+	    empty string and produces a warning.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="reverse_function" type="function" name="xsh:reverse">
+      <production/>
+      <documentation>
+	<usage>xsh:reverse(string)</usage>
+	<description>
+	  <para>
+	    Returns a string value same as <literal>string</literal>
+	    but with all characters in the opposite order.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="same_function" type="function" name="xsh:same">
+      <production/>
+      <documentation>
+	<usage>xsh:same(node-set1, node-set2)</usage>
+	<description>
+	  <para>
+	    Returns <literal>true</literal> if the given node sets
+	    both contain the same node
+	    (in XPath, this can also be expressed as
+	    <literal>count(node-set1|node-set2)+count(node-set1)+count(node-set2)=1</literal>).
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="max_function" type="function" name="xsh:max">
+      <production/>
+      <documentation>
+	<usage>xsh:max(expression, ...)</usage>
+	<description>
+	  <para>
+	    Returns the maximum of numeric values
+	    computed from given <literal>expression</literal>(s).
+	    If <literal>expression</literal> evaluates to a node-set,
+	    string values of individual nodes are used.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="min_function" type="function" name="xsh:min">
+      <production/>
+      <documentation>
+	<usage>xsh:min(expression, ...)</usage>
+	<description>
+	  <para>
+	    Returns the minimum of numeric values
+	    computed from given <literal>expression</literal>(s).
+	    If <literal>expression</literal> evaluates to a node-set,
+	    string values of individual nodes are used.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="strmax_function" type="function" name="xsh:strmax">
+      <production/>
+      <documentation>
+	<usage>xsh:strmax(expression, ...)</usage>
+	<description>
+	  <para>
+	    Returns a string value computed as the maximum
+	    (in lexicographical order)
+	    of all string values computed from given 
+	    <literal>expression</literal>(s).
+	    If <literal>expression</literal> evaluates to a node-set,
+	    string values of individual nodes are used.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="strmin_function" type="function" name="xsh:strmin">
+      <production/>
+      <documentation>
+	<usage>xsh:strmin(expression, ...)</usage>
+	<description>
+	  <para>
+	    Returns a string value computed as the minimum
+	    (in lexicographical order)
+	    of all string values computed from given 
+	    <literal>expression</literal>(s).
+	    If <literal>expression</literal> evaluates to a node-set,
+	    string values of individual nodes are used.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="sum_function" type="function" name="xsh:sum">
+      <production/>
+      <documentation>
+	<usage>xsh:sum(expression, ...)</usage>
+	<description>
+	  <para>
+	    Returns the sum of numerical value
+	    computed from given 
+	    <literal>expression</literal>(s).
+	    If <literal>expression</literal> evaluates to a node-set,
+	    string values of individual nodes are used.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="join_function" type="function" name="xsh:join">
+      <production/>
+      <documentation>
+	<usage>xsh:join(delim-string, expression,...)</usage>
+	<description>
+	  <para>
+	    Joins the separate string values computed from 
+	    <literal>expression</literal>(s) into a single
+	    string with fields separated by the 
+	    value of <literal>delim-string</literal>,
+	    and returns that new string.
+	    If <literal>expression</literal> evaluates to a node-set,
+	    joins string values of individual nodes.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="subst_function" type="function" name="xsh:subst">
+      <production/>
+      <documentation>
+	<usage>xsh:subst(string,regexp,replacement,[options])</usage>
+	<description>
+	  <para>
+	    Acts in the very same way as perl substitution operation
+	    <literal>string =~ s/regexp/replacement/options</literal>,
+	    returning the resulting string.
+	    Searches a string for a pattern, and if found,
+	    replaces that pattern with the replacement text.	    
+	    If the <literal>replacement</literal> string
+	    contains a <literal>$</literal>  that looks like a variable,
+	    the variable will be interpolated
+	    into the </para>
+	  <para><literal>replacement</literal> at run-time.
+	    Options are:
+	    </para>
+	  <para>
+	    <literal>e</literal> - evaluate <literal>replacement</literal> 
+	    as a Perl expression,</para>
+	  <para>
+	    <literal>g</literal> - replace globally, i.e., all occurrences,</para>
+	  <para>
+	    <literal>i</literal> - do case-insensitive pattern matching,</para>
+	  <para>
+	    <literal>m</literal> - treat string as multiple lines,
+	    that is, change <literal>^</literal>
+	    and <literal>$</literal> from matching the start or end 
+	    of the string to matching the start or end of any line anywhere
+	    within the string,</para>
+	  <para>
+	    <literal>s</literal> - treat string as single line,
+	    that is, change <literal>.</literal>
+	    to match any character whatsoever, even a newline, which
+	    normally it would not match,</para>
+	  <para>
+	    <literal>x</literal> - use extended regular expressions.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="sprintf_function" type="function" name="xsh:sprintf">
+      <production/>
+      <documentation>
+	<usage>xsh:sprintf(format-string,expression,...)</usage>
+	<description>
+	  <para>
+	    Returns a string formatted by the usual <literal>printf</literal>
+	    conventions of the C library function <literal>sprintf</literal>
+	    and <literal>sprintf</literal> Perl function.</para>
+	  <para>
+	    See C documentation for an explanation of the
+	    general principles and Perl documentation
+	    for a list of supported formatting conversions.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="serialize_function" type="function" name="xsh:serialize">
+      <production/>
+      <documentation>
+	<usage>xsh:serialize(node-set,...)</usage>
+	<description>
+	  <para>
+	    Serializes nodes of <literal>node-set</literal>(s)
+	    into XML strings and returns concatenation of
+	    those strings.
+	  </para>	
+	</description>
+      </documentation>
+    </rule>
+    <rule id="parse_function" type="function" name="xsh:parse">
+      <production/>
+      <documentation>
+	<usage>xsh:parse(string)</usage>
+	<description>
+	  <para>
+	    This function parses <literal>string</literal>
+	    as XML and returns a node-set consisting
+	    of the top-level nodes of the resulting document node.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="current_function" type="function" name="xsh:current">
+      <production/>
+      <documentation>
+	<usage>node-list xsh:current()</usage>
+	<description>
+	  <para>
+	    This function (very similar to XSLT <literal>current()</literal>
+	    extension function) returns a node-set having the
+	    current node as its only member.
+	  </para>
+	</description>
+      </documentation>
     </rule>
   </rules>  
 </recdescent-xml>
