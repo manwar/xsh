@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.45 2003-03-12 14:00:24 pajas Exp $
+# $Id: Functions.pm,v 1.46 2003-03-28 14:41:47 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -26,7 +26,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.7';
-  $REVISION='$Revision: 1.45 $';
+  $REVISION='$Revision: 1.46 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -675,7 +675,7 @@ sub _undef {
   return 1;
 }
 
-# evaluate xpath and assign thre result to a variable
+# evaluate xpath and assign the result to a variable
 sub xpath_assign {
   my ($name,$xp)=@_;
   _assign($name,count($xp));
@@ -888,6 +888,7 @@ sub open_doc {
     $source='file';
   }
   $file=expand($file);
+  $file=~s{^(\~[^\/]*)}{(glob($1))[0]}eg;
   $id=_id($id);
   print STDERR "open [$file] as [$id]\n" if "$DEBUG";
   if ($id eq "" or $file eq "") {
@@ -1093,7 +1094,7 @@ sub save_xinclude_chunk {
 
   if ($parse eq 'text') {
     foreach my $node (@$nodes) {
-      $F->print(fromUTF8($enc,$node->to_literal()));
+      $F->print(fromUTF8($enc,$node->to_literal()->value()));
     }
   } else {
     my $version=$doc->can('getVersion') ? $doc->getVersion() : '1.0';
@@ -1364,9 +1365,9 @@ sub eval_xpath_literal {
   my $ql=&find_nodes($xp);
   if (@$ql) {
     if (wantarray) {
-      return map { &fromUTF8($ENCODING, $_->to_literal()) } @$ql;
+      return map { &fromUTF8($ENCODING, $_->to_literal()->value()) } @$ql;
     } else {
-      return &fromUTF8($ENCODING, $ql->[0]->to_literal());
+      return &fromUTF8($ENCODING, $ql->[0]->to_literal()->value());
     }
   } else {
     return '';
@@ -1520,7 +1521,7 @@ sub node_copy {
     }
     # --
     $copy=new_element($dest_doc,$node->getName(),$ns,
-		      [map { [$_->nodeName(),$_->nodeValue()] } $node->attributes]);
+		      [map { [$_->nodeName(),$_->nodeValue()] } $node->attributes],$dest);
   } elsif ($_xml_module->is_document_fragment($node)) {
     $copy=$_parser->parse_xml_chunk($node->toString());
   } else {
@@ -1785,7 +1786,7 @@ sub insert_node {
 	     ref($node)," $where ",ref($dest),"!");
 	return 1;
 # 	# converting attribute to element
-# 	my $new=new_element($dest_doc,$node->getName(),$ns);
+# 	my $new=new_element($dest_doc,$node->getName(),$ns,$dest);
 # 	$new->appendText($node->getValue());
 # 	my $parent=$dest->parentNode();
 # 	if ($_xml_module->is_element($parent)) {
@@ -1870,7 +1871,7 @@ sub insert_node {
 # 	  $ns=$parent->lookupNamespaceURI(name_prefix($node->getName));
 # 	}
 # 	# --
-# 	$new=new_element($dest_doc,$node->getName(),$ns);
+# 	$new=new_element($dest_doc,$node->getName(),$ns,$dest);
 # 	$new->appendText($node->getValue());
       }
       # source: All other
@@ -1964,12 +1965,17 @@ sub create_attributes {
 }
 
 sub new_element {
-  my ($doc,$name,$ns,$attrs)=@_;
+  my ($doc,$name,$ns,$attrs,$dest)=@_;
   my $el;
   my $prefix;
   if ($ns ne "" and $name=~/^([^>]+):(.*)$/) {
     $prefix=$1;
-    $el=$doc->createElementNS($ns,$name);
+    if ($dest && $_xml_module->is_element($dest)) {
+      $el=$dest->addNewChild($ns,$name);
+      $el->unbindNode();
+    } else {
+      $el=$doc->createElementNS($ns,$name);
+    }
   } else {
     $el=$doc->createElement($name);
   }
@@ -1979,6 +1985,7 @@ sub new_element {
 	print STDERR "NS: $ns\n" if $DEBUG;
 	$el->setAttributeNS($ns,$_->[0],$_->[1]);
       } else {
+	next if ($_->[0] eq "xmlns:$prefix" and $_->[1] eq $ns);
 	$el->setAttribute($_->[0],$_->[1]); # what about other namespaces?
       }
     }
@@ -3007,7 +3014,7 @@ import XML::XSH::Functions ':param_vars';
 
 # make this command available from perl expressions
 sub echo {
-  &XML::XSH::Functions::out(@_);
+  &XML::XSH::Functions::out(XML::XSH::Functions::fromUTF8($XML::XSH::Functions::ENCODING,join("",@_)));
   return 1;
 }
 
