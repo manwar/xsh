@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Tue Jun 25 20:59:18 2002
+# Fri Aug  9 16:52:48 2002
 
 
 package XML::XSH::Grammar;
@@ -43,6 +43,9 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(validation)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_validation,$item[3]] }
   	
+	  | /(recovering)\s/ <commit> expression
+		{ [\&XML::XSH::Functions::set_recovering,$item[3]] }
+  	
 	  | /(parser_expands_entities)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_expand_entities,$item[3]] }
   	
@@ -69,6 +72,9 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 	  | /(query-encoding)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_qencoding,$item[3]] }
+  	
+	  | /(options|flags)/ <commit>
+		{ [\&XML::XSH::Functions::list_flags] }
   	
 	  | /(copy|cp)\s/ <commit> xpath loc xpath
 		{ [\&XML::XSH::Functions::copy,@item[3,5,4]] }
@@ -513,7 +519,7 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 
   nodetype:
-	    /element|attribute|attributes|text|cdata|pi|comment|chunk/
+	    /element|attribute|attributes|text|cdata|pi|comment|chunk|entity_reference/
 
   namespace:
 	    /namespace\s/ expression

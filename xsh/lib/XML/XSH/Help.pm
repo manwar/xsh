@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Tue Jun 25 20:59:18 2002
+# Fri Aug  9 16:52:48 2002
 
 package XML::XSH::Help;
 use strict;
@@ -49,13 +49,13 @@ description: assign, backups, call, cd, clone, close, complete_attributes, copy,
 	     create, debug, def, defs, dtd, encoding, eval, exec, exit,
 	     files, foreach, help, if, include, indent, insert,
 	     keep_blanks, lcd, list, load_ext_dtd, locate, map, move,
-	     nobackups, nodebug, open, open_HTML, open_PIPE,
+	     nobackups, nodebug, open, open_HTML, open_PIPE, options,
 	     parser_expands_entities, parser_expands_xinclude,
 	     pedantic_parser, print, print_enc_command, process_xinclude,
-	     pwd, query-encoding, quiet, remove, run-mode, save, save_HTML,
-	     save_xinclude, saveas, select, test-mode, unless, valid,
-	     validate, validation, variables, verbose, version, while,
-	     xcopy, xinsert, xmove, xslt, xupdate
+	     pwd, query-encoding, quiet, recovering, remove, run-mode,
+	     save, save_HTML, save_xinclude, saveas, select, test-mode,
+	     unless, valid, validate, validation, variables, verbose,
+	     version, while, xcopy, xinsert, xmove, xslt, xupdate
 
 END
 
@@ -273,6 +273,22 @@ description: In the first two cases (where dollar sign appears) store the result
 END
 
 
+$HELP{'options'}=[<<'END'];
+usage:       options
+
+aliases:     flags
+
+description: List current values of all XSH flags and options (such as validation flag
+	     or query-encoding).
+
+Example:     Store current settings in your .xshrc
+
+             xsh> options | cat > ~/.xshrc
+
+END
+
+$HELP{'flags'}=$HELP{options};
+
 $HELP{'defs'}=[<<'END'];
 usage:       defs
 
@@ -330,7 +346,7 @@ END
 $HELP{'system'}=$HELP{exec};
 
 $HELP{'xslt'}=[<<'END'];
-usage:       xslt <id><filename>
+usage:       xslt <id> <filename> [(params|parameters) name=<expression> [name=<expression> ...]]
 
 aliases:     transform xsl xsltproc process
 
@@ -338,7 +354,14 @@ description: Load an XSLT stylesheet from a file and use it to transform the doc
 	     of the first <id> into a new document named <id>. Parameters
 	     may be passed to a stylesheet after params keyword in the form
 	     of a list of name=value pairs where name is the parameter name
-	     and value is an expression interpolating to its value.
+	     and value is an expression interpolating to its value. The
+	     resulting value is interpretted by XSLT processor as an XPath
+	     expression so e.g. quotes surrounding a XPath string have to
+	     be quoted themselves to preveserve them during the XSH
+	     expression interpolation.
+
+
+             xslt src stylesheet.xsl rslt params font="'14pt'" color="'red'"
 
 END
 
@@ -509,8 +532,9 @@ $HELP{'xadd'}=$HELP{xinsert};
 $HELP{'node-type'}=[<<'END'];
 Node-type argument type
 
-description: One of: element, attribute, text, cdata, comment, chunk. A chunk is a
-	     character string which forms a well-balanced peace of XML.
+description: One of: element, attribute, text, cdata, comment, chunk and
+	     (EXPERIMENTALLY!) entity_reference. A chunk is a character
+	     string which forms a well-balanced peace of XML.
 
 
              add element hobbit into //middle-earth/creatures;
@@ -1033,6 +1057,23 @@ usage:       validation <expression>
 
 description: Turn on validation during the parse process if the <expression> is
 	     non-zero or off otherwise. Defaults to on.
+
+END
+
+
+$HELP{'recovering'}=[<<'END'];
+usage:       recovering <expression>
+
+description: Turn on recovering parser mode if the <expression> is non-zero or off
+	     otherwise. Defaults to off. Note, that the in the recovering
+	     mode, validation is not performed by the parser even if the
+	     validation flag is on and that recovering mode flag only
+	     influences parsing of XML documents (not HTML).
+
+	     The recover mode helps to efficiently recover documents that
+	     are almost well-formed. This for example includes documents
+	     whit to close tag for the document element (or any other
+	     element inside the document).
 
 END
 

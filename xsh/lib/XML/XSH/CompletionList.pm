@@ -34,6 +34,7 @@ eval
 exec
 exit
 files
+flags
 for
 foreach
 get
@@ -59,6 +60,7 @@ nodebug
 open
 open_HTML
 open_PIPE
+options
 parser_expands_entities
 parser_expands_xinclude
 pedantic_parser
@@ -74,6 +76,7 @@ pwd
 query-encoding
 quiet
 quit
+recovering
 remove
 rm
 run-mode
