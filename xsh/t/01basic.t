@@ -1,6 +1,12 @@
 # -*- cperl -*-
 use Test;
+
+use IO::File;
+
 BEGIN {
+  autoflush STDOUT 1;
+  autoflush STDERR 1;
+
   @xsh_test=split /\n\n/, <<'EOF';
 list;
 
@@ -47,6 +53,8 @@ files;
 foreach scratch://foo { insert text "no. " into .; copy ./@bar after ./text() };
 
 indent 1;
+
+ls //foo/text()[starts-with(.,'no. 8')] 1>&2;
 
 if count(//foo/text()[starts-with(.,'no. 8')])!=1 { eval die };
 
@@ -123,7 +131,7 @@ list | cat 1>&2
 
 xinsert element silly after //br
 
-list | cat 1>&2
+list / | cat 1>&2
 
 count count(//br[./following-sibling::silly])=2
 
