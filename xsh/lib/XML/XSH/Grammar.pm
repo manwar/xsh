@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Aug  8 16:12:49 2003
+# Mon Aug 25 14:53:28 2003
 
 
 package XML::XSH::Grammar;
@@ -130,6 +130,12 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 	  | /(enc)/ <commit> optional_expression(?)
 		{ [\&XML::XSH::Functions::print_enc,@{$item[3]}] }
+  	
+	  | /(set-enc)\s/ <commit> expression optional_expression(?)
+		{ [\&XML::XSH::Functions::set_doc_enc,$item[3],@{$item[4]}] }
+  	
+	  | /(set-standalone)\s/ <commit> expression optional_expression(?)
+		{ [\&XML::XSH::Functions::set_doc_standalone,$item[3],@{$item[4]}] }
   	
 	  | /(lcd|chdir)/ <commit> optional_expression(?)
 		{ [\&XML::XSH::Functions::cd,@{$item[3]}] }

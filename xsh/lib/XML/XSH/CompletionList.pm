@@ -119,6 +119,8 @@ run_mode
 save
 sed
 select
+set-enc
+set-standalone
 sort
 stream
 strip-whitespace
@@ -214,6 +216,8 @@ create
 new
 save
 dtd
+set-enc
+set-standalone
 enc
 validate
 valid

@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Aug  8 16:12:50 2003
+# Mon Aug 25 14:53:29 2003
 
 package XML::XSH::Help;
 use strict;
@@ -79,11 +79,11 @@ Help items:
     process-xinclude, pwd, query-encoding, quiet, recovering, redo,
     register-function, register-namespace, register-xhtml-namespace,
     register-xsh-namespace, remove, rename, return, run-mode, save, select,
-    sort, stream, strip-whitespace, switch-to-new-documents, test-mode,
-    throw, try, undef, unfold, unless, unregister-function,
-    unregister-namespace, valid, validate, validation, variables, verbose,
-    version, while, xcopy, xinsert, xmove, xpath-axis-completion,
-    xpath-completion, xslt, xupdate
+    set-enc, set-standalone, sort, stream, strip-whitespace,
+    switch-to-new-documents, test-mode, throw, try, undef, unfold, unless,
+    unregister-function, unregister-namespace, valid, validate, validation,
+    variables, verbose, version, while, xcopy, xinsert, xmove,
+    xpath-axis-completion, xpath-completion, xslt, xupdate
 
   XSH Argument Types:
 
@@ -107,12 +107,13 @@ description:
 	     process-xinclude, pwd, query-encoding, quiet, recovering,
 	     redo, register-function, register-namespace,
 	     register-xhtml-namespace, register-xsh-namespace, remove,
-	     rename, return, run-mode, save, select, sort, stream,
-	     strip-whitespace, switch-to-new-documents, test-mode, throw,
-	     try, undef, unfold, unless, unregister-function,
-	     unregister-namespace, valid, validate, validation, variables,
-	     verbose, version, while, xcopy, xinsert, xmove,
-	     xpath-axis-completion, xpath-completion, xslt, xupdate
+	     rename, return, run-mode, save, select, set-enc,
+	     set-standalone, sort, stream, strip-whitespace,
+	     switch-to-new-documents, test-mode, throw, try, undef, unfold,
+	     unless, unregister-function, unregister-namespace, valid,
+	     validate, validation, variables, verbose, version, while,
+	     xcopy, xinsert, xmove, xpath-axis-completion,
+	     xpath-completion, xslt, xupdate
 
 END
 
@@ -1376,17 +1377,19 @@ $HELP{'open'}=[<<'END'];
 usage:       [open [HTML|XML|DOCBOOK] [FILE|PIPE|STRING]] <id>=<expression>
              
 description:
-	     Load a new XML, HTML or SGML DOCBOOK document from the file,
-	     URI, command output or string provided by the <expression>. In
-	     XSH the document is given a symbolic name <id>. To identify
-	     the documentin commands like close, save, validate, dtd or enc
-	     simply use <id>. In commands which work on document nodes,
-	     give <id>: prefix to XPath expressions to point the XPath to
-	     the document.
+	     Load a new XML, HTML or SGML DOCBOOK document from the file
+	     (actually arbitrary URL), command output or string provided by
+	     the <expression>. In XSH the document is given a symbolic name
+	     <id>. To identify the documentin commands like close, save,
+	     validate, dtd or enc simply use <id>. In commands which work
+	     on document nodes, give <id>: prefix to XPath expressions to
+	     point the XPath to the document.
 
 Example:
              xsh> open x=mydoc.xml # open a document
              
+             # open a HTML document from the Internet
+             xsh> open HTML h="http://www.google.com/?q=xsh"
              # quote file name if it contains whitespace
              xsh> open y="document with a long name with spaces.xml"
              
@@ -1499,12 +1502,55 @@ see also:     valid_command validate_command
 END
 
 
+$HELP{'set-enc'}=[<<'END'];
+usage:       set-enc <enc-string> [<id>]
+             
+description:
+	     Changes character encoding of a given document. If no document
+	     <id> is given, the command applies to the current document.
+	     This has two effects: changing the XMLDecl encoding
+	     declaration in the document prolog to display the new encoding
+	     and making all future <save> operations on the document
+	     default to the given charset.
+
+Example:
+             xsh> ls
+             <?xml version="1.0" encoding="iso-8859-1"?>
+             <foo>...</foo>
+             xsh> set-enc "utf-8"
+             xsh> ls
+             <?xml version="1.0" encoding="utf-8"?>
+             <foo>...</foo>
+             xsh> save # saves the file in UTF-8 encoding
+
+see also:     print_enc_command doc_info_command
+
+END
+
+
+$HELP{'set-standalone'}=[<<'END'];
+usage:       set-standalone <expression> [<id>]
+             
+description:
+	     Changes the value of `standalone' declaration in the XMLDecl
+	     prolog of a document. The <expression> should evaluate to
+	     either 1 or 0 or `'yes'' or `'no''. The result of applying the
+	     command on other values is not specified. If no document <id>
+	     is given, the command applies to the current document.
+
+see also:     doc_info_command
+
+END
+
+
 $HELP{'enc'}=[<<'END'];
 usage:       enc [<id>]
              
 description:
 	     Print the original document encoding string. If no document
 	     identifier is given, the current document is used.
+
+see also:     set_enc_command
 
 END
 
@@ -2420,6 +2466,8 @@ description:
 	     information about level of `gzip' compression of the original
 	     XML file.
 
+see also:     set_enc_command set_standalone_command
+
 END
 
 $HELP{'doc_info'}=$HELP{'doc-info'};
@@ -2610,7 +2658,8 @@ Example: Using string variables to convert between different types of nodes
 
 Related commands:
   clone, copy, insert, map, move, normalize, process-xinclude, remove,
-  rename, strip-whitespace, xcopy, xinsert, xmove, xslt, xupdate
+  rename, set-enc, set-standalone, strip-whitespace, xcopy, xinsert, xmove,
+  xslt, xupdate
 
 END
 
