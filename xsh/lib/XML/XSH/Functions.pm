@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.48 2003-04-15 17:31:55 pajas Exp $
+# $Id: Functions.pm,v 1.49 2003-04-16 08:32:13 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -27,7 +27,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.7';
-  $REVISION='$Revision: 1.48 $';
+  $REVISION='$Revision: 1.49 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -845,7 +845,6 @@ sub _find_nodes {
 	return scalar(_xpc_find_nodes($_nodelist{$name}->[0], $q));
       }
     } else {
-      __debug("plain variable\n");
       return $_nodelist{$name}->[1];
     }
   } else {
