@@ -71,6 +71,8 @@ $grammar=<<'_EO_GRAMMAR_';
             | /pedantic_parser\s/ expression { [\&XSH::Functions::set_pedantic_parser,$item[2]]; }
             | /complete_attributes\s/ expression
                              { [\&XSH::Functions::set_complete_attributes,$item[2]]; }
+            | /indent\s/ expression
+                             { [\&XSH::Functions::set_indent,$item[2]]; }
             | /parser_expands_xinclude\s/ expression { [\&XSH::Functions::set_expand_xinclude,$item[2]]; }
             | /load_ext_dtd\s/ expression { [\&XSH::Functions::set_load_ext_dtd,$item[2]]; }
 
@@ -93,7 +95,7 @@ $grammar=<<'_EO_GRAMMAR_';
             | exec_command  | call_command | include_command | assign_command
             | print_var_command | var_command | print_command
             | create_command | list_defs_command | select_command
-            | option | compound | process_xinclude_command)
+            | option | compound | process_xinclude_command )
             { [$item[1]] }
 
   compound  : /if\s/ xpath (command|block) { [\&XSH::Functions::if_statement,$item[2],$item[3]] }
@@ -147,11 +149,17 @@ $grammar=<<'_EO_GRAMMAR_';
              | /cd|chdir/  { [\&XSH::Functions::cd]; }
 
   insert_command : /insert\s|add\s/ nodetype expression loc xpath
-                 { [\&XSH::Functions::insert,@item[2,3,5,4]]; }
+                 { [\&XSH::Functions::insert,@item[2,3,5,4],0]; }
                  | /xinsert\s|xadd\s/ nodetype expression loc xpath
                  { [\&XSH::Functions::insert,@item[2,3,5,4],1]; }
+                 | /insert\s|add\s/ nodetype expression namespace loc xpath
+                 { [\&XSH::Functions::insert,@item[2,3,6,5,4],0]; }
+                 | /xinsert\s|xadd\s/ nodetype expression namespace loc xpath
+                 { [\&XSH::Functions::insert,@item[2,3,6,5,4],1]; }
 
   nodetype       : /element|attribute|attributes|text|cdata|pi|comment|chunk/
+
+  namespace      : /namespace\s/ expression { $item[2] }
 
   loc : "after"
       | "before"
