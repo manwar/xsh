@@ -1,4 +1,4 @@
-# $Id: LibXMLCompat.pm,v 1.6 2002-10-22 16:58:29 pajas Exp $
+# $Id: LibXMLCompat.pm,v 1.7 2002-10-25 16:01:50 pajas Exp $
 
 package XML::XSH::LibXMLCompat;
 
@@ -181,9 +181,9 @@ sub is_pi {
   return $node->nodeType == XML::LibXML::XML_PI_NODE();
 }
 
-sub is_entity {
+sub is_entity_reference {
   my ($class,$node)=@_;
-  return $node->nodeType == XML::LibXML::XML_ENTITY_NODE();
+  return $node->nodeType == XML::LibXML::XML_ENTITY_REF_NODE();
 }
 
 sub is_document {

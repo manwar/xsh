@@ -1,4 +1,4 @@
-# $Id: GDOMECompat.pm,v 1.6 2002-10-22 16:58:29 pajas Exp $
+# $Id: GDOMECompat.pm,v 1.7 2002-10-25 16:01:39 pajas Exp $
 
 package XML::XSH::GDOMECompat;
 
@@ -189,9 +189,9 @@ sub is_pi {
   return $node->nodeType == PROCESSING_INSTRUCTION_NODE;
 }
 
-sub is_entity {
+sub is_entity_reference {
   my ($class,$node)=@_;
-  return $node->nodeType == ENTITY_NODE;
+  return $node->nodeType == ENTITY_REFERENCE_NODE;
 }
 
 sub is_document {
