@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.19 2002-08-26 14:39:17 pajas Exp $
+# $Id: Functions.pm,v 1.20 2002-08-28 09:44:52 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -40,6 +40,16 @@ BEGIN {
   $_qencoding='iso-8859-2';
   $_newdoc=1;
   %_nodelist=();
+}
+
+sub min { $_[0] > $_[1] ? $_[1] : $_[0] }
+
+sub out {
+  if (ref($OUT) eq 'GLOB' or ref($OUT) eq 'Term::ReadLine::Gnu::Var') {
+    print $OUT @_;
+  } else {
+    $OUT->print(@_);
+  }
 }
 
 sub __debug {
@@ -171,17 +181,17 @@ sub xsh_set_parser {
 
 # print version info
 sub print_version {
-  $OUT->print("Main program:        $::VERSION $::REVISION\n");
-  $OUT->print("XML::XSH::Functions: $VERSION\n");
-  $OUT->print($_xml_module->module(),"\t",$_xml_module->version(),"\n");
-#  $OUT->print("XML::LibXSLT         $XML::LibXSLT::VERSION\n")
+  out("Main program:        $::VERSION $::REVISION\n");
+  out("XML::XSH::Functions: $VERSION\n");
+  out($_xml_module->module(),"\t",$_xml_module->version(),"\n");
+#  out("XML::LibXSLT         $XML::LibXSLT::VERSION\n")
 #    if defined($XML::LibXSLT::VERSION);
   return 1;
 }
 
 # print a list of all open files
 sub files {
-  $OUT->print(map { "$_ = $_files{$_}\n" } sort keys %_files);
+  out(map { "$_ = $_files{$_}\n" } sort keys %_files);
   return 1;
 }
 
@@ -189,7 +199,7 @@ sub files {
 sub variables {
   no strict;
   foreach (keys %{"XML::XSH::Map::"}) {
-    $OUT->print("\$$_=",${"XML::XSH::Map::$_"},"\n") if defined(${"XML::XSH::Map::$_"});
+    out("\$$_=",${"XML::XSH::Map::$_"},"\n") if defined(${"XML::XSH::Map::$_"});
   }
   return 1;
 }
@@ -198,13 +208,13 @@ sub variables {
 sub print_var {
   no strict;
   if ($_[0]=~/^\$?(.*)/) {
-    $OUT->print("\$$1=",${"XML::XSH::Map::$1"},"\n") if defined(${"XML::XSH::Map::$1"});
+    out("\$$1=",${"XML::XSH::Map::$1"},"\n") if defined(${"XML::XSH::Map::$1"});
     return 1;
   }
   return 0;
 }
 
-sub echo { $OUT->print((join " ",expand(@_)),"\n"); return 1; }
+sub echo { out((join " ",expand(@_)),"\n"); return 1; }
 sub set_opt_q { $_quiet=$_[0]; return 1; }
 sub set_opt_d { $_debug=$_[0]; return 1; }
 sub set_opt_c { $_test=$_[0]; return 1; }
@@ -239,7 +249,7 @@ sub print_qencoding { print "$_qencoding\n"; return 1; }
 
 sub sigint {
   if ($TRAP_SIGINT) {
-    $OUT->print("\nCtrl-C pressed. \n");
+    out("\nCtrl-C pressed. \n");
     die "Interrupted by user.";
   } else {
     print STDERR "\nCtrl-C pressed. \n";
@@ -419,7 +429,7 @@ sub xsh_pwd {
 sub print_pwd {
   my $pwd=xsh_pwd();
   if ($pwd) {
-    $OUT->print("$pwd\n\n");
+    out("$pwd\n\n");
     return $pwd;
   } else {
     return 0;
@@ -603,7 +613,7 @@ sub open_doc {
 sub close_doc {
   my ($id)=expand(@_);
   $id=_id($id);
-  $OUT->print("closing file $_files{$id}\n") unless "$_quiet";
+  out("closing file $_files{$id}\n") unless "$_quiet";
   delete $_files{$id};
   foreach (values %_nodelist) {
     if ($_->[0]==$_doc{$id}) {
@@ -861,14 +871,18 @@ sub to_string {
   my $result;
 #  __debug("$folding\n");
   if ($node) {
+    if (ref($node) and $_xml_module->is_element($node) and $folding and
+	$node->hasAttributeNS($XML::XSH::xshNS,'fold')) {
+      if ($depth>=0) {
+	$depth = min($depth,$node->getAttributeNS($XML::XSH::xshNS,'fold'));
+      } else {
+	$depth = $node->getAttributeNS($XML::XSH::xshNS,'fold');
+      }
+    }
+
     if ($depth<0 and !$folding) {
       $result=ref($node) ? $_xml_module->toStringUTF8($node) : $node;
-    } elsif (ref($node) and $_xml_module->is_element($node)
-      and ($depth==0 or $folding and
-	   $node->hasAttributeNS($XML::XSH::xshNS,'fold') and
-	   $node->getAttributeNS($XML::XSH::xshNS,'fold') != 0
-	  ))
-    {
+    } elsif (ref($node) and $_xml_module->is_element($node) and $depth==0) {
       $result=start_tag($node).
 	($node->hasChildNodes() ? "...".end_tag($node) : "");
     } elsif ($depth>0 or $folding) {
@@ -908,11 +922,11 @@ sub list {
     my $ql=find_nodes($xp);
     foreach (@$ql) {
       print STDERR "checking for folding\n" if "$_debug";
-      my $fold=$folding &&
+      my $fold=$folding && ($_xml_module->is_element($_) || $_xml_module->is_document($_)) &&
 	$_->findvalue("count(.//\@*[local-name()='fold' and namespace-uri()='$XML::XSH::xshNS'])");
-      print STDERR "checking for folding\n" if "$_debug";
-      $OUT->print(fromUTF8($_encoding,to_string($_,$depth,$fold
-					       )),"\n");
+      print STDERR "folding: $fold\n" if "$_debug";
+      print STDERR ref($OUT),"\n";
+      out (fromUTF8($_encoding,to_string($_,$depth,$fold)),"\n");
     }
     print STDERR "\nFound ",scalar(@$ql)," node(s).\n" unless "$_quiet";
   };
@@ -929,7 +943,7 @@ sub locate {
   eval {
     local $SIG{INT}=\&sigint;
     my $ql=find_nodes($xp);
-    foreach (@$ql) { $OUT->print(fromUTF8($_encoding,pwd($_)),"\n"); }
+    foreach (@$ql) { out(fromUTF8($_encoding,pwd($_)),"\n"); }
     print STDERR "\nFound ",scalar(@$ql)," node(s).\n" unless "$_quiet";
   };
   return _check_err($@);
@@ -1370,7 +1384,7 @@ sub valid_doc {
   eval {
     local $SIG{INT}=\&sigint;
     if ($doc->can('is_valid')) {
-      $OUT->print(($doc->is_valid() ? "yes\n" : "no\n"));
+      out(($doc->is_valid() ? "yes\n" : "no\n"));
     } else {
       print STDERR "Vaidation not supported by ",ref($doc),"\n";
     }
@@ -1414,7 +1428,7 @@ sub list_dtd {
   eval {
     local $SIG{INT}=\&sigint;
     if ($dtd) {
-      $OUT->print(fromUTF8($_encoding,$_xml_module->toStringUTF8($dtd)),"\n");
+      out(fromUTF8($_encoding,$_xml_module->toStringUTF8($dtd)),"\n");
     }
   };
   return _check_err($@);
@@ -1427,7 +1441,7 @@ sub print_enc {
   return unless $doc;
   eval {
     local $SIG{INT}=\&sigint;
-    $OUT->print($_xml_module->doc_encoding($doc),"\n");
+    out($_xml_module->doc_encoding($doc),"\n");
   };
   return _check_err($@);
 }
@@ -1468,7 +1482,9 @@ sub remove_node {
   if (is_ancestor_or_self($node,$LOCAL_NODE)) {
     $LOCAL_NODE=tree_parent_node($node);
   }
-  my $doc=$node->ownerDocument();
+  my $doc;
+  $doc=$node->ownerDocument();
+
   my $sibling=$node->nextSibling();
   if ($sibling and
       $_xml_module->is_text($sibling) and
@@ -1511,7 +1527,7 @@ sub sh {
   eval {
     local $SIG{INT}=\&sigint;
     my $cmd=expand($_[0]);
-    $OUT->print(`$cmd`);
+    out(`$cmd`);
   };
   return $@ ? 0 : 1;
 }
@@ -1519,7 +1535,7 @@ sub sh {
 # print the result of evaluating an XPath expression in scalar context
 sub print_count {
   my $count=count(@_);
-  $OUT->print("$count\n");
+  out("$count\n");
   return $count;
 }
 
@@ -1535,7 +1551,7 @@ sub print_eval {
     print STDERR "$@\n";
     return 0;
   }
-  $OUT->print("$result\n") unless "$_quiet";
+  out("$result\n") unless "$_quiet";
   return 1;
 }
 
@@ -1769,7 +1785,7 @@ sub def {
 
 # list all named commands
 sub list_defs {
-  $OUT->print(join("\n",sort keys (%_defs)),"\n");
+  out(join("\n",sort keys (%_defs)),"\n");
   return 1;
 }
 
@@ -1798,13 +1814,13 @@ sub help {
   my ($command)=expand @_;
   if ($command) {
     if (exists($XML::XSH::Help::HELP{$command})) {
-      $OUT->print($XML::XSH::Help::HELP{$command}->[0]);
+      out($XML::XSH::Help::HELP{$command}->[0]);
     } else {
-      $OUT->print("no detailed help available on $command\n");
+      out("no detailed help available on $command\n");
       return 0;
     }
   } else {
-    $OUT->print($XML::XSH::Help::HELP);
+    out($XML::XSH::Help::HELP);
   }
   return 1;
 }
