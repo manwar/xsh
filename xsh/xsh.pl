@@ -25,7 +25,7 @@ use vars qw/$VERSION $REVISION $ERR $OUT $LAST_ID $LOCAL_ID $LOCAL_NODE
 require Term::ReadLine if $opt_i;
 
 $VERSION='0.5';
-$REVISION='$Revision: 1.7 $';
+$REVISION='$Revision: 1.8 $';
 $ERR='';
 $LAST_ID='';
 $OUT=\*STDOUT;
@@ -125,7 +125,7 @@ sub _expand {
       $k.=${"XSH::Map::$1"};
     } elsif ($l=~/\G\$\{\{([a-zA-Z_][a-zA-Z0-9_]*):(\\.|[^}]*|\}[^}]*)\}\}/gsco) {
       $k.=count([$1,$2]);
-    } elsif ($l=~/\G\$\{\{(\\.|[^}]*|\}[^}]*)\}\}/gsco) {
+    } elsif ($l=~/\G\$\{\{((?:\\.|[^}]*|\}[^}])*)\}\}/gsco) {
       $k.=count([undef,$1]);
     } elsif ($l=~/\G(.|\n)/gsco) {
       $k.=$1;
@@ -866,7 +866,7 @@ printflush STDERR "Plase wait, parsing grammar...";
 $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
   TOKEN: /\S+/
 
-  STRING: /([^'"\\ \t\n\r;|]|\\.)+/
+  STRING: /([^'"$\\ \t\n\r;|\$[^{]|\$\{[^{]|]|\\.)+/
      { local $_=$item[1];
        s/\\([^\$])/$1/g;
        $_;
@@ -886,7 +886,9 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
        $_;
      }
 
-  exp_part: STRING | single_quoted_string | double_quoted_string
+  exp_inline_count : /\${{([^}]|}[^}])*}}/
+
+  exp_part: STRING | exp_inline_count | single_quoted_string | double_quoted_string
 
   expressions : expression expressions { [$item[1],@{$item[2]}] }
               | expression             { [$item[1]] }
