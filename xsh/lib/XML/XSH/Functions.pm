@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.31 2002-10-24 17:38:11 pajas Exp $
+# $Id: Functions.pm,v 1.32 2002-10-25 16:01:07 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -1413,6 +1413,7 @@ sub safe_insert {
 	if ($parent->getDocumentElement()) {
 	  _err("Error: cannot insert another element into /:\n",
 	       "  there's one document element already!");
+	  return 1;
 	} else {
 	  new_document_element($parent,$source,
 			       get_following_siblings($dest));
@@ -1422,6 +1423,7 @@ sub safe_insert {
 	if ($parent->getDocumentElement()) {
 	  _err("Error: cannot insert another element into /:\n",
 	       "  there's one document element already!");
+	  return 1;
 	} else {
 	  new_document_element($parent,$source,
 			       $dest,get_following_siblings($dest));
@@ -1437,6 +1439,7 @@ sub safe_insert {
 	  } else {
 	    _err("Error: cannot insert another element into /:\n",
 	         "  there's one document element already!");
+	    return 1;
 	  }
 	} else {
 	  new_document_element($parent,$source,
@@ -1463,6 +1466,7 @@ sub safe_insert {
       }
     } else {
       _err("Error: cannot insert node ",ref($source)," on a document level");
+      return 1;
     }
   } else {
     if ($where eq 'after') {
@@ -1489,11 +1493,14 @@ sub insert_node {
 
   # destination: Attribute
   if ($_xml_module->is_attribute($dest)) {
-    # source: Text, CDATA, Comment, Entity
+    # source: Text, CDATA, Comment, Entity, Element
     if ($_xml_module->is_text($node)           ||
 	$_xml_module->is_cdata_section($node)  ||
-	$_xml_module->is_comment($node)) {
-      my $val=$node->getData();
+	$_xml_module->is_comment($node) ||
+	$_xml_module->is_element($node) ||
+	$_xml_module->is_pi($node)) {
+      my $val = $_xml_module->is_element($node) ?
+	$node->textContent() : $node->getData();
       if ($where eq 'replace' or $where eq 'into') {
 	$val=~s/^\s+|\s+$//g;
 	# xcopy will replace the value several times, which may not be intended
@@ -1510,12 +1517,10 @@ sub insert_node {
       }
 
     }
-    # source: attribute, element
-    elsif ($_xml_module->is_attribute($node) ||
-	   $_xml_module->is_element($node) ||
-	   $_xml_module->is_pi($node)) {
+    # source: Attribute
+    elsif ($_xml_module->is_attribute($node)) {
       my $name=$node->getName();
-      my $value = $_xml_module->is_element($node) ? $node->textContent() : $node->getValue();
+      my $value = $node->getValue();
       if ($where eq 'replace' or $where eq 'after' or $where eq 'before') {
 	# -- prepare NS
 	$ns=$node->namespaceURI() if ($ns eq "");
@@ -1606,28 +1611,35 @@ sub insert_node {
 	$ns=$dest->lookupNamespaceURI(name_prefix($node->getName))
       }
       # --
-      if ($where eq 'into') {
+      if ($where eq 'into' or $where eq 'append' or $where eq 'prepend') {
 	set_attr_ns($dest,"$ns",$node->getName(),$node->getValue());
       } elsif ($where eq 'replace') {
 	my $parent=$dest->parentNode();
 	if ($_xml_module->is_element($parent)) {
 	  set_attr_ns($dest,"$ns",$node->getName(),$node->getValue());
+	} else {
+	  _err("Warning: Cannot replace ",ref($node)," with ",ref($parent),
+               ": parent node is not an element!");
+	  return 1;
 	}
 	return 'remove';
       } else {
-	# converting attribute to element
-	my $new=new_element($dest_doc,$node->getName(),$ns);
-	$new->appendText($node->getValue());
-	my $parent=$dest->parentNode();
-	if ($_xml_module->is_element($parent)) {
-	  if ($where eq 'before' or $where eq 'after') {
-	    safe_insert($new,$dest,$where);
-	  }
-	} elsif ($where eq 'append') {
-	  $dest->appendChild($new);
-	} elsif ($where eq 'prepend') {
-	  $dest->insertBefore($new,$dest->firstChild());
-	}
+	_err("Warning: Ignoring incompatible nodes in insert/copy/move operation:\n",
+	     ref($node)," $where ",ref($dest),"!");
+	return 1;
+# 	# converting attribute to element
+# 	my $new=new_element($dest_doc,$node->getName(),$ns);
+# 	$new->appendText($node->getValue());
+# 	my $parent=$dest->parentNode();
+# 	if ($_xml_module->is_element($parent)) {
+# 	  if ($where eq 'before' or $where eq 'after') {
+# 	    safe_insert($new,$dest,$where);
+# 	  }
+# 	} elsif ($where eq 'append') {
+# 	  $dest->appendChild($new);
+# 	} elsif ($where eq 'prepend') {
+# 	  $dest->insertBefore($new,$dest->firstChild());
+# 	}
       }
     }
     # source: Any but Attribute
@@ -1687,15 +1699,18 @@ sub insert_node {
       my $new;
       # source: Attribute
       if ($_xml_module->is_attribute($node)) {
-	# implicit conversion of attribute to element
-	# -- prepare NS
-	$ns=$node->namespaceURI() if ($ns eq "");
-	if ($ns eq "" and name_prefix($node->getName) ne "") {
-	  $ns=$parent->lookupNamespaceURI(name_prefix($node->getName));
-	}
-	# --
-	$new=new_element($dest_doc,$node->getName(),$ns);
-	$new->appendText($node->getValue());
+	_err("Warning: Ignoring incompatible nodes in insert/copy/move operation:\n",
+	     ref($node)," $where ",ref($dest),"!");
+	return 1;
+# 	# implicit conversion of attribute to element
+# 	# -- prepare NS
+# 	$ns=$node->namespaceURI() if ($ns eq "");
+# 	if ($ns eq "" and name_prefix($node->getName) ne "") {
+# 	  $ns=$parent->lookupNamespaceURI(name_prefix($node->getName));
+# 	}
+# 	# --
+# 	$new=new_element($dest_doc,$node->getName(),$ns);
+# 	$new->appendText($node->getValue());
       }
       # source: All other
       else {
