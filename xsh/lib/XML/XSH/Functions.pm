@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.24 2002-09-02 15:46:28 pajas Exp $
+# $Id: Functions.pm,v 1.25 2002-09-12 15:32:34 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -11,9 +11,9 @@ use IO::File;
 use Exporter;
 use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $OUT $LOCAL_ID $LOCAL_NODE
             $_xml_module
-            $_xsh $_parser $_encoding $_qencoding %_nodelist
+            $_xsh $_parser $_encoding $_qencoding %_nodelist @stored_variables
             $_quiet $_debug $_test $_newdoc $_indent $_backups $SIGSEGV_SAFE $TRAP_SIGINT
-            %_doc %_files %_defs
+            %_doc %_files %_defs %_chr
 	    $VALIDATION $RECOVERING $EXPAND_ENTITIES $KEEP_BLANKS
 	    $PEDANTIC_PARSER $LOAD_EXT_DTD $COMPLETE_ATTRIBUTES
 	    $EXPAND_XINCLUDE $_on_exit
@@ -40,6 +40,10 @@ BEGIN {
   $_qencoding='iso-8859-2';
   $_newdoc=1;
   %_nodelist=();
+
+  %_chr = ( n => "\n", t => "\t", r => "\r",
+	    f => "\f", b => "\b", a => "\a",
+	    e => "\e" );
 }
 
 sub min { $_[0] > $_[1] ? $_[1] : $_[0] }
@@ -55,6 +59,11 @@ sub out {
 sub __debug {
   print STDERR @_;
 }
+
+sub __bug {
+  print STDERR "BUG: ",@_;
+}
+
 
 # initialize XSH and XML parsers
 sub xsh_init {
@@ -195,6 +204,18 @@ sub files {
   return 1;
 }
 
+# return a value of the given XSH string or nodelist variable
+sub var_value {
+  no strict;
+  if ($_[0]=~/^\$(.*)/ and defined(${"XML::XSH::Map::$1"})) {
+    return "".${"XML::XSH::Map::$1"};
+  } elsif ($_[0]=~/^\%(.*)/ and exists($_nodelist{$1})) {
+    return $_nodelist{$1};
+  } else {
+    return undef;
+  }
+}
+
 # print a list of XSH variables and their values
 sub variables {
   no strict;
@@ -320,7 +341,7 @@ sub _find_id {
   if ($node->can('ownerDocument')) {
     my $doc=$node->ownerDocument();
     foreach my $id (keys %_doc) {
-      if ($_doc{$id}->isSameNode($doc)) {
+      if ($_xml_module->xml_equal($_doc{$id},$doc)) {
 	print STDERR "FOUND ID: $id\n" if $_debug;
 	return $id;
       }
@@ -463,7 +484,13 @@ sub _expand {
   no strict;
   $l=~/^/o;
   while ($l !~ /\G$/gsco) {
-    if ($l=~/\G\\(.)/gsco or $l=~/\G([^\\\$]+)/gsco) {
+    if ($l=~/\G\\(.|\n)/gsco) {
+      if (exists($_chr{$1})) {
+	$k.=$_chr{$1};
+      } else {
+	$k.=$1;
+      }
+    } elsif ($l=~/\G([^\\\$]+)/gsco) {
       $k.=$1;
     } elsif ($l=~/\G\$\{([a-zA-Z_-][a-zA-Z0-9_-]*)\}/gsco
 	     or $l=~/\G\$([a-zA-Z_-][a-zA-Z0-9_-]*)/gsco) {
@@ -494,10 +521,84 @@ sub _assign {
   return 1;
 }
 
+sub _undef {
+  my ($name,$value)=@_;
+  no strict 'refs';
+  $name=~/^\$(.+)/;
+  undef ${"XML::XSH::Map::$1"};
+  return 1;
+}
+
 # evaluate xpath and assign thre result to a variable
 sub xpath_assign {
   my ($name,$xp)=@_;
   _assign($name,count($xp));
+  return 1;
+}
+
+sub xpath_assign_local {
+  my ($name)=@_;
+  store_variables(0,$name);
+  xpath_assign(@_);
+  return 1;
+}
+
+sub nodelist_assign_local {
+  my ($name)=@_;
+  $name=expand($name);
+  store_variables(0,"\%$name");
+  nodelist_assign(@_);
+  return 1;
+}
+
+
+sub get_stored_nodelists {
+  return grep { ref($_) } map { @$_ } @stored_variables;
+}
+
+sub store_variables {
+  my ($new,@vars)=@_;
+  my $pool;
+  if ($new) {
+    $pool=[];
+    push @stored_variables, $pool;
+  } elsif (@stored_variables and ref($stored_variables[0])) {
+    $pool=$stored_variables[0];
+  } else {
+    print STDERR "WARNING: Ignoring attempt to make a local variable outside a localizable context!\n";
+    return 0;
+  }
+  foreach (@vars) {
+    my $value=var_value($_);
+    push @$pool, $_ => $value;
+  }
+  return 1;
+}
+
+sub restore_variables {
+  my $pool=shift @stored_variables;
+  unless (ref($pool)) {
+    __bug("Local variable pool is empty, which was not expected!\n");
+    return 0;
+  }
+  while (@$pool) {
+    my ($value,$name)=(pop(@$pool), pop(@$pool));
+    if ($name =~ m/^\$/) {
+      if (defined($value)) {
+	_assign($name,$value);
+      } else {
+	_undef($name,$value);
+      }
+    } elsif ($name =~ m/^\%(.*)$/) {
+      if (defined($value)) {
+	$_nodelist{$1}=$value;
+      } else {
+	delete $_nodelist{$1};
+      }
+    } else {
+      __bug("Invalid variable name $1\n");
+    }
+  }
   return 1;
 }
 
@@ -539,6 +640,7 @@ sub find_nodes {
 # assign a result of xpath search to a nodelist variable
 sub nodelist_assign {
   my ($name,$xp)=@_;
+  $name=expand($name);
   my ($id,$query,$doc)=_xpath($xp);
   if ($doc) {
     $_nodelist{$name}=[$doc,find_nodes($xp)];
@@ -549,7 +651,7 @@ sub nodelist_assign {
 # remove given node and all its descendants from all nodelists
 sub remove_node_from_nodelists {
   my ($node,$doc)=@_;
-  foreach my $list (values(%_nodelist)) {
+  foreach my $list (values(%_nodelist),get_stored_nodelists()) {
     if ($_xml_module->xml_equal($doc,$list->[0])) {
       $list->[1]=[ grep { !is_ancestor_or_self($node,$_) } @{$list->[1]} ];
     }
@@ -959,7 +1061,7 @@ sub list {
 
 sub mark_fold {
   my ($xp,$depth)=@_;
-  $depth=_expand($depth);
+  $depth=expand($depth);
   $depth=0 if $depth eq "";
   eval {
     local $SIG{INT}=\&sigint;
@@ -1070,6 +1172,7 @@ sub eval_substitution {
 # sort given nodelist according to the given xsh code and perl code
 sub perlsort {
   my ($codea,$codeb,$perl,$var)=@_;
+  $var=expand($var);
   return 1 unless (exists($_nodelist{$var}));
   return 1 unless ref(my $list=$_nodelist{$var});
   my $doc=$list->[0];
@@ -1671,6 +1774,8 @@ sub run_commands {
   my $result=0;
 
   my ($cmd,@params);
+
+  store_variables(1);
   foreach my $run (@cmds) {
     if (ref($run) eq 'ARRAY') {
       ($cmd,@params)=@$run;
@@ -1678,8 +1783,12 @@ sub run_commands {
       if ($cmd eq "run-mode") { $_test=0; $result=1; next; }
       next if $_test;
       $result=&{$cmd}(@params);
+    } else {
+      $result=1;
     }
   }
+  restore_variables();
+
   return $result;
 }
 
@@ -1776,15 +1885,17 @@ sub foreach_statement {
 
 # call methods if given XPath holds
 sub if_statement {
-  my ($xp,$command,$else)=@_;
+  my @cases=@_;
 #  print STDERR "Parsed $xp\n";
-  if ((ref($xp) eq 'ARRAY') && count($xp) ||
-      !ref($xp) && perl_eval($xp)) {
-    return run_commands($command);
-  } else {
-    print STDERR $@;
-    return $else ? run_commands($else) : 1;
+  foreach (@cases) {
+    my ($xp,$command)=@$_;
+    if (!defined($xp) or
+	(ref($xp) eq 'ARRAY') && count($xp) ||
+	!ref($xp) && perl_eval($xp)) {
+      return run_commands($command);
+    }
   }
+  return 1;
 }
 
 # call methods unless given XPath holds
@@ -1794,7 +1905,7 @@ sub unless_statement {
 	  !ref($xp) && perl_eval($xp)) {
     return run_commands($command);
   } else {
-    return $else ? run_commands($else) : 1;
+    return ref($else) ? run_commands($else->[1]) : 1;
   }
 }
 
@@ -1864,9 +1975,28 @@ sub xupdate {
 
 # call a named set of commands
 sub call {
-  my ($name)=expand @_;
+  my ($name,$args)=@_;
+  $name=expand($name);
   if (exists $_defs{$name}) {
-    return run_commands($_defs{$name});
+    if (ref($args)) {
+      my @vars=@{ $_defs{$name} };
+      shift @vars;
+      store_variables(1,@vars);
+      my $var;
+      foreach (@$args) {
+	$var=shift @vars;
+	if (defined($var)) {
+	  if ($var =~ /^\$/) {
+	    _assign($var,expand($_)); # string assignment
+	  } elsif ($var =~ /^\%(.*)$/) {
+	    nodelist_assign($1,$_); # nodelist assignment
+	  }
+	}
+      }
+    }
+    my $result = run_commands($_defs{$name}->[0]);
+    restore_variables() if (ref($args));
+    return $result;
   } else {
     print STDERR "ERROR: $name not defined\n";
     return 0;
@@ -1875,15 +2005,17 @@ sub call {
 
 # define a named set of commands
 sub def {
-  my ($name,$command)=@_;
+  my ($name,$command,$args)=@_;
   $name=expand $name;
-  $_defs{$name}=$command;
+  $_defs{$name} = [ $command, @$args ];
   return 1;
 }
 
 # list all named commands
 sub list_defs {
-  out(join("\n",sort keys (%_defs)),"\n");
+  foreach (sort keys (%_defs)) {
+    out($_, join(" ",@{ $_defs{$_} }[1..$#{ $_defs{$_} }] ),"\n" );
+  }
   return 1;
 }
 
