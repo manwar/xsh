@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.16 2002-05-22 16:52:27 pajas Exp $
+# $Id: Functions.pm,v 1.17 2002-05-30 12:27:09 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -12,7 +12,7 @@ use Exporter;
 use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $OUT $LOCAL_ID $LOCAL_NODE
             $_xml_module
             $_xsh $_parser $_encoding $_qencoding %_nodelist
-            $_quiet $_debug $_test $_newdoc $_indent $SIGSEGV_SAFE $TRAP_SIGINT
+            $_quiet $_debug $_test $_newdoc $_indent $_backups $SIGSEGV_SAFE $TRAP_SIGINT
             %_doc %_files %_defs
 	    $VALIDATION $EXPAND_ENTITIES $KEEP_BLANKS $PEDANTIC_PARSER
 	    $LOAD_EXT_DTD $COMPLETE_ATTRIBUTES $EXPAND_XINCLUDE
@@ -34,6 +34,7 @@ BEGIN {
   $TRAP_SIGINT=0;
   $_xml_module='XML::XSH::LibXMLCompat';
   $_indent=1;
+  $_backups=1;
   $_encoding='iso-8859-2';
   $_qencoding='iso-8859-2';
   $_newdoc=1;
@@ -94,6 +95,8 @@ sub set_load_ext_dtd	     { $LOAD_EXT_DTD=$_[0]; 1; }
 sub set_complete_attributes  { $COMPLETE_ATTRIBUTES=$_[0]; 1; }
 sub set_expand_xinclude	     { $EXPAND_XINCLUDE=$_[0]; 1; }
 sub set_indent		     { $_indent=$_[0]; 1; }
+sub set_backups		     { $_backups=$_[0]; 1; }
+
 
 sub get_validation	     { $VALIDATION }
 sub get_expand_entities	     { $EXPAND_ENTITIES }
@@ -103,7 +106,7 @@ sub get_load_ext_dtd	     { $LOAD_EXT_DTD }
 sub get_complete_attributes  { $COMPLETE_ATTRIBUTES }
 sub get_expand_xinclude	     { $EXPAND_XINCLUDE }
 sub get_indent		     { $_indent }
-
+sub get_backups		     { $_backups }
 
 
 sub toUTF8 {
@@ -123,7 +126,7 @@ sub fromUTF8 {
 # evaluate a XSH command
 sub xsh {
   if (ref($_xsh)) {
-    return $_xsh->startrule($_[0]);
+    return ($_[0]=~/^\s*$/) ? 1 : $_xsh->startrule($_[0]);
   } else {
     return 0;
   }
@@ -226,7 +229,7 @@ sub sigint {
 
 sub convertFromDocEncoding ($$\$) {
   my ($doc,$encoding,$str)=@_;
-  return fromUTF8($encoding, toUTF8($doc->getEncoding, $str));
+  return fromUTF8($encoding, toUTF8($_xml_module->doc_encoding($doc), $str));
 }
 
 # if the argument is non-void then print it and return 0; return 1 otherwise
@@ -453,20 +456,20 @@ sub _find_nodes {
     if ($query ne "") {
       if ($query =~m|^\s*\[(\d+)\](.*)$|) { # index on a node-list
 	return $_nodelist{$name}->[1]->[$1] ?
-	  [ $_nodelist{$name}->[1]->[$1]->findnodes('./self::*'.$2) ] : [];
+	  [ grep {defined($_)} $_nodelist{$name}->[1]->[$1]->findnodes('./self::*'.$2) ] : [];
       } elsif ($query =~m|^\s*\[|) { # filter in a nodelist
-	return [ map { ($_->findnodes('./self::*'.$query)) }
+	return [ grep {defined($_)} map { ($_->findnodes('./self::*'.$query)) }
 		 @{$_nodelist{$name}->[1]}
 	       ];
       }
-      return [ map { ($_->findnodes('.'.$query)) }
+      return [ grep {defined($_)} map { ($_->findnodes('.'.$query)) }
 	       @{$_nodelist{$name}->[1]}
 	     ];
     } else {
       return $_nodelist{$name}->[1];
     }
   } else {
-    return [$context->findnodes($query)];
+    return [ grep {defined($_)} $context->findnodes($query)];
   }
 }
 
@@ -483,7 +486,7 @@ sub nodelist_assign {
   my ($name,$xp)=@_;
   my ($id,$query,$doc)=_xpath($xp);
   $_nodelist{$name}=[$doc,find_nodes($xp)];
-  print STDERR "\nStored ",scalar(@{$_nodelist{$name}->[1]})," nodes.\n" unless "$_quiet";
+  print STDERR "\nStored ",scalar(@{$_nodelist{$name}->[1]})," node(s).\n" unless "$_quiet";
 }
 
 # remove given node and all its descendants from all nodelists
@@ -536,8 +539,6 @@ sub get_doc {
 sub open_doc {
   my ($id,$file)=expand @_[0,1];
   my $format=$_[2];
-
-  print STDERR "open [$file] as [$id]\n" if "$_debug";
   $file=expand($file);
   $id=_id($id);
   print STDERR "open [$file] as [$id]\n" if "$_debug";
@@ -593,25 +594,154 @@ sub close_doc {
   return 1;
 }
 
+sub open_io_file {
+  my ($file)=@_;
+  if ($file=~/^\s*[|>]/) {
+    return IO::File->new($file);
+  } elsif ($file=~/.gz\s*$/) {
+    return IO::File->new("| gzip -c > $file");
+  } else {
+    return IO::File->new(">$file");
+  }
+}
+
+sub xinclude_start_tag {
+  my ($xi)=@_;
+  my %xinc = map { $_->nodeName() => $_->value() } $xi->attributes();
+  return "<".$xi->nodeName()." href='".$xinc{href}."' parse='".$xinc{parse}."'>";
+}
+
+sub xinclude_end_tag {
+  my ($xi)=@_;
+  return "</".$xi->nodeName().">";
+}
+
+sub xinclude_print {
+  my ($doc,$F,$node,$enc)=@_;
+  print STDERR "xinclude_print-node: $node\n";
+  return unless ref($node);
+  if ($_xml_module->is_element($node) || $_xml_module->is_document($node)) {
+    print STDERR "el or doc\n";
+    $F->print(fromUTF8($enc,start_tag($node))) if $_xml_module->is_element($node);
+    my $child=$node->firstChild();
+    while ($child) {
+      __debug("$child\n");
+      if ($_xml_module->is_xinclude_start($child)) {
+	my %xinc = map { $_->nodeName() => $_->value() } $child->attributes();
+
+	my $elements=0;
+	my @nodes=();
+	my $node=$child->nextSibling();
+	while ($node and
+	       !$_xml_module->is_xinclude_end($node) and
+	      !$_xml_module->is_xinclude_start($node)) {
+	  push @nodes,$node;
+	  $elements++ if $_xml_module->is_element($node);
+	  $node=$node->nextSibling();
+	}
+	if ($_xml_module->is_xinclude_start($node)) {
+	  print STDERR "Warning: Unexpected nested XInclude start node.\n",
+                       "         Skipping whole XInclude span!\n";
+	  $F->print("<!-- ".fromUTF8($enc,xinclude_start_tag($child))." -->");
+	} elsif (!$_xml_module->is_xinclude_end($node)) {
+	  print STDERR "Warning: XInclude end node not found.\n",
+                       "         Skipping whole XInclude span!\n";
+	  $F->print("<!-- ".fromUTF8($enc,xinclude_start_tag($child))." -->");
+	} elsif (!$node) {
+	  print STDERR "Warning: XInclude end node not found.\n",
+ 	               "         Skipping whole XInclude span!\n";
+	  $F->print("<!-- ".fromUTF8($enc,xinclude_start_tag($child))." -->");
+	} elsif ($xinc{parse} ne 'text' and $elements==0) {
+	  print STDERR "Warning: XInclude: No elements found in XInclude span.\n",
+                       "         Skipping whole XInclude span!\n";
+	  $F->print("<!-- ".fromUTF8($enc,xinclude_start_tag($child))." -->");
+	} elsif ($xinc{parse} ne 'text' and $elements>1) {
+	  print STDERR "Warning: XInclude: More than one element found in XInclude span.\n",
+                       "         Skipping whole XInclude span!\n";
+	  $F->print("<!-- ".fromUTF8($enc,xinclude_start_tag($child))." -->");
+	} elsif ($xinc{parse} eq 'text' and $elements>0) {
+	  print STDERR "Warning: XInclude: Element(s) found in textual XInclude span.\n",
+                       "         Skipping whole XInclude span!\n";
+	  $F->print("<!-- ".fromUTF8($enc,xinclude_start_tag($child))." -->");
+	} else {
+	  $F->print(fromUTF8($enc,xinclude_start_tag($child)));
+	  save_xinclude_chunk($doc,\@nodes,$xinc{href},$xinc{parse},$enc);
+	  $F->print(fromUTF8($enc,xinclude_end_tag($node)));
+	  $child=$node;
+	}
+      } elsif($_xml_module->is_xinclude_end($child)) {
+	$F->print("<!-- ".fromUTF8($enc,xinclude_end_tag($child))." -->");
+      } else {
+	xinclude_print($doc,$F,$child,$enc);
+      }
+      $child=$child->nextSibling();
+    }
+    $F->print(fromUTF8($enc,end_tag($node))) if $_xml_module->is_element($node);
+  } else {
+    $F->print(fromUTF8($enc,$_xml_module->toStringUTF8($node)));
+  }
+}
+
+sub save_xinclude_chunk {
+  my ($doc,$nodes,$file,$parse,$enc)=@_;
+
+  return unless @$nodes>0;
+
+  if ($_backups) {
+    eval { rename $file, $file."~"; };
+    _check_err($@);
+  }
+  my $F=open_io_file($file);
+  $F || die "Cannot open $file\n";
+
+  if ($parse eq 'text') {
+    foreach my $node (@$nodes) {
+      $F->print(fromUTF8($enc,$node->to_literal()));
+    }
+  } else {
+    my $version=$doc->can('getVersion') ? $doc->getVersion() : '1.0';
+    $F->print("<?xml version='$version' encoding='$enc'?>\n");
+    foreach my $node (@$nodes) {
+      xinclude_print($doc,$F,$node,$enc);
+    }
+  }
+  $F->close();
+}
+
+sub save_xinclude {
+  my ($id,$enc)= expand(@_);
+  ($id,my $doc)=_id($id);
+  return unless ref($doc);
+  my $file=$_files{$id};
+  $enc=$enc || $_xml_module->doc_encoding($doc) || 'utf-8';
+  eval {
+    local $SIG{INT}=\&sigint;
+    save_xinclude_chunk($doc,[$doc->childNodes()],$file,'xml',$enc);
+  };
+  print STDERR "saved $id=$_files{$id} as $file in $enc encoding\n" unless ($@ or "$_quiet");
+  return _check_err($@);
+}
+
+
 # close a document and destroy all nodelists that belong to it
 sub save_as {
   my ($id,$file,$enc)= expand(@_);
   ($id,my $doc)=_id($id);
   return unless ref($doc);
-  $file=$_files{$id} if $file eq "";
-  print STDERR "$id=$_files{$id} --> $file ($enc)\n" unless "$_quiet";
-  $enc=$doc->getEncoding() unless ($enc ne "");
-  my $F;
-  if ($file=~/^\s*[|>]/) {
-    $F=IO::File->new($file);
-  } elsif ($file=~/.gz\s*$/) {
-    $F=IO::File->new("| gzip -c > $file");
-  } else {
-    $F=IO::File->new(">$file");
+  if ($file eq "") {
+    $file=$_files{$id};
+    if ($_backups) {
+      eval { rename $file, $file."~"; };
+      _check_err($@);
+    }
   }
+  $enc=$_xml_module->doc_encoding($doc) unless ($enc ne "");
+  print STDERR "$id=$_files{$id} --> $file ($enc)\n" unless "$_quiet";
   eval {
     local $SIG{INT}=\&sigint;
-    if (lc($doc->getEncoding()) ne lc($enc)) {
+    my $F=open_io_file($file);
+    $F || die "Cannot open $file\n";
+    if (lc($_xml_module->doc_encoding($doc)) ne lc($enc)) {
       my $t=$_xml_module->toStringUTF8($doc,$_indent);
       $t=~s/(\<\?xml(?:\s+[^<]*)\s+)encoding=(["'])[^'"]+/$1encoding=$2${enc}/;
       $F->print(fromUTF8($enc,$t));
@@ -633,22 +763,22 @@ sub save_as_html {
     print STDERR "HTML not supported by ",ref($doc),"\n";
     return 1;
   }
-  $file=$_files{$id} if $file eq "";
-  print STDERR "$id=$_files{$id} --HTML--> $file ($enc)\n" unless "$_quiet";
-  $enc=$doc->getEncoding() unless ($enc ne "");
-  my $F;
-  if ($file=~/^\s*[|>]/) {
-    $F=IO::File->new($file);
-  } elsif ($file=~/.gz\s*$/) {
-    $F=IO::File->new("| gzip -c > $file");
-  } else {
-    $F=IO::File->new(">$file");
+  if ($file eq "") {
+    $file=$_files{$id};
+    if ($_backups) {
+      eval { rename $file, $file."~"; };
+      _check_err($@);
+    }
   }
+  print STDERR "$id=$_files{$id} --HTML--> $file ($enc)\n" unless "$_quiet";
+  $enc=$_xml_module->doc_encoding($doc) unless ($enc ne "");
+
   eval {
     local $SIG{INT}=\&sigint;
+    my $F=open_io_file($file);
+    $F || die "Cannot open $file\n";
     $F->print("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n");
-    $F->print(fromUTF8($enc,
-			     toUTF8($doc->getEncoding(), 
+    $F->print(fromUTF8($enc, toUTF8($_xml_module->doc_encoding($doc),
 					  $doc->toStringHTML())));
     $F->close();
   };
@@ -658,11 +788,23 @@ sub save_as_html {
 
 
 # create start tag for an element
+
+###
+### Workaround of a bug in XML::LibXML (no getNamespaces, getName returns prefix only,
+### prefix returns prefix not xmlns, getAttributes contains also namespaces
+### findnodes('namespace::*') returns (namespaces,undef)
+###
+
 sub start_tag {
   my ($element)=@_;
   return "<".$element->getName().
     join("",map { " ".$_->getName()."=\"".$_->nodeValue()."\"" } 
-	 $element->attributes)
+	 $element->findnodes('attribute::*'))
+      .    join("",map { " xmlns:".$_->getName()."=\"".$_->nodeValue()."\"" }
+		$element->can('getNamespaces') ?
+		$element->getNamespaces() :
+		$element->findnodes('namespace::*')
+		)
     .($element->hasChildNodes() ? ">" : "/>");
 }
 
@@ -762,8 +904,7 @@ sub count {
       $result=scalar(@$result);
     } else {
       $query=toUTF8($_qencoding,$query);
-      $result=fromUTF8($_encoding,
-		       $_xml_module->count_xpath(get_local_node($id),
+      $result=fromUTF8($_encoding,$_xml_module->count_xpath(get_local_node($id),
 						 $query));
     }
   };
@@ -1175,7 +1316,7 @@ sub print_enc {
   return unless $doc;
   eval {
     local $SIG{INT}=\&sigint;
-    $OUT->print($doc->getEncoding(),"\n");
+    $OUT->print($_xml_module->doc_encoding($doc),"\n");
   };
   return _check_err($@);
 }

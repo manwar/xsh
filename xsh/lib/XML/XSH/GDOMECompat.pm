@@ -1,4 +1,4 @@
-# $Id: GDOMECompat.pm,v 1.1 2002-05-22 16:53:24 pajas Exp $
+# $Id: GDOMECompat.pm,v 1.2 2002-05-30 12:27:09 pajas Exp $
 
 package XML::XSH::GDOMECompat;
 
@@ -26,11 +26,16 @@ sub toStringUTF8 {
     return $node->toString($mode);
   } else {
     return $node->toString();
-  }  
+  }
 }
 
 sub doc_URI {
   return undef;
+}
+
+sub doc_encoding {
+  my ($class,$dom)=@_;
+  return '';			# not implemented ?
 }
 
 sub xml_equal {
@@ -110,6 +115,14 @@ sub parse_file {
     $doc->process_xinclude();
   }
   return $doc;
+}
+
+sub is_xinclude_start {
+  return 0;			# not supported
+}
+
+sub is_xinclude_end {
+  return 0;			# not supported
 }
 
 sub is_element {

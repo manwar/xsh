@@ -1,4 +1,4 @@
-# $Id: LibXMLCompat.pm,v 1.1 2002-05-22 16:53:24 pajas Exp $
+# $Id: LibXMLCompat.pm,v 1.2 2002-05-30 12:27:09 pajas Exp $
 
 package XML::XSH::LibXMLCompat;
 
@@ -30,6 +30,11 @@ sub new_parser {
 sub doc_URI {
   my ($class,$dom)=@_;
   return $dom->URI();
+}
+
+sub doc_encoding {
+  my ($class,$dom)=@_;
+  return $dom->getEncoding();
 }
 
 sub xml_equal {
@@ -99,6 +104,16 @@ sub parse_file {
   my ($class,$parser,$file)=@_;
   $class->init_parser($parser);
   return $parser->parse_file($file);
+}
+
+sub is_xinclude_start {
+  my ($class,$node)=@_;
+  return $node->nodeType == XML_XINCLUDE_START();
+}
+
+sub is_xinclude_end {
+  my ($class,$node)=@_;
+  return $node->nodeType == XML_XINCLUDE_END();
 }
 
 sub is_element {
