@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.22 2003-06-04 11:26:47 pajas Exp $
+# $Id: xsh,v 1.23 2003-06-04 11:34:58 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -27,7 +27,7 @@ use XML::XSH qw(&xsh_set_output &xsh_get_output &xsh &xsh_init
 BEGIN {
   getopts('atscqvwdfhVinTE:e:l:');
   $VERSION='0.10';
-   $REVISION='$Revision: 1.22 $';
+   $REVISION='$Revision: 1.23 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -61,8 +61,8 @@ if ($opt_h) {
   exit 1;
 }
 
-unless ($opt_n || $opt_i || $^O eq 'MSWin32') {
-  $opt_i=(system("tty 2>/dev/null >/dev/null")==0);
+unless ($opt_n || $opt_i) {
+  $opt_i=(-t STDIN) ? 1 : 0;
 }
 
 require Term::ReadLine if $opt_i;
