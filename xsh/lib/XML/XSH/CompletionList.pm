@@ -103,6 +103,7 @@ redo
 register-function
 register-namespace
 register-xhtml-namespace
+register-xsh-namespace
 remove
 rename
 return
