@@ -4590,6 +4590,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
     </rule>
     <rule id="registerns_command" type="command" name="register-namespace"
       inline="yes">
+      <aliases>
+	<alias name="regns"/>
+      </aliases>
       <production>
 	<selfref/>
 	<directive type="commit"/>
@@ -4613,6 +4616,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
     <rule id="registerns_xhtml_command" type="command" 
       name="register-xhtml-namespace"
       inline="yes">
+      <aliases>
+	<alias name="regns-xhtml"/>
+      </aliases>
       <production>
 	<selfref/>
 	<directive type="commit"/>
@@ -4634,6 +4640,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
     <rule id="registerns_xsh_command" type="command" 
       name="register-xsh-namespace"
       inline="yes">
+      <aliases>
+	<alias name="regns-xsh"/>
+      </aliases>
       <production>
 	<selfref/>
 	<directive type="commit"/>
@@ -4660,6 +4669,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
     <rule id="registerfunc_command" type="command" 
       name="register-function"
       inline="yes">
+      <aliases>
+	<alias name="regfunc"/>
+      </aliases>
       <production>
 	<selfref/>
 	<directive type="commit"/>
