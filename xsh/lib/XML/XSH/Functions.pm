@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.36 2002-11-01 17:37:34 pajas Exp $
+# $Id: Functions.pm,v 1.37 2002-11-04 13:09:32 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -30,6 +30,7 @@ BEGIN {
 		&create_doc &open_doc &set_doc
 		&xsh_pwd &xsh_local_id &get_doc &out
 		&toUTF8 &fromUTF8 &set_local_doc
+		&xsh_xml_parser &xsh_parse_string &xsh_docs
 	       );
   %EXPORT_TAGS = (default => [@EXPORT_OK]);
 
@@ -208,6 +209,19 @@ sub xsh_set_output {
 # get output stream
 sub xsh_get_output {
   return $OUT;
+}
+
+sub xsh_docs {
+  return keys %_doc;
+}
+
+sub xsh_parse_string {
+  return $_xml_module->parse_string($_parser,$_[0]);
+}
+
+sub xsh_xml_parser {
+  xsh_init() unless ref($_parser);
+  return $_parser;
 }
 
 # store a pointer to an XSH-Grammar parser
@@ -623,8 +637,7 @@ sub xpath_assign {
 }
 
 sub xpath_assign_local {
-  my ($name)=@_;
-  store_variables(0,$name);
+  store_variables(0,$_[0]);
   xpath_assign(@_);
   return 1;
 }
@@ -635,6 +648,16 @@ sub nodelist_assign_local {
   store_variables(0,"\%$name");
   nodelist_assign(@_);
   return 1;
+}
+
+sub make_local {
+  foreach (@_) {
+    if ($_->[0] eq '$') {
+      xpath_assign_local($_->[1],undef);
+    } else {
+      nodelist_assign_local($_->[1],undef);
+    }
+  }
 }
 
 
@@ -1266,7 +1289,7 @@ sub count {
   my ($xp)=@_;
   my ($id,$query,$doc)= _xpath($xp);
 
-  return if ($id eq "" or $query eq "");
+  return undef if ($id eq "" or $query eq "");
   unless (ref($doc)) {
     die "No such document: $id\n";
   }
