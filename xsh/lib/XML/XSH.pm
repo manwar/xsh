@@ -1,4 +1,4 @@
-# $Id: XSH.pm,v 1.8 2002-12-13 11:46:37 pajas Exp $
+# $Id: XSH.pm,v 1.9 2003-03-12 13:54:11 pajas Exp $
 
 package XML::XSH;
 
@@ -21,7 +21,7 @@ BEGIN {
 
 =head1 NAME
 
-XML::XSH - Powerfull Scripting Language/Shell for XPath-based Editing of XML
+XML::XSH - A powerfull scripting language/shell for XPath-based editing of XML
 
 =head1 SYNOPSIS
 
