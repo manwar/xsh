@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.32 2002-10-25 16:01:07 pajas Exp $
+# $Id: Functions.pm,v 1.33 2002-10-29 11:25:05 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -13,7 +13,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $OUT $LOCAL_ID $LOCAL_NODE
             $_xml_module $_sigint
             $_xsh $_parser $_encoding $_qencoding %_nodelist @stored_variables
             $_quiet $_debug $_test $_newdoc $_indent $_backups $_cdonopen $SIGSEGV_SAFE
-            $TRAP_SIGINT $_die_on_err
+            $TRAP_SIGINT $TRAP_SIGPIPE $_die_on_err
             %_doc %_files %_defs %_chr
 	    $VALIDATION $RECOVERING $EXPAND_ENTITIES $KEEP_BLANKS
 	    $PEDANTIC_PARSER $LOAD_EXT_DTD $COMPLETE_ATTRIBUTES
@@ -42,7 +42,7 @@ BEGIN {
   $_encoding='iso-8859-2';
   $_qencoding='iso-8859-2';
   $_newdoc=1;
-  $_die_on_err=0;
+  $_die_on_err=1;
   %_nodelist=();
 
   %_chr = ( n => "\n", t => "\t", r => "\r",
@@ -306,6 +306,15 @@ sub sigint {
   }
 }
 
+sub sigpipe {
+  if ($TRAP_SIGPIPE) {
+    die "SIGPIPE";
+  } else {
+    _err('broken pipe (SIGPIPE)');
+    exit 1;
+  }
+}
+
 sub flagsigint {
   print STDERR "\nCtrl-C pressed. \n";
   $_sigint=1;
@@ -336,16 +345,26 @@ sub _check_err {
       if ($survive_int) {
 	$err=~s/ at (?:.|\n)*$//;
 	_err($err);
+	return 0;
+      } else {
+	die $err; # propagate
+      }
+    } elsif ($_die_on_err) {
+      if ($err=~/^SIGPIPE/) {
+	_err('broken pipe (SIGPIPE)');
       } else {
 	die $err; # propagate
       }
     } else {
-      _err($err);
+      if ($err=~/^SIGPIPE/) {
+	_err('broken pipe (SIGPIPE)');
+      } else {
+	_err($err);
+      }
+      return 0;
     }
-    return 0;
-  } else {
-    return 1;
   }
+  return 1;
 }
 
 # return current document id
@@ -712,6 +731,25 @@ sub nodelist_assign {
     } else {
       $_nodelist{$name}=[$doc,find_nodes($xp)];
       print STDERR "\nStored ",scalar(@{$_nodelist{$name}->[1]})," node(s).\n" unless "$_quiet";
+    }
+  }
+}
+
+sub has_all_ancestors {
+  my ($node)=@_;
+  while ($node) {
+    return 1 if ($_xml_module->is_document($node));
+    $node=$node->parentNode;
+  }
+  return 0;
+}
+
+# remove unbounded nodes from all nodelists of a given document
+sub remove_dead_nodes_from_nodelists {
+  my ($doc)=@_;
+  foreach my $list (values(%_nodelist),get_stored_nodelists()) {
+    if ($_xml_module->xml_equal($doc,$list->[0])) {
+      $list->[1]=[ grep { has_all_ancestors($_) } @{$list->[1]} ];
     }
   }
 }
@@ -1181,12 +1219,14 @@ sub mark_fold {
 
 sub mark_unfold {
   my ($xp)=@_;
+  my ($id,$query,$doc)=_xpath($xp);
   my $l=find_nodes($xp);
   foreach my $node (@$l) {
     if ($_xml_module->is_element($node) and $node->hasAttributeNS($XML::XSH::xshNS,'fold')) {
       remove_node($node->getAttributeNodeNS($XML::XSH::xshNS,'fold'));
     }
   }
+  remove_dead_nodes_from_nodelists($doc);
   return 1;
 }
 
@@ -1248,6 +1288,7 @@ sub prune {
     remove_node($node,get_keep_blanks());
     $i++;
   }
+  remove_dead_nodes_from_nodelists($doc);
   print STDERR "$i node(s) removed from $id=$_files{$id}\n" unless "$_quiet";
   return 1;
 }
@@ -1743,7 +1784,7 @@ sub copy {
     print STDERR "No matching nodes found for $tq in $tid=$_files{$tid}\n" unless "$_quiet";
     return 0;
   }
-
+  my $some_nodes_removed=0;
   if ($all_to_all) {
     foreach my $tp (@$tl) {
       my $replace=0;
@@ -1751,6 +1792,7 @@ sub copy {
 	$replace = ((insert_node($fp,$tp,$tdoc,$where) eq 'remove') || $replace);
       }
       if ($replace) {
+	$some_nodes_removed=1;
 	remove_node($tp);
       }
     }
@@ -1758,11 +1800,14 @@ sub copy {
     while (ref(my $fp=shift @$fl) and ref(my $tp=shift @$tl)) {
       my $replace=insert_node($fp,$tp,$tdoc,$where);
       if ($replace eq 'remove') {
+	$some_nodes_removed=1;
 	remove_node($tp);
       }
     }
   }
-
+  if ($some_nodes_removed) {
+    remove_dead_nodes_from_nodelists($tdoc);
+  }
   return 1;
 }
 
@@ -1895,42 +1940,45 @@ sub insert {
   my ($tid,$tq,$tdoc)=_xpath($xpath); # destination(s)
 
   return 0 unless ref($tdoc);
-# eval {
-#    local $SIG{INT}=\&sigint;
-    my @nodes;
-    $ns=toUTF8($_qencoding,$ns);
-    unless ($type eq 'chunk') {
-      $exp=toUTF8($_qencoding,$exp);
-      @nodes=grep {ref($_)} create_nodes($type,$exp,$tdoc,$ns);
-      return unless @nodes;
-    } else {
-      if ($exp !~/^\s*<?xml [^>]*encoding=[^>]*?>/) {
-	$exp=toUTF8($_qencoding,$exp);
-      }
-      @nodes=grep {ref($_)} ($_parser->parse_xml_chunk($exp));
-    }
-    my $tl=find_nodes($xpath);
 
-    if ($to_all) {
-      foreach my $tp (@$tl) {
-	my $replace=0;
-	foreach my $node (@nodes) {
-	  $replace = (insert_node($node,$tp,$tdoc,$where) eq 'remove') || $replace;
-	}
-	if ($replace) {
-	  remove_node($tp);
-	}
-      }
-    } elsif ($tl->[0]) {
+  my @nodes;
+  $ns=toUTF8($_qencoding,$ns);
+  unless ($type eq 'chunk') {
+    $exp=toUTF8($_qencoding,$exp);
+    @nodes=grep {ref($_)} create_nodes($type,$exp,$tdoc,$ns);
+    return unless @nodes;
+  } else {
+    if ($exp !~/^\s*<?xml [^>]*encoding=[^>]*?>/) {
+      $exp=toUTF8($_qencoding,$exp);
+    }
+    @nodes=grep {ref($_)} ($_parser->parse_xml_chunk($exp));
+  }
+  my $tl=find_nodes($xpath);
+  my $some_nodes_removed=0;
+  if ($to_all) {
+    foreach my $tp (@$tl) {
+      my $replace=0;
       foreach my $node (@nodes) {
-	if (ref($tl->[0])) {
-	  if (insert_node($node,$tl->[0],$tdoc,$where) eq 'remove') {
-	    remove_node($tl->[0]);
-	  }
+	$replace = (insert_node($node,$tp,$tdoc,$where) eq 'remove') || $replace;
+      }
+      if ($replace) {
+	$some_nodes_removed=1;
+	remove_node($tp);
+      }
+    }
+  } elsif ($tl->[0]) {
+    foreach my $node (@nodes) {
+      if (ref($tl->[0])) {
+	if (insert_node($node,$tl->[0],$tdoc,$where) eq 'remove') {
+	  $some_nodes_removed=1;
+	  remove_node($tl->[0]);
 	}
       }
     }
-#  };
+  }
+  if ($some_nodes_removed) {
+    remove_dead_nodes_from_nodelists($tdoc);
+  }
   return 1;
 }
 
@@ -2040,7 +2088,7 @@ sub is_ancestor_or_self {
   }
 }
 
-# remve node and all its surrounding whitespace textual siblings
+# remove node and all its surrounding whitespace textual siblings
 # from a document; remove all its descendant from all nodelists
 # change current element to the nearest ancestor
 sub remove_node {
@@ -2055,11 +2103,11 @@ sub remove_node {
     if ($sibling and
 	$_xml_module->is_text($sibling) and
 	$sibling->getData =~ /^\s+$/) {
-      remove_node_from_nodelists($sibling,$doc);
+#      remove_node_from_nodelists($sibling,$doc);
       $_xml_module->remove_node($sibling);
     }
   }
-  remove_node_from_nodelists($node,$doc);
+#  remove_node_from_nodelists($node,$doc);
   $_xml_module->remove_node($node);
 }
 
@@ -2078,6 +2126,9 @@ sub move {
     foreach my $node (@$sourcenodes) {
       remove_node($node);
       $i++;
+    }
+    if ($i) {
+      remove_dead_nodes_from_nodelists($doc);
     }
     return 1;
   } else {
@@ -2134,14 +2185,15 @@ sub cd {
 sub run_commands {
   return 0 unless ref($_[0]) eq "ARRAY";
   my @cmds=@{$_[0]};
-  my $trapsigint=$_[1];
+  my $trapsignals=$_[1];
   my $result=0;
 
   my ($cmd,@params);
 
   store_variables(1);
   eval {
-    local $SIG{INT}=\&sigint if $trapsigint;
+    local $SIG{INT}=\&sigint if $trapsignals;
+    local $SIG{PIPE}=\&sigpipe if $trapsignals;
     foreach my $run (@cmds) {
       if (ref($run) eq 'ARRAY') {
 	($cmd,@params)=@$run;
@@ -2159,7 +2211,7 @@ sub run_commands {
     restore_variables();
     propagate_flagsigint();
   };
-  if (!$trapsigint and $@ =~ /^SIGINT/) {
+  if (!$trapsignals and $@ =~ /^SIGINT|^SIGPIPE/) {
     die $@
   } else {
     _check_err($@,1);
