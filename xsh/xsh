@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # -*- cperl -*-
 
-# $Id: xsh,v 2.1 2004-12-02 19:26:35 pajas Exp $
+# $Id: xsh,v 2.2 2005-01-09 16:54:09 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -61,7 +61,7 @@ BEGIN {
 			) or $usage=1;
 #  getopts('atscqvwdfhVinTE:e:l:pP');
   $VERSION='0.12';
-   $REVISION=q($Revision: 2.1 $);
+   $REVISION=q($Revision: 2.2 $);
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -251,14 +251,14 @@ if ($opt_i) {
        my ($exit_code,$term)=@_;
        if ($term->can('GetHistory')) {
 	 eval {
-	   print STDERR "saving $ENV{HOME}/.xsh_history\n";
-	   open my $HIST,'>:bytes',"$ENV{HOME}/.xsh_history" || die "cannot open $ENV{HOME}/.xsh_history";
+	   print STDERR "saving $XML::XSH2::Functions::HISTFILE\n";
+	   open my $HIST,'>:bytes', $XML::XSH2::Functions::HISTFILE || die "cannot open $XML::XSH2::Functions::HISTFILE";
 	   print $HIST join("\n",$term->GetHistory());
 	   close $HIST;
 	   print STDERR "done\n";
 	 };
 	 if ($@) {
-	   print STDERR "Error occured while writing to ~/.xsh_history\n";
+	   print STDERR "Error occured while writing to $XML::XSH2::Functions::HISTFILE\n";
 	   print STDERR "$@\n";
 	 }
        }
@@ -266,14 +266,14 @@ if ($opt_i) {
     ];
 
   eval {
-    if (-r "$ENV{HOME}/.xsh_history") {
-      open my $HIST,'<:bytes',"$ENV{HOME}/.xsh_history";
+    if (-r $XML::XSH2::Functions::HISTFILE) {
+      open my $HIST,'<:bytes',$XML::XSH2::Functions::HISTFILE;
       $term->addhistory(map { chomp; $_ } <$HIST>);
       close $HIST;
     }
   };
   if ($@) {
-    print STDERR "Error occured while reading from ~/.xsh_history\n";
+    print STDERR "Error occured while reading from $XML::XSH2::Functions::HISTFILE\n";
     print STDERR "$@\n";
   }
 

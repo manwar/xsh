@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.4 2004-12-14 13:39:56 pajas Exp $
+# $Id: Functions.pm,v 2.5 2005-01-09 16:54:20 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -31,12 +31,12 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 	    $XPATH_AXIS_COMPLETION
 	    $XPATH_COMPLETION $DEFAULT_FORMAT $LINE_NUMBERS
             $RT_LINE $RT_COLUMN $RT_OFFSET $RT_SCRIPT $SCRIPT
-            $BENCHMARK $Xinclude_prefix
+            $BENCHMARK $Xinclude_prefix $HISTFILE
 	  /;
 
 BEGIN {
   $VERSION='2.0.1';
-  $REVISION=q($Revision: 2.4 $);
+  $REVISION=q($Revision: 2.5 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -62,6 +62,7 @@ BEGIN {
 		    $LINE_NUMBERS
 		    $WARNINGS
 		    $MAXPRINTLENGTH
+		    $HISTFILE
 		    /;
   *XSH_NS=*XML::XSH2::xshNS;
   *XML::XSH2::Map::XSH_NS=*XML::XSH2::xshNS;
@@ -110,6 +111,7 @@ BEGIN {
   $WARNINGS=1;
   $BENCHMARK=0;
   $MAXPRINTLENGTH=256;
+  $HISTFILE="$ENV{HOME}/.xsh2_history";
   *XML::XSH2::Map::CURRENT_SCRIPT=\$RT_SCRIPT;
 
   $_newdoc=1;
