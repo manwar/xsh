@@ -22,8 +22,8 @@ require Term::ReadLine if $opt_i;
 
 BEGIN {
   getopts('cqdhViE:e:');
-  $VERSION='0.6';
-  $REVISION='$Revision: 1.11 $';
+  $VERSION='0.7';
+  $REVISION='$Revision: 1.12 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
