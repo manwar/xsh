@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: LibXMLCompat.pm,v 1.14 2003-09-10 15:54:31 pajas Exp $
+# $Id: LibXMLCompat.pm,v 1.15 2003-10-23 17:43:20 pajas Exp $
 
 package XML::XSH::LibXMLCompat;
 
@@ -360,6 +360,19 @@ sub value {
   my $self = CORE::shift;
   my $result = join('', grep {defined $_} map { $_->string_value } @$self);
   return $result;
+}
+
+package XML::LibXML::Number;
+sub new {
+    my $class = shift;
+    my $number = shift;
+    if ($number !~ /^\s*(-\s*)?(\d+(\.\d*)?|\.\d+)\s*$/) {
+        $number = undef;
+    }
+    else {
+        $number =~ s/\s*//g;
+    }
+    bless \$number, $class;
 }
 
 
