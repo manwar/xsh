@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.25 2003-08-05 08:01:28 pajas Exp $
+# $Id: xsh,v 1.26 2003-08-06 08:55:38 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -27,7 +27,7 @@ use XML::XSH qw(&xsh_set_output &xsh_get_output &xsh &xsh_init
 BEGIN {
   getopts('atscqvwdfhVinTE:e:l:pP');
   $VERSION='0.10';
-   $REVISION='$Revision: 1.25 $';
+   $REVISION='$Revision: 1.26 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -189,16 +189,18 @@ if ($opt_i) {
   $XML::XSH::Functions::_on_exit=
     [sub { 
        my ($exit_code,$term)=@_;
-       eval {
-	 print STDERR "saving $ENV{HOME}/.xsh_history\n";
-	 open HIST,"> $ENV{HOME}/.xsh_history" || die "cannot open $ENV{HOME}/.xsh_history";
-	 print HIST join("\n",$term->GetHistory()),"\n";
-	 close HIST;
-	 print STDERR "done\n";
-       };
-       if ($@) {
-	 print STDERR "Error occured while writing to ~/.xsh_history\n";
-	 print STDERR "$@\n";
+       if ($term->can('GetHistory')) {
+	 eval {
+	   print STDERR "saving $ENV{HOME}/.xsh_history\n";
+	   open HIST,"> $ENV{HOME}/.xsh_history" || die "cannot open $ENV{HOME}/.xsh_history";
+	   print HIST join("\n",$term->GetHistory());
+	   close HIST;
+	   print STDERR "done\n";
+	 };
+	 if ($@) {
+	   print STDERR "Error occured while writing to ~/.xsh_history\n";
+	   print STDERR "$@\n";
+	 }
        }
      },$term
     ];
@@ -211,7 +213,7 @@ if ($opt_i) {
     }
   };
   if ($@) {
-    print STDERR "Error occured while writing to ~/.xsh_history\n";
+    print STDERR "Error occured while reading from ~/.xsh_history\n";
     print STDERR "$@\n";
   }
 
