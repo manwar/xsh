@@ -99,6 +99,8 @@ save
 sed
 select
 sort
+strip-whitespace
+strip_whitespace
 switch-to-new-documents
 switch_to_new_documents
 system

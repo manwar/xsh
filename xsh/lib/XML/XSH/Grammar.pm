@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Dec  6 09:51:27 2002
+# Tue Dec 10 19:26:42 2002
 
 
 package XML::XSH::Grammar;
@@ -246,6 +246,9 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 	  | /(normalize)\s/ <commit> xpath
 		{ [\&XML::XSH::Functions::normalize_nodes,$item[3]] }
+  	
+	  | /(strip-whitespace|strip_whitespace)\s/ <commit> xpath
+		{ [\&XML::XSH::Functions::strip_ws,$item[3]] }
   	
 	  | call_command
 

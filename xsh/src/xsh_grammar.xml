@@ -746,6 +746,7 @@ sub new {
       <ruleref ref="fold_command"/>
       <ruleref ref="unfold_command"/>
       <ruleref ref="normalize_command"/>
+      <ruleref ref="strip_ws_command"/>
       <production>
 	<ruleref ref="call_command"/>
       </production>
@@ -2681,6 +2682,30 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    comments, processing instructions, CDATA sections, and
 	    entity references) separates text nodes, i.e., there are
 	    neither adjacent Text nodes nor empty Text nodes.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="strip_ws_command" type="command" name="strip-whitespace"
+	    inline="yes">
+      <aliases>
+	<alias name="strip_whitespace"/>
+      </aliases>
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="xpath"/>
+	<action>[\&amp;XML::XSH::Functions::strip_ws,$item[3]]</action>
+      </production>
+      <documentation sections="manipulation">
+	<usage>strip <xref linkend="xpath"/></usage>
+	<shortdesc>trip leading and trailing whitespace</shortdesc>
+	<description>
+	  <para><literal>strip</literal> removes all leading and
+	    trailing whitespace from given nodes. If applied to an
+	    element node, it removes all leading and trailing child
+	    text nodes and CDATA sections consisting of
+	    whitespace only.
 	  </para>
 	</description>
       </documentation>

@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.40 2002-12-09 13:29:52 pajas Exp $
+# $Id: Functions.pm,v 1.41 2002-12-11 13:55:28 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -22,7 +22,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.6';
-  $REVISION='$Revision: 1.40 $';
+  $REVISION='$Revision: 1.41 $';
   @ISA=qw(Exporter);
   @EXPORT_OK=qw(&xsh_init &xsh &xsh_get_output
                 &xsh_set_output &xsh_set_parser
@@ -2061,6 +2061,87 @@ sub normalize_nodes {
   my $ql=find_nodes($xp);
   foreach (@$ql) {
     $_->normalize();
+  }
+  return 1;
+}
+
+sub _trim_ws {
+  my ($text)=@_;
+  $text=~s/^\s*//;
+  $text=~s/\s*$//;
+  return $text;
+}
+
+# strip whitespace from given nodes
+sub strip_ws {
+  my ($xp)=@_;
+  my ($id,$query,$doc)=_xpath($xp);
+
+  print STDERR "stripping whitespace in $query from $id=$_files{$id}\n\n" if "$_debug";
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+  my $ql=find_nodes($xp);
+  foreach my $node (@$ql) {
+    if ($_xml_module->is_text($node)
+	or
+	$_xml_module->is_cdata_section($node)
+	or
+	$_xml_module->is_comment($node)
+       ) {
+      my $data=_trim_ws($node->getData());
+      if ($data ne "") {
+	$node->setData($data);
+      } else {
+	$node->unbindNode();
+      }
+    } elsif ($_xml_module->is_pi($node)) {
+      $node->setData(_trim_ws($node->getData($node)));
+    } elsif ($_xml_module->is_attribute($node)) {
+      $node->setValue(_trim_ws($node->getValue));
+    } elsif ($_xml_module->is_element($node) or
+	     $_xml_module->is_document($node)) {
+      # traverse children, skip comments, strip text nodes
+      # until first element or PI or text node containing
+      # a non-ws character
+      my $child=$node->firstChild();
+      while ($child) {
+	if ($_xml_module->is_text($child) or
+	    $_xml_module->is_cdata_section($child)) {
+	  my $data=_trim_ws($child->getData());
+	  if ($data ne "") {
+	    $child->setData($data);
+	    last;
+	  } else {
+	    $child->unbindNode();
+	  }
+	} elsif ($_xml_module->is_element($child) or
+		 $_xml_module->is_pi($child)) {
+	  last;
+	}
+	$child=$child->nextSibling();
+      }
+      # traverse children (upwards), skip comments, strip text nodes
+      # until first element or PI or text node containing a non-ws
+      # character
+      my $child=$node->lastChild();
+      while ($child) {
+	if ($_xml_module->is_text($child) or
+	    $_xml_module->is_cdata_section($child)) {
+	  my $data=_trim_ws($child->getData());
+	  if ($data ne "") {
+	    $child->setData($data);
+	    last;
+	  } else {
+	    $child->unbindNode();
+	  }
+	} elsif ($_xml_module->is_element($child) or
+		 $_xml_module->is_pi($child)) {
+	  last;
+	}
+	$child=$child->previousSibling();
+      }
+    }
   }
   return 1;
 }
