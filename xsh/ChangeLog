@@ -1,3 +1,64 @@
+2002-02-18  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* XSH/Parser.pm: regenerated
+
+	* XSH/Help.pm: bugfixes:
+	  echo documented
+
+	* XSH/Functions.pm: features:
+	  add attribute name=value into ... construction with
+	                                    unquoted expr. allowed for
+	                                    single attribute and its
+	                                    single-word value
+
+	bugfixes:
+	  foreach, xslt, move default id handling fixed
+	  echo documented
+
+2002-02-07  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* XSH/Grammar.pm, XSH/Functions.pm: save command fixed
+
+2002-02-06  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* config.mk: default PREFIX changed to /usr/local
+
+	* xsh.pl: release version update
+
+	* config.mk: initial commit
+
+	* INSTALL, Makefile, README, XSH/Makefile: make install added
+
+	* ChangeLog, Makefile, XSH/Makefile: initial commit
+
+	* XSH/Parser.pm: new compile
+
+	* XSH/Help.pm: help update
+
+	* XSH/Grammar.pm: new commands (defs, select) added
+
+	* XSH/Functions.pm: list_defs added
+	trying to solve some problems with validation
+
+2002-02-06  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* xsh.pl: release version update
+
+	* config.mk: initial commit
+
+	* INSTALL, Makefile, README, XSH/Makefile: make install added
+
+	* ChangeLog, Makefile, XSH/Makefile: initial commit
+
+	* XSH/Parser.pm: new compile
+
+	* XSH/Help.pm: help update
+
+	* XSH/Grammar.pm: new commands (defs, select) added
+
+	* XSH/Functions.pm: list_defs added
+	trying to solve some problems with validation
+
 2002-02-06  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
 
 	* XSH/Parser.pm: new compile
