@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.9 2002-09-12 15:25:33 pajas Exp $
+# $Id: xsh,v 1.10 2002-09-16 15:46:52 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -29,7 +29,7 @@ require Term::ReadLine if $opt_i;
 BEGIN {
   getopts('scqgwdfhViE:e:');
   $VERSION='0.9';
-  $REVISION='$Revision: 1.9 $';
+  $REVISION='$Revision: 1.10 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -178,7 +178,7 @@ if ($opt_i) {
     }
     if ($l=~/\S/) {
       xsh($l);
-      $term->addhistory($l);
+#      $term->addhistory($l);
     }
   }
 
