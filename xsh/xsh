@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.29 2003-08-11 14:18:57 pajas Exp $
+# $Id: xsh,v 1.30 2003-08-13 11:34:31 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -55,7 +55,7 @@ BEGIN {
 			) or $usage=1;
 #  getopts('atscqvwdfhVinTE:e:l:pP');
   $VERSION='0.12';
-   $REVISION='$Revision: 1.29 $';
+   $REVISION='$Revision: 1.30 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -322,7 +322,7 @@ Type C<xsh help commands> to get list of available XSH commands and
 C<xsh help B<command>> with B<command> replaced by a XSH command name
 to get help on a particular command.
 
-=head1 COMMAND-LINE OPTIONS
+=head1 OPTIONS
 
 =over 8
 
