@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 1.6 2003-01-22 14:55:53 pajas Exp $
+# $Id: Completion.pm,v 1.7 2003-03-12 13:57:15 pajas Exp $
 
 package XML::XSH::Completion;
 
@@ -8,12 +8,12 @@ use strict;
 
 sub cpl {
   my($word,$line,$pos) = @_;
-  if ($line=~/^\s*[^=\s]*$/) {
-    return grep { index($_,$word)==0 } @XML::XSH::CompletionList::XSH_COMMANDS;
-  } elsif ($line=~/\$([a-zA-Z0-9_]*)$/) {
+  if ($line=~/\$([a-zA-Z0-9_]*)$/) {
     return grep { index($_,$1)==0 } XML::XSH::Functions::string_vars;
   } elsif ($line=~/\%([a-zA-Z0-9_]*)$/) {
     return map {'%'.$_} grep { index($_,$1)==0 } XML::XSH::Functions::nodelist_vars;
+  } elsif (substr($line,0,$pos)=~/^\s*[^=\s]*$/) {
+    return grep { index($_,$word)==0 } @XML::XSH::CompletionList::XSH_COMMANDS;
   } elsif ($line=~/^\s*call\s+(\S*)$|[;}]\s*call\s+(\S*)$/) {
     return grep { index($_,$1)==0 } XML::XSH::Functions::defs;
   } elsif ($line=~/^\s*help\s+(\S*)$|[;}]\s*help\s+(\S*)$/) {
@@ -26,12 +26,12 @@ sub cpl {
 sub gnu_cpl {
     my($text, $line, $start, $end) = @_;
     my(@perlret);
-    if ($line=~/^\s*[^=\s]*$/) {
-      @perlret = grep { index($_,$text)==0 } @XML::XSH::CompletionList::XSH_COMMANDS;
-    } elsif ($line=~/\$([a-zA-Z0-9_]*)$/) {
+    if ($line=~/\$([a-zA-Z0-9_]*)$/) {
       @perlret = grep { index($_,$1)==0 } XML::XSH::Functions::string_vars;
     } elsif ($line=~/\%([a-zA-Z0-9_]*)$/) {
       @perlret = map {'%'.$_} grep { index($_,$1)==0 } XML::XSH::Functions::nodelist_vars;
+    } elsif (substr($line,0,$end)=~/^\s*[^=\s]*$/) {
+      @perlret = grep { index($_,$text)==0 } @XML::XSH::CompletionList::XSH_COMMANDS;
     } elsif ($line=~/^\s*call\s+(\S*)$|[;}]\s*call\s+(\S*)$/) {
       @perlret = grep { index($_,$1)==0 } XML::XSH::Functions::defs;
     } elsif ($line=~/^\s*help\s+(\S*)$|[;}]\s*help\s+(\S*)$/) {
