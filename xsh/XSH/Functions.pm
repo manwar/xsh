@@ -718,8 +718,8 @@ sub list_dtd {
     local $SIG{INT}=\&sigint;
     if ($dtd) {
     my $conv=mkconv($doc->getEncoding(),$_encoding);
-      print $OUT ($conv ? $conv->convert($dtd->toString($_indent)) : 
-		  $dtd->toString($_indent)),"\n";
+      print $OUT ($conv ? $conv->convert($dtd->toString()) : 
+		  $dtd->toString()),"\n";
     }
   };
   print STDERR "$@\n" if ($@);
