@@ -1,9 +1,9 @@
-# $Id: Functions.pm,v 1.20 2002-08-28 09:44:52 pajas Exp $
+# $Id: Functions.pm,v 1.21 2002-08-28 09:48:44 pajas Exp $
 
 package XML::XSH::Functions;
 
 use strict;
-no warnings;
+eval { no warnings };
 
 use XML::XSH::Help;
 use IO::File;
@@ -925,7 +925,6 @@ sub list {
       my $fold=$folding && ($_xml_module->is_element($_) || $_xml_module->is_document($_)) &&
 	$_->findvalue("count(.//\@*[local-name()='fold' and namespace-uri()='$XML::XSH::xshNS'])");
       print STDERR "folding: $fold\n" if "$_debug";
-      print STDERR ref($OUT),"\n";
       out (fromUTF8($_encoding,to_string($_,$depth,$fold)),"\n");
     }
     print STDERR "\nFound ",scalar(@$ql)," node(s).\n" unless "$_quiet";
