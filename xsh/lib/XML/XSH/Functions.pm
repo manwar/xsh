@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.47 2003-04-14 13:12:24 pajas Exp $
+# $Id: Functions.pm,v 1.48 2003-04-15 17:31:55 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -27,7 +27,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.7';
-  $REVISION='$Revision: 1.47 $';
+  $REVISION='$Revision: 1.48 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -845,6 +845,7 @@ sub _find_nodes {
 	return scalar(_xpc_find_nodes($_nodelist{$name}->[0], $q));
       }
     } else {
+      __debug("plain variable\n");
       return $_nodelist{$name}->[1];
     }
   } else {
@@ -1445,15 +1446,22 @@ sub count {
 # evaluate given xpath and return the text content of the result
 sub eval_xpath_literal {
   my ($xp)=@_;
-  my $ql=&find_nodes($xp);
-  if (@$ql) {
-    if (wantarray) {
-      return map { &fromUTF8($ENCODING, literal_value($_->to_literal)) } @$ql;
-    } else {
-      return &fromUTF8($ENCODING, literal_value($ql->[0]->to_literal));
-    }
+  my ($id,$query)=_xpath($xp);
+  $_xpc->setContextNode(get_local_node($id));
+  my $result = $_xpc->find(toUTF8($QUERY_ENCODING,$query));
+
+  if (!ref($result)) {
+    return &fromUTF8($ENCODING, $result);
   } else {
-    return '';
+    if ($result->isa('XML::LibXML::NodeList')) {
+      if (wantarray) {
+	return map { &fromUTF8($ENCODING, literal_value($_->to_literal)) } @$result;
+      } else {
+	return &fromUTF8($ENCODING, literal_value($result->[0]->to_literal));
+      }
+    } else {
+      return &fromUTF8($ENCODING, literal_value($result->to_literal));
+    }
   }
 }
 
