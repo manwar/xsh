@@ -1,4 +1,5 @@
-# xsh
+#!/usr/bin/perl /home/pajas/bin/xsh
+# -*- cperl -*-
 
 if ("$xsh_grammar_file" = "") $xsh_grammar_file="src/xsh_grammar.xml";
 if ("$db_stylesheet" = "") {
@@ -45,18 +46,19 @@ def transform_section {
     map { $_="s_".$_.".html" } @url;
   }
   xslt S $db_stylesheet H params html.stylesheet="'$html_stylesheet'";
-#  clone H=H;
+  clone H=H;
+
   xadd attribute target=_self into H://*[name()='a'];
   # move content of <a name="">..</a> out, so that it does not behave
   # as a link in browsers
-  foreach H://*[name()='a' and not(@href)] {
-    xmove ./node() after .;
-  }
-  for %section/@id {
-    save_HTML H "doc/s_${{string(.)}}.html";
-    saveas S "doc/s_${{string(.)}}.xml";
-  }
-  close H;
+   foreach H://*[name()='a' and not(@href)] {
+     xmove ./node() after .;
+   }
+   for %section/@id {
+     save_HTML H "doc/s_${{string(.)}}.html";
+     saveas S "doc/s_${{string(.)}}.xml";
+   }
+   close H;
 }
 
 $toc_template="<html>
@@ -193,9 +195,9 @@ foreach { qw(command type) } {
     if (./aliases) {
       add chunk "<simplesect><title>Aliases</title><para><literal> </literal></para></simplesect>" into %section;
       foreach (./aliases/alias) {
-	copy ./@name after %section/simplesect[last()]/para/literal/text()[last()];
+	copy ./@name append %section/simplesect[last()]/para/literal/text()[last()];
 	if (following-sibling::alias) {
-	  add text ", " after %section/simplesect[last()]/para/literal/text()[last()];;
+	  add text ", " append %section/simplesect[last()]/para/literal/text()[last()];;
 	}
       }
     }
@@ -226,7 +228,7 @@ foreach { qw(command type) } {
       };
       foreach %section/simplesect[last()]/para/xref {
 	if (following-sibling::xref) {
-	  add text ", " after .;
+	  add text ", " append .;
 	}
       }
     }
