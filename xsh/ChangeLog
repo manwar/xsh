@@ -1,3 +1,107 @@
+2002-02-27  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* TODO: initial commit
+
+	* XSH/Parser.pm: recompiled
+
+	* XSH/Help.pm: Doc update. Command name transform is an alias for xslt.
+
+	* XSH/Functions.pm: Bugfixes:
+	  dtd command: Prepending document path to a relative sysid
+	  (Still cannot avoid XML::LibXML SIGSEGVs if DTD sysid not found)
+
+	* XSH/Functions.pm:
+	dtd fixed: XML::LibXML::Dtd->toString does not support format arg.
+
+	* XSH/Help.pm: doc update
+
+	* XSH/Grammar.pm: New commands:
+	  indent
+	  add/insert <node-type> <expression> namespace <namespace> <location> <xpath>
+
+	* XSH/Functions.pm: Features:
+	  simple namespaces support
+	  command to enable/disable output indenting on save
+
+	* xsh.pl: -q supresses copyright info and hint
+
+	* LICENSE: initial commit (replaces misspelled LICENCE)
+
+2002-02-22  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* xsh.pl: Version number update.
+
+	* XSH/Parser.pm: Recompiled from Grammar.pm
+
+	* XSH/Help.pm: New XSH commands documented.
+
+	* XSH/Grammar.pm: Features:
+	- new XSH bindings for XML::LibXML options
+	  (validation, parser_expands_entities, parser_expands_xinclude,
+	  keep_blanks, pedantic_parser, complete_attributes, load_ext_dtd)
+	- a new command process_xinclude
+	  (seems to be broken in XML::LibXML, though)
+
+	* XSH/Functions.pm: Bugfixes:
+
+	- dtd-related bugs corrected
+	  (sorry Matt, I blamed your XML::LibXML for them)
+
+	Features:
+
+	- new XSH::Grammar functions implemented
+
+	* xsh.pl:
+	scratch creation moved after seting cmd-line options (probably useless)
+
+2002-02-22  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* xsh.pl: Version number update.
+
+	* XSH/Parser.pm: Recompiled from Grammar.pm
+
+	* XSH/Help.pm: New XSH commands documented.
+
+	* XSH/Grammar.pm: Features:
+	- new XSH bindings for XML::LibXML options
+	  (validation, parser_expands_entities, parser_expands_xinclude,
+	  keep_blanks, pedantic_parser, complete_attributes, load_ext_dtd)
+	- a new command process_xinclude
+	  (seems to be broken in XML::LibXML, though)
+
+	* XSH/Functions.pm: Bugfixes:
+
+	- dtd-related bugs corrected
+	  (sorry Matt, I blamed your XML::LibXML for them)
+
+	Features:
+
+	- new XSH::Grammar functions implemented
+
+	* xsh.pl:
+	scratch creation moved after seting cmd-line options (probably useless)
+
+2002-02-18  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* ChangeLog: *** empty log message ***
+
+	* xsh.pl: version number update
+
+	* ChangeLog, XSH/Parser.pm: regenerated
+
+	* XSH/Help.pm: bugfixes:
+	  echo documented
+
+	* XSH/Functions.pm: features:
+	  add attribute name=value into ... construction with
+	                                    unquoted expr. allowed for
+	                                    single attribute and its
+	                                    single-word value
+
+	bugfixes:
+	  foreach, xslt, move default id handling fixed
+	  echo documented
+
 2002-02-18  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
 
 	* xsh.pl: version number update
