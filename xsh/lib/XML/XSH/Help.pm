@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri May  2 19:10:07 2003
+# Fri May 30 18:06:00 2003
 
 package XML::XSH::Help;
 use strict;
@@ -77,10 +77,10 @@ Help items:
     parser-expands-xinclude, pedantic-parser, perl, prev, print,
     process-xinclude, pwd, query-encoding, quiet, recovering, redo,
     register-function, register-namespace, register-xhtml-namespace,
-    remove, rename, return, run-mode, save, select, sort, stream,
-    strip-whitespace, switch-to-new-documents, test-mode, throw, try,
-    unfold, unless, valid, validate, validation, variables, verbose,
-    version, while, xcopy, xinsert, xmove, xslt, xupdate
+    register-xsh-namespace, remove, rename, return, run-mode, save, select,
+    sort, stream, strip-whitespace, switch-to-new-documents, test-mode,
+    throw, try, unfold, unless, valid, validate, validation, variables,
+    verbose, version, while, xcopy, xinsert, xmove, xslt, xupdate
 
   XSH Argument Types:
 
@@ -102,11 +102,12 @@ description:
 	     parser-expands-entities, parser-expands-xinclude,
 	     pedantic-parser, perl, prev, print, process-xinclude, pwd,
 	     query-encoding, quiet, recovering, redo, register-function,
-	     register-namespace, register-xhtml-namespace, remove, rename,
-	     return, run-mode, save, select, sort, stream,
-	     strip-whitespace, switch-to-new-documents, test-mode, throw,
-	     try, unfold, unless, valid, validate, validation, variables,
-	     verbose, version, while, xcopy, xinsert, xmove, xslt, xupdate
+	     register-namespace, register-xhtml-namespace,
+	     register-xsh-namespace, remove, rename, return, run-mode,
+	     save, select, sort, stream, strip-whitespace,
+	     switch-to-new-documents, test-mode, throw, try, unfold,
+	     unless, valid, validate, validation, variables, verbose,
+	     version, while, xcopy, xinsert, xmove, xslt, xupdate
 
 END
 
@@ -230,10 +231,31 @@ $HELP{'xpath'}=[<<'END'];
 Xpath argument type
 
 description:
-	     Any XPath expression as defined in W3C recommendation at
-	     http://www.w3.org/TR/xpath optionally preceded with a document
-	     identifier followed by colon. If no identifier is used, the
-	     current document is used.
+	     XSH supports arbitrary XPath expression as defined in W3C
+	     recommendation at http://www.w3.org/TR/xpath. In XSH, XPath
+	     expressoin may be optionally preceded with a document
+	     identifier followed by colon. If no document identifier is
+	     used, the current document is used.
+
+	     The following XPath extension functions are defined in the XSH
+	     namespace:
+
+	     `xsh:doc(id-string)' - returns a nodelist consisting of the
+	     document node associated in XSH with an identifier given in
+	     `id-string'.
+
+	     `xsh:matches(match-string,regexp-string)' - returns `true' if
+	     `match-string' matches the regular expression given in
+	     `regexp-string'. Otherwise returns `false'.
+
+	     `xsh:grep(node-set, regexp-string)' - returns a node set
+	     consisting of nodes of the given `node-set' whose content (as
+	     returned by the built-in XPath function `string()' matches the
+	     regular expression given in `regexp-string'.
+
+	     `xsh:same(node-set, node-set)' - returns `true' if the given
+	     node sets contain exactly one node each and these nodes are
+	     the same (equivallent to `count(node-set|node-set)').
 
 Example:     Open a document and count all sections containing a subsection
 	     in it
@@ -778,7 +800,7 @@ END
 $HELP{'chdir'}=$HELP{'lcd'};
 
 $HELP{'insert'}=[<<'END'];
-usage:       insert <node-type> <expression> [namespace <expression>] <location><xpath>
+usage:       insert <node-type> <expression> [namespace <expression>] <location> <xpath>
              
 aliases:     add
 
@@ -791,7 +813,7 @@ END
 $HELP{'add'}=$HELP{'insert'};
 
 $HELP{'xinsert'}=[<<'END'];
-usage:       xinsert <node-type> <expression> [namespace <expression>] <location><xpath>
+usage:       xinsert <node-type> <expression> [namespace <expression>] <location> <xpath>
              
 aliases:     xadd
 
@@ -2044,6 +2066,19 @@ description:
 END
 
 
+$HELP{'register-xsh-namespace'}=[<<'END'];
+usage:       register-xsh-namespace <expression>
+             
+description:
+	     Registers a new prefix for the XSH namespace. The prefix can
+	     later be used in XPath expressions. Note, that XSH namespace
+	     is by default registered with `xsh' prefix. This command is
+	     thus, in general, useful only when some document uses `xsh'
+	     prefix for a different namespace.
+
+END
+
+
 $HELP{'register-function'}=[<<'END'];
 usage:       register-function <expression> <perl-code>
              
@@ -2111,6 +2146,18 @@ description:
 END
 
 
+$HELP{'namespaces'}=[<<'END'];
+usage:       namespaces [<xpath>]
+             
+description:
+	     For each node matching given <xpath> lists all namespaces that
+	     are valid in its scope in the form of `xmlns:prefix="uri"'
+	     declarations. If no <xpath> is given, lists namespaces in the
+	     scope of the current node.
+
+END
+
+
 $HELP{'Documents'}=[<<'END'];
 Files/Documents
 ---------------
@@ -2140,7 +2187,8 @@ Example: Store XSH document DOC on a remote machine using Secure Shell
 Related commands:
   backups, catalog, clone, close, create, documents, nobackups, open,
   process-xinclude, register-function, register-namespace,
-  register-xhtml-namespace, save, select, switch-to-new-documents
+  register-xhtml-namespace, register-xsh-namespace, save, select,
+  switch-to-new-documents
 
 END
 
@@ -2333,8 +2381,8 @@ Retrieving more information
 
 
 Related commands:
-  count, defs, documents, dtd, enc, help, locate, ls, options, print, pwd,
-  valid, validate, variables, version
+  count, defs, documents, dtd, enc, help, locate, ls, namespaces, options,
+  print, pwd, valid, validate, variables, version
 
 END
 

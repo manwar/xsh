@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 1.10 2003-05-26 15:21:56 pajas Exp $
+# $Id: Completion.pm,v 1.11 2003-05-30 16:14:47 pajas Exp $
 
 package XML::XSH::Completion;
 
@@ -111,9 +111,18 @@ sub xpath_complete_str {
   }
 
  STEP1:
-  if ( $str =~ /\G(${NAMECHAR}+)(:${NNAMECHAR}+)?/gsco ) {
-    $localmatch=reverse($1);
-    $result=reverse($2).'*[starts-with(local-name(),"'.$localmatch.'")]'.$result;
+  if ( $str =~ /\G(${NAMECHAR}+)?(?::(${NNAMECHAR}+))?/gsco ) {
+    if ($2 ne "") {
+      $localmatch=reverse($2).":".reverse($1);
+      if ($1 ne "") {
+	$result=reverse($2).':*[starts-with(local-name(),"'.reverse($1).'")]'.$result;
+      } else {
+	$result=reverse($2).':*'.$result;
+      }
+    } else {
+      $localmatch=reverse($1);
+      $result='*[starts-with(name(),"'.$localmatch.'")]'.$result;
+    }
   } else {
     $result='*'.$result;
   }
@@ -122,6 +131,7 @@ sub xpath_complete_str {
   }
 
  STEP2:
+  print "STEP2-LOCALMATCH: $localmatch\n" if $debug;
   print "STEP2: $result\n" if $debug;
   print "STEP2-STR: ".reverse(substr($str,pos($str)))."\n" if $debug;
   while ($str =~ m/\G(::|:|\@|${NAME}\$?|\/\/|\/|${WILDCARD}|\)|\])/gsco) {
@@ -205,11 +215,12 @@ sub xpath_complete {
   my $str=XML::XSH::Functions::toUTF8($XML::XSH::Functions::QUERY_ENCODING,
 				      substr($line,0,$pos).$word);
 
-  my ($xp,$local) = xpath_complete_str($str);
-#  __debug("COMPLETING $_[0] local $local as $xp\n");
+  my ($xp,$local) = xpath_complete_str($str,0);
+#  XML::XSH::Functions::__debug("COMPLETING $_[0] local $local as $xp\n");
   return () if $xp eq "";
   $xp=~/^(?:([a-zA-Z_][a-zA-Z0-9_]*):(?!:))?((?:.|\n)*)$/;
-#  __debug("ID:$1 XP:$2\n");
+  my $docid=$1.":" if $1;
+#  XML::XSH::Functions::__debug("ID:$1 XP:$2\n");
   my ($id,$query,$doc)=XML::XSH::Functions::_xpath([$1,$2]);
 
   return () unless (ref($doc));
@@ -218,10 +229,10 @@ sub xpath_complete {
   my %names;
   @names{ map { 
     XML::XSH::Functions::fromUTF8($XML::XSH::Functions::QUERY_ENCODING,
-	     substr(substr($str,0,
+	     $docid.substr(substr($str,0,
 			   length($str)
 			   -length($local)).
-		    $_->localname(),$pos))
+		    $_->nodeName(),$pos))
   } @$ql}=();
   if ((keys %names)==0) {
 #    print "completing $word as an axis\n";

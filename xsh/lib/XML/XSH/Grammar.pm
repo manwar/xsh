@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri May  2 19:10:06 2003
+# Fri May 30 18:06:00 2003
 
 
 package XML::XSH::Grammar;
@@ -281,6 +281,10 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(register-xhtml-namespace)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::register_ns,
                  $item[3],'http://www.w3.org/1999/xhtml'] }
+  	
+	  | /(register-xsh-namespace)\s/ <commit> expression
+		{ [\&XML::XSH::Functions::register_ns,
+                 $item[3],$XML::XSH::xshNS] }
   	
 	  | /(register-function)\s/ <commit> expression perl_code
 		{ [\&XML::XSH::Functions::register_func,
