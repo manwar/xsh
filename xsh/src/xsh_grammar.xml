@@ -860,6 +860,7 @@ sub new {
       <ruleref ref="xpath_completion_command"/>
       <ruleref ref="xpath_axis_completion_command"/>
       <ruleref ref="doc_info_command"/>
+      <ruleref ref="xpath_extensions_command"/>
       <ruleref ref="ignore_use_command"/>
       <!-- ADD NEW COMMANDS HERE -->
       <production>
@@ -1340,7 +1341,15 @@ END
 	  <para>
 	    XSH provides many powerfull XPath extension functions,
 	    listed below and described in separate sections:
-	    <typeref types="functions"/>.	    
+	    <typeref types="function"/>. XPath extension functions
+	    by default belong to XSH namespace
+	    <literal>http://xsh.sourceforge.net/xsh/</literal>
+	    with default namespace prefix <literal>xsh</literal>.
+	    A program may however call the
+	    <xref linkend="xpath_extensions_command"/> command
+	    to map XSH XPath extension functions
+	    into the default namespace, so that they may be used
+	    directly without any prefix.
 	  </para>
 	  <example>
 	    <title>Open a document and count all sections containing a
@@ -4164,6 +4173,7 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
 	</description>
 	<see-also>
 	  <ruleref ref="locate_command"/>
+	  <ruleref ref="path_function"/>
 	</see-also>
       </documentation>
     </rule>    
@@ -5519,6 +5529,48 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
 	</see-also>
       </documentation>
     </rule>
+    <rule id="xpath_extensions_command" type="command"
+	    name="xpath-extensions" inline="yes">
+      <aliases>
+	<alias name="xpath_extensions"/>
+      </aliases>
+      <production>
+	<selfref sep="no"/>
+	<directive type="commit"/>
+	<ruleref ref="optional_expression" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::xpath_extensions,@{$item[3]}]</action>
+      </production>
+      <documentation sections="Configuration">
+	<usage>xpath-extensions [<xref linkend="expression"/>]</usage>
+	<shortdesc>map predefined XSH XPath extension functions to
+	  no or other namespace
+	</shortdesc>
+	<description>
+	  <para>
+	    <literal>xpath-extensions</literal>
+	    command remaps all extra
+	    XPath extension functions provided by XSH
+	    (which by default belong to
+	    <literal>http://xsh.sourceforge.net/xsh/</literal>
+	    namespace)
+	    to a new namespace given by <xref linkend="expression"/>.
+	    If the argument is omitted, the functions
+	    are re-registered without any namespace,
+	    so that they may be called without any
+	    namespace prefix, just by their function
+	    names, which may be very convenient.
+	  </para>
+	  <example>
+	    <code>xsh> xpath-extensions
+xsh> ls grep(//word,"^.*tion$")</code>
+	  </example>
+	</description>
+	<see-also>
+	  <ruleref ref="set_enc_command"/>
+	  <ruleref ref="set_standalone_command"/>
+	</see-also>
+      </documentation>
+    </rule>
     <rule id="ignore_use_command" name="use" inline="yes">
       <production>
 	<selfref/>
@@ -5531,12 +5583,12 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="doc_function" type="function" name="xsh:doc">
       <production/>
       <documentation>
-	<usage>xsh:doc(id-string)</usage>
+	<usage>node-set xsh:doc(string ID)</usage>
 	<description>
 	  <para>
 	    Returns a node-set consisting of the document node
-	    associated in XSH with an identifier given in
-	    <literal>id-string</literal>.	    
+	    associated in XSH with an identifier
+	    <literal>ID</literal>.	    
 	  </para>
 	</description>
       </documentation>
@@ -5544,11 +5596,11 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="var_function" type="function" name="xsh:var">
       <production/>
       <documentation>
-	<usage>xsh:var(name-string)</usage>
+	<usage>node-set xsh:var(string NAME)</usage>
 	<description>
 	  <para>
 	    Returns a node-set consisting of nodes stored in a XSH node-list
-	    variable named <literal>name-string</literal>.
+	    variable named <literal>NAME</literal>.
 	  </para>
 	</description>
       </documentation>
@@ -5556,12 +5608,11 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="matches_function" type="function" name="xsh:matches">
       <production/>
       <documentation>
-	<usage>xsh:matches(match-string,regexp-string)</usage>
+	<usage>boolean xsh:matches(string STR,string PATTERN)</usage>
 	<description>
 	  <para>
-	    Returns <literal>true</literal> if <literal>match-string</literal>
-	    matches the regular expression given in
-	    <literal>regexp-string</literal>.
+	    Returns <literal>true</literal> if <literal>STR</literal>
+	    matches the regular expression <literal>PATTERN</literal>.
 	    Otherwise returns <literal>false</literal>.
 	  </para>
 	</description>
@@ -5570,14 +5621,14 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="grep_function" type="function" name="xsh:grep">
       <production/>
       <documentation>
-	<usage>xsh:grep(node-set, regexp-string)</usage>
+	<usage>node-set xsh:grep(node-set NODES, string PATTERN)</usage>
 	<description>
 	  <para>
-	    Returns a node set consisting of nodes of the
-	    given <literal>node-set</literal> whose content 
+	    Returns a node set consisting of those nodes of
+	    <literal>NODES</literal> whose content 
 	    (as returned by the built-in XPath 
 	    function <literal>string()</literal>)
-	    matches the regular expression given in <literal>regexp-string</literal>.
+	    matches the regular expression <literal>PATTERN</literal>.
 	  </para>
 	</description>
       </documentation>
@@ -5585,22 +5636,22 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="substr_function" type="function" name="xsh:substr">
       <production/>
       <documentation>
-	<usage>xsh:substr(string,offset,[length])</usage>
+	<usage>string xsh:substr(string STR,float OFFSET,[float LENGTH])</usage>
 	<description>
 	  <para>
-	    Extracts a substring out of <literal>string</literal> 
+	    Extracts a substring out of <literal>STR</literal> 
 	    and returns it. First character is at offset 0.</para>
 	  <para>
-	    If <literal>offset</literal> is negative, starts
+	    If <literal>OFFSET</literal> is negative, starts
 	    that far from the end of the string. </para>
 	  <para>
-	    If <literal>length</literal> is
+	    If <literal>LENGTH</literal> is
 	    omitted, returns everything to the end of the
-	    string.  If <literal>length</literal> is negative,
+	    string.  If <literal>LENGTH</literal> is negative,
 	    leaves that many characters off the end of the string.</para>
 	  <para>
-	    If <literal>offset</literal> and
-	    <literal>length</literal> specify a substring that is
+	    If <literal>OFFSET</literal> and
+	    <literal>LENGTH</literal> specify a substring that is
 	    partly outside the string, only the part within
 	    the string is returned.  If the substring is
 	    beyond either end of the string, substr() returns
@@ -5612,10 +5663,10 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="reverse_function" type="function" name="xsh:reverse">
       <production/>
       <documentation>
-	<usage>xsh:reverse(string)</usage>
+	<usage>string xsh:reverse(string STR)</usage>
 	<description>
 	  <para>
-	    Returns a string value same as <literal>string</literal>
+	    Returns a string value same as <literal>STR</literal>
 	    but with all characters in the opposite order.
 	  </para>
 	</description>
@@ -5624,13 +5675,13 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="same_function" type="function" name="xsh:same">
       <production/>
       <documentation>
-	<usage>xsh:same(node-set1, node-set2)</usage>
+	<usage>bool xsh:same(node-set N1, node-set N2)</usage>
 	<description>
 	  <para>
 	    Returns <literal>true</literal> if the given node sets
 	    both contain the same node
 	    (in XPath, this can also be expressed as
-	    <literal>count(node-set1|node-set2)+count(node-set1)+count(node-set2)=1</literal>).
+	    <literal>count(N1|N2)+count(N1)+count(N2)=3</literal>).
 	  </para>
 	</description>
       </documentation>
@@ -5638,12 +5689,12 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="max_function" type="function" name="xsh:max">
       <production/>
       <documentation>
-	<usage>xsh:max(expression, ...)</usage>
+	<usage>float xsh:max(object EXPRESSION, ...)</usage>
 	<description>
 	  <para>
 	    Returns the maximum of numeric values
-	    computed from given <literal>expression</literal>(s).
-	    If <literal>expression</literal> evaluates to a node-set,
+	    computed from given <literal>EXPRESSION</literal>(s).
+	    If <literal>EXPRESSION</literal> evaluates to a node-set,
 	    string values of individual nodes are used.
 	  </para>
 	</description>
@@ -5652,12 +5703,12 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="min_function" type="function" name="xsh:min">
       <production/>
       <documentation>
-	<usage>xsh:min(expression, ...)</usage>
+	<usage>float xsh:min(object EXPRESSION, ...)</usage>
 	<description>
 	  <para>
 	    Returns the minimum of numeric values
-	    computed from given <literal>expression</literal>(s).
-	    If <literal>expression</literal> evaluates to a node-set,
+	    computed from given <literal>EXPRESSION</literal>(s).
+	    If <literal>EXPRESSION</literal> evaluates to a node-set,
 	    string values of individual nodes are used.
 	  </para>
 	</description>
@@ -5666,14 +5717,14 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="strmax_function" type="function" name="xsh:strmax">
       <production/>
       <documentation>
-	<usage>xsh:strmax(expression, ...)</usage>
+	<usage>string xsh:strmax(object EXPRESSION, ...)</usage>
 	<description>
 	  <para>
 	    Returns a string value computed as the maximum
 	    (in lexicographical order)
 	    of all string values computed from given 
-	    <literal>expression</literal>(s).
-	    If <literal>expression</literal> evaluates to a node-set,
+	    <literal>EXPRESSION</literal>(s).
+	    If <literal>EXPRESSION</literal> evaluates to a node-set,
 	    string values of individual nodes are used.
 	  </para>
 	</description>
@@ -5682,14 +5733,14 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="strmin_function" type="function" name="xsh:strmin">
       <production/>
       <documentation>
-	<usage>xsh:strmin(expression, ...)</usage>
+	<usage>string xsh:strmin(object EXPRESSION, ...)</usage>
 	<description>
 	  <para>
 	    Returns a string value computed as the minimum
 	    (in lexicographical order)
 	    of all string values computed from given 
-	    <literal>expression</literal>(s).
-	    If <literal>expression</literal> evaluates to a node-set,
+	    <literal>EXPRESSION</literal>(s).
+	    If <literal>EXPRESSION</literal> evaluates to a node-set,
 	    string values of individual nodes are used.
 	  </para>
 	</description>
@@ -5698,13 +5749,13 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="sum_function" type="function" name="xsh:sum">
       <production/>
       <documentation>
-	<usage>xsh:sum(expression, ...)</usage>
+	<usage>float xsh:sum(object EXPRESSION, ...)</usage>
 	<description>
 	  <para>
 	    Returns the sum of numerical value
 	    computed from given 
-	    <literal>expression</literal>(s).
-	    If <literal>expression</literal> evaluates to a node-set,
+	    <literal>EXPRESSION</literal>(s).
+	    If <literal>EXPRESSION</literal> evaluates to a node-set,
 	    string values of individual nodes are used.
 	  </para>
 	</description>
@@ -5713,15 +5764,15 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="join_function" type="function" name="xsh:join">
       <production/>
       <documentation>
-	<usage>xsh:join(delim-string, expression,...)</usage>
+	<usage>string xsh:join(string DELIM, object EXPRESSION,...)</usage>
 	<description>
 	  <para>
 	    Joins the separate string values computed from 
-	    <literal>expression</literal>(s) into a single
+	    <literal>EXPRESSION</literal>(s) into a single
 	    string with fields separated by the 
-	    value of <literal>delim-string</literal>,
+	    value of <literal>DELIM</literal>,
 	    and returns that new string.
-	    If <literal>expression</literal> evaluates to a node-set,
+	    If <literal>EXPRESSION</literal> evaluates to a node-set,
 	    joins string values of individual nodes.
 	  </para>
 	</description>
@@ -5730,23 +5781,24 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="subst_function" type="function" name="xsh:subst">
       <production/>
       <documentation>
-	<usage>xsh:subst(string,regexp,replacement,[options])</usage>
+	<usage>string xsh:subst(string STR,string REGEXP,string
+	REPLACEMENT, [string OPTIONS])</usage>
 	<description>
 	  <para>
 	    Acts in the very same way as perl substitution operation
-	    <literal>string =~ s/regexp/replacement/options</literal>,
+	    <literal>STRING =~ s/REGEXP/REPLACEMENT/OPTIONS</literal>,
 	    returning the resulting string.
 	    Searches a string for a pattern, and if found,
 	    replaces that pattern with the replacement text.	    
-	    If the <literal>replacement</literal> string
+	    If the <literal>REPLACEMENT</literal> string
 	    contains a <literal>$</literal>  that looks like a variable,
 	    the variable will be interpolated
 	    into the </para>
-	  <para><literal>replacement</literal> at run-time.
+	  <para><literal>REPLACEMENT</literal> at run-time.
 	    Options are:
 	    </para>
 	  <para>
-	    <literal>e</literal> - evaluate <literal>replacement</literal> 
+	    <literal>e</literal> - evaluate <literal>REPLACEMENT</literal> 
 	    as a Perl expression,</para>
 	  <para>
 	    <literal>g</literal> - replace globally, i.e., all occurrences,</para>
@@ -5772,7 +5824,7 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="sprintf_function" type="function" name="xsh:sprintf">
       <production/>
       <documentation>
-	<usage>xsh:sprintf(format-string,expression,...)</usage>
+	<usage>string xsh:sprintf(string FORMAT,object EXPRESSION,...)</usage>
 	<description>
 	  <para>
 	    Returns a string formatted by the usual <literal>printf</literal>
@@ -5789,10 +5841,10 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="serialize_function" type="function" name="xsh:serialize">
       <production/>
       <documentation>
-	<usage>xsh:serialize(node-set,...)</usage>
+	<usage>string xsh:serialize(node-set N,...)</usage>
 	<description>
 	  <para>
-	    Serializes nodes of <literal>node-set</literal>(s)
+	    Serializes nodes of given node-set(s)
 	    into XML strings and returns concatenation of
 	    those strings.
 	  </para>	
@@ -5802,11 +5854,11 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="parse_function" type="function" name="xsh:parse">
       <production/>
       <documentation>
-	<usage>xsh:parse(string)</usage>
+	<usage>node-set xsh:parse(string XML-STRING)</usage>
 	<description>
 	  <para>
-	    This function parses <literal>string</literal>
-	    as XML and returns a node-set consisting
+	    This function runs XML parser on <literal>XML-STRING</literal>
+	    and returns a node-set consisting
 	    of the top-level nodes of the resulting document node.
 	  </para>
 	</description>
@@ -5815,14 +5867,130 @@ validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
     <rule id="current_function" type="function" name="xsh:current">
       <production/>
       <documentation>
-	<usage>node-list xsh:current()</usage>
+	<usage>node-set xsh:current()</usage>
 	<description>
 	  <para>
 	    This function (very similar to XSLT <literal>current()</literal>
 	    extension function) returns a node-set having the
-	    current node as its only member.
+	    current node as its only
+	    member.
 	  </para>
 	</description>
+      </documentation>
+    </rule>
+    <rule id="path_function" type="function" name="xsh:path">
+      <production/>
+      <documentation>
+	<usage>string xsh:path(node-set NODE)</usage>
+	<description>
+	  <para>
+	    This function returns a string containing
+	    cannonical XPath leading
+	    to <literal>NODE</literal>.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="pwd_command"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="map_function" type="function" name="xsh:map">
+      <production/>
+      <documentation>
+	<usage>mode-set xsh:map(node-set NODE, string XPATH)</usage>
+	<description>
+	  <para>
+	    This function is very similar to EXSLT
+	    <literal>dynamic:map</literal> function.  The description
+	    below is almost literally taken from the <ulink
+	    url="http://www.exslt.org/dyn/functions/map/index.html">EXSLT
+	    specification</ulink>.
+	  </para>
+	  <para>
+	    The <literal>xsh:map</literal> function evaluates the 
+	    expression passed as the second argument for each of 
+	    the nodes passed as the first argument, and returns a 
+	    node-set of those values. 
+	  </para>
+	  <para>
+	    The expressions are evaluated relative to the nodes 
+	    passed as the first argument. In other words, the value 
+	    for each node is calculated by evaluating the XPath 
+	    expression with all context information being the same as 
+	    that for the call to the <literal>xsh:map</literal>
+	    function itself, except for the following: 
+	  </para>
+	  <para>
+	    1) the context node is the node whose value is being
+	    calculated, 2) the context position is the position of the
+	    node within the node set passed as the first argument to
+	    the <literal>xsh:map</literal> function, arranged in
+	    document order, and 3) the context size is the number of
+	    nodes passed as the first argument to the dyn:map function.
+	  </para>
+	  <para>
+	    If the expression string passed as the second argument is
+	    an invalid XPath expression (including an empty string),
+	    this function returns an empty node set.
+	  </para>
+	  <para>
+	    If <literal>XPATH</literal> evaluates as a node set, the
+	    <literal>xsh:map</literal> function returns the union of
+	    the node sets returned by evaluating the expression for
+	    each of the nodes in the first argument. Note that this
+	    may mean that the node set resulting from the call to the
+	    <literal>xsh:map</literal> function contains a different
+	    number of nodes from the number in the node set passed as
+	    the first argument to the function.
+	  </para>
+	  <para>
+	    If <literal>XPATH</literal> evaluates as a number, the
+	    <literal>xsh:map</literal> function returns a node set
+	    containing one <literal>xsh:number</literal> element
+	    (namespace
+	    <literal>http://xsh.sourceforge.net/xsh/</literal>) for
+	    each node in the node set passed as the first argument to
+	    the dyn:map function, in document order. The string value
+	    of each <literal>xsh:number</literal> element is the same
+	    as the result of converting the number resulting from
+	    evaluating the expression to a string as with the number
+	    function, with the exception that Infinity results in an
+	    <literal>xsh:number</literal> holding the highest number
+	    the implementation can store, and -Infinity results in an
+	    <literal>xsh:number</literal> holding the lowest number
+	    the implementation can store.
+	  </para>
+	  <para>
+	    If <literal>XPATH</literal> evaluates as a boolean, the
+	    <literal>xsh:map</literal> function returns a node set
+	    containing one <literal>xsh:boolean</literal> element
+	    (namespace
+	    <literal>http://xsh.sourceforge.net/xsh/</literal>) for
+	    each node in the node set passed as the first argument to
+	    the <literal>xsh:map</literal> function, in document
+	    order. The string value of each
+	    <literal>xsh:boolean</literal> element is
+	    <literal>true</literal> if the expression evaluates as
+	    true for the node, and is empty if the expression evaluates as
+	    false.
+	  </para>
+	  <para>
+	    Otherwise, the <literal>xsh:map</literal> function returns
+	    a node set containing one <literal>xsh:string</literal>
+	    element (namespace
+	    <literal>http://xsh.sourceforge.net/xsh/</literal>) for
+	    each node in the node set passed as the first argument to
+	    the <literal>xsh:map</literal> function, in document
+	    order. The string value of each
+	    <literal>xsh:string</literal> element is the same as the
+	    result of converting the result of evaluating the
+	    expression for the relevant node to a string as with the
+	    string function.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="pwd_command"/>
+	</see-also>
       </documentation>
     </rule>
   </rules>  
