@@ -228,7 +228,7 @@ foreach { qw(command type) } {
       };
       foreach %section/simplesect[last()]/para/xref {
 	if (following-sibling::xref) {
-	  add text ", " append .;
+	  add text ", " after . ;
 	}
       }
     }
