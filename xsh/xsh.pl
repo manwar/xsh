@@ -25,7 +25,7 @@ use vars qw/$VERSION $REVISION $ERR $OUT $LAST_ID $LOCAL_ID $LOCAL_NODE
 require Term::ReadLine if $opt_i;
 
 $VERSION='0.5';
-$REVISION='$Revision: 1.4 $';
+$REVISION='$Revision: 1.5 $';
 $ERR='';
 $LAST_ID='';
 $OUT=\*STDOUT;
@@ -59,13 +59,17 @@ sub print_var {
   }
 }
 
+sub echo {
+  print $OUT "@_\n";
+}
 
-$SIG{PIPE}=sub { #print STDERR "Broken pipe\n"; 
+$SIG{PIPE}=sub { print STDERR "Broken pipe\n"; };
 
 sub sigint {
   print $OUT "\nCtrl-C pressed. \n";
-  die "Interrupted by user."; }
+  die "Interrupted by user."; 
 };
+
 
 # prepair and return conversion object
 sub mkconv {
@@ -697,8 +701,10 @@ sub pipe_command {
     my $out=$OUT;
     local *PIPE;
     local *O=*$OUT;
+    print STDERR "openning pipe $pipe\n" if $opt_d;
     eval {
-      open(PIPE,"| $pipe >&O");
+      # open(PIPE,"| $pipe >&O") || die "cannot open pipe $pipe\n";
+      open(PIPE,"| $pipe") || die "cannot open pipe $pipe\n";
       $OUT=\*PIPE;
       run_commands($cmd);
       $OUT=$out;
@@ -853,7 +859,7 @@ printflush STDERR "Plase wait, parsing grammar...";
 $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
   TOKEN: /\S+/
 
-  STRING: /([^'"\\ \t\n\r;]|\\.)+/
+  STRING: /([^'"\\ \t\n\r;|]|\\.)+/
      { local $_=$item[1];
        s/\\([^\$])/$1/g;
        $_;
@@ -875,6 +881,9 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
 
   exp_part: STRING | single_quoted_string | double_quoted_string
 
+  expressions : expression expressions
+              | expression
+
   expression: exp_part <skip:""> expression  { "$item[1]$item[3]" }
             | exp_part { $item[1] }
 
@@ -894,7 +903,7 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
             | <error:error while parsing line $thisline near $text>
 
   shell : /!\s*/ cmdline { main::sh($item[2]); }
-  cmdline : /.*$/
+  cmdline : /[^\n]*/
 
   option :  /quiet/ { $main::opt_q=1 }
             | /verbose/ { $main::opt_q=0 }
@@ -942,7 +951,7 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
   help_command : /\?|help\s/ expression { [\&main::help,$item[2]]; }
                | /\?|help/ { [\&main::help]; }
 
-  exec_command : /exec\s|system\s/ expression
+  exec_command : /exec\s|system\s/ expressions
                { [\&main::sh,$item[2]] }
 
   xslt_command : xslt_alias ID filename ID /params|parameters\s/ paramlist
@@ -1000,6 +1009,9 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
 
   prune_command : /rm\s|remove\s|prune\s|delete\s|del\s/ xpath  { [\&main::prune,$item[2]]; }
 
+  print_command : /print|echo/ {  [\&main::echo]; }
+                  /print|echo/ expressions { [\&main::echo,@item[2..$#item]]; }
+
   map_command : /map\s|sed\s/ (<perl_codeblock>|perl_expression) xpath
 				       { [\&main::perlmap,@item[3,2]]; }
 
@@ -1048,7 +1060,6 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
   filename : expression
 
   xpath : ID ":" xp                    { $main::LAST_ID=$item[1];
-                                         print STDERR "XPATH: @item\n";
                                          [@item[1,3]] }
         | xp                           { [$main::LAST_ID, $item[1]] }
         | <error>
@@ -1691,6 +1702,13 @@ description: Changes the working directory to <directory>, if possible.
 	     specified in HOME environment variable, if set; if not,
              changes to the directory specified by LOGDIR environment
              variable.
+H1
+'print' => <<'H1',
+usage:       print [<expression>]*
+
+aliases:     echo
+
+description: Interpolate and print given expression(s).
 H1
 
 
