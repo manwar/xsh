@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.64 2003-08-13 09:53:09 pajas Exp $
+# $Id: Functions.pm,v 1.65 2003-08-13 13:20:28 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -28,7 +28,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8';
-  $REVISION='$Revision: 1.64 $';
+  $REVISION='$Revision: 1.65 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -1027,7 +1027,7 @@ sub open_doc {
     return;
   }
   if (($source ne 'file') or
-      (-f $file) or
+      (-f $file) or $file eq "-" or
       ($file=~/^[a-z]+:/)) {
     print STDERR "parsing $file\n" unless "$QUIET";
 
