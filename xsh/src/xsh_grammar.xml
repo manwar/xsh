@@ -295,7 +295,7 @@
 	In the current version, XSH supports two types of variables:
 	string (scalar) variables and node-list variables.  Perl
 	programmers that might miss some other kinds of variables
-	(arrays or hashes) may use the support for <link linkend="binding">interacting
+	(arrays or hashes) may use the support for <link linkend="perl_shell">interacting
 	with Perl</link> to access these types (see some examples below).
       </para>
       <para>
@@ -486,7 +486,7 @@
 	<code>xsh&gt; <userinput>options | cat &gt; ~/.xshrc</userinput></code>
       </example>
     </section>
-    <section id="binding">
+    <section id="perl_shell">
       <title>Interacting with Perl and Shell</title>
       <para>
 	To allow more complex tasks to be achieved, XSH provides ways
@@ -917,13 +917,13 @@ sub new {
     </rule>
     <rule id="exp_inline_count">
       <production>
-	<regexp>\${\((.+?)\)}</regexp>
+	<regexp>\$\{\((.+?)\)\}</regexp>
       </production>
       <production>
-	<regexp>\${{{(.+?)}}}</regexp>
+	<regexp>\$\{\{\{(.+?)\}\}\}</regexp>
       </production>
       <production>
-	<regexp>\${{([^{].*?)}}</regexp>
+	<regexp>\$\{\{([^{].*?)\}\}</regexp>
       </production>
     </rule>
     <rule id="expression" type="argtype">
@@ -933,7 +933,7 @@ sub new {
 	<ruleref ref="expression" rep="?"/>
 	<action>$item[1].join(&quot;&quot;,@{$item[3]})</action>
       </production>
-      <documentation sections="argtypes variables manipulation binding">
+      <documentation sections="argtypes variables manipulation perl_shell">
 	<title>expression argument type</title>
 	<shortdesc>string-like expression</shortdesc>
 	<description>
@@ -1791,6 +1791,16 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</see-also>
       </documentation>
     </rule>
+    <rule id="anyvariable">
+      <production>
+	<ruleref ref="variable"/>
+	<action>['$',$item[1]]</action>
+      </production>
+      <production>
+	<ruleref ref="nodelistvariable"/>
+	<action>['%',$item[1]]</action>
+      </production>
+    </rule>
     <rule id="local_command" type="command" name="local" inline="yes">
       <production>
 	<selfref/>
@@ -1801,11 +1811,6 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       </production>
       <production>
 	<selfref/>
-	<ruleref ref="variable"/>
-	<action>[\&amp;XML::XSH::Functions::xpath_assign_local,$item[2],undef]</action>
-      </production>
-      <production>
-	<selfref/>
 	<ruleref ref="nodelistvariable"/>
 	<string>=</string>
 	<ruleref ref="xpath"/>
@@ -1813,13 +1818,13 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       </production>
       <production>
 	<selfref/>
-	<ruleref ref="nodelistvariable"/>
-	<action>[\&amp;XML::XSH::Functions::nodelist_assign_local,$item[2],["",""]]</action>
+	<ruleref ref="anyvariable" rep="s"/>
+	<action>[\&amp;XML::XSH::Functions::make_local,@{$item[2]}]</action>
       </production>
       <documentation sections="variables">
-	<usage>local $<xref linkend="ID"/> [ = <xref linkend="xpath"/>]</usage>
-	<usage>
-	  local %<xref linkend="ID"/> [ = <xref linkend="xpath"/>]</usage>
+	<usage>local $<xref linkend="ID"/> = <xref linkend="xpath"/></usage>
+	<usage>local %<xref linkend="ID"/> = <xref linkend="xpath"/></usage>
+	<usage>local $<xref linkend="ID"/>|%<xref linkend="ID"/> [ $<xref linkend="ID"/>|%<xref linkend="ID"/> ... ] </usage>
 	<shortdesc>temporarily assign new value to a variable</shortdesc>
 	<description>
 	  <para> 
@@ -2026,7 +2031,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression" rep="s"/>
 	<action>[\&amp;XML::XSH::Functions::sh,join(&quot; &quot;,@{$item[3]})]</action>
       </production>
-      <documentation sections="binding">
+      <documentation sections="perl_shell">
 	<usage>exec <xref linkend="expression"/> [<xref linkend="expression"/> ...]</usage>
 	<shortdesc>execute a shell command</shortdesc>
 	<description>
@@ -2239,7 +2244,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::cd,@{$item[3]}]</action>
       </production>
-      <documentation sections="binding">
+      <documentation sections="perl_shell">
 	<usage>lcd <xref linkend="expression"/></usage>
 	<shortdesc>change system working directory</shortdesc>
 	<description>
@@ -2692,7 +2697,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       <production>
 	<ruleref ref="perl_expression"/>
       </production>
-      <documentation sections="argtypes binding">
+      <documentation sections="argtypes perl_shell">
 	<title>Perl-code argument type</title>
 	<shortdesc>in-line code in Perl programming language</shortdesc>
 	<description>
@@ -2704,10 +2709,15 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    redirects output to the terminal, you cannot simply use
 	    perl print function for output if you want to filter the
 	    result with a shell command. Instead use predefined perl
-	    routine <literal>echo ...</literal> which is equivalent to
-	    <literal>print $::OUT ...</literal>. The $::OUT
-	    perl-variable stores the referenc to the terminal file
+	    routine <literal>echo(...)</literal> which is equivalent to
+	    Perl's
+	    <literal>print $::OUT ...</literal>. The <literal>$::OUT</literal>
+	    perl-variable stores the reference to the terminal file
 	    handle.
+	  </para>
+	  <para>
+	    For more information about embedded Perl code in XSH, predefined
+	    functions etc. see <xref linkend="perl_shell"/>.
 	  </para>
 	  <example>
 	    <code>
@@ -2731,7 +2741,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="perl_code"/>
 	<action>[\&amp;XML::XSH::Functions::print_eval,$item[3]]</action>
       </production>
-      <documentation sections="binding">
+      <documentation sections="perl_shell">
 	<usage>eval <xref linkend="perl_code"/></usage>
 	<shortdesc>evaluate in-line Perl code</shortdesc>
 	<description>
@@ -2841,7 +2851,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::perlmap,@item[4,3]]</action>
       </production>
-      <documentation sections="binding">
+      <documentation sections="perl_shell">
 	<usage>map <xref linkend="perl_code"/> <xref linkend="xpath"/></usage>
 	<shortdesc>quickly rename/modify nodes with in-line Perl code</shortdesc>
 	<description>
