@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.22 2002-08-28 09:49:56 pajas Exp $
+# $Id: Functions.pm,v 1.23 2002-08-30 17:13:23 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -314,6 +314,26 @@ sub _id {
   return wantarray ? ($id,$_doc{$id}) : $id;
 }
 
+# try to find a document ID by its node
+sub _find_id {
+  my ($node)=@_;
+  if ($node->can('ownerDocument')) {
+    my $doc=$node->ownerDocument();
+    foreach my $id (keys %_doc) {
+      if ($_doc{$id}->isSameNode($doc)) {
+	print STDERR "FOUND ID: $id\n" if $_debug;
+	return $id;
+      }
+    }
+    my $uri=$_xml_module->doc_URI($doc);
+    if ($uri ne "") {
+      print STDERR "ID NOT FOUND, USING: document('$uri')\n" if $_debug;
+      return "document('$uri')";
+    }
+  }
+  return "";
+}
+
 # extract document id, xpath query string and document pointer from XPath type
 sub _xpath {
   my ($id,$query)=expand(@{$_[0]});
@@ -543,6 +563,7 @@ sub create_doc {
   my $doc;
   $root_element="<$root_element/>" unless ($root_element=~/^\s*</);
   $root_element=toUTF8($_qencoding,$root_element);
+  $root_element=~s/^\s+//;
   my $xmldecl;
   $xmldecl="<?xml version='1.0' encoding='utf-8'?>" unless $root_element=~/^\s*\<\?xml /;
   eval {
@@ -915,8 +936,8 @@ sub list {
   my ($xp,$depth,$folding)=@_;
   my ($id,$query,$doc)=_xpath($xp);
   $folding = 1;
-  print STDERR "listing $query from $id=$_files{$id}\n\n" if "$_debug";
   return 0 unless ref($doc);
+  print STDERR "listing $query from $id=$_files{$id}\n\n" if "$_debug";
   eval {
     local $SIG{INT}=\&sigint;
     my $ql=find_nodes($xp);
@@ -989,7 +1010,7 @@ sub prune {
     local $SIG{INT}=\&sigint;
     my $ql=find_nodes($xp);
     foreach my $node (@$ql) {
-      remove_node($node);
+      remove_node($node,get_keep_blanks());
       $i++;
     }
     print STDERR "$i node(s) removed from $id=$_files{$id}\n" unless "$_quiet";
@@ -1000,7 +1021,7 @@ sub prune {
 # evaluate given perl expression
 sub eval_substitution {
   my ($val,$expr)=@_;
-  $_ = fromUTF8($_qencoding,$val);
+  $_ = fromUTF8($_qencoding,$val) if defined($val);
 
   eval "package XML::XSH::Map; no strict 'vars'; $expr";
 
@@ -1011,6 +1032,31 @@ sub eval_substitution {
   return toUTF8($_qencoding,$_);
 }
 
+# sort given nodelist according to the given xsh code and perl code
+sub perlsort {
+  my ($codea,$codeb,$perl,$var)=@_;
+  return 1 unless (exists($_nodelist{$var}));
+  return 1 unless ref(my $list=$_nodelist{$var});
+  my $doc=$list->[0];
+  eval {
+    local $SIG{INT}=\&sigint;
+    @{$list->[1]} = sort {
+      my $old_local=$LOCAL_NODE;
+      my $old_id=$LOCAL_ID;
+      foreach ([$a,$codea],[$b,$codeb]) {
+	$LOCAL_NODE=$_->[0];
+	$LOCAL_ID=_find_id($_->[0]);
+	run_commands($_->[1]);
+      };
+      $LOCAL_NODE=$old_local;
+      $LOCAL_ID=$old_id;
+
+      eval "package XML::XSH::Map; no strict 'vars'; $perl";
+    } @{$list->[1]};
+  };
+  return _check_err($@);
+}
+
 # Evaluate given perl expression over every element matching given XPath.
 # The element is passed to the expression by its name or value in the $_
 # variable.
@@ -1018,7 +1064,7 @@ sub perlmap {
   my ($q, $expr)=@_;
   my ($id,$query,$doc)=_xpath($q);
 
-  print STDERR "Executing $expr on $query in $id=$_files{$id}\n" unless "$_quiet";
+  print STDERR "Executing $expr on $query in $id=$_files{$id}\n" if "$_debug";
   unless ($doc) {
     print STDERR "No such document $id\n";
     return;
@@ -1032,17 +1078,17 @@ sub perlmap {
     foreach my $node (@$ql) {
       if ($_xml_module->is_attribute($node)) {
 	my $val=$node->getValue();
-	$node->setValue(eval_substitution($val,$expr));
+	$node->setValue(eval_substitution("$val",$expr));
       } elsif ($_xml_module->is_element($node)) {
 	my $val=$node->getName();
 	if ($node->can('setName')) {
-	  $node->setName(eval_substitution($val,$expr));
+	  $node->setName(eval_substitution("$val",$expr));
 	} else {
 	  print STDERR "Node renaming not supported by ",ref($node),"\n";
 	}
       } elsif ($node->can('setData') and $node->can('getData')) {
 	my $val=$node->getData();
-	$node->setData(eval_substitution($val,$expr));
+	$node->setData(eval_substitution("$val",$expr));
       }
     }
   };
@@ -1076,8 +1122,18 @@ sub insert_node {
       $_xml_module->is_entity($node)
       and $_xml_module->is_attribute($dest)) {
     my $val=$node->getData();
-    $val=~s/^\s+|\s+$//g;
-    set_attr_ns($dest->ownerElement(),$dest->namespaceURI(),$dest->getName(),$val);
+    if ($where eq 'replace' or $where eq 'as_child') {
+      $val=~s/^\s+|\s+$//g;
+      set_attr_ns($dest->ownerElement(),$dest->namespaceURI(),$dest->getName(),$val);
+    } elsif ($where eq 'before') {
+      $val=~s/^\s+//g;
+      set_attr_ns($dest->ownerElement(),$dest->namespaceURI(),$dest->getName(),
+		  $val.$dest->getValue());
+    } elsif ($where eq 'after') {
+      $val=~s/\s+$//g;
+      set_attr_ns($dest->ownerElement(),$dest->namespaceURI(),$dest->getName(),
+		  $dest->getValue().$val);
+    }
   } elsif ($_xml_module->is_attribute($node)) {
     if ($_xml_module->is_attribute($dest)) {
       my ($name,$value);
@@ -1134,6 +1190,8 @@ sub insert_node {
       # --
       $copy=new_element($dest_doc,$node->getName(),$ns,
 		  [map { [$_->nodeName(),$_->nodeValue()] } $node->attributes]);
+    } elsif ($_xml_module->is_document_fragment($node)) {
+      $copy=$_parser->parse_xml_chunk($node->toString());
     } else {
       $copy=$_xml_module->clone_node($dest_doc,$node);
     }
@@ -1322,11 +1380,16 @@ sub insert {
   return 0 unless ref($tdoc);
   eval {
     my @nodes;
-    $exp=toUTF8($_qencoding,$exp);
     $ns=toUTF8($_qencoding,$ns);
     unless ($type eq 'chunk') {
+      $exp=toUTF8($_qencoding,$exp);
       @nodes=grep {ref($_)} create_nodes($type,$exp,$tdoc,$ns);
       return unless @nodes;
+    } else {
+      if ($exp !~/^\s*<?xml [^>]*encoding=[^>]*?>/) {
+	$exp=toUTF8($_qencoding,$exp);
+      }
+      @nodes=grep {ref($_)} ($_parser->parse_xml_chunk($exp));
     }
     local $SIG{INT}=\&sigint;
     my $tl=find_nodes($xpath);
@@ -1334,31 +1397,31 @@ sub insert {
     if ($to_all) {
       my $to=($where eq 'replace' ? 'after' : $where);
       foreach my $tp (@$tl) {
-	if ($type eq 'chunk') {
-	  if ($_xml_module->is_element($tp)) {
-	    $tp->appendWellBalancedChunk($exp);
-	  } else {
-	    print STDERR "Target node is not an element!\n";
-	  }
-	} else {
-	  foreach my $node (@nodes) {
-	    insert_node($node,$tp,$tdoc,$to);
-	  }
+#	if ($type eq 'chunk') {
+#	  if ($_xml_module->is_element($tp)) {
+#	    $tp->appendWellBalancedChunk($exp);
+#	  } else {
+#	    print STDERR "Target node is not an element!\n";
+#	  }
+#	} else {
+	foreach my $node (@nodes) {
+	  insert_node($node,$tp,$tdoc,$to);
 	}
+	#	}
 	remove_node($tp) if $where eq 'replace';
       }
     } elsif ($tl->[0]) {
-      if ($type eq 'chunk') {
-	if ($_xml_module->is_element($tl->[0])) {
-	  $tl->[0]->appendWellBalancedChunk($exp);
-	} else {
-	  print STDERR "Target node is not an element!\n";
-	}
-      } else {
-	foreach my $node (@nodes) {
-	  insert_node($node,$tl->[0],$tdoc,$where) if ref($tl->[0]);
-	}
+#      if ($type eq 'chunk') {
+#	if ($_xml_module->is_element($tl->[0])) {
+#	  print STDERR "CHUNK: ",$tl->[0]->appendWellBalancedChunk($exp),"\n";
+#	} else {
+#	  print STDERR "Target node is not an element!\n";
+#	}
+#      } else {
+      foreach my $node (@nodes) {
+	insert_node($node,$tl->[0],$tdoc,$where) if ref($tl->[0]);
       }
+      #      }
     }
   };
   return _check_err($@);
@@ -1477,19 +1540,20 @@ sub is_ancestor_or_self {
 # from a document; remove all its descendant from all nodelists
 # change current element to the nearest ancestor
 sub remove_node {
-  my ($node)=@_;
+  my ($node,$trim_space)=@_;
   if (is_ancestor_or_self($node,$LOCAL_NODE)) {
     $LOCAL_NODE=tree_parent_node($node);
   }
   my $doc;
   $doc=$node->ownerDocument();
-
-  my $sibling=$node->nextSibling();
-  if ($sibling and
-      $_xml_module->is_text($sibling) and
-      $sibling->getData =~ /^\s+$/) {
-    remove_node_from_nodelists($sibling,$doc);
-    $_xml_module->remove_node($sibling);
+  if ($trim_space) {
+    my $sibling=$node->nextSibling();
+    if ($sibling and
+	$_xml_module->is_text($sibling) and
+	$sibling->getData =~ /^\s+$/) {
+      remove_node_from_nodelists($sibling,$doc);
+      $_xml_module->remove_node($sibling);
+    }
   }
   remove_node_from_nodelists($node,$doc);
   $_xml_module->remove_node($node);
@@ -1657,7 +1721,8 @@ sub foreach_statement {
       my $ql=find_nodes($xp);
       foreach my $node (@$ql) {
 	$LOCAL_NODE=$node;
-	$LOCAL_ID=$id;
+	$LOCAL_ID=_find_id($node);
+#	__debug("FOREACH ID: $LOCAL_ID\n");
 	run_commands($command);
       }
     };
@@ -1704,11 +1769,11 @@ sub xslt {
   my ($id,$stylefile,$newid)=expand @_[0..2];
   $id=_id($id);
   my $params=$_[3];
-  print STDERR "running xslt on @_\n";
+  print STDERR "running xslt on @_\n" if "$_debug";
   return unless $_doc{$id};
   eval {
     my %params;
-    %params=map { @$_ } @$params if ref($params);
+    %params=map { expand($_) } map { @$_ } @$params if ref($params);
     if ($_debug) {
       print STDERR map { "$_ -> $params{$_} " } keys %params;
       print STDERR "\n";
@@ -1730,7 +1795,6 @@ sub xslt {
       my $st=$_xsltparser->parse_stylesheet_file($stylefile);
       $stylefile=~s/\..*$//;
       my $doc=$st->transform($_doc{$id},%params);
-      print STDERR "created $doc\n";
       set_doc($newid,$doc,
 	      "$stylefile"."_transformed_".$_files{$id});
 #      open (STDERR,">&SAVE");
@@ -1843,6 +1907,11 @@ package XML::XSH::Map;
 sub echo {
   $XML::XSH::Functions::OUT->print(@_);
   return 1;
+}
+
+# make this command available from perl expressions
+sub xsh {
+  &XML::XSH::Functions::xsh(@_);
 }
 
 #######################################################################
