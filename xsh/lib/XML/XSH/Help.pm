@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Thu May 30 14:22:18 2002
+# Tue Jun 25 20:59:18 2002
 
 package XML::XSH::Help;
 use strict;
@@ -45,17 +45,35 @@ END
 $HELP{'command'}=[<<'END'];
 List of XSH commands
 
-description: assign, backups, backups, call, cd, clone, close, complete_attributes,
-	     copy, count, create, debug, def, defs, dtd, encoding, eval,
-	     exec, exit, files, foreach, help, if, include, indent, insert,
+description: assign, backups, call, cd, clone, close, complete_attributes, copy, count,
+	     create, debug, def, defs, dtd, encoding, eval, exec, exit,
+	     files, foreach, help, if, include, indent, insert,
 	     keep_blanks, lcd, list, load_ext_dtd, locate, map, move,
-	     nodebug, open, open_HTML, open_PIPE, parser_expands_entities,
-	     parser_expands_xinclude, pedantic_parser, print,
-	     print_enc_command, process_xinclude, pwd, query-encoding,
-	     quiet, remove, run-mode, save, save_HTML, save_xinclude,
-	     saveas, select, test-mode, unless, valid, validate,
-	     validation, variables, verbose, version, while, xcopy,
-	     xinsert, xmove, xslt, xupdate
+	     nobackups, nodebug, open, open_HTML, open_PIPE,
+	     parser_expands_entities, parser_expands_xinclude,
+	     pedantic_parser, print, print_enc_command, process_xinclude,
+	     pwd, query-encoding, quiet, remove, run-mode, save, save_HTML,
+	     save_xinclude, saveas, select, test-mode, unless, valid,
+	     validate, validation, variables, verbose, version, while,
+	     xcopy, xinsert, xmove, xslt, xupdate
+
+END
+
+
+$HELP{'command-block'}=[<<'END'];
+command-block argument type
+
+description: XSH command or a block of semicolon-separated commands enclosed within
+	     curly brackets.
+
+Example:     Count paragraphs in each chapter
+
+             $i=0;
+             foreach //chapter {
+             $c=./para;
+             $i=$i+1;
+             print "$c paragraphs in chapter no.$i";
+             }
 
 END
 
@@ -124,7 +142,7 @@ $HELP{'xpath'}=[<<'END'];
 Xpath argument type
 
 description: Any XPath expression as defined in W3C recommendation at
-	     http://www.w3.org/TR/xpath optionaly preceded with a document
+	     http://www.w3.org/TR/xpath optionally preceded with a document
 	     identifier followed by colon. If no identifier is used, the
 	     current document is used.
 
@@ -152,27 +170,12 @@ description: Perl-block is a block of arbitrary perl code encosed in curly brack
 END
 
 
-$HELP{'command-block'}=[<<'END'];
-command-block argument type
-
-description: XSH command or a block of semicolon-separated commands enclosed within
-	     curly brackets.
-
-Example:     Count paragraphs in each chapter
-
-             $i=0;
-             foreach //chapter {
-             $c=./para;
-             $i=$i+1;
-             print "$c paragraphs in chapter no.$i";
-             }
-
-END
-
-
 $HELP{'if'}=[<<'END'];
 usage:       if <xpath>|<perl-block>
-	  <command-block>
+	  <command>
+
+          if <xpath>|<perl-block>
+	  <command-block> [ else <command-block> ]
 
 description: Execute <command-block> if the given <xpath> or <perl-block> expression
 	     evaluates to a non-emtpty node-list, true boolean-value,
@@ -182,7 +185,11 @@ END
 
 
 $HELP{'unless'}=[<<'END'];
-usage:       unless
+usage:       unless <xpath>|<perl-block>
+	  <command>
+
+          unless <xpath>|<perl-block>
+	  <command-block> [ else <command-block> ]
 
 description: Like if but negating the result of the expression.
 
@@ -205,7 +212,9 @@ END
 
 
 $HELP{'foreach'}=[<<'END'];
-usage:       foreach <xpath>|<perl-block> <command-block>
+usage:       foreach <xpath>|<perl-block> 
+	  <command>
+	  <command-block>
 
 aliases:     for
 
@@ -831,9 +840,24 @@ $HELP{'save_as'}=$HELP{saveas};
 $HELP{'save_xinclude'}=[<<'END'];
 usage:       save_xinclude <id> [encoding <enc-string>]
 
-description: Save the document identified by <id> saving all expanded XInclude sections
-	     to the original files (optionally converting it from its
-	     original encoding to <enc-string>.
+description: Save the document identified by <id> while saving all expanded XInclude
+	     sections to the original files (optionally converting it from
+	     its original encoding to <enc-string>). Once expanded,
+	     sections included with XInclude mechanism cannot be normally
+	     distinguished from other parts of the DOM tree by any XPath
+	     expression or XSH command. Internally, however, they are
+	     marked with special DOM nodes. This command uses these nodes
+	     to find the sections and save them to their original documents
+	     while restoring the <xi:include> tags in the root document.
+	     More over, this command may be used to split the document to
+	     new fragments included back by means of XInclude, since all
+	     non-empty fragments containded within
+
+	     <xi:include xmlns:xi='http://www.w3.org/2001/XInclude'
+	     href='output-file'><xi:include/>
+
+	     elements are saved to separate files too, leaving only empty
+	     xi:include element in the root file.
 
 END
 
@@ -881,7 +905,7 @@ usage:       exit [<expression>]
 
 aliases:     quit
 
-description: Exit xsh immediately, optionaly with the exit-code resulting from the
+description: Exit xsh immediately, optionally with the exit-code resulting from the
 	     given expression.
 
 	     WARNING: No files are saved on exit.
@@ -1111,7 +1135,7 @@ description: Enable creating backup files on save (default).
 END
 
 
-$HELP{'backups'}=[<<'END'];
+$HELP{'nobackups'}=[<<'END'];
 usage:       nobackups
 
 description: Disable creating backup files on save.

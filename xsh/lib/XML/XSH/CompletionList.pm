@@ -9,7 +9,6 @@ use vars qw(@XSH_COMMANDS);
 add
 assign
 backups
-backups
 call
 cd
 chdir
@@ -55,6 +54,7 @@ map
 move
 mv
 new
+nobackups
 nodebug
 open
 open_HTML
