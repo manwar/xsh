@@ -1041,8 +1041,9 @@ sub new {
 	<action>[\&amp;XML::XSH::Functions::xslt,@item[3,4,5],@{$item[6]}]</action>
       </production>
       <documentation>
-	<usage>xslt <xref linkend='ID'/><xref
-	    linkend="filename"/></usage>
+	<usage>xslt <xref linkend='ID'/> <xref
+	    linkend="filename"/> [(params|parameters) name=<xref
+	    linkend="expression"/> [name=<xref linkend="expression"/> ...]]</usage>
 	<description>
 	  <para>
 	    Load an XSLT stylesheet from a file and use it to transform
@@ -1051,8 +1052,14 @@ sub new {
 	    may be passed to a stylesheet after params keyword in the
 	    form of a list of name=value pairs where name is the
 	    parameter name and value is an expression interpolating to
-	    its value.
+	    its value. The resulting value is interpretted by XSLT
+	    processor as an XPath expression so e.g. quotes surrounding
+	    a XPath string have to be quoted themselves to preveserve
+	    them during the XSH expression interpolation.           
 	  </para>
+	  <example>
+	    <code>xslt src stylesheet.xsl rslt params font="'14pt'" color="'red'"</code>
+	  </example>
 	</description>
       </documentation>
     </rule>
