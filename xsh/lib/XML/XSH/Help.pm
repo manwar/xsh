@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Nov  1 16:20:34 2002
+# Fri Nov  1 17:18:18 2002
 
 package XML::XSH::Help;
 use strict;
@@ -1012,14 +1012,16 @@ description:
 	     <command-block> are evaluated, each in a context of one of the
 	     nodes to compare. These <command-block> are supposed to
 	     prepair any variables needed for later order comparizon in the
-	     <perl-code>. The nodes to be compared are available in %a and
-	     %b node-lists. It is the <perl-code> that is responsible for
-	     deciding which node comes first. Therefore it should return
-	     either -1, 0, or 1.
+	     <perl-code>. It is the <perl-code> that is responsible for
+	     deciding which node comes first by returning either -1 (the
+	     first node should come first), 0 (no precedence - e.g. the
+	     nodes gave the same value for comparizon), or 1 (the second
+	     node should come first).
 
 Example:     Sort creatures by name
 
-             xsh> %c=/middle-earth[1]/creatures
+             xsh> local $a; local $b;
+             xsh> local %c=/middle-earth[1]/creatures
              xsh> sort { $a=string(@name) }{ $b=string(@name) }{ $a cmp $b } %c
              xsh> xmove %c into /middle-earth[1]# replaces the creatures
 

@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Nov  1 16:20:34 2002
+# Fri Nov  1 17:18:18 2002
 
 
 package XML::XSH::Grammar;
