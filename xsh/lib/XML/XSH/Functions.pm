@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.29 2002-10-23 09:15:55 pajas Exp $
+# $Id: Functions.pm,v 1.30 2002-10-24 07:23:37 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -1646,7 +1646,9 @@ sub insert_node {
   elsif ($_xml_module->is_text($dest)          ||
 	 $_xml_module->is_cdata_section($dest) ||
 	 $_xml_module->is_comment($dest)       ||
-	 $_xml_module->is_pi($dest)) {
+	 $_xml_module->is_pi($dest) ||
+	 $_xml_module->is_entity($node)
+	) {
 
     if ($where eq 'into') {
       my $value=$_xml_module->is_element($node) ?
@@ -2077,9 +2079,15 @@ sub print_count {
 }
 
 sub perl_eval {
-  my $result=eval("package XML::XSH::Map; no strict 'vars'; $_[0]");
-  die $@ if $@;
-  return $result;
+  if (wantarray) {
+    my @result=eval("package XML::XSH::Map; no strict 'vars'; $_[0]");
+    die $@ if $@;
+    return @result;
+  } else {
+    my $result=eval("package XML::XSH::Map; no strict 'vars'; $_[0]");
+    die $@ if $@;
+    return $result;
+  }
 }
 
 # evaluate a perl expression and print out the result
