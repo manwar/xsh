@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.80 2003-11-04 20:42:35 pajas Exp $
+# $Id: Functions.pm,v 1.81 2003-11-08 10:40:16 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -31,7 +31,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8.2';
-  $REVISION='$Revision: 1.80 $';
+  $REVISION='$Revision: 1.81 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -225,6 +225,14 @@ sub xpc_init {
   $_ns{xsh}=$XML::XSH::xshNS;
 }
 
+sub init_XPATH_funcs {
+  my ($xpc,$ns)=@_;
+  foreach my $name (get_XPATH_extensions()) {
+    my $func=$name; $func =~ s/-/_/g;
+    $xpc->registerFunctionNS($name,$ns,\&{"XPATH_$func"});
+  }
+}
+
 sub new_xpath_context {
   my $xpc;
   unless (eval { require XML::LibXML::XPathContext;
@@ -238,26 +246,7 @@ sub new_xpath_context {
   $xpc = XML::LibXML::XPathContext->new();
   $xpc->registerVarLookupFunc(\&xpath_var_lookup,undef);
   $xpc->registerNs('xsh',$XML::XSH::xshNS);
-  $xpc->registerFunctionNS('doc',$XML::XSH::xshNS,\&XPATH_doc);
-  $xpc->registerFunctionNS('var',$XML::XSH::xshNS,\&XPATH_var);
-  $xpc->registerFunctionNS('matches',$XML::XSH::xshNS,\&XPATH_matches);
-  $xpc->registerFunctionNS('substr',$XML::XSH::xshNS,\&XPATH_substr);
-  $xpc->registerFunctionNS('reverse',$XML::XSH::xshNS,\&XPATH_reverse);
-  $xpc->registerFunctionNS('grep',$XML::XSH::xshNS,\&XPATH_grep);
-  $xpc->registerFunctionNS('same',$XML::XSH::xshNS,\&XPATH_same);
-  $xpc->registerFunctionNS('max', $XML::XSH::xshNS,\&XPATH_max);
-  $xpc->registerFunctionNS('strmax', $XML::XSH::xshNS,\&XPATH_strmax);
-  $xpc->registerFunctionNS('min', $XML::XSH::xshNS,\&XPATH_min);
-  $xpc->registerFunctionNS('strmin', $XML::XSH::xshNS,\&XPATH_strmin);
-  $xpc->registerFunctionNS('sum', $XML::XSH::xshNS,\&XPATH_sum);
-  $xpc->registerFunctionNS('join', $XML::XSH::xshNS,\&XPATH_join);
-  $xpc->registerFunctionNS('serialize',$XML::XSH::xshNS,\&XPATH_serialize);
-  $xpc->registerFunctionNS('subst',$XML::XSH::xshNS,\&XPATH_subst);
-  $xpc->registerFunctionNS('parse',$XML::XSH::xshNS,\&XPATH_parse);
-  $xpc->registerFunctionNS('sprintf',$XML::XSH::xshNS,\&XPATH_sprintf);
-  $xpc->registerFunctionNS('current',$XML::XSH::xshNS,\&XPATH_current);
-  $xpc->registerFunctionNS('path',$XML::XSH::xshNS,\&XPATH_path);
-  $xpc->registerFunctionNS('map',$XML::XSH::xshNS,\&XPATH_map);
+  init_XPATH_funcs($xpc,$XML::XSH::xshNS);
   return $xpc;
 }
 
@@ -278,7 +267,21 @@ sub clone_xpc {
   return $xpc;
 }
 
+sub xpath_extensions {
+  init_XPATH_funcs($_xpc,shift);
+  return 1;
+}
+
 # ===================== XPATH EXT FUNC ================
+
+sub get_XPATH_extensions {
+  qw(doc var matches substr reverse grep same max
+     strmax min strmin sum join serialize subst
+     parse sprintf current path map if split times
+     new-attribute new-text new-element new-element-ns
+     new-comment new-cdata new-pi new-chunk node-type
+    )
+}
 
 sub XPATH_doc {
   die "Wrong number of arguments for function xsh:doc(id)!" if (@_!=1);
@@ -332,7 +335,7 @@ sub XPATH_reverse {
 sub XPATH_grep {
   die "Wrong number of arguments for function xsh:grep(list,regexp)!" if (@_!=2);
   my ($nodelist,$regexp)=@_;
-  die "1st argument must be a node-list in grep(list,regexp)!" 
+  die "1st argument must be a nodeset in grep(list,regexp)!" 
     unless (ref($nodelist) and $nodelist->isa('XML::LibXML::NodeList'));
   use utf8; 
   [grep { $_->to_literal=~m{$regexp} } @$nodelist];
@@ -459,29 +462,42 @@ sub XPATH_current {
 }
 
 sub XPATH_path {
-  die "Wrong number of arguments for function xsh:path(node-list)!" if (@_!=1);
-  die "Wrong type of argument 1 for xsh:path(node-list)!" unless (ref($_[0]) and $_[0]->isa('XML::LibXML::NodeList'));
+  die "Wrong number of arguments for function xsh:path(nodeset)!" if (@_!=1);
+  die "Wrong type of argument 1 for xsh:path(nodeset)!" unless (ref($_[0]) and $_[0]->isa('XML::LibXML::NodeList'));
   return "" unless $_[0][0];
   return
     XML::LibXML::Literal->new(pwd($_[0][0]));
 }
 
+sub XPATH_node_type {
+  die "Wrong number of arguments for function xsh:node-type(node-set)!" if (@_!=1);
+  die "Wrong type of argument 1 for xsh:node-type(node-set)!" unless (ref($_[0]) and $_[0]->isa('XML::LibXML::NodeList'));
+  return "" unless $_[0][0];
+  return
+    XML::LibXML::Literal->new(node_type($_[0][0]));
+}
+
 sub XPATH_map {
-  die "Wrong number of arguments for function xsh:map(node-list,string)!"
+  die "Wrong number of arguments for function xsh:map(nodeset,string)!"
     if (@_!=2);
-  die "Wrong type of argument 1 for xsh:map(node-list,string)!"
+  die "Wrong type of argument 1 for xsh:map(nodeset,string)!"
     unless (ref($_[0]) and $_[0]->isa('XML::LibXML::NodeList'));
   my ($nl,$xpath)=@_;
   my $res = XML::LibXML::NodeList->new();
   unless (@{$nl} and $xpath ne "") { return $res; }
+  return $res if $xpath eq "";
 #  my $xpc = clone_xpc();
   my $res_el;
   my $res_doc;
+  $_xpc->setContextSize(0+@{$nl}) if $_xpc->can('setContextSize');
+  my $pos=1;
   foreach my $node (@{$nl}) {
-# #    my $val = $node->find($xpath);
-     my $val = $_xpc->find($xpath,$node);
-     next unless (ref($val));
-     if ($val->isa("XML::LibXML::NodeList")) {
+    $_xpc->setContextPosition($pos++) if $_xpc->can('setContextSize');
+    my $val;
+    eval { $val = $_xpc->find($xpath,$node); };
+    return XML::LibXML::NodeList->new() if $@;
+    next unless (ref($val));
+    if ($val->isa("XML::LibXML::NodeList")) {
       push @$res,@$val;
     } else {
       unless ($res_el) {
@@ -491,19 +507,146 @@ sub XPATH_map {
       }
       my $el;
       if ($val->isa("XML::LibXML::Boolean")) {
-	$el = $res_doc->createElementNS($XML::XSH::xshNS,'xsh:bool');
+	$el = $res_doc->createElementNS($XML::XSH::xshNS,'xsh:boolean');
+	$el->appendText($val ? 'true' : '');
       } elsif ($val->isa("XML::LibXML::Number")) {
-	$el = $res_doc->createElementNS($XML::XSH::xshNS,'xsh:float');
+	$el = $res_doc->createElementNS($XML::XSH::xshNS,'xsh:number');
+	$el->appendText($val->to_literal->value);
       } elsif ($val->isa("XML::LibXML::Literal")) {
 	$el = $res_doc->createElementNS($XML::XSH::xshNS,'xsh:string');
+	$el->appendText($val->to_literal->value);
       }
-      $el->appendText($val->to_literal->value);
       $res_el->appendChild($el);
       push @$res,$el;
     }
    }
   return $res;
 }
+
+sub XPATH_split {
+  die "Wrong number of arguments for function xsh:split(string,string)!"
+    if (@_!=2);
+  my ($regexp,$string)=@_;
+  $regexp=literal_value($regexp);
+  $string=literal_value($string);
+  my $res = XML::LibXML::NodeList->new();
+  my $res_doc=XML::LibXML::Document->new();
+  my $res_el=$res_doc->createElementNS($XML::XSH::xshNS,'xsh:result');
+  $res_doc->setDocumentElement($res_el);
+  my $el;
+  foreach my $str (split $regexp,$string) {
+    $el = $res_doc->createElementNS($XML::XSH::xshNS,'xsh:string');
+    $el->appendText($str->to_literal->value);
+    $res_el->appendChild($el);
+    push @$res,$el;
+  }
+  return $res;
+}
+
+sub XPATH_new_attribute {
+  die "Wrong number of arguments for function xsh:new-attribute(string, [string, [string]])!"
+    if (!@_ or @_>3);
+  my ($name,$value,$ns)=map {literal_value($_)} @_;
+  my $att=XML::LibXML::Attr->new($name,$value);
+  if ($ns) {
+    $att->setNamespace($ns);
+  }
+  return XML::LibXML::NodeList->new($att);
+}
+
+sub XPATH_new_attributes {
+  die "Wrong number of arguments for function xsh:new-attributes(string, string, [string, string,...])!"
+    unless (@_ and @_ % 2);
+  my %attr=map { literal_value($_) } @_;
+  return XML::LibXML::NodeList->new(map {XML::LibXML::Attr->new($_,$attr{$_})} keys %attr);
+}
+
+sub XPATH_new_element {
+  die "Wrong number of arguments for function xsh:new-element(string, [string,string,...])!"
+    unless (scalar(@_)%2);
+  my ($name,%attrs)=map {literal_value($_)} @_;
+  my $e=XML::LibXML::Element->new($name);
+  foreach my $aname (keys %attrs) {
+    $e->setAttribute($aname,$attrs{$aname});
+  }
+  return XML::LibXML::NodeList->new($e);
+}
+
+sub XPATH_new_element_ns {
+  die "Wrong number of arguments for function xsh:new-element-ns(string, string, [string,string])!"
+    unless (@_ and (scalar(@_)+1)%2);
+  my ($name,$ns,%attrs)=map {literal_value($_)} @_;
+  my ($name,$prefix) = split ':',$name;
+  my $e=XML::LibXML::Element->new($name);
+  $e->setNamespace($ns,$prefix,1);
+  foreach my $aname (keys %attrs) {
+    $e->setAttribute($aname,$attrs{$aname});
+  }
+  return XML::LibXML::NodeList->new($e);
+}
+
+
+sub XPATH_new_text {
+  die "Wrong number of arguments for function xsh:new-text(string)!"
+    if (@_!=1);
+  my $text=literal_value(shift);
+  my $t=XML::LibXML::Text->new($text);
+  return XML::LibXML::NodeList->new($t);
+}
+
+sub XPATH_new_comment {
+  die "Wrong number of arguments for function xsh:new-comment(string)!"
+    if (@_!=1);
+  my $text=literal_value(shift);
+  my $t=XML::LibXML::Comment->new($text);
+  return XML::LibXML::NodeList->new($t);
+}
+
+sub XPATH_new_cdata {
+  die "Wrong number of arguments for function xsh:new-cdata(string)!"
+    if (@_!=1);
+  my $name=literal_value(shift);
+  my $t=XML::LibXML::CDATASection->new($name);
+  return XML::LibXML::NodeList->new($t);
+}
+
+sub XPATH_new_pi {
+  die "Wrong number of arguments for function xsh:new-pi(string,[ string])!"
+    if (!@_ or @_>2);
+  my ($name,$value)=map { literal_value($_) } @_;
+  my $pi = XML::LibXML->createProcessingInstruction($name => $value);
+  return XML::LibXML::NodeList->new($pi);
+}
+
+sub XPATH_new_chunk {
+  die "Wrong number of arguments for function xsh:new-chunk(string,[ string])!"
+    if (@_!=1);
+  return XPATH_parse(@_);
+}
+
+sub XPATH_times {
+  die "Wrong number of arguments for function xsh:times(string,float)!"
+    if (@_!=2);
+  my ($string,$times)=@_;
+  $times=literal_value($times);
+  $string=literal_value($string);
+  return XML::LibXML::Literal->new($times x $string);
+}
+
+sub XPATH_if {
+  die "Wrong number of arguments for function xsh:if(object,object,object)!"
+    if (@_!=3);
+  my ($test, $if, $else)=@_;
+  if (ref($test) and
+      (XML::LibXML::NodeList->isa($test) and @$test
+       or $test->to_literal->value)
+      or $test) {
+    return $if;
+  } else {
+    return $else;
+  }
+}
+
 
 # ===================== END OF XPATH EXT FUNC ================
 
@@ -770,6 +913,11 @@ sub convertFromDocEncoding ($$\$) {
 sub _err {
   print STDERR @_,"\n";
 }
+
+sub _warn {
+  print STDERR "Warining: ",@_,"\n" unless $QUIET;
+}
+
 
 # if the argument is non-void then print it and return 0; return 1 otherwise
 sub _check_err {
@@ -2060,9 +2208,9 @@ sub safe_insert {
 	# maybe we are loosing the document element here !
 	if ($parent->getDocumentElement()) {
 	  if ($_xml_module->is_element($dest)) {
-	    my $nextnode = $parent->getDocumentElement()->nextSibling();
-	    new_document_element($parent,$source,
-				 $dest,get_following_siblings($dest));
+	    my @nextnodes = get_following_siblings($dest);
+	    $dest->unbindNode();
+	    new_document_element($parent,$source, @nextnodes);
 	  } else {
 	    die("Error: cannot insert another element into /:\n",
 	         "  there's one document element already!");
@@ -2221,15 +2369,14 @@ sub insert_node {
 	# rather than appendChild which does not work
 	# for Chunks!
 	$dest->insertAfter($copy,$dest->lastChild());
-	push @$rl,$copy if $rl;
       } elsif ($where =~ /^(?:before|prepend)/) {
 	$dest->insertBefore($copy,$dest->firstChild());
-	push @$rl,$copy if $rl;
       } elsif ($where eq 'replace') {
 	_err("Warning: Ignoring incompatible nodes in insert/copy/move operation:\n",
 	     ref($node)," $where ",ref($dest),"!");
 	return 1;
       }
+      push @$rl,$copy;
     }
   }
   # destination: Element
@@ -2367,6 +2514,7 @@ sub insert_node {
     }
   } else {
     print STDERR "Warning: unsupported/unknown destination type: ",ref($dest),"\n";
+    print STDERR substr($node->toString(),0,200), substr($dest->toString(),0,200),"\n" if ref($dest);
   }
   return 1;
 }
@@ -2388,11 +2536,14 @@ sub copy {
   my ($fl,$tl);
 
   $fl=find_nodes($fxp);
+  unless (@$fl) {
+    _warn("No nodes matching $fxp in $fid=$_files{$fid}");
+    return 1;
+  }
   $tl=find_nodes($txp);
-
   unless (@$tl) {
-    print STDERR "No matching nodes found for $tq in $tid=$_files{$tid}\n" unless "$QUIET";
-    return 0;
+    _warn("No nodes matching $txp in $tid=$_files{$tid}");
+    return 1;
   }
   my $some_nodes_removed=0;
   if ($all_to_all) {
@@ -2497,68 +2648,79 @@ sub create_nodes {
   my ($type,$exp,$doc,$ns)=@_;
   my @nodes=();
 #  return undef unless ($exp ne "" and ref($doc));
-  if ($type eq 'attribute') {
-    foreach (create_attributes($exp)) {
-      my $at;
-      if  ($_->[0]=~/^([^:]+):/ and $1 ne 'xmlns') {
-	die "Error: undefined namespace prefix `$1'\n"  if ($ns eq "");
-	$at=$doc->createAttributeNS($ns,$_->[0],$_->[1]);
-      } else {
-	$at=$doc->createAttribute($_->[0],$_->[1]);
-      }
-      push @nodes,$at;
+  if ($type eq 'chunk') {
+    if ($exp !~/^\s*<?xml [^>]*encoding=[^>]*?>/) {
+      $exp=toUTF8($QUERY_ENCODING,$exp);
     }
-  } elsif ($type eq 'element') {
-    my ($name,$attributes);
-    if ($exp=~/^\<?([^ \t\n\/\<\>]+)(\s+.*)?(?:\/?\>)?\s*$/) {
-      print STDERR "element_name=$1\n" if $DEBUG;
-      print STDERR "attributes=$2\n" if $DEBUG;
-      my ($elt,$att)=($1,$2);
-      my $el;
-      if ($elt=~/^([^:>]+):(.*)$/) {
-	print STDERR "NS: $ns\n" if $DEBUG;
-	print STDERR "Name: $elt\n" if $DEBUG;
-	die "Error: undefined namespace prefix `$1'\n"  if ($ns eq "");
-	$el=$doc->createElementNS($ns,$elt);
-      } else {
-	$el=$doc->createElement($elt);
+    @nodes=map {$_->childNodes()}
+      grep {ref($_)} ($_parser->parse_xml_chunk($exp));
+  } else {
+    $exp=toUTF8($QUERY_ENCODING,$exp);
+    if ($type eq 'attribute') {
+      foreach (create_attributes($exp)) {
+	my $at;
+	if ($_->[0]=~/^([^:]+):/ and $1 ne 'xmlns') {
+	  die "Error: undefined namespace prefix `$1'\n"  if ($ns eq "");
+	  $at=$doc->createAttributeNS($ns,$_->[0],$_->[1]);
+	} else {
+	  $at=$doc->createAttribute($_->[0],$_->[1]);
+	}
+	push @nodes,$at;
       }
-      if ($att ne "") {
-	$att=~s/\/?\>?$//;
-	foreach (create_attributes($att)) {
-	  print STDERR "atribute: ",$_->[0],"=",$_->[1],"\n" if $DEBUG;
-	  if ($elt=~/^([^:]+):/ and $1 ne 'xmlns') {
-	    print STDERR "NS: $ns\n" if $DEBUG;
-	    die "Error: undefined namespace prefix `$1'\n"  if ($ns eq "");
-	    $el->setAttributeNS($ns,$_->[0],$_->[1]);
-	  } else {
-	    $el->setAttribute($_->[0],$_->[1]);
+    } elsif ($type eq 'element') {
+      my ($name,$attributes);
+      if ($exp=~/^\<?([^ \t\n\/\<\>]+)(\s+.*)?(?:\/?\>)?\s*$/) {
+	print STDERR "element_name=$1\n" if $DEBUG;
+	print STDERR "attributes=$2\n" if $DEBUG;
+	my ($elt,$att)=($1,$2);
+	my $el;
+	if ($elt=~/^([^:>]+):(.*)$/) {
+	  print STDERR "NS: $ns\n" if $DEBUG;
+	  print STDERR "Name: $elt\n" if $DEBUG;
+	  die "Error: undefined namespace prefix `$1'\n"  if ($ns eq "");
+	  $el=$doc->createElementNS($ns,$elt);
+	} else {
+	  $el=$doc->createElement($elt);
+	}
+	if ($att ne "") {
+	  $att=~s/\/?\>?$//;
+	  foreach (create_attributes($att)) {
+	    print STDERR "atribute: ",$_->[0],"=",$_->[1],"\n" if $DEBUG;
+	    if ($elt=~/^([^:]+):/ and $1 ne 'xmlns') {
+	      print STDERR "NS: $ns\n" if $DEBUG;
+	      die "Error: undefined namespace prefix `$1'\n"  if ($ns eq "");
+	      $el->setAttributeNS($ns,$_->[0],$_->[1]);
+	    } else {
+	      $el->setAttribute($_->[0],$_->[1]);
+	    }
 	  }
 	}
+	push @nodes,$el;
+      } else {
+	print STDERR "invalid element $exp\n" unless "$QUIET";
       }
-      push @nodes,$el;
+    } elsif ($type eq 'text') {
+      push @nodes,$doc->createTextNode($exp);
+      print STDERR "text=$exp\n" if $DEBUG;
+    } elsif ($type eq 'entity_reference') {
+      push @nodes,$doc->createEntityReference($exp);
+      print STDERR "entity_reference=$exp\n" if $DEBUG;
+    } elsif ($type eq 'cdata') {
+      push @nodes,$doc->createCDATASection($exp);
+      print STDERR "cdata=$exp\n" if $DEBUG;
+    } elsif ($type eq 'pi') {
+      my ($name,$data)=($exp=~/^\s*(?:\<\?)?(\S+)(?:\s+(.*?)(?:\?\>)?)?$/);
+      my $pi = $doc->createProcessingInstruction($name);
+      $pi->setData($data);
+      print STDERR "pi=<?$name ... $data?>\n" if $DEBUG;
+      push @nodes,$pi;
+      #    print STDERR "cannot add PI yet\n" if $DEBUG;
+    } elsif ($type eq 'comment') {
+      push @nodes,$doc->createComment($exp);
+      print STDERR "comment=$exp\n" if $DEBUG;
     } else {
-      print STDERR "invalid element $exp\n" unless "$QUIET";
+      die "unknown type: $type\n";
     }
-  } elsif ($type eq 'text') {
-    push @nodes,$doc->createTextNode($exp);
-    print STDERR "text=$exp\n" if $DEBUG;
-  } elsif ($type eq 'entity_reference') {
-    push @nodes,$doc->createEntityReference($exp);
-    print STDERR "entity_reference=$exp\n" if $DEBUG;
-  } elsif ($type eq 'cdata') {
-    push @nodes,$doc->createCDATASection($exp);
-    print STDERR "cdata=$exp\n" if $DEBUG;
-  } elsif ($type eq 'pi') {
-    my ($name,$data)=($exp=~/^\s*(?:\<\?)?(\S+)(?:\s+(.*?)(?:\?\>)?)?$/);
-    my $pi = $doc->createProcessingInstruction($name);
-    $pi->setData($data);
-    print STDERR "pi=<?$name ... $data?>\n" if $DEBUG;
-    push @nodes,$pi;
-#    print STDERR "cannot add PI yet\n" if $DEBUG;
-  } elsif ($type eq 'comment') {
-    push @nodes,$doc->createComment($exp);
-    print STDERR "comment=$exp\n" if $DEBUG;
   }
   return @nodes;
 }
@@ -2569,7 +2731,7 @@ sub insert {
   my ($type,$exp,$xpath,$where,$ns,$to_all,$nlspec)=@_;
 
   $exp = expand($exp);
-  $ns  = expand($ns);
+  $ns  = toUTF8($QUERY_ENCODING,expand($ns));
 
   my ($tid,$tq,$tdoc)=_xpath($xpath); # destination(s)
   unless (ref($tdoc)) {
@@ -2578,18 +2740,16 @@ sub insert {
 
   my $rl = _prepare_result_nl($nlspec);
   my @nodes;
-  $ns=toUTF8($QUERY_ENCODING,$ns);
-  unless ($type eq 'chunk') {
-    $exp=toUTF8($QUERY_ENCODING,$exp);
-    @nodes=grep {ref($_)} create_nodes($type,$exp,$tdoc,$ns);
-    return unless @nodes;
-  } else {
-    if ($exp !~/^\s*<?xml [^>]*encoding=[^>]*?>/) {
-      $exp=toUTF8($QUERY_ENCODING,$exp);
-    }
-    @nodes=grep {ref($_)} ($_parser->parse_xml_chunk($exp));
+  @nodes=grep {ref($_)} create_nodes($type,$exp,$tdoc,$ns);
+  unless (@nodes) {
+    _warn("Expression generates no nodes to insert");
+    return 1;
   }
   my $tl=find_nodes($xpath);
+  unless (@$tl) {
+    _warn("No nodes matching $tq in $tid $_files{$tid}");
+    return 1;
+  }
   my $some_nodes_removed=0;
   if ($to_all) {
     foreach my $tp (@$tl) {
@@ -2622,8 +2782,8 @@ sub insert {
 sub wrap {
   my ($xp, $exp,$ns,$nlspec)=@_;
 
-  $exp = toUTF8($QUERY_ENCODING,expand($exp));
   $ns  = toUTF8($QUERY_ENCODING,expand($ns));
+  $exp = expand($exp);
 
   my ($id,$query,$doc)=_xpath($xp);
   unless (ref($doc)) {
@@ -2637,7 +2797,8 @@ sub wrap {
     my ($el) = create_nodes('element',$exp,
 			    $_xml_module->owner_document($node),$ns);
     if ($_xml_module->is_attribute($node)) {
-      $node->ownerElement()->insertAfter($el,undef);
+      my $parent=$node->ownerElement();
+      $parent->insertBefore($el,$parent->firstChild());
       set_attr_ns($el,$node->namespaceURI(),
 		  $node->getName(),$node->getValue());
       $node->unbindNode();
@@ -2659,8 +2820,8 @@ sub wrap {
 sub wrap_span {
   my ($xp_start,$xp_end,$exp,$ns,$nlspec)=@_;
 
-  $exp = toUTF8($QUERY_ENCODING,expand($exp));
   $ns  = toUTF8($QUERY_ENCODING,expand($ns));
+  $exp = expand($exp);
 
   my $rl=_prepare_result_nl($nlspec);
 
@@ -2668,7 +2829,7 @@ sub wrap_span {
   my $ql_end=find_nodes($xp_end);
   if (@$ql_start != @$ql_end) {
     die "Error: there are ".scalar(@$ql_start)." start nodes, ".
-      " but ".scalar(@$ql_start)." end nodes!";
+      " but ".scalar(@$ql_end)." end nodes!";
   }
   for (my $i=0; $i<=$#$ql_start; $i++) {
     my $node = $ql_start->[$i];
@@ -2696,8 +2857,8 @@ sub wrap_span {
       last if ($n->isSameNode($end_node));
       $n=$n->nextSibling();
     }
-    die "Error: End node of span ".pwd($node).
-      " .. ".pwd($end_node)." not reached!\n" unless $n;
+    die "Error: Node ".pwd($end_node).
+      " isn't following sibling of ".pwd($node)."!\n" unless $n;
     if ($_xml_module->is_document($parent)) {
       # check that document element is within the span
       my $docel=$parent->getDocumentElement();
@@ -3328,11 +3489,20 @@ sub foreach_statement {
     }
     my $old_local=$LOCAL_NODE;
     my $old_id=$LOCAL_ID;
+    my $proximity_support = $_xpc->can('setContextSize');
+    my ($old_pos, $old_size);
+    if ($proximity_support) {
+      $old_pos =$_xpc->getContextPosition();
+      $old_size=$_xpc->getContextSize();
+    }
     eval {
       my $ql=find_nodes($xp);
+      $_xpc->setContextSize(0+@$ql) if $proximity_support;
+      my $pos=1;
       foreach my $node (@$ql) {
 	$LOCAL_NODE=$node;
 	$LOCAL_ID=_find_id($node);
+	$_xpc->setContextPosition($pos) if $_xpc->can('setContextSize');
 	eval {
 	  run_commands($command);
 	};
@@ -3342,6 +3512,7 @@ sub foreach_statement {
 	    die $@; # propagate to a higher level
 	  }
 	  if ($@->label eq 'next') {
+	    $pos++;
 	    next;
 	  } elsif ($@->label eq 'last') {
 	    last;
@@ -3353,12 +3524,17 @@ sub foreach_statement {
 	} elsif ($@) {
 	  die $@; # propagate
 	}
+	$pos++;
       }
     };
     do {
       local $SIG{INT}=\&flagsigint;
       $LOCAL_NODE=$old_local;
       $LOCAL_ID=$old_id;
+      if ($proximity_support) {
+	$_xpc->setContextSize($old_size);
+	$_xpc->setContextPosition($old_pos);
+      }
       propagate_flagsigint();
     };
     die $@ if $@; # propagate
@@ -3897,6 +4073,33 @@ sub unregister_func {
   return 1;
 }
 
+sub node_type {
+  my ($node)=@_;
+  if ($_xml_module->is_element($_)) {
+    return 'element';
+  } elsif ($_xml_module->is_attribute($_)) {
+    return 'attribute';
+  } elsif ($_xml_module->is_text($_)) {
+    return 'text';
+  } elsif ($_xml_module->is_cdata_section($_)) {
+    return 'cdata';
+  } elsif ($_xml_module->is_pi($_)) {
+    return 'pi';
+  } elsif ($_xml_module->is_entity_reference($_)) {
+    return 'entity_reference';
+  } elsif ($_xml_module->is_document($_)) {
+    return 'document';
+  } elsif ($_xml_module->is_document_fragment($_)) {
+    return 'chunk';
+  } elsif ($_xml_module->is_comment($_)) {
+    return 'comment';
+  } elsif ($_xml_module->is_namespace($_)) {
+    return 'namespace';
+  } else {
+    return 'unknown';
+  }
+}
+
 #######################################################################
 #######################################################################
 
@@ -3960,29 +4163,7 @@ sub type {
   my $xm=$XML::XSH::Functions::_xml_module;
   my @result;
   foreach (@$ql) {
-    if ($xm->is_element($_)) {
-      push @result, 'element';
-    } elsif ($xm->is_attribute($_)) {
-      push @result, 'attribute';
-    } elsif ($xm->is_text($_)) {
-      push @result, 'text';
-    } elsif ($xm->is_cdata_section($_)) {
-      push @result, 'cdata';
-    } elsif ($xm->is_pi($_)) {
-      push @result, 'pi';
-    } elsif ($xm->is_entity_reference($_)) {
-      push @result, 'entity_reference';
-    } elsif ($xm->is_document($_)) {
-      push @result, 'document';
-    } elsif ($xm->is_document_fragment($_)) {
-      push @result, 'chunk';
-    } elsif ($xm->is_comment($_)) {
-      push @result, 'comment';
-    } elsif ($xm->is_namespace($_)) {
-      push @result, 'namespace';
-    } else {
-      push @result, 'unknown';
-    }
+    push @result,&XML::XSH::Functions::node_type($_);
     return $result[0] unless (wantarray);
   }
   return @result;
