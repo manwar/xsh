@@ -339,10 +339,10 @@ description: List the XML representation of all elements matching <xpath>.
 see also:    count
 
 H1
-'transform' => <<'H1',
-usage:       transform <id> <filename> <id> [params <parameter-list>]
+'xslt' => <<'H1',
+usage:       xslt <id> <filename> <id> [params <parameter-list>]
 
-aliases:     xslt, xsl, xsltproc, process
+aliases:     transform, xsl, xsltproc, process
 
 description: Load an XSLT stylesheet from a file and use it to
              transform the document of the first <id> into a new
@@ -389,7 +389,8 @@ example:     xsh> del //creature[@manner='evil']
 H1
 'xadd' => <<'H1',
 usage:       xadd <node-type> <expression> <location> <xpath>
-
+             or
+             xadd <node-type> <expression> namespace <expression> <location> <xpath>
 aliases:     xinsert
 
 description: Use the <expression> to create a new node of a given
@@ -419,6 +420,12 @@ description: Use the <expression> to create a new node of a given
              append or prepend a string to a value of an existing
              attribute. In that case, attribute name is ignored.
 
+             The namespace <expression> is only valid for elements and
+             attributes and must evaluate to the namespace URI. In
+             that case, the element or attribute name must have a
+             prefix. The created node is associated with the given
+             namespace.
+
 examples:    # append a new Hobbit element to the list of middle-earth
              # creatures
              xsh> xadd element "<creature race='hobbit' manner='good'> \
@@ -432,6 +439,8 @@ see also:    add, move, xmove
 H1
 'add' => <<'H1',
 usage:       add <node-type> <expression> <location> <xpath>
+             or
+             add <node-type> <expression> namespace <expression> <location> <xpath>
 
 aliases:     insert
 
