@@ -50,11 +50,13 @@ call myfunc;
 
 files;
 
-foreach scratch://foo { insert text "no. " into .; copy ./@bar after ./text() };
+foreach scratch://foo { insert text "no. " into .; copy ./@bar append ./text() };
 
 indent 1;
 
-ls //foo/text()[starts-with(.,'no. 8')] 1>&2;
+ls //foo | cat 1>&2;
+
+ls //foo/text()[starts-with(.,'no. 8')] | cat 1>&2;
 
 if count(//foo/text()[starts-with(.,'no. 8')])!=1 { eval die };
 
@@ -103,6 +105,8 @@ count t:count(//foo)=10;
 create new1 test
 
 count count(//*)=1;
+
+list / | cat 1>&2;
 
 create new2
 "<?xml version='1.0' encoding='iso-8859-1'?>

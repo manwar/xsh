@@ -2,8 +2,6 @@
 use Test;
 BEGIN {
   @xsh_test=split /\n\n/, <<'EOF';
-list;
-
 list | wc 1>&2
 
 count /;
@@ -44,7 +42,7 @@ call myfunc;
 
 files;
 
-foreach scratch://foo { insert text "no. " into .; copy ./@bar after ./text() };
+foreach scratch://foo { insert text "no. " into .; copy ./@bar append ./text() };
 
 indent 1;
 
