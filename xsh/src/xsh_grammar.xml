@@ -2220,11 +2220,12 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<shortdesc>copy nodes (in the all-to-every mode)</shortdesc>
 	<description>
 	  <para>
-	    xcopy is similar to copy, but copies *all* nodes matching
+	    xcopy is similar to <xref linkend="copy_command"/>, but copies *all* nodes matching
 	    the first <xref linkend="xpath"/> to *all* destinations determined by the
 	    <xref linkend="loc"/> directive relative to the
-	    second <xref linkend="xpath"/>. See copy
-	    for detailed description of xcopy arguments.
+	    second <xref linkend="xpath"/>. See <xref
+	    linkend="copy_command"/>
+	    for detailed description of <literal>xcopy</literal> arguments.
 	  </para>
 	  <example>
 	    <title>Copy all middle-earth creatures within the document a
@@ -3091,7 +3092,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    replacing them with &lt;xi:include&gt; tags in the main
 	    XML file. Moreover, all material included within
 	    &lt;include&gt; elements from the
-	    <literal>http://www.w3.org/2001/XInclude</literal>
+	    <ulink url="http://www.w3.org/2001/XInclude">http://www.w3.org/2001/XInclude</ulink>
 	    namespace is saved to separate files too according to the
 	    <literal>href</literal> attribute, leaving only empty
 	    &lt;include&gt; element in the root file. This feature may
