@@ -18668,7 +18668,7 @@ sub Parse::RecDescent::namespace000001::command
 	while (!$_matched && !$commit)
 	{
 		
-		Parse::RecDescent::_trace(q{Trying production: [/(namespaces)\\s/ <commit> xpath]},
+		Parse::RecDescent::_trace(q{Trying production: [/(namespaces)/ <commit> xpath]},
 					  Parse::RecDescent::_tracefirst($_[1]),
 					  q{command})
 						if defined $::RD_TRACE;
@@ -18680,14 +18680,14 @@ sub Parse::RecDescent::namespace000001::command
 		my $repcount = 0;
 
 
-		Parse::RecDescent::_trace(q{Trying terminal: [/(namespaces)\\s/]}, Parse::RecDescent::_tracefirst($text),
+		Parse::RecDescent::_trace(q{Trying terminal: [/(namespaces)/]}, Parse::RecDescent::_tracefirst($text),
 					  q{command})
 						if defined $::RD_TRACE;
 		$lastsep = "";
 		$expectation->is(q{})->at($text);
 		
 
-		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(namespaces)\s)//)
+		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(namespaces))//)
 		{
 			
 			$expectation->failed();
@@ -18775,7 +18775,7 @@ sub Parse::RecDescent::namespace000001::command
 		
 
 
-		Parse::RecDescent::_trace(q{>>Matched production: [/(namespaces)\\s/ <commit> xpath]<<},
+		Parse::RecDescent::_trace(q{>>Matched production: [/(namespaces)/ <commit> xpath]<<},
 					  Parse::RecDescent::_tracefirst($text),
 					  q{command})
 						if defined $::RD_TRACE;
@@ -32914,8 +32914,8 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                           'line' => '280',
                                                                           'items' => [
                                                                                        bless( {
-                                                                                                'description' => '/(namespaces)\\\\s/',
-                                                                                                'pattern' => '(namespaces)\\s',
+                                                                                                'description' => '/(namespaces)/',
+                                                                                                'pattern' => '(namespaces)',
                                                                                                 'mod' => '',
                                                                                                 'hashname' => '__PATTERN1__',
                                                                                                 'lookahead' => 0,

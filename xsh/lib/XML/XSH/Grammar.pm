@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri May  2 18:48:22 2003
+# Fri May  2 19:10:06 2003
 
 
 package XML::XSH::Grammar;
@@ -289,7 +289,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(stream)\s/ <commit> /input((\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?\s/ filename /output((\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?\s/ filename stream_select(s)
 		{ [\&XML::XSH::Functions::stream_process,$item[3],$item[4],$item[5],$item[6],$item[7]] }
   	
-	  | /(namespaces)\s/ <commit> xpath(?)
+	  | /(namespaces)/ <commit> xpath(?)
 		{ [\&XML::XSH::Functions::list_namespaces,@{$item[3]}] }
   	
 	  | call_command
