@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.73 2003-09-10 15:54:09 pajas Exp $
+# $Id: Functions.pm,v 1.74 2003-10-17 15:06:08 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -31,7 +31,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8.2';
-  $REVISION='$Revision: 1.73 $';
+  $REVISION='$Revision: 1.74 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -2178,7 +2178,7 @@ sub new_element {
   }
   if (ref($attrs)) {
     foreach (@$attrs) {
-      if ($ns ne "" and ($_->[0]=~/^${prefix}:/)) {
+      if ($ns ne "" and ($_->[0]=~/^\Q${prefix}\E:/)) {
 	print STDERR "NS: $ns\n" if $DEBUG;
 	$el->setAttributeNS($ns,$_->[0],$_->[1]);
       } elsif  ($_->[0] eq "xmlns:(.*)") {
