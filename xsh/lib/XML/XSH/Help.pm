@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Wed Sep 10 17:53:03 2003
+# Thu Oct 23 19:46:26 2003
 
 package XML::XSH::Help;
 use strict;
@@ -815,69 +815,79 @@ $HELP{'vars'}=$HELP{'variables'};
 $HELP{'var'}=$HELP{'variables'};
 
 $HELP{'copy'}=[<<'END'];
-usage:       copy <xpath> <location> <xpath>
+usage:       copy <xpath> <location> <xpath> [(result|append-result) %<id>]
              
 aliases:     cp
 
 description:
-	     Copies nodes matching the first <xpath> to the destinations
-	     determined by the <location> directive relative to the second
-	     <xpath>. If more than one node matches the first <xpath> than
-	     it is copied to the position relative to the corresponding
-	     node matched by the second <xpath> according to the order in
-	     which are nodes matched. Thus, the n'th node matching the
-	     first <xpath> is copied to the location relative to the n'th
-	     node matching the second <xpath>.
+	     Copies nodes matching the first <xpath> (source nodes) to the
+	     destinations determined by the <location> directive applied to
+	     nodes matching the second <xpath> (target nodes). If more than
+	     one node matched source <xpath> than n'th source node is
+	     copied to the location relative to the n'th target node.
 
-	     The possible values for <location> are: after, before, into,
-	     replace and cause copying the source nodes after, before, into
-	     (as the last child-node). the destination nodes. If replace
-	     <location> is used, the source node is copied before the
-	     destination node and the destination node is removed.
+	     The possible values for <location> are: `after', `before',
+	     `into', `replace', `append' and `prepend'. The first three
+	     location directives cause making a copy of the source nodes
+	     after, before, and within (as the last child-node) the target
+	     nodes, respectively. If `replace' location directive is used,
+	     source node are copied before the respective target nodes and
+	     target nodes are removed. The `append' and `prepend' location
+	     directives allow, depending on the destination node type,
+	     either inserting copies of the source nodes as the first or
+	     last child nodes of a destination element or
+	     appending/prepending destination node data in case of
+	     non-element destination nodes. See <location> argument type
+	     for more detail.
 
-	     Some kind of type conversion is used when the types of the
-	     source and destination nodes are not equal. Thus, text, cdata,
-	     comment or processing instruction node data prepend, append or
-	     replace value of a destination attribute when copied
-	     before,after/into or instead (replace) an attribute, and vice
-	     versa.
+	     The user may collect the copies of the source nodes created by
+	     the `copy' command by storing them to a given node-list
+	     variable `%<id>' following either `result' or `append-result'
+	     keyword. In case of `result', the node-list variable is
+	     cleared fist, so that it contains only nodes resulting from
+	     the copy operation. In case of `append-result', the original
+	     content of the node-list variable is preserved and the
+	     resulting nodes are appended to it.
 
-	     Attributes may be copied after, before or into some other
-	     attribute to append, prepend or replace the destination
-	     attribute value. They may also replace the destination
-	     attribute completely (both its name and value). To copy an
-	     attribute from one element to another, simply copy the
-	     attribute node into the destination element.
+	     Although we used the word "copy", nodes resulting from copying
+	     the source nodes may pass through certain type conversion
+	     before they are inserted at the appointed destinations. This,
+	     however, only happens in cases where the types of the source
+	     and target nodes are not straightforwardly compatible with the
+	     location directive. See <location> argument type for more
+	     detail.
 
-	     Elements may be copied into other elements (which results in
-	     appending the child-list of the destination element), or
-	     before, after or instead (replace) other nodes of any type
-	     except attributes.
+	     Note that XSH refuses creating multiple top-level (document)
+	     elements using `copy', <move> and smilar commands.
 
-Example:     Replace living-thing elements in the document b with the
-	     coresponding creature elements of the document a.
+Example:     Replace living-thing elements in the document b with copies of
+	     the coresponding creature elements from the document a.
 
              xsh> copy a://creature replace b://living-thing
+
+see also:     xcopy move xmove insert xinsert
 
 END
 
 $HELP{'cp'}=$HELP{'copy'};
 
 $HELP{'xcopy'}=[<<'END'];
-usage:       xcopy <xpath> <location> <xpath>
+usage:       xcopy <xpath> <location> <xpath> [(result|append-result) %<id>]
              
 aliases:     xcp
 
 description:
-	     xcopy is similar to <copy>, but copies *all* nodes matching
-	     the first <xpath> to *all* destinations determined by the
-	     <location> directive relative to the second <xpath>. See
-	     <copy> for detailed description of `xcopy' arguments.
+	     xcopy is similar to <copy>, but copies all nodes matching the
+	     first <xpath> to all destinations determined by the <location>
+	     directive relative to the second <xpath>. See <copy> for
+	     detailed description of `xcopy' arguments.
 
 Example:     Copy all middle-earth creatures within the document a into
 	     every world of the document b.
 
              xsh> xcopy a:/middle-earth/creature into b://world
+
+see also:     copy move xmove insert xinsert
 
 END
 
@@ -900,13 +910,13 @@ END
 $HELP{'chdir'}=$HELP{'lcd'};
 
 $HELP{'insert'}=[<<'END'];
-usage:       insert <node-type> <expression> [namespace <expression>] <location> <xpath>
+usage:       insert <node-type> <expression> [namespace <expression>] <location> <xpath> [(result|append-result) %<id>]
              
 aliases:     add
 
 description:
-	     Works just like xadd, except that the new node is attached
-	     only the first node matched.
+	     Works just like <xinsert>, except that the new node is
+	     attached only the first node matched.
 
 see also:     xinsert move xmove
 
@@ -915,7 +925,7 @@ END
 $HELP{'add'}=$HELP{'insert'};
 
 $HELP{'xinsert'}=[<<'END'];
-usage:       xinsert <node-type> <expression> [namespace <expression>] <location> <xpath>
+usage:       xinsert <node-type> <expression> [namespace <expression>] <location> <xpath> [(result|append-result) %<id>]
              
 aliases:     xadd
 
@@ -942,17 +952,19 @@ description:
 	     `into', `replace', `append' or `prepend'. See documentation of
 	     the <location> argument type for more detail.
 
-	     The namespace <expression> is only valid for elements and
-	     attributes and must evaluate to the namespace URI. In that
-	     case, the element or attribute name must have a prefix. The
-	     created node is associated with a given namespace.
+	     The namespace <expression> may be used to associate inserted
+	     nodes with a namespace. This part of the command is optional
+	     and only makes sense for elements and attributes. The
+	     expression itself is supposed to evaluate to a namespace URI
+	     and the name of the element or attribute being inserted name
+	     must have a prefix.
 
 Example:     Append a new Hobbit element to the list of middle-earth
 	     creatures and name him Bilbo.
 
-             xsh> xadd element "<creature race='hobbit' manner='good'>" \
+             xsh> xinsert element "<creature race='hobbit' manner='good'>" \
                               into /middle-earth/creatures
-             xsh> xadd attribute "name='Bilbo'" \
+             xsh> xinsert attribute "name='Bilbo'" \
                               into /middle-earth/creatures/creature[@race='hobbit'][last()]
 
 see also:     insert move xmove
@@ -1035,7 +1047,7 @@ END
 
 
 $HELP{'move'}=[<<'END'];
-usage:       move <xpath> <location> <xpath>
+usage:       move <xpath> <location> <xpath> [(result|append-result) %<id>]
              
 aliases:     mv
 
@@ -1052,14 +1064,14 @@ description:
 	     See <copy> for more details on how the copies of the moved
 	     nodes are created.
 
-see also:     copy xmove insert xinsert
+see also:     xmove copy xcopy insert xinsert
 
 END
 
 $HELP{'mv'}=$HELP{'move'};
 
 $HELP{'xmove'}=[<<'END'];
-usage:       xmove <xpath> <location> <xpath>
+usage:       xmove <xpath> <location> <xpath> [(result|append-result) %<id>]
              
 aliases:     xmv
 
@@ -1088,7 +1100,7 @@ Example:     Get rid of all <font> tags
                }
              }
 
-see also:     xcopy move insert xinsert
+see also:     move copy xcopy insert xinsert
 
 END
 
@@ -2720,7 +2732,7 @@ Example: Using string variables to convert between different types of nodes
   
   # comment out the first chapter
   ls //chapter[1] |> $chapter_xml;
-  add comment $chapter_xml replace //chapter[1];
+  insert comment $chapter_xml replace //chapter[1];
   ls / 0;
   # OUTPUT:
   <?xml version="1.0"?>
@@ -2737,7 +2749,7 @@ Example: Using string variables to convert between different types of nodes
   
   # un-comment the chapter
   $comment = string(//comment()[1]);
-  add chunk $comment replace //comment()[1];
+  insert chunk $comment replace //comment()[1];
   ls / 0;
   # OUTPUT:
   <?xml version="1.0"?>

@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Wed Sep 10 17:53:03 2003
+# Thu Oct 23 19:46:24 2003
 
 
 package XML::XSH::Grammar;
@@ -86,17 +86,17 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(options|flags)/ <commit>
 		{ [\&XML::XSH::Functions::list_flags] }
   	
-	  | /(copy|cp)\s/ <commit> xpath loc xpath
-		{ [\&XML::XSH::Functions::copy,@item[3,5,4]] }
+	  | /(copy|cp)\s/ <commit> xpath loc xpath store_or_append_nl(?)
+		{ [\&XML::XSH::Functions::copy,@item[3,5,4],0,@{$item[6]}] }
   	
-	  | /(xcopy|xcp)\s/ <commit> xpath loc xpath
-		{ [\&XML::XSH::Functions::copy,@item[3,5,4],1] }
+	  | /(xcopy|xcp)\s/ <commit> xpath loc xpath store_or_append_nl(?)
+		{ [\&XML::XSH::Functions::copy,@item[3,5,4],1,@{$item[6]}] }
   	
-	  | /(move|mv)\s/ <commit> xpath loc xpath
-		{ [\&XML::XSH::Functions::move,@item[3,5,4]] }
+	  | /(move|mv)\s/ <commit> xpath loc xpath store_or_append_nl(?)
+		{ [\&XML::XSH::Functions::move,@item[3,5,4],0,@{$item[6]}] }
   	
-	  | /(xmove|xmv)\s/ <commit> xpath loc xpath
-		{ [\&XML::XSH::Functions::move,@item[3,5,4],1] }
+	  | /(xmove|xmv)\s/ <commit> xpath loc xpath store_or_append_nl(?)
+		{ [\&XML::XSH::Functions::move,@item[3,5,4],1,@{$item[6]}] }
   	
 	  | /(ls|list)\s/ xpath expression
 		{ [\&XML::XSH::Functions::list,$item[2],$item[3]] }
@@ -176,11 +176,11 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(xslt|transform|xsl|xsltproc|process)\s/ <commit> expression filename expression xslt_params(?)
 		{ [\&XML::XSH::Functions::xslt,@item[3,4,5],@{$item[6]}] }
   	
-	  | /(insert|add)\s/ <commit> nodetype expression namespace(?) loc xpath
-		{ [\&XML::XSH::Functions::insert,@item[3,4,7,6],$item[5][0],0] }
+	  | /(insert|add)\s/ <commit> nodetype expression namespace(?) loc xpath store_or_append_nl(?)
+		{ [\&XML::XSH::Functions::insert,@item[3,4,7,6],$item[5][0],0,@{$item[8]}] }
   	
-	  | /(xinsert|xadd)\s/ <commit> nodetype expression namespace(?) loc xpath
-		{ [\&XML::XSH::Functions::insert,@item[3,4,7,6],$item[5][0],1] }
+	  | /(xinsert|xadd)\s/ <commit> nodetype expression namespace(?) loc xpath store_or_append_nl(?)
+		{ [\&XML::XSH::Functions::insert,@item[3,4,7,6],$item[5][0],1,@{$item[8]}] }
   	
 	  | /(help|\?)/ <commit> optional_expression(?)
 		{ [\&XML::XSH::Functions::help,@{$item[3]}] }
@@ -764,6 +764,11 @@ $grammar=<<'_EO_GRAMMAR_';
   param:
 	    /[^=\s]+/ '=' expression
 		{ [$item[1],$item[3]] }
+  	
+
+  store_or_append_nl:
+	    /result|append-result/ nodelistvariable
+		{ [$item[1] eq 'result' ? 0 : 1,$item[2]] }
   	
 
   nodetype:
