@@ -545,7 +545,7 @@
 	  the result of the XPath search as a XML string which is
 	  equivallent to the output of a <xref
 	  linkend="list_command"/> on the same XPath expression
-	  (without indentation and without folding and any other
+	  (without indentation and without folding or any other
 	  limitation on the depth of the listing).
 	</para>
 	<para>
@@ -581,6 +581,57 @@
 	    <tab/>}
 	    };</code>
 	</example>
+      </section>
+      <section id="binding_perl_xpathextensions">
+        <title>Writing your own XPath extension functions in Perl</title>
+        <para>
+	  XSH allows the user to extend the set of XPath functions by
+	  providing an extension function written in Perl.  This can
+	  be achieved using the <xref linkend="registerfunc_command"/>
+	  command.  The perl code implementing an extension function
+	  works as a usual perl routine accepting its arguments in
+	  <literal>@_</literal> and returning the result. The
+	  following conventions are used:
+	</para>
+	<para>
+	  The arguments passed to the perl implementation by the XPath
+	  engine are either simple scalars or
+	  <literal>XML::LibXML::NodeList</literal> objects, depending
+	  on the types of the XPath arguments.  The implementation is
+	  responsible for checking the argument number and types.  The
+	  implementation may use arbitrary
+	  <literal>XML::LibXML</literal> methods to process the
+	  arguments and return the result.
+	  (<literal>XML::LibXML</literal> perl module documentation
+	  can be found for example at <ulink
+	  url="http://search.cpan.org/author/PHISH/XML-LibXML-1.54/LibXML.pm">http://search.cpan.org/author/PHISH/XML-LibXML-1.54/LibXML.pm</ulink>).
+	</para>
+	<para>
+	  The implementation SHOULD NOT, however, MODIFY the document.
+	  Doing so could not only confuse the XPath engine but result
+	  in an critical error (such as segmentation fault).
+	</para>
+	<para>
+	  Calling XSH commands from extension function implementations
+	  is not currently allowed.
+	</para>
+	<para>
+	  The perl code must return a single value, which can be of
+	  one of the following types: a simple scalar (a number or
+	  string), <literal>XML::LibXML::Boolean</literal> object
+	  reference (result is a boolean value),
+	  <literal>XML::LibXML::Literal</literal> object reference
+	  (result is a string), <literal>XML::LibXML::Number</literal>
+	  object reference (resulat is a float),
+	  <literal>XML::LibXML::Node</literal> (or derived) object
+	  reference (result is a nodeset consisting of a single node),
+	  or <literal>XML::LibXML::NodeList</literal> (result is a
+	  nodeset). For convenience, simple (non-blessed) array
+	  references consisting of
+	  <literal>XML::LibXML::Node</literal> objects can also be
+	  used for a nodeset result instead of a
+	  <literal>XML::LibXML::NodeList</literal>.
+        </para>
       </section>
       <section id="binding_shell">
 	<title>Calling the System Shell</title>
@@ -761,6 +812,8 @@ sub new {
       <ruleref ref="registerfunc_command"/>
       <ruleref ref="stream_process_command"/>
       <ruleref ref="namespaces_command"/>
+      <ruleref ref="xpath_completion_command"/>
+      <ruleref ref="xpath_axis_completion_command"/>
       <!-- ADD NEW COMMANDS HERE -->
       <production>
 	<ruleref ref="call_command"/>
@@ -1126,11 +1179,11 @@ sub new {
 	    recommendation at <ulink
 	    url="http://www.w3.org/TR/xpath">http://www.w3.org/TR/xpath</ulink>.
 	    In XSH, XPath expressoin may be optionally preceded with a
-	    document identifier followed by colon. If no document
-	    identifier is used, the current document is used.
+	    document identifier followed by colon (<xref linkend="ID"/>:xpath). If no document
+	    identifier is given, the current document is used.
 	  </para>
 	  <para>
-	    The following XPath extension functions are defined in
+	    As an extension, the following XPath extension functions are defined in
 	    the XSH namespace:
 	  </para>
 	  <para>
@@ -1154,14 +1207,15 @@ sub new {
 	    matches the regular expression given in <literal>regexp-string</literal>.
 	  </para>
 	  <para>
-	    <literal>xsh:same(node-set, node-set)</literal> -
+	    <literal>xsh:same(node-set1, node-set2)</literal> -
 	    returns <literal>true</literal> if the given node sets
 	    contain exactly one node each and these nodes are the same
-	    (equivallent to <literal>count(node-set|node-set)</literal>).
+	    (in XPath, this can also be expressed as
+	    <literal>count(node-set1|node-set2)+count(node-set1)+count(node-set2)=1</literal>).
 	  </para>
 	  <example>
 	    <title>Open a document and count all sections containing a
-	      subsection in it
+	      subsection
 	    </title>
 	    <code>
 	      xsh scratch:/&gt; <userinput>open v = mydocument1.xml;</userinput>
@@ -2786,8 +2840,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  <para><literal>strip</literal> removes all leading and
 	    trailing whitespace from given nodes. If applied to an
 	    element node, it removes all leading and trailing child
-	    text nodes and CDATA sections consisting of
-	    whitespace only.
+	    text nodes and CDATA sections that consist entirely of
+	    whitespace.
 	  </para>
 	</description>
       </documentation>
@@ -2995,36 +3049,40 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  <para>
 	    DOCUMENTATION OBSOLETE! Syntax changed!
 	  </para>
-	  <para>!!!!TODO!!!!  This command may be used to sort the
-	    node-list stored in the node-list variable <xref
-	    linkend="ID"/>. First, for each node in the node-list, the
-	    first <xref linkend="xpath"/> or <xref
-	    linkend="perl_code"/> expression is evaluated in its
-	    context and the resulting value is remembered for the
-	    node. (In case of <xref linkend="xpath"/>, the result of
-	    whatever type is cast to a string).  Now perl sorting
+	  <para>This command may be used to sort the node-list stored
+	    in the node-list variable <xref linkend="ID"/>. First, for
+	    each node in the node-list %<xref linkend="ID"/>, the
+	    first argument (either a <xref linkend="xpath"/> or <xref
+	    linkend="perl_code"/> expression), which serves as a
+	    sorting criterion, is evaluated in the context of the node
+	    and the obtained value is stored together with the
+	    node. (In case of <xref linkend="xpath"/> the result of
+	    whatever type is cast to a string). Then perl's sorting
 	    algorithm is used to sort the nodelist, consulting the
-	    second argument <xref linkend="perl_code"/> to compare
-	    nodes.  Before each comparison, the values obtained from
-	    the previous evaluation of the first argument expression
-	    on the two nodes being compared are stored into
-	    <literal>$a</literal> and <literal>$b</literal> variables
-	    in respective order.  Now, the <xref linkend="perl_code"/>
-	    being consulted is supposed to be either -1 (the first
-	    node should come first), 0 (no order precedence), or 1
-	    (the second node should come first). Note, that Perl
-	    provides very convenient operators <literal>cmp</literal>
-	    and <literal>&lt;=&gt;</literal> for string and numeric
+	    second, <xref linkend="perl_code"/>, argument to compare
+	    nodes. Before the <xref linkend="perl_code"/> is
+	    evaluated, the values obtained from the previous
+	    evaluation of the sorting crierion argument on the two
+	    nodes being compared are stored into <literal>$a</literal>
+	    and <literal>$b</literal> variables in the respective
+	    order.  The <xref linkend="perl_code"/> being consulted is
+	    supposed to return either -1 (the first node should come
+	    first), 0 (no order precedence), or 1 (the second node
+	    should come first). Note that Perl provides very
+	    convenient operators <literal>cmp</literal> and
+	    <literal>&lt;=&gt;</literal> for string and numeric
 	    comparison of this kind as shown in the examples below.
 	  </para>
 	  <para>
-	    Note that here, unlike in <xref
+	    Remember that <literal>sort</literal> (unlike <xref
 	      linkend="assign_command"/>, <xref linkend="if"/>, or
-	      <xref linkend="while"/>, the evaluation of an <xref
-	      linkend="xpath"/> expression always results in a
-	      string. Thus you need not to bother with wrapping
-	      node-queries with a <literal>string()</literal>
-	      function.
+	      <xref linkend="while"/>) evaluates the first <xref
+	      linkend="xpath"/> argument (the sorting criterion) in a
+	      way to obtain a string. Thus you need not to bother with
+	      wrapping node-queries with a <literal>string()</literal>
+	      function but you must remember to explicitly wrap the
+	      expression in <literal>count()</literal> if the number
+	      of the nodes is to be the sorting criterion.
 	  </para>
 	  <example>
 	    <title>Sort creatures by name (XPath-based sort)
@@ -3055,7 +3113,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::perlmap,@item[4,3]]</action>
       </production>
-      <documentation sections="Perl_shell">
+      <documentation sections="Perl_shell Manipulation">
 	<usage>map <xref linkend="perl_code"/> <xref linkend="xpath"/></usage>
 	<shortdesc>quickly modify node value/data using Perl code</shortdesc>
 	<description>
@@ -3097,7 +3155,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::perlrename,@item[4,3]]</action>
       </production>
-      <documentation sections="Perl_shell">
+      <documentation sections="Perl_shell Manipulation">
 	<usage>rename <xref linkend="perl_code"/> <xref linkend="xpath"/></usage>
 	<shortdesc>quickly rename nodes with in-line Perl code</shortdesc>
 	<description>
@@ -3709,9 +3767,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<shortdesc>show version information</shortdesc>
 	<description>
 	  <para>
-	    Prints program version as well as versions of
-	    XML::XSH::Functions, XML::LibXML, and XML::LibXSLT modules
-	    used.
+	    Prints program version plus version numbers of the most
+	    important libraries used.
 	  </para>
 	</description>
       </documentation>
@@ -3780,8 +3837,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<shortdesc>turn on/off parser's tendency to expand entities</shortdesc>
 	<description>
 	  <para>
-	    Turn on the entity expansion during the parse process if the
-	    <xref linkend="expression"/> is non-zero on or off otherwise.  If entity
+	    Enable the entity expansion during the parse process if the
+	    <xref linkend="expression"/> is non-zero, disable it otherwise.
+	    If entity
 	    expansion is off, any external parsed entities in the
 	    document are left as entities. Defaults to on.
 	  </para>
@@ -4133,7 +4191,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::loop_redo,@{$item[3]}]</action>
       </production>
-      <documentation sections="Navigation">
+      <documentation sections="Flow">
 	<usage>redo [<xref linkend="expression"/>]</usage>
 	<shortdesc>restart the innermost enclosing loop block</shortdesc>
 	<description>
@@ -4396,28 +4454,30 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  </para>
 	  <para>
 	    What are the benefits of <literal>iterate</literal> over a
-	    <literal>foreach</literal> loop, then? Well, under some
+	    <xref linkend="foreach"/> loop, then? Well, under some
 	    circumstances it is efficiency, under other there are
-	    none. To clarify this, we have to go a bit deaper into the
-	    details of XPath implementation.  By definition, the
+	    none. To clarify this, we have to dive a bit deeper into
+	    the details of XPath implementation.  By definition, the
 	    node-list resulting from evaluation of an XPath has to be
 	    ordered in the canonical document order. That means that
-	    an XPath implementation must contain some kind of sorting
-	    algorighm. This would not itself be much trouble if a
-	    relative document order of two nodes of a DOM tree could
-	    be determined in constant time. Unfortunately, the libxml2
-	    library, used behind XSH, does not implement mechanisms
-	    that would allow this complexity restriction. (This is,
-	    however, quite reasonable approach if all the consequences
-	    are conserned.) Thus, when comparing two nodes, libxml2
-	    traverses the tree to find their nearest common ancestor
-	    and at that point determines the relative order of the two
-	    subtrees by trying to seek one of them in a list of right
-	    siblings of the other. This of course cannot be handled in
-	    a constant time. As a result, the sorting algorithm, which
-	    would otherwise be itself quite fast becomes very
-	    inefficient when applied on a huge node-list (in a huge
-	    DOM tree).
+	    an XPath implementation must contain some kind of a
+	    sorting algorithm. This would not itself be much trouble
+	    if a relative document order of two nodes of a DOM tree
+	    could be determined in a constant time. Unfortunately, the
+	    libxml2 library, used behind XSH, does not implement
+	    mechanisms that would allow this complexity restriction
+	    (which is, however, quite natural and reasonable approach
+	    if all the consequences are considered). Thus, when
+	    comparing two nodes, libxml2 traverses the tree to find
+	    their nearest common ancestor and at that point determines
+	    the relative order of the two subtrees by trying to seek
+	    one of them in a list of right siblings of the other. This
+	    of course cannot be handled in a constant time. As a
+	    result, the sorting algorithm, reasonably efficient for a
+	    constant time comparison (polynomial of a degree &lt; 1.5) or
+	    small node-lists, becomes rather unusable for huge
+	    node-lists with linear time comparison (still polynomial
+	    but of a degree &gt; 2).
 	  </para>
 	  <para>
 	    The <literal>iterate</literal> command provides a way to
@@ -4426,15 +4486,16 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    time. On the other hand, since <literal>iterate</literal>
 	    is implemented in Perl, a proxy object glueing the C and
 	    Perl layers has to be created for every node the iterator
-	    passes by. This makes it about two to three times slower
-	    compared to a similar tree-traversing algorithm used by
-	    libxml2 itself during XPath evaluation.
+	    passes by. This (plus some extra subroutine calls) makes
+	    it about two to three times slower compared to a similar
+	    tree-traversing algorithm used by libxml2 itself during
+	    XPath evaluation.
 	  </para>
 	  <para>
-	    Our experience shows, that <literal>iterate</literal>
-	    beats <literal>foreach</literal> in performance on
-	    large node-lists (>=1500 nodes, but your milage may vary)
-	    while foreach wins on small node-lists.
+	    Our experience shows that <literal>iterate</literal> beats
+	    <xref linkend="foreach"/> in performance on large
+	    node-lists (>=1500 nodes, but your milage may vary) while
+	    <xref linkend="foreach"/> wins on smaller node-lists.
 	  </para>
 	  <para>
 	    The following two examples give equivallent results.
@@ -4453,7 +4514,8 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    <code>echo "$productive inhabitants in productive age";</code>
 	  </example>
 	  <para>
-	    To benchmark a XSH command on a UNIX system, follow the 
+	    Use e.g. <literal>| time cut</literal> pipe-line
+	    redirection to benchmark a XSH command on a UNIX system.
 	  </para>
 	</description>
 	<see-also>
@@ -4474,7 +4536,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::register_ns,
                  $item[3],$item[4]]</action>
       </production>
-      <documentation sections="Documents">
+      <documentation sections="Navigation Configuration">
 	<usage>register-namespace <xref linkend="expression"/> <xref linkend="expression"/></usage>
 	<shortdesc>register namespace prefix to use XPath expressions</shortdesc>
 	<description>
@@ -4496,7 +4558,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::register_ns,
                  $item[3],'http://www.w3.org/1999/xhtml']</action>
       </production>
-      <documentation sections="Documents">
+      <documentation sections="Navigation Configuration">
 	<usage>register-xhtml-namespace <xref linkend="expression"/></usage>
 	<shortdesc>register XHTML namespace prefix to use XPath expressions</shortdesc>
 	<description>
@@ -4517,7 +4579,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::register_ns,
                  $item[3],$XML::XSH::xshNS]</action>
       </production>
-      <documentation sections="Documents">
+      <documentation sections="Navigation Configuration">
 	<usage>register-xsh-namespace <xref linkend="expression"/></usage>
 	<shortdesc>register XSH namespace prefix to use XPath expressions</shortdesc>
 	<description>
@@ -4544,7 +4606,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::register_func,
                  $item[3],$item[4]]</action>
       </production>
-      <documentation sections="Documents">
+      <documentation sections="Navigation Configuration">
 	<usage>register-function <xref linkend="expression"/> <xref linkend="perl_code"/></usage>
 	<shortdesc>define XPath extension function (EXPERIMENTAL)</shortdesc>
 	<description>
@@ -4576,7 +4638,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
         <ruleref ref="stream_select" rep="s"/>
 	<action>[\&amp;XML::XSH::Functions::stream_process,$item[3],$item[4],$item[5],$item[6],$item[7]]</action>
       </production>
-      <documentation sections="Flow">
+      <documentation sections="Flow Documents">
 	<usage>stream input [FILE|PIPE|STRING] <xref linkend="expression"/>
                       output [FILE|PIPE|STRING] <xref linkend="expression"/>
                       select <xref linkend="xpath"/> <xref linkend="block"/>
@@ -4585,21 +4647,22 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<shortdesc>process selected elements from an XML stream (EXPERIMENTAL)</shortdesc>
 	<description>
 	  <para>
-	    EXPERIMENTAL!
-	    This command provides a memory efficient (though slower)
-	    way to process selected parts of an XML document with
-	    XSH. A streaming XML parser (SAX parser) is used to parse
-	    the input. The parser has two states which will be refered
-	    to as A and B here. The initial state of the parser is
-	    A.</para>
-	  <para>In the state A, only a limited vertical portion of the
-	    DOM tree is built. All XML data other than start-tags
-	    comming from the input stream are immediatelly copied to
-	    the output stream.  If a new start-tag of an element
-	    arrives, a new node is created in the tree. All siblings
-	    of the newly created node are removed. Thus, in the state
-	    A, there is exactly one node on every level of the
-	    tree. Now all the <xref linkend="xpath"/> expressions are
+	    EXPERIMENTAL!  This command provides a memory efficient
+	    (though slower) way to process selected parts of an XML
+	    document with XSH. A streaming XML parser (SAX parser) is
+	    used to parse the input. The parser has two states which
+	    will be refered to as A and B below. The initial state of
+	    the parser is A.</para> <para>In the state A, only a
+	    limited vertical portion of the DOM tree is built. All XML
+	    data comming from the input stream other than start-tags
+	    are immediatelly copied to the output stream.  If a new
+	    start-tag of an element arrives, a new node is created in
+	    the tree. All siblings of the newly created node are
+	    removed. Thus, in the state A, there is exactly one node
+	    on every level of the tree. After a node is added to the
+	    tree, all the <xref linkend="xpath"/> expressions
+	    following the <literal>select</literal> keyword
+	    are
 	    checked. If none matches, the parser remains in state A
 	    and copies the start-tag to the output stream. Otherwise,
 	    the first expression that matches is remembered and the
@@ -4610,16 +4673,17 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    element that was last added to the tree before the parser
 	    changed its state from A to B. No data are sent to the
 	    output at this stage. When the subtree is complete
-	    (i.e. the corresponding end-tag is encountered), the <xref
-	    linkend="block"/> of instructions following the <xref
-	    linkend="xpath"/> expression that matched is invoked with
-	    the root element of the subtree as the current context
-	    node. The commands in <xref linkend="block"/> are allowed
-	    to transform the whole element subtree or even to replace
-	    it with a different DOM subtree or subtrees. They must,
-	    however, preserve the element's parent as well as all its
-	    ancestor nodes intact. Failing to do so can result in an
-	    error or unpredictable results.
+	    (i.e. the corresponding end-tag for its topmost element is
+	    encountered), the <xref linkend="block"/> of instructions
+	    following the <xref linkend="xpath"/> expression that
+	    matched is invoked with the root element of the subtree as
+	    the current context node. The commands in <xref
+	    linkend="block"/> are allowed to transform the whole
+	    element subtree or even to replace it with a different DOM
+	    subtree or subtrees. They must, however, preserve the
+	    element's parent as well as all its ancestor nodes
+	    intact. Failing to do so can result in an error or
+	    unpredictable results.
 	  </para>
 	  <para>
 	    After the subtree processing <xref linkend="block"/>
@@ -4633,10 +4697,10 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    of information the XPath expressions can use. First
 	    notable fact is that elements can not be selected by their
 	    content. The only information present in the tree at the
-	    time of the XPath evaluation is the element's name,
-	    attributes and the same information for its
+	    time of the XPath evaluation is the element's name and
+	    attributes plus the same information for all its
 	    ancestors. There is nothing known yet about possible
-	    child nodes of the element as well as of its position
+	    child nodes of the element as well as of the node's position
 	    within its siblings.
 	  </para>
 	</description>
@@ -4662,6 +4726,81 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    If no <xref linkend="xpath"/> is given, lists namespaces
 	    in the scope of the current node.
 	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="xpath_completion_command" type="command"
+	    name="xpath-completion" inline="yes">
+      <aliases>
+	<alias name="xpath_completion"/>
+      </aliases>
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="expression"/>
+	<action>[\&amp;XML::XSH::Functions::set_xpath_completion,$item[3]]</action>
+      </production>
+      <documentation sections="Configuration">
+	<usage>xpath_completion <xref linkend="expression"/></usage>
+	<shortdesc>turn on/off TAB complation for xpath expressions in
+	the interactive mode</shortdesc>
+	<description>
+	  <para>
+	    If the
+	    <xref linkend="expression"/> is non-zero,
+	    enable the TAB completion for <xref linkend="xpath"/>
+	    expansions in the interactive shell mode, disable it
+	    otherwise. Defaults to on.
+	  </para>
+	  <para>This command is equivalent to setting the
+	    <literal>$XPATH_COMPLETION</literal> variable.</para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="xpath_axis_completion_command" type="command"
+	    name="xpath-axis-completion" inline="yes">
+      <aliases>
+	<alias name="xpath_axis_completion"/>
+      </aliases>
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="expression"/>
+	<action>[\&amp;XML::XSH::Functions::set_xpath_axis_completion,$item[3]]</action>
+      </production>
+      <documentation sections="Configuration">
+	<usage>xpath_axis_completion <xref linkend="expression"/></usage>
+	<shortdesc>sets TAB complation for axes in xpath expressions in
+	the interactive mode</shortdesc>
+	<description>
+	  <para>
+	    The following values are allowed:
+	    <literal>always</literal>, <literal>never</literal>,
+	    <literal>when-empty</literal>. Note, that all other values
+	    (including 1) work as <literal>never</literal>!
+	  </para>
+	  <para>
+	    If the <xref linkend="expression"/> evaluates 
+	    to <literal>always</literal>, TAB completion for
+	    XPath expressions always includes axis names.
+	  </para>
+	  <para>
+	    If the <xref linkend="expression"/> evaluates to
+	    <literal>when-empty</literal>, the TAB completion list for
+	    XPath expressions includes axis names only if no element name
+	    matches the completion.
+	  </para>
+	  <para>
+	    If the <xref linkend="expression"/> evaluates to
+	    <literal>never</literal>, the TAB completion list for
+	    XPath expressions never includes axis names.
+	  </para>
+	  <para>
+	    The default value for this optio is
+	    <literal>always</literal>.
+	  </para>
+	  <para>This command is equivalent to setting the
+	    <literal>$XPATH_AXIS_COMPLETION</literal> variable.</para>
 	</description>
       </documentation>
     </rule>

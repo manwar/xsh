@@ -144,6 +144,10 @@ xincludes
 xinsert
 xmove
 xmv
+xpath-axis-completion
+xpath-completion
+xpath_axis_completion
+xpath_completion
 xsl
 xslt
 xsltproc

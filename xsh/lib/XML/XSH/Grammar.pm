@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri May 30 18:06:00 2003
+# Wed Jun  4 11:50:48 2003
 
 
 package XML::XSH::Grammar;
@@ -295,6 +295,12 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 	  | /(namespaces)/ <commit> xpath(?)
 		{ [\&XML::XSH::Functions::list_namespaces,@{$item[3]}] }
+  	
+	  | /(xpath-completion|xpath_completion)\s/ <commit> expression
+		{ [\&XML::XSH::Functions::set_xpath_completion,$item[3]] }
+  	
+	  | /(xpath-axis-completion|xpath_axis_completion)\s/ <commit> expression
+		{ [\&XML::XSH::Functions::set_xpath_axis_completion,$item[3]] }
   	
 	  | call_command
 

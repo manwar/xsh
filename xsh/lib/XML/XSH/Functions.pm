@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.56 2003-05-30 16:14:26 pajas Exp $
+# $Id: Functions.pm,v 1.57 2003-06-04 14:40:46 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -22,11 +22,13 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 	    $VALIDATION $RECOVERING $PARSER_EXPANDS_ENTITIES $KEEP_BLANKS
 	    $PEDANTIC_PARSER $LOAD_EXT_DTD $PARSER_COMPLETES_ATTRIBUTES
 	    $PARSER_EXPANDS_XINCLUDE
+	    $XPATH_AXIS_COMPLETION
+	    $XPATH_COMPLETION
 	  /;
 
 BEGIN {
   $VERSION='1.7';
-  $REVISION='$Revision: 1.56 $';
+  $REVISION='$Revision: 1.57 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -39,6 +41,8 @@ BEGIN {
 		    $VALIDATION
 		    $RECOVERING
 		    $PARSER_EXPANDS_ENTITIES
+		    $XPATH_AXIS_COMPLETION
+		    $XPATH_COMPLETION
 		    $KEEP_BLANKS
 		    $PEDANTIC_PARSER
 		    $LOAD_EXT_DTD
@@ -76,6 +80,8 @@ BEGIN {
   $LOAD_EXT_DTD=0;
   $PARSER_COMPLETES_ATTRIBUTES=1;
   $PARSER_EXPANDS_XINCLUDE=0;
+  $XPATH_COMPLETION=1;
+  $XPATH_AXIS_COMPLETION='always'; # never / when-empty
   $_newdoc=1;
   $_die_on_err=1;
   %_nodelist=();
@@ -169,6 +175,12 @@ sub set_expand_xinclude	     { $PARSER_EXPANDS_XINCLUDE=$_[0]; 1; }
 sub set_indent		     { $INDENT=$_[0]; 1; }
 sub set_backups		     { $BACKUPS=$_[0]; 1; }
 sub set_cdonopen	     { $SWITCH_TO_NEW_DOCUMENTS=$_[0]; 1; }
+sub set_xpath_completion     { $XPATH_COMPLETION=$_[0]; 1; }
+sub set_xpath_axis_completion { $XPATH_AXIS_COMPLETION=$_[0];
+				if ($XPATH_AXIS_COMPLETION!~/^always|when-empty|never$/) {
+				  $XPATH_AXIS_COMPLETION='never';
+				}
+				1; }
 
 sub get_validation	     { $VALIDATION }
 sub get_recovering	     { $RECOVERING }
@@ -181,6 +193,9 @@ sub get_expand_xinclude	     { $PARSER_EXPANDS_XINCLUDE }
 sub get_indent		     { $INDENT }
 sub get_backups		     { $BACKUPS }
 sub get_cdonopen	     { $SWITCH_TO_NEW_DOCUMENTS }
+sub get_xpath_completion     { $XPATH_COMPLETION }
+sub get_xpath_axis_completion { $XPATH_AXIS_COMPLETION }
+
 
 # initialize global XPathContext
 sub xpc_init {
@@ -250,7 +265,9 @@ sub list_flags {
   print (($TEST_MODE ? "run-mode" : "test-mode"),";\n");
   print "switch_to_new_documents ".(get_cdonopen() or "0").";\n";;
   print "encoding '$ENCODING';\n";
-  print "query-encoding '$QUERY_ENCODING';\n";
+  print "query_encoding '$QUERY_ENCODING';\n";
+  print "xpath_completion ".(get_xpath_completion() or "0").";\n";
+  print "xpath_axis_completion \'".get_xpath_axis_completion()."';\n";
 }
 
 sub toUTF8 {
@@ -320,11 +337,14 @@ sub xsh_set_parser {
 
 # print version info
 sub print_version {
-  out("Main program:        $::VERSION $::REVISION\n");
-  out("XML::XSH::Functions: $VERSION $REVISION\n");
-  out($_xml_module->module(),"\t",$_xml_module->version(),"\n");
-#  out("XML::LibXSLT         $XML::LibXSLT::VERSION\n")
-#    if defined($XML::LibXSLT::VERSION);
+  out("Main program:              $::VERSION $::REVISION\n");
+  out("XML::XSH::Functions:       $VERSION $REVISION\n");
+  out("XML::LibXML:               $XML::LibXML::VERSION\n");
+#  out($_xml_module->module(),"\t",$_xml_module->version(),"\n");
+  out("XML::LibXSLT               $XML::LibXSLT::VERSION\n")
+    if defined($XML::LibXSLT::VERSION);
+  out("XML::LibXML::XPathContext  $XML::LibXML::XPathContext::VERSION\n")
+    if defined($XML::LibXML::XPathContext::VERSION);
   return 1;
 }
 

@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 1.11 2003-05-30 16:14:47 pajas Exp $
+# $Id: Completion.pm,v 1.12 2003-06-04 14:40:46 pajas Exp $
 
 package XML::XSH::Completion;
 
@@ -212,9 +212,9 @@ sub xpath_complete_str {
 
 sub xpath_complete {
   my ($line, $word,$pos)=@_;
+  return () unless $XML::XSH::Functions::XPATH_COMPLETION;
   my $str=XML::XSH::Functions::toUTF8($XML::XSH::Functions::QUERY_ENCODING,
 				      substr($line,0,$pos).$word);
-
   my ($xp,$local) = xpath_complete_str($str,0);
 #  XML::XSH::Functions::__debug("COMPLETING $_[0] local $local as $xp\n");
   return () if $xp eq "";
@@ -222,7 +222,6 @@ sub xpath_complete {
   my $docid=$1.":" if $1;
 #  XML::XSH::Functions::__debug("ID:$1 XP:$2\n");
   my ($id,$query,$doc)=XML::XSH::Functions::_xpath([$1,$2]);
-
   return () unless (ref($doc));
   my $ql= eval { XML::XSH::Functions::find_nodes([$id,$query]) };
   return () if $@;
@@ -234,22 +233,24 @@ sub xpath_complete {
 			   -length($local)).
 		    $_->nodeName(),$pos))
   } @$ql}=();
-  if ((keys %names)==0) {
-#    print "completing $word as an axis\n";
+
+  my @completions = sort { $a cmp $b } keys %names;
+
+  if (($XML::XSH::Functions::XPATH_AXIS_COMPLETION eq 'always' or
+       $XML::XSH::Functions::XPATH_AXIS_COMPLETION eq 'when-empty' and !@completions)
+      and $str =~ /[ \n\t\r|\/]([[:alpha:]][-:[:alnum:]]*)?$/) {
     # complete XML axis
-    my @completions;
+    my ($pre,$axpart)=($word =~ /^(.*[^[:alnum:]])?([[:alpha:]][-[:alnum:]:]*)/);
+#    print "\nWORD: $word\nPRE: $pre\nPART: $axpart";
     foreach my $axis (qw(following preceding following-or-self preceding-or-self
-                         parent ancestor ancestor-or-self descendant self
-                         descendant-or-self child attribute namespace)) {
-      my ($pre,$axpart)=($word =~ /(^|[^[:alnum:]])([_[:alpha:]][-[:alnum:]_.:]*)/);
+			 parent ancestor ancestor-or-self descendant self
+			 descendant-or-self child attribute namespace)) {
       if ($axis =~ /^${axpart}/) {
 	push @completions, "${pre}${axis}::";
       }
     }
-    return @completions;
-  } else {
-    return sort { $a cmp $b } keys %names;
   }
+  return @completions;
 }
 
 1;

@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri May 30 18:06:00 2003
+# Wed Jun  4 11:50:49 2003
 
 package XML::XSH::Help;
 use strict;
@@ -80,7 +80,8 @@ Help items:
     register-xsh-namespace, remove, rename, return, run-mode, save, select,
     sort, stream, strip-whitespace, switch-to-new-documents, test-mode,
     throw, try, unfold, unless, valid, validate, validation, variables,
-    verbose, version, while, xcopy, xinsert, xmove, xslt, xupdate
+    verbose, version, while, xcopy, xinsert, xmove, xpath-axis-completion,
+    xpath-completion, xslt, xupdate
 
   XSH Argument Types:
 
@@ -107,7 +108,8 @@ description:
 	     save, select, sort, stream, strip-whitespace,
 	     switch-to-new-documents, test-mode, throw, try, unfold,
 	     unless, valid, validate, validation, variables, verbose,
-	     version, while, xcopy, xinsert, xmove, xslt, xupdate
+	     version, while, xcopy, xinsert, xmove, xpath-axis-completion,
+	     xpath-completion, xslt, xupdate
 
 END
 
@@ -234,11 +236,11 @@ description:
 	     XSH supports arbitrary XPath expression as defined in W3C
 	     recommendation at http://www.w3.org/TR/xpath. In XSH, XPath
 	     expressoin may be optionally preceded with a document
-	     identifier followed by colon. If no document identifier is
-	     used, the current document is used.
+	     identifier followed by colon (<id>:xpath). If no document
+	     identifier is given, the current document is used.
 
-	     The following XPath extension functions are defined in the XSH
-	     namespace:
+	     As an extension, the following XPath extension functions are
+	     defined in the XSH namespace:
 
 	     `xsh:doc(id-string)' - returns a nodelist consisting of the
 	     document node associated in XSH with an identifier given in
@@ -253,12 +255,13 @@ description:
 	     returned by the built-in XPath function `string()' matches the
 	     regular expression given in `regexp-string'.
 
-	     `xsh:same(node-set, node-set)' - returns `true' if the given
+	     `xsh:same(node-set1, node-set2)' - returns `true' if the given
 	     node sets contain exactly one node each and these nodes are
-	     the same (equivallent to `count(node-set|node-set)').
+	     the same (in XPath, this can also be expressed as
+	     `count(node-set1|node-set2)+count(node-set1)+count(node-set2)=
+	     1').
 
 Example:     Open a document and count all sections containing a subsection
-	     in it
 
              xsh scratch:/> open v = mydocument1.xml;
              xsh v:/> open k = mydocument2.xml;
@@ -1021,8 +1024,8 @@ aliases:     strip_whitespace
 description:
 	     `strip' removes all leading and trailing whitespace from given
 	     nodes. If applied to an element node, it removes all leading
-	     and trailing child text nodes and CDATA sections consisting of
-	     whitespace only.
+	     and trailing child text nodes and CDATA sections that consist
+	     entirely of whitespace.
 
 END
 
@@ -1147,27 +1150,31 @@ description:
 
 	     DOCUMENTATION OBSOLETE! Syntax changed!
 
-	     !!!!TODO!!!! This command may be used to sort the node-list
-	     stored in the node-list variable <id>. First, for each node in
-	     the node-list, the first <xpath> or <perl-code> expression is
-	     evaluated in its context and the resulting value is remembered
-	     for the node. (In case of <xpath>, the result of whatever type
-	     is cast to a string). Now perl sorting algorithm is used to
-	     sort the nodelist, consulting the second argument <perl-code>
-	     to compare nodes. Before each comparison, the values obtained
-	     from the previous evaluation of the first argument expression
-	     on the two nodes being compared are stored into `$a' and `$b'
-	     variables in respective order. Now, the <perl-code> being
-	     consulted is supposed to be either -1 (the first node should
-	     come first), 0 (no order precedence), or 1 (the second node
-	     should come first). Note, that Perl provides very convenient
-	     operators `cmp' and `<=>' for string and numeric comparison of
-	     this kind as shown in the examples below.
+	     This command may be used to sort the node-list stored in the
+	     node-list variable <id>. First, for each node in the node-list
+	     %<id>, the first argument (either a <xpath> or <perl-code>
+	     expression), which serves as a sorting criterion, is evaluated
+	     in the context of the node and the obtained value is stored
+	     together with the node. (In case of <xpath> the result of
+	     whatever type is cast to a string). Then perl's sorting
+	     algorithm is used to sort the nodelist, consulting the second,
+	     <perl-code>, argument to compare nodes. Before the <perl-code>
+	     is evaluated, the values obtained from the previous evaluation
+	     of the sorting crierion argument on the two nodes being
+	     compared are stored into `$a' and `$b' variables in the
+	     respective order. The <perl-code> being consulted is supposed
+	     to return either -1 (the first node should come first), 0 (no
+	     order precedence), or 1 (the second node should come first).
+	     Note that Perl provides very convenient operators `cmp' and
+	     `<=>' for string and numeric comparison of this kind as shown
+	     in the examples below.
 
-	     Note that here, unlike in <assign>, <if>, or <while>, the
-	     evaluation of an <xpath> expression always results in a
-	     string. Thus you need not to bother with wrapping node-queries
-	     with a `string()' function.
+	     Remember that `sort' (unlike <assign>, <if>, or <while>)
+	     evaluates the first <xpath> argument (the sorting criterion)
+	     in a way to obtain a string. Thus you need not to bother with
+	     wrapping node-queries with a `string()' function but you must
+	     remember to explicitly wrap the expression in `count()' if the
+	     number of the nodes is to be the sorting criterion.
 
 Example:     Sort creatures by name (XPath-based sort) in ascending order
 	     using current locale settings
@@ -1577,9 +1584,8 @@ $HELP{'version'}=[<<'END'];
 usage:       version
              
 description:
-	     Prints program version as well as versions of
-	     XML::XSH::Functions, XML::LibXML, and XML::LibXSLT modules
-	     used.
+	     Prints program version plus version numbers of the most
+	     important libraries used.
 
 END
 
@@ -1625,8 +1631,8 @@ usage:       parser_expands_entities <expression>
 aliases:     parser_expands_entities
 
 description:
-	     Turn on the entity expansion during the parse process if the
-	     <expression> is non-zero on or off otherwise. If entity
+	     Enable the entity expansion during the parse process if the
+	     <expression> is non-zero, disable it otherwise. If entity
 	     expansion is off, any external parsed entities in the document
 	     are left as entities. Defaults to on.
 
@@ -1990,40 +1996,43 @@ description:
 	     one XPath step, i.e. it cannot contain an XPath step separator
 	     `/'.
 
-	     What are the benefits of `iterate' over a `foreach' loop,
+	     What are the benefits of `iterate' over a <foreach> loop,
 	     then? Well, under some circumstances it is efficiency, under
-	     other there are none. To clarify this, we have to go a bit
-	     deaper into the details of XPath implementation. By
+	     other there are none. To clarify this, we have to dive a bit
+	     deeper into the details of XPath implementation. By
 	     definition, the node-list resulting from evaluation of an
 	     XPath has to be ordered in the canonical document order. That
-	     means that an XPath implementation must contain some kind of
-	     sorting algorighm. This would not itself be much trouble if a
+	     means that an XPath implementation must contain some kind of a
+	     sorting algorithm. This would not itself be much trouble if a
 	     relative document order of two nodes of a DOM tree could be
-	     determined in constant time. Unfortunately, the libxml2
+	     determined in a constant time. Unfortunately, the libxml2
 	     library, used behind XSH, does not implement mechanisms that
-	     would allow this complexity restriction. (This is, however,
-	     quite reasonable approach if all the consequences are
-	     conserned.) Thus, when comparing two nodes, libxml2 traverses
-	     the tree to find their nearest common ancestor and at that
-	     point determines the relative order of the two subtrees by
-	     trying to seek one of them in a list of right siblings of the
-	     other. This of course cannot be handled in a constant time. As
-	     a result, the sorting algorithm, which would otherwise be
-	     itself quite fast becomes very inefficient when applied on a
-	     huge node-list (in a huge DOM tree).
+	     would allow this complexity restriction (which is, however,
+	     quite natural and reasonable approach if all the consequences
+	     are considered). Thus, when comparing two nodes, libxml2
+	     traverses the tree to find their nearest common ancestor and
+	     at that point determines the relative order of the two
+	     subtrees by trying to seek one of them in a list of right
+	     siblings of the other. This of course cannot be handled in a
+	     constant time. As a result, the sorting algorithm, reasonably
+	     efficient for a constant time comparison (polynomial of a
+	     degree < 1.5) or small node-lists, becomes rather unusable for
+	     huge node-lists with linear time comparison (still polynomial
+	     but of a degree > 2).
 
 	     The `iterate' command provides a way to avoid sorting the
 	     resulting nodelist by limiting allowed XPath expression to one
 	     step (and thus one axis) at a time. On the other hand, since
 	     `iterate' is implemented in Perl, a proxy object glueing the C
 	     and Perl layers has to be created for every node the iterator
-	     passes by. This makes it about two to three times slower
-	     compared to a similar tree-traversing algorithm used by
-	     libxml2 itself during XPath evaluation.
+	     passes by. This (plus some extra subroutine calls) makes it
+	     about two to three times slower compared to a similar
+	     tree-traversing algorithm used by libxml2 itself during XPath
+	     evaluation.
 
-	     Our experience shows, that `iterate' beats `foreach' in
+	     Our experience shows that `iterate' beats <foreach> in
 	     performance on large node-lists (>=1500 nodes, but your milage
-	     may vary) while foreach wins on small node-lists.
+	     may vary) while <foreach> wins on smaller node-lists.
 
 	     The following two examples give equivallent results. However,
 	     the one using iterate may be faster esp. if the number of
@@ -2040,7 +2049,8 @@ Example:     Using XPath
              $productive=count(rohan/inhabitants/*[@age>=18 and @age<60]);
              echo "$productive inhabitants in productive age";
 
-	     To benchmark a XSH command on a UNIX system, follow the
+	     Use e.g. `| time cut' pipe-line redirection to benchmark a XSH
+	     command on a UNIX system.
 
 END
 
@@ -2101,17 +2111,18 @@ description:
 	     slower) way to process selected parts of an XML document with
 	     XSH. A streaming XML parser (SAX parser) is used to parse the
 	     input. The parser has two states which will be refered to as A
-	     and B here. The initial state of the parser is A.
+	     and B below. The initial state of the parser is A.
 
 	     In the state A, only a limited vertical portion of the DOM
-	     tree is built. All XML data other than start-tags comming from
-	     the input stream are immediatelly copied to the output stream.
-	     If a new start-tag of an element arrives, a new node is
-	     created in the tree. All siblings of the newly created node
+	     tree is built. All XML data comming from the input stream
+	     other than start-tags are immediatelly copied to the output
+	     stream. If a new start-tag of an element arrives, a new node
+	     is created in the tree. All siblings of the newly created node
 	     are removed. Thus, in the state A, there is exactly one node
-	     on every level of the tree. Now all the <xpath> expressions
-	     are checked. If none matches, the parser remains in state A
-	     and copies the start-tag to the output stream. Otherwise, the
+	     on every level of the tree. After a node is added to the tree,
+	     all the <xpath> expressions following the `select' keyword are
+	     checked. If none matches, the parser remains in state A and
+	     copies the start-tag to the output stream. Otherwise, the
 	     first expression that matches is remembered and the parser
 	     changes its state to B.
 
@@ -2119,15 +2130,15 @@ description:
 	     element that was last added to the tree before the parser
 	     changed its state from A to B. No data are sent to the output
 	     at this stage. When the subtree is complete (i.e. the
-	     corresponding end-tag is encountered), the <command-block> of
-	     instructions following the <xpath> expression that matched is
-	     invoked with the root element of the subtree as the current
-	     context node. The commands in <command-block> are allowed to
-	     transform the whole element subtree or even to replace it with
-	     a different DOM subtree or subtrees. They must, however,
-	     preserve the element's parent as well as all its ancestor
-	     nodes intact. Failing to do so can result in an error or
-	     unpredictable results.
+	     corresponding end-tag for its topmost element is encountered),
+	     the <command-block> of instructions following the <xpath>
+	     expression that matched is invoked with the root element of
+	     the subtree as the current context node. The commands in
+	     <command-block> are allowed to transform the whole element
+	     subtree or even to replace it with a different DOM subtree or
+	     subtrees. They must, however, preserve the element's parent as
+	     well as all its ancestor nodes intact. Failing to do so can
+	     result in an error or unpredictable results.
 
 	     After the subtree processing <command-block> returns, all
 	     subtrees that now appear in the DOM tree in the place of the
@@ -2138,10 +2149,10 @@ description:
 	     information the XPath expressions can use. First notable fact
 	     is that elements can not be selected by their content. The
 	     only information present in the tree at the time of the XPath
-	     evaluation is the element's name, attributes and the same
-	     information for its ancestors. There is nothing known yet
-	     about possible child nodes of the element as well as of its
-	     position within its siblings.
+	     evaluation is the element's name and attributes plus the same
+	     information for all its ancestors. There is nothing known yet
+	     about possible child nodes of the element as well as of the
+	     node's position within its siblings.
 
 END
 
@@ -2157,6 +2168,52 @@ description:
 
 END
 
+
+$HELP{'xpath-completion'}=[<<'END'];
+usage:       xpath_completion <expression>
+             
+aliases:     xpath_completion
+
+description:
+	     If the <expression> is non-zero, enable the TAB completion for
+	     <xpath> expansions in the interactive shell mode, disable it
+	     otherwise. Defaults to on.
+
+	     This command is equivalent to setting the `$XPATH_COMPLETION'
+	     variable.
+
+END
+
+$HELP{'xpath_completion'}=$HELP{'xpath-completion'};
+
+$HELP{'xpath-axis-completion'}=[<<'END'];
+usage:       xpath_axis_completion <expression>
+             
+aliases:     xpath_axis_completion
+
+description:
+	     The following values are allowed: `always', `never',
+	     `when-empty'. Note, that all other values (including 1) work
+	     as `never'!
+
+	     If the <expression> evaluates to `always', TAB completion for
+	     XPath expressions always includes axis names.
+
+	     If the <expression> evaluates to `when-empty', the TAB
+	     completion list for XPath expressions includes axis names only
+	     if no element name matches the completion.
+
+	     If the <expression> evaluates to `never', the TAB completion
+	     list for XPath expressions never includes axis names.
+
+	     The default value for this optio is `always'.
+
+	     This command is equivalent to setting the
+	     `$XPATH_AXIS_COMPLETION' variable.
+
+END
+
+$HELP{'xpath_axis_completion'}=$HELP{'xpath-axis-completion'};
 
 $HELP{'Documents'}=[<<'END'];
 Files/Documents
@@ -2186,9 +2243,7 @@ Example: Store XSH document DOC on a remote machine using Secure Shell
 
 Related commands:
   backups, catalog, clone, close, create, documents, nobackups, open,
-  process-xinclude, register-function, register-namespace,
-  register-xhtml-namespace, register-xsh-namespace, save, select,
-  switch-to-new-documents
+  process-xinclude, save, select, stream, switch-to-new-documents
 
 END
 
@@ -2231,7 +2286,8 @@ Example:
 
 
 Related commands:
-  cd, fold, locate, ls, pwd, redo, select, unfold
+  cd, fold, locate, ls, pwd, register-function, register-namespace,
+  register-xhtml-namespace, register-xsh-namespace, select, unfold
 
 END
 
@@ -2343,8 +2399,8 @@ Example: Using string variables to convert between different types of nodes
 
 
 Related commands:
-  clone, copy, insert, move, normalize, process-xinclude, remove,
-  strip-whitespace, xcopy, xinsert, xmove, xslt, xupdate
+  clone, copy, insert, map, move, normalize, process-xinclude, remove,
+  rename, strip-whitespace, xcopy, xinsert, xmove, xslt, xupdate
 
 END
 
@@ -2365,8 +2421,8 @@ Flow control
 
 
 Related commands:
-  call, def, exit, foreach, if, include, iterate, last, next, prev, return,
-  run-mode, stream, test-mode, throw, try, unless, while
+  call, def, exit, foreach, if, include, iterate, last, next, prev, redo,
+  return, run-mode, stream, test-mode, throw, try, unless, while
 
 END
 
@@ -2563,8 +2619,10 @@ Related commands:
   backups, debug, encoding, indent, keep-blanks, load-ext-dtd, nobackups,
   nodebug, options, parser-completes-attributes, parser-expands-entities,
   parser-expands-xinclude, pedantic-parser, query-encoding, quiet,
-  recovering, run-mode, switch-to-new-documents, test-mode, validation,
-  verbose
+  recovering, register-function, register-namespace,
+  register-xhtml-namespace, register-xsh-namespace, run-mode,
+  switch-to-new-documents, test-mode, validation, verbose,
+  xpath-axis-completion, xpath-completion
 
 END
 
@@ -2611,7 +2669,7 @@ Interacting with Perl and Shell
     returns the same value as `count('doc:string(expression)')'. The third
     function, named `xml_list', returns the result of the XPath search as a
     XML string which is equivallent to the output of a <ls> on the same
-    XPath expression (without indentation and without folding and any other
+    XPath expression (without indentation and without folding or any other
     limitation on the depth of the listing).
 
     In the following examples we use Perl to populate the Middle-Earth with
@@ -2642,6 +2700,42 @@ Example: The same code as a single Perl block
         close $file;
       }
     };
+
+  Writing your own XPath extension functions in Perl
+  --------------------------------------------------
+
+    XSH allows the user to extend the set of XPath functions by providing
+    an extension function written in Perl. This can be achieved using the
+    <register-function> command. The perl code implementing an extension
+    function works as a usual perl routine accepting its arguments in `@_'
+    and returning the result. The following conventions are used:
+
+    The arguments passed to the perl implementation by the XPath engine are
+    either simple scalars or `XML::LibXML::NodeList' objects, depending on
+    the types of the XPath arguments. The implementation is responsible for
+    checking the argument number and types. The implementation may use
+    arbitrary `XML::LibXML' methods to process the arguments and return the
+    result. (`XML::LibXML' perl module documentation can be found for
+    example at
+    http://search.cpan.org/author/PHISH/XML-LibXML-1.54/LibXML.pm).
+
+    The implementation SHOULD NOT, however, MODIFY the document. Doing so
+    could not only confuse the XPath engine but result in an critical error
+    (such as segmentation fault).
+
+    Calling XSH commands from extension function implementations is not
+    currently allowed.
+
+    The perl code must return a single value, which can be of one of the
+    following types: a simple scalar (a number or string),
+    `XML::LibXML::Boolean' object reference (result is a boolean value),
+    `XML::LibXML::Literal' object reference (result is a string),
+    `XML::LibXML::Number' object reference (resulat is a float),
+    `XML::LibXML::Node' (or derived) object reference (result is a nodeset
+    consisting of a single node), or `XML::LibXML::NodeList' (result is a
+    nodeset). For convenience, simple (non-blessed) array references
+    consisting of `XML::LibXML::Node' objects can also be used for a
+    nodeset result instead of a `XML::LibXML::NodeList'.
 
   Calling the System Shell
   ------------------------
