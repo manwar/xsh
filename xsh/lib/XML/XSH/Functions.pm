@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.7 2002-03-20 17:59:40 pajas Exp $
+# $Id: Functions.pm,v 1.8 2002-03-21 15:42:16 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -482,7 +482,8 @@ sub get_doc {
 # create a new document by parsing a file
 sub open_doc {
   my ($id,$file)=expand @_[0,1];
-  my $as_html=$_[2];
+  my $format=$_[2];
+
   print STDERR "open [$file] as [$id]\n" if "$_debug";
   $file=expand($file);
   $id=_id($id);
@@ -491,17 +492,22 @@ sub open_doc {
     print STDERR "hint: open identifier=file-name\n" unless "$_quiet";
     return;
   }
-  if (-f $file || $file=~/^[a-z]+:/) { # || (-f ($file="$file.gz"))) {
+  if ($format eq 'pipe' || -f $file || $file=~/^[a-z]+:/) { # || (-f ($file="$file.gz"))) {
     print STDERR "parsing $file\n" unless "$_quiet";
     eval {
       local $SIG{INT}=\&sigint;
       my $doc;
-      if ($as_html) {
+      if ($format eq 'html') {
 	$doc=$_parser->parse_html_file($file);
 	# WORKAROUND
 	# THIS IS A WORKAROUND UNTIL LibXML IS FIXED
 	$doc=$_parser->parse_string(join "\n", map { $_->toString() } $doc->childNodes());
 	# WORKAROUND
+      } elsif ($format eq 'pipe') {
+	local *F;
+	open F,"$file|";
+	$doc=$_parser->parse_fh(\*F);
+	close F;
       } else {
 	$doc=$_parser->parse_file($file);
       }
