@@ -57,12 +57,23 @@ $grammar=<<'_EO_GRAMMAR_';
   shell : /!\s*/ cmdline { XSH::Functions::sh($item[2]); }
   cmdline : /[^\n]*/
 
-  option :  /quiet/ { [\&XSH::Functions::set_opt_q,1] }
+  option :  /quiet/ { [\&XSH::Functions::set_opt_q,1]; }
             | /verbose/ { [\&XSH::Functions::set_opt_q,0] }
             | /test-mode/ { XSH::Functions::set_opt_c(1); }
             | /run-mode/ { XSH::Functions::set_opt_c(0); }
-            | /debug/ { [\&XSH::Functions::set_opt_d,1] }
-            | /nodebug/ { [\&XSH::Functions::set_opt_d,0] }
+            | /debug/ { [\&XSH::Functions::set_opt_d,1]; }
+            | /nodebug/ { [\&XSH::Functions::set_opt_d,0]; }
+            | /version/ { [\&XSH::Functions::print_version,0]; }
+            | /validation\s/ expression { [\&XSH::Functions::set_validation,$item[2]]; }
+            | /parser_expands_entities\s/ expression
+              { [\&XSH::Functions::set_expand_entities,$item[2]]; }
+            | /keep_blanks\s/ expression { [\&XSH::Functions::set_keep_blanks,$item[2]]; }
+            | /pedantic_parser\s/ expression { [\&XSH::Functions::set_pedantic_parser,$item[2]]; }
+            | /complete_attributes\s/ expression
+                             { [\&XSH::Functions::set_complete_attributes,$item[2]]; }
+            | /parser_expands_xinclude\s/ expression { [\&XSH::Functions::set_expand_xinclude,$item[2]]; }
+            | /load_ext_dtd\s/ expression { [\&XSH::Functions::set_load_ext_dtd,$item[2]]; }
+
             | /encoding\s/ expression { [\&XSH::Functions::set_encoding,$item[2]]; }
             | /query-encoding\s/ expression { [\&XSH::Functions::set_qencoding,$item[2]]; }
 
@@ -82,7 +93,7 @@ $grammar=<<'_EO_GRAMMAR_';
             | exec_command  | call_command | include_command | assign_command
             | print_var_command | var_command | print_command
             | create_command | list_defs_command | select_command
-            | option | compound)
+            | option | compound | process_xinclude_command)
             { [$item[1]] }
 
   compound  : /if\s/ xpath (command|block) { [\&XSH::Functions::if_statement,$item[2],$item[3]] }
@@ -140,7 +151,7 @@ $grammar=<<'_EO_GRAMMAR_';
                  | /xinsert\s|xadd\s/ nodetype expression loc xpath
                  { [\&XSH::Functions::insert,@item[2,3,5,4],1]; }
 
-  nodetype       : /element|attribute|attributes|text|cdata|pi|comment/
+  nodetype       : /element|attribute|attributes|text|cdata|pi|comment|chunk/
 
   loc : "after"
       | "before"
@@ -160,6 +171,7 @@ $grammar=<<'_EO_GRAMMAR_';
   clone_command : /dup\s|clone\s/ ID /\s*=\s*/ ID { [\&XSH::Functions::clone,@item[2,4]]; }
 
   list_command : /list\s|ls\s/ xpath    { [\&XSH::Functions::list,$item[2]]; }
+               | /list|ls/              { [\&XSH::Functions::list]; }
 
   count_command : /count\s|xpath\s/ xpath { [\&XSH::Functions::print_count,$item[2]];}
 
@@ -209,6 +221,11 @@ $grammar=<<'_EO_GRAMMAR_';
 
   exit_command : /exit\s|quit\s/ expression { [\&XSH::Functions::quit,$item[2]]; }
                | /exit|quit/           { [\&XSH::Functions::quit,0]; }
+
+  process_xinclude_command : /(process_xincludes?|xincludes?|load_xincludes?)\s/ ID 
+                                       { [\&XSH::Functions::process_xinclude,$item[2]]; }
+                             /(process_xincludes?|xincludes?|load_xincludes?)(\s|$)/
+                                       { [\&XSH::Functions::process_xinclude,undef]; }
 
   filename : expression
 
