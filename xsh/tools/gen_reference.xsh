@@ -1,19 +1,32 @@
 # xsh
 
-$db_stylesheet="/home/pajas/share/xsl/docbook/html/docbook.xsl";
-$html_stylesheet="style.css";
-X = "xsh_grammar.xml";
+if ("$xsh_grammar_file" = "") $xsh_grammar_file="src/xsh_grammar.xml";
+if ("$db_stylesheet" = "") {
+  perl { ($db_stylesheet)=split(/\n/,`locate html/docbook.xsl`); };
+  echo "Using DocBook XML stylesheet: $db_stylesheet"
+}
+if ("$db_stylesheet" = "") {
+  echo "Cannot find docbook.xsl stylesheets! Exiting."
+  exit 1;
+}
+if ("$html_stylesheet"="") $html_stylesheet="style.css";
+
+X = $xsh_grammar_file;
+parser-completes-attributes 1;
 indent 1;
 validation 0;
-#quiet;
+quiet;
 
 def transform_section {
   map { s/^[ \t]+//; s/\n[ \t]+/\n/g; } %section//code/text();
+  foreach %section//code/tab {
+    perl { $ws='  ' x count('string(@count)'); };
+    insert text $ws instead of %section//code/tab;
+  }
   map { $_='programlisting' } %section//code;
   foreach %section//xref {
     $linkend=string(@linkend);
     foreach X:(id("$linkend")) {
-      echo "FOUND: $linkend ---------";
       if (name()='section') {
 	$content=string(title);
       } else {
@@ -53,7 +66,7 @@ $toc_template="<html>
   </head>
   <body>
     <h2>XSH Reference</h2>
-    <font color='#000090' size='-3'>
+    <font color='#000090' size='-2'>
       <a href='t_syntax.html' target='mainIndex'>Syntax</a><br/>
       <a href='t_command.html' target='mainIndex'>Commands</a><br/>
       <a href='t_argtype.html' target='mainIndex'>Argument types</a><br/>
@@ -83,7 +96,7 @@ new I "<html>
 save_HTML I 'doc/index.html';
 close I;
 
-new S "<section id='intro'><title>Introduction</title></section>";
+new S "<section id='intro'><title>Getting Started</title></section>";
 %section=S://section;
 xcopy X:/recdescent-xml/doc/description/node() into %section;
 call transform_section;
@@ -95,7 +108,7 @@ for T:(/html/body/font/a[contains(@href,'syntax')]) {
   add chunk "<u><b/></u>" before .;
   move . into preceding-sibling::u/b;
 }
-add chunk "<a href='s_intro.html' target='mainWindow'>Introduction</a><br/>"
+add chunk "<a href='s_intro.html' target='mainWindow'>Getting started</a><br/>"
   into T:/html/body/small;
 
 foreach X:/recdescent-xml/doc/section {
@@ -107,13 +120,17 @@ foreach X:/recdescent-xml/doc/section {
     %section=S:section;
   }
   xcopy ./node() into %section;
-  add chunk "<simplesect>
-               <title>Related Commands and Argument Types</title>
-               <variablelist/>
-             </simplesect>" into %section;
 
   %rules=X:(//rule[documentation[id(@sections)[@id='$id']]]);
-  sort { $a=string(@name) } { $b=string(@name) } { $a cmp $b } %rules;
+  if %rules[@type='command'] { $c='Commands' } else { $c='' }
+  if %rules[@type='argtype'] { $a='Argument Types' } else { $a='' }
+  if ('$c' != '' and '$a' != '') { $t='$a and $c' } else { $t='$a$c' }
+  if ('$a$c' != '')
+    add chunk "<simplesect>
+                 <title>Related $t</title>
+                 <variablelist/>
+               </simplesect>" into %section;
+  sort { $a=string(@name|@id) } { $b=string(@name|@id) } { $a cmp $b } %rules;
   foreach %rules {
     add chunk "<varlistentry>
       <term><xref linkend='${{string(./@id)}}'/></term>
@@ -137,7 +154,12 @@ foreach { qw(command type) } {
     move . into preceding-sibling::u/b;
   }
   if ('$__'='type') $__='argtype';
-  foreach X:(//rule[@type='$__']) {
+  %rules=X:(//rule[@type='$__']);
+  sort
+    { $a=string(./documentation/title|@name|@id) }
+    { $b=string(./documentation/title|@name|@id) }
+    { lc($a) cmp lc($b) } %rules;
+  foreach %rules {
     $ref=string(@id);
     new S "<section id='$ref'/>";
     cd X:id('$ref');
@@ -154,6 +176,9 @@ foreach { qw(command type) } {
       add chunk "<a href='s_${ref}.html' target='mainWindow'>${{string(.)}}</a><br/>"
 	into T:/html/body/small;
     }
+    if ('$__'='argtype') { $t = 'argument type' }
+    else { $t = 'command' }
+    insert text " $t" into %section/title;
     #USAGE
     if (./documentation/usage) {
       add chunk "<simplesect><title>Usage</title></simplesect>" into %section;
