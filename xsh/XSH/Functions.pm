@@ -13,11 +13,13 @@ use vars qw/@ISA @EXPORT_OK $VERSION $OUT $LAST_ID $LOCAL_ID $LOCAL_NODE
             %_doc %_files %_iconv %_defs/;
 
 BEGIN {
-  $VERSION='0.6';
+  $VERSION='0.9';
   @ISA=qw(Exporter);
   @EXPORT_OK=qw(&xsh_init &xsh
                 &xsh_set_output &xsh_set_parser
-                &set_opt_q &set_opt_d &set_opt_c);
+                &set_opt_q &set_opt_d &set_opt_c
+		&create_doc &open_doc &set_doc
+	       );
 
   $LAST_ID='';
 
@@ -52,6 +54,14 @@ sub xsh_init {
   }
 }
 
+sub set_validation { $_parser->validation($_[0]); }
+sub set_expand_entities { $_parser->expand_entities($_[0]); }
+sub set_keep_blanks { $_parser->keep_blanks($_[0]); }
+sub set_pedantic_parser { $_parser->pedantic_parser($_[0]); }
+sub set_load_ext_dtd { $_parser->load_ext_dtd($_[0]); }
+sub set_complete_attributes { $_parser->complete_attributes($_[0]); }
+sub set_expand_xinclude { $_parser->expand_xinclude($_[0]); }
+
 sub xsh {
   return $_xsh->startrule($_[0]) if ref($_xsh);
 }
@@ -66,6 +76,13 @@ sub xsh_set_parser {
 
 sub set_last_id {
   $LAST_ID=$_[0];
+}
+
+sub print_version {
+  print $OUT "Main program:   $::VERSION $::REVISION\n";
+  print $OUT "XSH::Functions: $VERSION\n";
+  print $OUT "XML::LibXML     $XML::LibXML::VERSION\n";
+  print $OUT "XML::LibXSLT    $XML::LibXSLT::VERSION\n" if defined($XML::LibXSLT::VERSION);
 }
 
 sub files {
@@ -196,6 +213,13 @@ EOXML
     $_newdoc++;
   };
   print STDERR "$@\n" if ($@);
+  return $doc;
+}
+
+sub set_doc {
+  my ($id,$doc,$file)=@_;
+  $_doc{$id}=$doc;
+  $_files{$id}=$file;
 }
 
 sub open_doc {
@@ -270,7 +294,10 @@ sub save_as {
 sub list {
   my ($id,$query)=expand(@{$_[0]});
   ($id,my $doc)=_id($id);
-  return if ($id eq "" or $query eq "");
+  if ($id eq "" or $query eq "") {
+    files();
+    return;
+  }
   print STDERR "listing $query from $id=$_files{$id}\n" unless "$_quiet";
   return unless ref($doc);
   eval {
@@ -557,9 +584,12 @@ sub insert {
   ($tid,my $tdoc)=_id($tid);
   return unless ref($tdoc);
 
-  my @nodes=grep {ref($_)} create_nodes($type,$exp,$tdoc);
-  return unless @nodes;
   eval {
+    my @nodes;
+    unless ($type eq 'chunk') {
+      @nodes=grep {ref($_)} create_nodes($type,$exp,$tdoc);
+      return unless @nodes;
+    }
     local $SIG{INT}=\&sigint;
     my $qconv=mkconv($_qencoding,"utf-8");
     $tq=$qconv ? $qconv->convert($tq) : $tq;
@@ -568,44 +598,62 @@ sub insert {
     if ($to_all) {
       my $to=($where eq 'replace' ? 'after' : $where);
       foreach my $tp (@tp) {
-	foreach my $node (@nodes) {
-	  insert_node($node,$tp,$tdoc,$to);
+	if ($type eq 'chunk') {
+	  if ($tp->nodeType == XML_ELEMENT_NODE) {
+	    $tp->appendWellBalancedChunk($exp);
+	  } else {
+	    print STDERR "Target node is not an element!\n";
+	  }
+	} else {
+	  foreach my $node (@nodes) {
+	    insert_node($node,$tp,$tdoc,$to);
+	  }
 	}
 	$tp->unbindNode() if $where eq 'replace';
       }
     } else {
-      foreach my $node (@nodes) {
-	print "inserting $node $where $tp[0] in $tdoc\n" if $_debug;
-	insert_node($node,$tp[0],$tdoc,$where) if ref($tp[0]);
+      if ($type eq 'chunk') {
+	if ($tp[0]->nodeType == XML_ELEMENT_NODE) {
+	  $tp[0]->appendWellBalancedChunk($exp);
+	} else {
+	  print STDERR "Target node is not an element!\n";
+	}
+      } else {
+	foreach my $node (@nodes) {
+	  insert_node($node,$tp[0],$tdoc,$where) if ref($tp[0]);
+	}
       }
     }
   }; print STDERR "$@\n" if ($@);
 }
 
 sub get_dtd {
-  my ($doc)=expand @_;
+  my ($doc)=@_;
   my $dtd;
 
   eval {
     local $SIG{INT}=\&sigint;
-    foreach ($doc->getChildnodes) {
+    foreach ($doc->childNodes()) {
       if ($_->nodeType == XML_DTD_NODE) {
-	return $_ if ($_->hasChildNodes());
-	my $str=$_->toString();
-	my $name=$_->getName();
-	my $public_id="";
-	my $system_id="";
-	if ($str=~/PUBLIC\s+(\S)([^\1]*\1)\s+(\S)([^\3]*)\3/) {
-	  $public_id=$2;
-	  $system_id=$4;
+	if ($_->hasChildNodes()) {
+	  $dtd=$_;
+	} elsif ($_parser->load_ext_dtd) {
+	  my $str=$_->toString();
+	  my $name=$_->getName();
+	  my $public_id="";
+	  my $system_id="";
+	  if ($str=~/PUBLIC\s+(\S)([^\1]*\1)\s+(\S)([^\3]*)\3/) {
+	    $public_id=$2;
+	    $system_id=$4;
+	  }
+	  if ($str=~/SYSTEM\s+(\S)([^\1]*)\1/) {
+	    $system_id=$2;
+	  }
+	  print STDERR "loading external dtd: $system_id\n" unless "$_quiet";
+	  $dtd=XML::LibXML::Dtd->new($public_id, $system_id) if $system_id ne "";
+	  $dtd->setName($name);
+	  print STDERR "failed to load dtd: $system_id\n" unless ($dtd or "$_quiet");
 	}
-	if ($str=~/SYSTEM\s+(\S)([^\1]*)\1/) {
-	  $system_id=$2;
-	}
-	print STDERR "loading external dtd: $system_id\n" unless "$_quiet";
-	$dtd=XML::LibXML::Dtd->new($public_id, $system_id);
-	$dtd->setName($name);
-	print STDERR "failed to load dtd: $system_id\n" unless ($dtd or "$_quiet");
       }
     }
   }; print STDERR "$@\n" if ($@);
@@ -616,13 +664,9 @@ sub valid_doc {
   my ($id)=expand @_;
   ($id,my $doc)=_id($id);
   return unless $doc;
-#  my $dtd=get_dtd($doc);
-#  print STDERR "got dtd $dtd\n";
   eval {
     local $SIG{INT}=\&sigint;
- #   if ($dtd) {
-      print $OUT ($doc->is_valid() ? "yes\n" : "no\n");
- #   }
+    print $OUT ($doc->is_valid() ? "yes\n" : "no\n");
   }; print STDERR "$@\n" if ($@);
 }
 
@@ -630,21 +674,27 @@ sub validate_doc {
   my ($id)=expand @_;
   ($id, my $doc)=_id($id);
   return unless $doc;
-#  my $dtd=get_dtd($doc);
-#  eval {
-    local $SIG{INT}=\&sigint;
-#    if ($dtd) {
-      eval { print $OUT $doc->validate(); };
-      print $OUT "$@\n";
-#    }
-#  }; print STDERR "$@\n" if ($@);
+  local $SIG{INT}=\&sigint;
+  eval { print $OUT $doc->validate(); };
+  print $OUT "$@\n";
 }
+
+sub process_xinclude {
+  my ($id)=expand @_;
+  ($id, my $doc)=_id($id);
+  return unless $doc;
+  local $SIG{INT}=\&sigint;
+  eval { $_parser->processXIncludes($doc); };
+  print $OUT "$@\n";
+}
+
 
 sub list_dtd {
   my ($id)=expand @_;
   ($id, my $doc)=_id($id);
   return unless $doc;
   my $dtd=get_dtd($doc);
+
   eval {
     local $SIG{INT}=\&sigint;
     if ($dtd) {
