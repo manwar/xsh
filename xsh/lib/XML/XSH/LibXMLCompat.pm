@@ -1,4 +1,4 @@
-# $Id: LibXMLCompat.pm,v 1.7 2002-10-25 16:01:50 pajas Exp $
+# $Id: LibXMLCompat.pm,v 1.8 2003-01-22 15:05:05 pajas Exp $
 
 package XML::XSH::LibXMLCompat;
 
@@ -18,6 +18,9 @@ sub toStringUTF8 {
   my ($class,$node,$mode)=@_;
   if ($class->is_document($node)) {
     return XML::LibXML::encodeToUTF8($node->getEncoding(),$node->toString($mode));
+  } elsif ($class->is_namespace($node)) {
+    return 'xmlns'.($node->name() ne '' ? ':' : '').
+      $node->name()."='".$node->getNamespaceURI()."'";
   } else {
     return $node->can('toString') ? $node->toString($mode) : $node->to_literal();
   }
@@ -84,14 +87,18 @@ sub init_parser {
   my ($class,$parser)=@_;
    $parser->validation($XML::XSH::Functions::VALIDATION);
    $parser->recover($XML::XSH::Functions::RECOVERING) if $parser->can('recover');
-   $parser->expand_entities($XML::XSH::Functions::EXPAND_ENTITIES);
+   $parser->expand_entities($XML::XSH::Functions::PARSER_EXPANDS_ENTITIES);
    $parser->keep_blanks($XML::XSH::Functions::KEEP_BLANKS);
    $parser->pedantic_parser($XML::XSH::Functions::PEDANTIC_PARSER);
    $parser->load_ext_dtd($XML::XSH::Functions::LOAD_EXT_DTD);
-   $parser->complete_attributes($XML::XSH::Functions::COMPLETE_ATTRIBUTES);
-   $parser->expand_xinclude($XML::XSH::Functions::EXPAND_XINCLUDE);
+   $parser->complete_attributes($XML::XSH::Functions::PARSER_COMPLETES_ATTRIBUTES);
+   $parser->expand_xinclude($XML::XSH::Functions::PARSER_EXPANDS_XINCLUDE);
 }
 
+sub load_catalog {
+  my ($class,$parser,$catalog)=@_;
+  $parser->load_catalog($catalog);
+}
 
 sub parse_string {
   my ($class,$parser,$str)=@_;
@@ -261,6 +268,10 @@ sub remove_node {
   my ($class,$node)=@_;
   return $node->unbindNode();
 }
+
+package XML::LibXML::Namespace;
+
+sub parentNode {}
 
 1;
 
