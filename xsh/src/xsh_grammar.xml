@@ -2275,7 +2275,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  </para>
 	</description>
 	<see-also>
-	  <ruleref ref="include_command"/>
+	  <ruleref ref="ifinclude_command"/>
 	</see-also>
       </documentation>
     </rule>
