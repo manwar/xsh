@@ -531,11 +531,16 @@
 	  <literal>xsh</literal> is defined in the
 	  <literal>XML::XSH::Map</literal> namespace.  All parameters
 	  passed to this function are interpreted as XSH commands. To
-	  simplify evaluation of XPath expressions another function
-	  called <literal>count</literal> is defined.  It returns the
-	  same value as would be printed by <xref
-	  linkend="count_command"/> command in XSH on the same
-	  expression.
+	  simplify evaluation of XPath expressions, another two
+	  functions called <literal>count</literal> and
+	  <literal>xpath</literal> are defined.  The first one returns
+	  the same value as would be printed by <xref
+	  linkend="count_command"/> command in XSH on the same XPath
+	  expression. The second one returns the result of the XPath
+	  search as a XML string which is equivallent to the output of
+	  a <xref linkend="list_command"/> on the same XPath
+	  expression (without indentation and without folding and any
+	  other limitation on the depth of the listing).
 	</para>
 	<para>
 	  In the following examples we use Perl to populate the
@@ -1515,10 +1520,10 @@ sub new {
 	  </para>
 	  <para>The routine can be later invoked using the <xref
 	    linkend="call_command"/> command followed by the routine
-	    name and parameters. Nodelist parameters have to be given
+	    name and parameters. Nodelist parameters must be given
 	    as an XPath expressions, and are evaluated just before the
-	    subroutine's body is executed. String variables must be
-	    given as a (string) <xref linkend="expression"/>.
+	    subroutine's body is executed. String parameters must be
+	    given as (string) <xref linkend="expression"/>s.
 	    Resulting node-lists/strings are stored into the
 	    parametric variables before the body is executed. These
 	    variables are local to the subroutine's call tree (see also the <xref
@@ -1891,10 +1896,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    Call an XSH subroutine named <xref linkend="ID"/> previously
 	    created using def. If the subroutine requires some
 	    paramters, these have to be specified after the <xref
-	    linkend="ID"/>. Node-list parameters have to be provided as
-	    <xref linkend="xpath"/> expressions. String variables
-	    are have to be provided as string <xref
-	    linkend="expression"/>.
+	    linkend="ID"/>. Node-list parameters are given by means of
+	    <xref linkend="xpath"/> expressions. String parameters
+	    have to be string <xref linkend="expression"/>s.
 	  </para>
 	</description>
 	<see-also>
@@ -2319,23 +2323,71 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<shortdesc>relative destination specification (such as after, before, etc.)</shortdesc>
 	<description>
 	  <para>One of: 
-	    after, 
-	    before, 
-	    into
-	    append,
-	    prepend,
-	    replace.
+	    <literal>after</literal>, 
+	    <literal>before</literal>, 
+	    <literal>into</literal>,
+	    <literal>append</literal>,
+	    <literal>prepend</literal>,
+	    <literal>replace</literal>.
 	  </para>
 	  <para>
-	    This argument is required by all commands allow inserting
-	    nodes to a document at a destination given by an XPath
-	    expression. While their meaning is supposed be obvious in
-	    most cases, the exact semantics for location argument
-	    values depends on types of both the source node and the
-	    target node.
+	    NOTE: XSH 1.6 introduces two new values for location
+	    argument:
+	    <literal>append</literal> and <literal>prepend</literal>
+	    and slighlty changes behavior of
+	    <literal>after</literal> and <literal>before</literal>!
 	  </para>
 	  <para>
-	    TO BE DOCUMENTED!
+	    This argument is required by all commands that insert
+	    nodes to a document in some way to a destination described
+	    by an XPath expression. The meaning of the values listed
+	    above is supposed be obvious in most cases, however the
+	    exact semantics for location argument values depends on
+	    types of both the source node and the target node.
+	  </para>
+	  <para>
+	    <literal>after/before</literal> place the node right
+	    after/before the destination node, except for when the
+	    destination node is a document node or one of the source
+	    nodes is an attribute: If the destination node is a
+	    document node, the source node is attached to the
+	    end/beginning of the document (remember: there is no
+	    "after/before a document").  If both the source and
+	    destination nodes are attributes, then the source node is
+	    simply attached to the element containing the destination
+	    node (remember: there is no order on attribute nodes). If
+	    the destination node is an attribute but the source node
+	    is of a different type, then the textual content of the
+	    source node is appended to the value of the destination
+	    attribute (i.e. in this case after/before act just as
+	    append/prepend).
+	  </para>
+	  <para>
+	    <literal>append/prepend</literal> appends/prepends the
+	    source node to the destination node. If the destination
+	    node can contain other nodes (i.e. it is an element or a
+	    document node) then the entire source node is attached to
+	    it. In case of other destination node types, the textual
+	    content of the source node is appended/prepended to the
+	    content of the destination node.
+	  </para>
+	  <para>
+	    <literal>into</literal> can also be used to place
+	    the source node to the end of an element (in the same way
+	    as <literal>append</literal>), to attach an attribute
+	    to an element, or, if the destination node is a text node,
+	    cdata section, processing-instruction, attribute or comment,
+	    to replace its textual content with the textual content of 
+	    the source node.
+	  </para>
+	  <para>
+	    <literal>replace</literal> replaces the entire destination
+	    node with the source node except for the case when the
+	    destination node is an attribute and the source node is
+	    not. In such a case only the value of the destination
+	    attribute is replaced with the textual content of the
+	    source node. Note also that document node can never be
+	    replaced.
 	  </para>
 	</description>
       </documentation>
@@ -3522,13 +3574,16 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::set_cdonopen,$item[2]]</action>
       </production>
       <documentation sections="configuration documents">
-	<usage>switch-to-new-documents</usage>
+	<usage>switch-to-new-documents <xref linkend="expression"/></usage>
 	<shortdesc>set on/off changing current document to newly
 	  open/created files</shortdesc>
 	<description>
-	  <para>If true, change current node to the document node
-	    of a newly open/created files after <xref
-	      linkend="open_command"/> or <xref linkend="create_command"/>.
+	  <para>If non-zero, XSH changes
+	    current node to the document node of a newly open/created
+	    files every time a new document is opened or created with
+	    <xref linkend="open_command"/> or <xref
+	    linkend="create_command"/>.
+	    Default value for this option is 1. 
 	  </para>
 	</description>
       </documentation>
