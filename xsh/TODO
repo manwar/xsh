@@ -1,5 +1,13 @@
 TODO XSH2:
 
+- help apropos commnad
+- echo --stderr
+- inner-wrap 
+- split [after|before] ...
+- split text on a given character???
+
+=============
+
 - loose parsing of xpath in assignment and count: allow $a - 1
 - swap nodes command (maybe reorder: reorder {(2,1,3,4)} //foo) ?
   now doable with sort:
