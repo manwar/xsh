@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.49 2003-04-16 08:32:13 pajas Exp $
+# $Id: Functions.pm,v 1.50 2003-04-16 14:56:12 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -7,7 +7,6 @@ no warnings;
 
 use XML::XSH::Help;
 use XML::XSH::Iterators;
-use XML::LibXML::XPathContext;
 use IO::File;
 
 use Exporter;
@@ -27,7 +26,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.7';
-  $REVISION='$Revision: 1.49 $';
+  $REVISION='$Revision: 1.50 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -185,7 +184,14 @@ sub get_cdonopen	     { $SWITCH_TO_NEW_DOCUMENTS }
 
 # initialize global XPathContext
 sub xpc_init {
-  $_xpc = XML::LibXML::XPathContext->new();
+  if (eval { require XML::LibXML::XPathContext; }) {
+    $_xpc=XML::LibXML::XPathContext->new();
+  } else {
+    require XML::XSH::DummyXPathContext;
+    print STDERR ("Warning: XML::LibXML::XPathContext not found!\n".
+		  "XSH will lack namespace and function registering functionality!\n\n");
+    $_xpc=XML::XSH::DummyXPathContext->new();
+  }
   $_xpc->registerVarLookupFunc(\&xpath_var_lookup,undef);
   $_xpc->registerFunction('doc',
 			  sub {
@@ -838,11 +844,26 @@ sub _find_nodes {
       die "No such nodelist '\%$name'\n";
     }
     if ($query =~ /\S/) {
-      if ($query =~m|^\s*\[(\d+)\](.*)$|) { # index on a node-list
-	return exists($_nodelist{$name}->[1]->[$1+1]) ?
-	  scalar(_xpc_find_nodes($_nodelist{$name}->[1]->[$1],'./self::*'.$2)) : [];
+      if ($_xpc->isa('XML::LibXML::XPathContext')) {
+	if ($query =~m|^\s*\[(\d+)\](.*)$|) { # index on a node-list
+	  return exists($_nodelist{$name}->[1]->[$1+1]) ?
+	    scalar(_xpc_find_nodes($_nodelist{$name}->[1]->[$1],'./self::*'.$2)) : [];
+	} else {
+	  return scalar(_xpc_find_nodes($_nodelist{$name}->[0], $q));
+	}
       } else {
-	return scalar(_xpc_find_nodes($_nodelist{$name}->[0], $q));
+	# workaround for dummy XPathContext
+	if ($query =~m|^\s*\[(\d+)\](.*)$|) { # index on a node-list
+	  return $_nodelist{$name}->[1]->[$1+1] ?
+	    [ grep {defined($_)} $_nodelist{$name}->[1]->[$1]->findnodes('./self::*'.$2) ] : [];
+	} elsif ($query =~m|^\s*\[|) { # filter in a nodelist
+	  return [ grep {defined($_)} map { ($_->findnodes('./self::*'.$query)) }
+		   @{$_nodelist{$name}->[1]}
+		 ];
+	}
+	return [ grep {defined($_)} map { ($_->findnodes('.'.$query)) }
+		 @{$_nodelist{$name}->[1]}
+	       ];
       }
     } else {
       return $_nodelist{$name}->[1];
