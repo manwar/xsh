@@ -25,7 +25,7 @@ use vars qw/$VERSION $REVISION $ERR $OUT $LAST_ID $LOCAL_ID $LOCAL_NODE
 require Term::ReadLine if $opt_i;
 
 $VERSION='0.5';
-$REVISION='$Revision: 1.6 $';
+$REVISION='$Revision: 1.7 $';
 $ERR='';
 $LAST_ID='';
 $OUT=\*STDOUT;
@@ -59,9 +59,11 @@ sub print_var {
   }
 }
 
-sub echo {
-  print $OUT "@_\n";
-}
+sub echo { print $OUT (join " ",expand(@_)),"\n"; }
+sub set_opt_q { $opt_q=$_[0]; }
+sub set_opt_d { $opt_q=$_[0]; }
+sub set_encoding { $_encoding=expand($_[0]); }
+sub set_qencoding { $_qencoding=expand($_[0]); }
 
 $SIG{PIPE}=sub { print STDERR "Broken pipe\n"; };
 
@@ -110,23 +112,26 @@ sub _id {
   return wantarray ? ($id,$_doc{$id}) : $id;
 }
 
-sub _evar {
-  my ($v)=@_;
-  no strict;
-  if ($v=~/^\$\{([a-zA-Z_-][a-zA-Z0-9_-]*)\}$/
-      or
-      $v=~/^\$([a-zA-Z_-][a-zA-Z0-9_-]*)$/
-     ) {
-    return ${"XSH::Map::$1"};
-  } else {
-    return $v;
-  }
-}
-
 sub _expand {
-  local $_=$_[0];
-  s/(\\.|\$\{[a-zA-Z_-][a-zA-Z0-9_-]*\}|\$[a-zA-Z_-][a-zA-Z0-9_-]*)/_evar($1)/eg;
-  return $_;
+  my $l=$_[0];
+  my $k;
+  no strict;
+  $l=~/^/o;
+  while ($l !~ /\G$/gsco) {
+    if ($l=~/\G\\(.)/gsco or $l=~/\G([^\\\$]+)/gsco) {
+      $k.=$1;
+    } elsif ($l=~/\G\$\{([a-zA-Z_-][a-zA-Z0-9_-]*)\}/gsco
+	     or $l=~/\G\$([a-zA-Z_-][a-zA-Z0-9_-]*)/gsco) {
+      $k.=${"XSH::Map::$1"};
+    } elsif ($l=~/\G\$\{\{([a-zA-Z_][a-zA-Z0-9_]*):(\\.|[^}]*|\}[^}]*)\}\}/gsco) {
+      $k.=count([$1,$2]);
+    } elsif ($l=~/\G\$\{\{(\\.|[^}]*|\}[^}]*)\}\}/gsco) {
+      $k.=count([undef,$1]);
+    } elsif ($l=~/\G(.|\n)/gsco) {
+      $k.=$1;
+    }
+  }
+  return $k;
 }
 
 sub expand {
@@ -149,13 +154,15 @@ sub xpath_assign {
 
 sub open_doc {
   my ($id,$file)=@_;
+  print STDERR "open [$file] as [$id]\n" if "$opt_d";
   $file=expand $file;
   $id=_id($id);
+  print STDERR "open [$file] as [$id]\n" if "$opt_d";
   if ($id eq "" or $file eq "") {
     print STDERR "hint: open identifier=file-name\n" unless "$opt_q";
     return;
   }
-  if (-f $file) {
+  if ((-f $file) || (-f ($file="$file.gz"))) {
     print STDERR "parsing $file\n" unless "$opt_q";
     $_files{$id}=$file;
     eval {
@@ -852,7 +859,7 @@ $::RD_HINT   = 1; # Give out hints to help fix problems.
 
 
 
-$Parse::RecDescent::skip = '(\s|#[^\n]*)*';
+$Parse::RecDescent::skip = '(\s|\n|#[^\n]*)*';
 
 printflush STDERR "Plase wait, parsing grammar...";
 
@@ -899,18 +906,17 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
   statement : shell
             | commands '|' cmdline { main::pipe_command($item[1],$item[3]); }
             | commands { main::run_commands($item[1]); }
-            | option
             | <error:error while parsing line $thisline near $text>
 
   shell : /!\s*/ cmdline { main::sh($item[2]); }
   cmdline : /[^\n]*/
 
-  option :  /quiet/ { $main::opt_q=1 }
-            | /verbose/ { $main::opt_q=0 }
-            | /debug/ { $main::opt_d=1 }
-            | /nodebug/ { $main::opt_d=0 }
-            | /encoding\s/ expression { $main::encoding=expand($item[2]); }
-            | /query-encoding\s/ expression { $main::qencoding=expand($item[2]); }
+  option :  /quiet/ { [\&main::set_opt_q,1] }
+            | /verbose/ { [\&main::set_opt_q,0] }
+            | /debug/ { [\&main::set_opt_d,1] }
+            | /nodebug/ { [\&main::set_opt_d,0] }
+            | /encoding\s/ expression { [\&main::set_encoding,$item[2]]; }
+            | /query-encoding\s/ expression { [\&main::set_qencoding,$item[2]]; }
 
   commands : command ';' commands { [ @{$item[1]},@{$item[3]} ]; }
            | command ';' { $item[1]; }
@@ -927,7 +933,7 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
             | files_command | xslt_command | insert_command | help_command
             | exec_command  | call_command | include_command | assign_command
             | print_var_command | var_command | print_command
-            | compound)
+            | option | compound)
             { [$item[1]] }
 
   compound  : /if\s/ xpath (command|block) { [\&main::if_statement,$item[2],$item[3]] }
@@ -1003,7 +1009,7 @@ $_xsh = Parse::RecDescent->new(<<'_EO_GRAMMAR_');
 
   list_command : /list\s|ls\s/ xpath    { [\&main::list,$item[2]]; }
 
-  count_command : /count\s|xpath\s/ xpath       { [\&main::print_count,$item[2]];}
+  count_command : /count\s|xpath\s/ xpath { [\&main::print_count,$item[2]];}
 
   eval_command : /eval\s|perl\s/ (<perl_codeblock>|perl_expression) { [\&main::print_eval,$item[2]];}
 
