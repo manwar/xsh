@@ -100,10 +100,14 @@ quiet
 quit
 recovering
 redo
+regfunc
 register-function
 register-namespace
 register-xhtml-namespace
 register-xsh-namespace
+regns
+regns-xhtml
+regns-xsh
 remove
 rename
 return

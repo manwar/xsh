@@ -18148,7 +18148,7 @@ sub Parse::RecDescent::namespace000001::command
 	while (!$_matched && !$commit)
 	{
 		
-		Parse::RecDescent::_trace(q{Trying production: [/(register-namespace)\\s/ <commit> expression expression]},
+		Parse::RecDescent::_trace(q{Trying production: [/(register-namespace|regns)\\s/ <commit> expression expression]},
 					  Parse::RecDescent::_tracefirst($_[1]),
 					  q{command})
 						if defined $::RD_TRACE;
@@ -18160,14 +18160,14 @@ sub Parse::RecDescent::namespace000001::command
 		my $repcount = 0;
 
 
-		Parse::RecDescent::_trace(q{Trying terminal: [/(register-namespace)\\s/]}, Parse::RecDescent::_tracefirst($text),
+		Parse::RecDescent::_trace(q{Trying terminal: [/(register-namespace|regns)\\s/]}, Parse::RecDescent::_tracefirst($text),
 					  q{command})
 						if defined $::RD_TRACE;
 		$lastsep = "";
 		$expectation->is(q{})->at($text);
 		
 
-		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(register-namespace)\s)//)
+		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(register-namespace|regns)\s)//)
 		{
 			
 			$expectation->failed();
@@ -18285,7 +18285,7 @@ sub Parse::RecDescent::namespace000001::command
 		
 
 
-		Parse::RecDescent::_trace(q{>>Matched production: [/(register-namespace)\\s/ <commit> expression expression]<<},
+		Parse::RecDescent::_trace(q{>>Matched production: [/(register-namespace|regns)\\s/ <commit> expression expression]<<},
 					  Parse::RecDescent::_tracefirst($text),
 					  q{command})
 						if defined $::RD_TRACE;
@@ -18297,7 +18297,7 @@ sub Parse::RecDescent::namespace000001::command
 	while (!$_matched && !$commit)
 	{
 		
-		Parse::RecDescent::_trace(q{Trying production: [/(register-xhtml-namespace)\\s/ <commit> expression]},
+		Parse::RecDescent::_trace(q{Trying production: [/(register-xhtml-namespace|regns-xhtml)\\s/ <commit> expression]},
 					  Parse::RecDescent::_tracefirst($_[1]),
 					  q{command})
 						if defined $::RD_TRACE;
@@ -18309,14 +18309,14 @@ sub Parse::RecDescent::namespace000001::command
 		my $repcount = 0;
 
 
-		Parse::RecDescent::_trace(q{Trying terminal: [/(register-xhtml-namespace)\\s/]}, Parse::RecDescent::_tracefirst($text),
+		Parse::RecDescent::_trace(q{Trying terminal: [/(register-xhtml-namespace|regns-xhtml)\\s/]}, Parse::RecDescent::_tracefirst($text),
 					  q{command})
 						if defined $::RD_TRACE;
 		$lastsep = "";
 		$expectation->is(q{})->at($text);
 		
 
-		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(register-xhtml-namespace)\s)//)
+		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(register-xhtml-namespace|regns-xhtml)\s)//)
 		{
 			
 			$expectation->failed();
@@ -18407,7 +18407,7 @@ sub Parse::RecDescent::namespace000001::command
 		
 
 
-		Parse::RecDescent::_trace(q{>>Matched production: [/(register-xhtml-namespace)\\s/ <commit> expression]<<},
+		Parse::RecDescent::_trace(q{>>Matched production: [/(register-xhtml-namespace|regns-xhtml)\\s/ <commit> expression]<<},
 					  Parse::RecDescent::_tracefirst($text),
 					  q{command})
 						if defined $::RD_TRACE;
@@ -18419,7 +18419,7 @@ sub Parse::RecDescent::namespace000001::command
 	while (!$_matched && !$commit)
 	{
 		
-		Parse::RecDescent::_trace(q{Trying production: [/(register-xsh-namespace)\\s/ <commit> expression]},
+		Parse::RecDescent::_trace(q{Trying production: [/(register-xsh-namespace|regns-xsh)\\s/ <commit> expression]},
 					  Parse::RecDescent::_tracefirst($_[1]),
 					  q{command})
 						if defined $::RD_TRACE;
@@ -18431,14 +18431,14 @@ sub Parse::RecDescent::namespace000001::command
 		my $repcount = 0;
 
 
-		Parse::RecDescent::_trace(q{Trying terminal: [/(register-xsh-namespace)\\s/]}, Parse::RecDescent::_tracefirst($text),
+		Parse::RecDescent::_trace(q{Trying terminal: [/(register-xsh-namespace|regns-xsh)\\s/]}, Parse::RecDescent::_tracefirst($text),
 					  q{command})
 						if defined $::RD_TRACE;
 		$lastsep = "";
 		$expectation->is(q{})->at($text);
 		
 
-		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(register-xsh-namespace)\s)//)
+		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(register-xsh-namespace|regns-xsh)\s)//)
 		{
 			
 			$expectation->failed();
@@ -18529,7 +18529,7 @@ sub Parse::RecDescent::namespace000001::command
 		
 
 
-		Parse::RecDescent::_trace(q{>>Matched production: [/(register-xsh-namespace)\\s/ <commit> expression]<<},
+		Parse::RecDescent::_trace(q{>>Matched production: [/(register-xsh-namespace|regns-xsh)\\s/ <commit> expression]<<},
 					  Parse::RecDescent::_tracefirst($text),
 					  q{command})
 						if defined $::RD_TRACE;
@@ -18541,7 +18541,7 @@ sub Parse::RecDescent::namespace000001::command
 	while (!$_matched && !$commit)
 	{
 		
-		Parse::RecDescent::_trace(q{Trying production: [/(register-function)\\s/ <commit> expression perl_code]},
+		Parse::RecDescent::_trace(q{Trying production: [/(register-function|regfunc)\\s/ <commit> expression perl_code]},
 					  Parse::RecDescent::_tracefirst($_[1]),
 					  q{command})
 						if defined $::RD_TRACE;
@@ -18553,14 +18553,14 @@ sub Parse::RecDescent::namespace000001::command
 		my $repcount = 0;
 
 
-		Parse::RecDescent::_trace(q{Trying terminal: [/(register-function)\\s/]}, Parse::RecDescent::_tracefirst($text),
+		Parse::RecDescent::_trace(q{Trying terminal: [/(register-function|regfunc)\\s/]}, Parse::RecDescent::_tracefirst($text),
 					  q{command})
 						if defined $::RD_TRACE;
 		$lastsep = "";
 		$expectation->is(q{})->at($text);
 		
 
-		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(register-function)\s)//)
+		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(register-function|regfunc)\s)//)
 		{
 			
 			$expectation->failed();
@@ -18678,7 +18678,7 @@ sub Parse::RecDescent::namespace000001::command
 		
 
 
-		Parse::RecDescent::_trace(q{>>Matched production: [/(register-function)\\s/ <commit> expression perl_code]<<},
+		Parse::RecDescent::_trace(q{>>Matched production: [/(register-function|regfunc)\\s/ <commit> expression perl_code]<<},
 					  Parse::RecDescent::_tracefirst($text),
 					  q{command})
 						if defined $::RD_TRACE;
@@ -33638,8 +33638,8 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                           'line' => '268',
                                                                           'items' => [
                                                                                        bless( {
-                                                                                                'description' => '/(register-namespace)\\\\s/',
-                                                                                                'pattern' => '(register-namespace)\\s',
+                                                                                                'description' => '/(register-namespace|regns)\\\\s/',
+                                                                                                'pattern' => '(register-namespace|regns)\\s',
                                                                                                 'mod' => '',
                                                                                                 'hashname' => '__PATTERN1__',
                                                                                                 'lookahead' => 0,
@@ -33690,8 +33690,8 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                           'line' => '272',
                                                                           'items' => [
                                                                                        bless( {
-                                                                                                'description' => '/(register-xhtml-namespace)\\\\s/',
-                                                                                                'pattern' => '(register-xhtml-namespace)\\s',
+                                                                                                'description' => '/(register-xhtml-namespace|regns-xhtml)\\\\s/',
+                                                                                                'pattern' => '(register-xhtml-namespace|regns-xhtml)\\s',
                                                                                                 'mod' => '',
                                                                                                 'hashname' => '__PATTERN1__',
                                                                                                 'lookahead' => 0,
@@ -33734,8 +33734,8 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                           'line' => '276',
                                                                           'items' => [
                                                                                        bless( {
-                                                                                                'description' => '/(register-xsh-namespace)\\\\s/',
-                                                                                                'pattern' => '(register-xsh-namespace)\\s',
+                                                                                                'description' => '/(register-xsh-namespace|regns-xsh)\\\\s/',
+                                                                                                'pattern' => '(register-xsh-namespace|regns-xsh)\\s',
                                                                                                 'mod' => '',
                                                                                                 'hashname' => '__PATTERN1__',
                                                                                                 'lookahead' => 0,
@@ -33778,8 +33778,8 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                           'line' => '280',
                                                                           'items' => [
                                                                                        bless( {
-                                                                                                'description' => '/(register-function)\\\\s/',
-                                                                                                'pattern' => '(register-function)\\s',
+                                                                                                'description' => '/(register-function|regfunc)\\\\s/',
+                                                                                                'pattern' => '(register-function|regfunc)\\s',
                                                                                                 'mod' => '',
                                                                                                 'hashname' => '__PATTERN1__',
                                                                                                 'lookahead' => 0,

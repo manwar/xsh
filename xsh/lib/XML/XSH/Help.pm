@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Tue Aug  5 10:13:55 2003
+# Tue Aug  5 12:41:23 2003
 
 package XML::XSH::Help;
 use strict;
@@ -2084,6 +2084,8 @@ END
 $HELP{'register-namespace'}=[<<'END'];
 usage:       register-namespace <expression> <expression>
              
+aliases:     regns
+
 description:
 	     Registers the first argument as a prefix for the namespace
 	     given in the second argument. The prefix can later be used in
@@ -2091,20 +2093,26 @@ description:
 
 END
 
+$HELP{'regns'}=$HELP{'register-namespace'};
 
 $HELP{'register-xhtml-namespace'}=[<<'END'];
 usage:       register-xhtml-namespace <expression>
              
+aliases:     regns-xhtml
+
 description:
 	     Registers a prefix for the XHTML namespace. The prefix can
 	     later be used in XPath expressions.
 
 END
 
+$HELP{'regns-xhtml'}=$HELP{'register-xhtml-namespace'};
 
 $HELP{'register-xsh-namespace'}=[<<'END'];
 usage:       register-xsh-namespace <expression>
              
+aliases:     regns-xsh
+
 description:
 	     Registers a new prefix for the XSH namespace. The prefix can
 	     later be used in XPath expressions. Note, that XSH namespace
@@ -2114,10 +2122,13 @@ description:
 
 END
 
+$HELP{'regns-xsh'}=$HELP{'register-xsh-namespace'};
 
 $HELP{'register-function'}=[<<'END'];
 usage:       register-function <expression> <perl-code>
              
+aliases:     regfunc
+
 description:
 	     EXPERIMENTAL! Register given perl code as a new extension
 	     XPath function. XML::LibXML DOM API may be used in the perl
@@ -2125,6 +2136,7 @@ description:
 
 END
 
+$HELP{'regfunc'}=$HELP{'register-function'};
 
 $HELP{'stream'}=[<<'END'];
 usage:       stream input [FILE|PIPE|STRING] <expression>
