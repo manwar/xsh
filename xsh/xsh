@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # -*- cperl -*-
 
-# $Id: xsh,v 2.2 2005-01-09 16:54:09 pajas Exp $
+# $Id: xsh,v 2.3 2005-02-22 07:44:42 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -61,7 +61,7 @@ BEGIN {
 			) or $usage=1;
 #  getopts('atscqvwdfhVinTE:e:l:pP');
   $VERSION='0.12';
-   $REVISION=q($Revision: 2.2 $);
+   $REVISION=q($Revision: 2.3 $);
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -146,6 +146,9 @@ set_compile_only_mode($opt_c);
 
 my $doc=XML::XSH2::Functions::create_doc('$scratch',"scratch",'xml');
 XML::XSH2::Functions::set_local_xpath('/');
+
+# recode arguments using query encoding
+$_=XML::XSH2::Functions::toUTF8($XML::XSH2::Functions::QUERY_ENCODING,$_) for (@ARGV,@XML::XSH2::Map::ARGV);
 
 # XPath variant of perlish {@ARGV} ($ARGV[1] is the first arg though)
 $XML::XSH2::Map::ARGV = XML::LibXML::NodeList->new(map { XML::XSH2::Functions::cast_value_to_objects($_) } @XML::XSH2::Map::ARGV);
@@ -287,7 +290,6 @@ if ($opt_i) {
     $readline::rl_completion_function = 'XML::XSH2::Completion::perl_complete';
     $readline::rl_completer_word_break_characters = " =\t\n\r\"'`;|&})[{(]";
   }
-
   xsh_set_output($term->OUT) if ($term->OUT);
   unless ("$opt_q") {
     print STDERR "Using terminal type: ",$term->ReadLine,"\n";
