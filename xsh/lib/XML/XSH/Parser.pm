@@ -1427,7 +1427,7 @@ sub Parse::RecDescent::namespace000001::count_command
 	while (!$_matched && !$commit)
 	{
 		
-		Parse::RecDescent::_trace(q{Trying production: [/(count)\\s/ xpath]},
+		Parse::RecDescent::_trace(q{Trying production: [/(count|print_value)\\s/ xpath]},
 					  Parse::RecDescent::_tracefirst($_[1]),
 					  q{count_command})
 						if defined $::RD_TRACE;
@@ -1439,14 +1439,14 @@ sub Parse::RecDescent::namespace000001::count_command
 		my $repcount = 0;
 
 
-		Parse::RecDescent::_trace(q{Trying terminal: [/(count)\\s/]}, Parse::RecDescent::_tracefirst($text),
+		Parse::RecDescent::_trace(q{Trying terminal: [/(count|print_value)\\s/]}, Parse::RecDescent::_tracefirst($text),
 					  q{count_command})
 						if defined $::RD_TRACE;
 		$lastsep = "";
 		$expectation->is(q{})->at($text);
 		
 
-		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(count)\s)//)
+		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(count|print_value)\s)//)
 		{
 			
 			$expectation->failed();
@@ -1511,7 +1511,7 @@ sub Parse::RecDescent::namespace000001::count_command
 		
 
 
-		Parse::RecDescent::_trace(q{>>Matched production: [/(count)\\s/ xpath]<<},
+		Parse::RecDescent::_trace(q{>>Matched production: [/(count|print_value)\\s/ xpath]<<},
 					  Parse::RecDescent::_tracefirst($text),
 					  q{count_command})
 						if defined $::RD_TRACE;
@@ -1594,7 +1594,7 @@ sub Parse::RecDescent::namespace000001::xmove_command
 	while (!$_matched && !$commit)
 	{
 		
-		Parse::RecDescent::_trace(q{Trying production: [/(xmove_command|xmv)\\s/ xpath loc xpath]},
+		Parse::RecDescent::_trace(q{Trying production: [/(xmove|xmv)\\s/ xpath loc xpath]},
 					  Parse::RecDescent::_tracefirst($_[1]),
 					  q{xmove_command})
 						if defined $::RD_TRACE;
@@ -1606,14 +1606,14 @@ sub Parse::RecDescent::namespace000001::xmove_command
 		my $repcount = 0;
 
 
-		Parse::RecDescent::_trace(q{Trying terminal: [/(xmove_command|xmv)\\s/]}, Parse::RecDescent::_tracefirst($text),
+		Parse::RecDescent::_trace(q{Trying terminal: [/(xmove|xmv)\\s/]}, Parse::RecDescent::_tracefirst($text),
 					  q{xmove_command})
 						if defined $::RD_TRACE;
 		$lastsep = "";
 		$expectation->is(q{})->at($text);
 		
 
-		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(xmove_command|xmv)\s)//)
+		unless ($text =~ s/\A($skip)/$lastsep=$1 and ""/e and   $text =~ s/\A(?:(xmove|xmv)\s)//)
 		{
 			
 			$expectation->failed();
@@ -1732,7 +1732,7 @@ sub Parse::RecDescent::namespace000001::xmove_command
 		
 
 
-		Parse::RecDescent::_trace(q{>>Matched production: [/(xmove_command|xmv)\\s/ xpath loc xpath]<<},
+		Parse::RecDescent::_trace(q{>>Matched production: [/(xmove|xmv)\\s/ xpath loc xpath]<<},
 					  Parse::RecDescent::_tracefirst($text),
 					  q{xmove_command})
 						if defined $::RD_TRACE;
@@ -8353,7 +8353,7 @@ sub Parse::RecDescent::namespace000001::load_ext_dtd
 						if defined $::RD_TRACE;
 		
 
-		$_tok = ($_noactions) ? 0 : do { [\&XML::XSH::Functions::set_expand_xinclude,$item[2]] };
+		$_tok = ($_noactions) ? 0 : do { [\&XML::XSH::Functions::set_load_ext_dtd,$item[2]] };
 		unless (defined $_tok)
 		{
 			Parse::RecDescent::_trace(q{<<Didn't match action>> (return value: [undef])})
@@ -27907,8 +27907,8 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                                 'line' => undef,
                                                                                 'items' => [
                                                                                              bless( {
-                                                                                                      'description' => '/(count)\\\\s/',
-                                                                                                      'pattern' => '(count)\\s',
+                                                                                                      'description' => '/(count|print_value)\\\\s/',
+                                                                                                      'pattern' => '(count|print_value)\\s',
                                                                                                       'mod' => '',
                                                                                                       'hashname' => '__PATTERN1__',
                                                                                                       'lookahead' => 0,
@@ -27956,8 +27956,8 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                                 'line' => undef,
                                                                                 'items' => [
                                                                                              bless( {
-                                                                                                      'description' => '/(xmove_command|xmv)\\\\s/',
-                                                                                                      'pattern' => '(xmove_command|xmv)\\s',
+                                                                                                      'description' => '/(xmove|xmv)\\\\s/',
+                                                                                                      'pattern' => '(xmove|xmv)\\s',
                                                                                                       'mod' => '',
                                                                                                       'hashname' => '__PATTERN1__',
                                                                                                       'lookahead' => 0,
@@ -30101,7 +30101,7 @@ package XML::XSH::Parser; sub new { my $self = bless( {
                                                                                                    }, 'Parse::RecDescent::Subrule' ),
                                                                                             bless( {
                                                                                                      'line' => '721',
-                                                                                                     'code' => '{ [\\&XML::XSH::Functions::set_expand_xinclude,$item[2]] }',
+                                                                                                     'code' => '{ [\\&XML::XSH::Functions::set_load_ext_dtd,$item[2]] }',
                                                                                                      'hashname' => '__ACTION1__',
                                                                                                      'lookahead' => 0
                                                                                                    }, 'Parse::RecDescent::Action' )

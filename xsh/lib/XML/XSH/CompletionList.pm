@@ -62,6 +62,7 @@ pedantic_parser
 perl
 print
 print_enc_command
+print_value
 process
 process_xinclude
 process_xincludes
@@ -97,7 +98,7 @@ xcp
 xinclude
 xincludes
 xinsert
-xmove_command
+xmove
 xmv
 xsl
 xslt

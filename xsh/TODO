@@ -2,4 +2,6 @@
 * better support for namespaces
 * allow entity reference insertion
 * allow parameters for user defined functions
-* maybe perl-like while/foreach (not xpath)
+* split element
+* 'locate' - allow use also nearest id() 
+* external xinclude save support

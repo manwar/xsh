@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Thu Mar 21 15:30:19 2002
+# Tue May 21 17:05:01 2002
 
 
 package XML::XSH::Grammar;
@@ -477,7 +477,7 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 
   xmove_command:
-	    /(xmove_command|xmv)\s/ xpath loc xpath
+	    /(xmove|xmv)\s/ xpath loc xpath
 		{ [\&XML::XSH::Functions::move,@item[2,4,3],1] }
   	
 
@@ -498,7 +498,7 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 
   count_command:
-	    /(count)\s/ xpath
+	    /(count|print_value)\s/ xpath
 		{ [\&XML::XSH::Functions::print_count,$item[2]] }
   	
 
@@ -730,7 +730,7 @@ $grammar=<<'_EO_GRAMMAR_';
 
   load_ext_dtd:
 	    /(load_ext_dtd)\s/ expression
-		{ [\&XML::XSH::Functions::set_expand_xinclude,$item[2]] }
+		{ [\&XML::XSH::Functions::set_load_ext_dtd,$item[2]] }
   	
 
   encoding:
