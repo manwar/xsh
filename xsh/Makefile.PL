@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 1.16 2003-08-11 14:17:48 pajas Exp $
+# $Id: Makefile.PL,v 1.17 2003-08-11 15:07:45 pajas Exp $
 
 use strict;
 
@@ -43,11 +43,8 @@ docs: all
 	./xsh < tools/gen_reference.xsh
 	./xsh < tools/gen_doc.xsh
 
-winppd: ppd XML-XSH.tar.gz
+winppd: ppd
 	perl -i~ -pe 's/OS NAME=".*"/OS NAME="MSWin32"/; s/ARCHITECTURE NAME=".*"/ARCHITECTURE NAME="MSWin32-x86-multi-thread"/; s/CODEBASE HREF=".*"/CODEBASE HREF="XML-XSH.tar.gz"/;' XML-XSH.ppd
-
-XML-XSH.tar.gz: all
-	tar czf XML-XSH.tar.gz blib/
 
 EOF
 
