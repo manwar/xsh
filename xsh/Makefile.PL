@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 1.10 2002-12-09 16:47:06 pajas Exp $
+# $Id: Makefile.PL,v 1.11 2003-03-12 14:51:53 pajas Exp $
 
 use strict;
 
@@ -12,6 +12,7 @@ WriteMakefile(
     'EXE_FILES' => ['xsh'],
     'PREREQ_PM' => {
 		    'XML::LibXML' => 1.54,
+		    'XML::LibXML::Iterator' => 0,
 		    'Parse::RecDescent' => 1.79,
 		    'XML::XUpdate::LibXML' => 0.3.0,
 		   },
