@@ -1,5 +1,24 @@
 2002-02-18  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
 
+	* xsh.pl: version number update
+
+	* ChangeLog, XSH/Parser.pm: regenerated
+
+	* XSH/Help.pm: bugfixes:
+	  echo documented
+
+	* XSH/Functions.pm: features:
+	  add attribute name=value into ... construction with
+	                                    unquoted expr. allowed for
+	                                    single attribute and its
+	                                    single-word value
+
+	bugfixes:
+	  foreach, xslt, move default id handling fixed
+	  echo documented
+
+2002-02-18  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
 	* XSH/Parser.pm: regenerated
 
 	* XSH/Help.pm: bugfixes:
