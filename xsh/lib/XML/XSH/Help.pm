@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Nov  1 18:37:35 2002
+# Sun Nov  3 21:23:38 2002
 
 package XML::XSH::Help;
 use strict;
@@ -44,6 +44,45 @@ Example: Store the number of all words in a variable named count.
 
   `<help>' followed by a command or type name gives more information on the
   particular command or argument type.
+
+END
+
+$HELP{'toc'}=[<<'END'];
+
+Help items:
+-----------
+
+  toc - this page
+
+  XSH Language Topics:
+
+    argtypes - Argument Types
+    configuration - Options
+    documents - Files/Documents
+    flow - Flow control
+    information - Retrieving more information
+    manipulation - Tree modification
+    navigation - Tree navigation
+    perl_shell - Interacting with Perl and Shell
+    variables - Variables
+
+  XSH Commands:
+
+    assign, backups, call, cd, clone, close, copy, count, create, debug,
+    def, defs, dtd, enc, encoding, exec, exit, files, fold, foreach, help,
+    if, include, indent, insert, keep-blanks, lcd, load-ext-dtd, local,
+    locate, ls, map, move, nobackups, nodebug, open, options,
+    parser-completes-attributes, parser-expands-entities,
+    parser-expands-xinclude, pedantic-parser, perl, print,
+    process-xinclude, pwd, query-encoding, quiet, recovering, remove,
+    run-mode, save, select, sort, switch-to-new-documents, test-mode,
+    unfold, unless, valid, validate, validation, variables, verbose,
+    version, while, xcopy, xinsert, xmove, xslt, xupdate
+
+  XSH Argument Types:
+
+    command-block, enc-string, expression, filename, id, location,
+    node-type, perl-code, xpath
 
 END
 
@@ -450,8 +489,9 @@ END
 
 
 $HELP{'local'}=[<<'END'];
-usage:       local $<id> [ = <xpath>]
-             local %<id> [ = <xpath>]
+usage:       local $<id> = <xpath>
+             local %<id> = <xpath>
+             local $<id>|%<id> [ $<id>|%<id> ... ]
              
 description:
 	     This command acts in a very similar way as <assign> does,
@@ -943,9 +983,12 @@ description:
 	     interactive mode, XSH redirects output to the terminal, you
 	     cannot simply use perl print function for output if you want
 	     to filter the result with a shell command. Instead use
-	     predefined perl routine `echo ...' which is equivalent to
-	     `print $::OUT ...'. The $::OUT perl-variable stores the
-	     referenc to the terminal file handle.
+	     predefined perl routine `echo(...)' which is equivalent to
+	     Perl's `print $::OUT ...'. The `$::OUT' perl-variable stores
+	     the reference to the terminal file handle.
+
+	     For more information about embedded Perl code in XSH,
+	     predefined functions etc. see <perl_shell>.
 
 Example:
              xsh> $i="foo";
@@ -1624,6 +1667,504 @@ description:
 
 END
 
+
+$HELP{'documents'}=[<<'END'];
+Files/Documents
+---------------
+
+  XSH is intended to query and manipulate XML and HTML documents. Use one
+  of the `open/open-*/create' commands to load an XML or HTML document from
+  a local file, external URL (such as http:// or ftp://), string or pipe.
+  While loading, XSH parses and optionally validates (see <validation> and
+  <load-ext-dtd>) the document. Parsed documents are stored in memory as
+  DOM trees, that can be <navigated>navigated and <manipulated>manipulated
+  quite similarly to a local filesystem.
+
+  Every opened document is associated with an identifier (<id>), that is a
+  symbolic name for the document in XSH and can be used for example as a
+  prefix of <XPath expressions>XPath expressions.
+
+  In the current version, XSH is only able to save documents locally. To
+  store a document on any other location, use <ls> command and pipe
+  redirection to feed the XML representation of the document to any
+  external program that is able to store it on a remote location.
+
+Example: Store XSH document DOC on a remote machine using Secure Shell
+
+  xsh> ls DOC:/ | ssh my.remote.org 'cat > test.xml'
+
+END
+
+$HELP{'navigation'}=[<<'END'];
+Tree navigation
+---------------
+
+  With XSH, it is possible to browse <document trees>document trees as if
+  they were a local filesystem, except that <XPath>XPath expressions are
+  used instead of ordinary UNIX paths.
+
+  Current position in the document tree is called the current node. Current
+  node's XPath may be queried with <pwd> command. In the interactive shell,
+  current node is also displayed in the command line prompt. Remember, that
+  beside <cd> command, current node (and document) is silently changed by
+  all variant of <open> command, <create> command and temporarily also by
+  the node-list variant of the <foreach> statement.
+
+  Documents are specified in a similar way as harddrives on DOS/Windows(TM)
+  systems (except that their names are not limitted to one letter in XSH),
+  i.e. by a prefix of the form doc: where doc is the <id> associated with
+  the document.
+
+  To mimic the filesystem navigation as closely as possible, XSH contains
+  several commands named by analogy of UNIX filesystem commands, such as
+  <cd>, <ls> and <pwd>.
+
+Example:
+  xsh scratch:/> open docA="testA.xml"
+  xsh docB:/> open docB="testB.xml"
+  xsh> pwd
+  docB:/
+  xsh docB:/> cd docA:/article/chapter[title='Conclusion']
+  xsh docA:/article/chapter[5]> pwd
+  docA:/article/chapter[5]
+  xsh docA:/article/chapter[5]> cd previous-sibling::chapter
+  xsh docA:/article/chapter[4]> cd ..
+  xsh docA:/article> select docB
+  xsh docB:/>
+
+END
+
+$HELP{'manipulation'}=[<<'END'];
+Tree modification
+-----------------
+
+  XSH provides mechanisms not only to browse and inspect the DOM tree but
+  also to modify its content by providing commands for copying, moving, and
+  deleting its nodes as well as adding completely new nodes or XML
+  fragments to it. It is quite easy to learn these commands since their
+  names or aliases mimic their well-known filesystem analogies. On the
+  other hand, many of these commands have two versions one of which is
+  prefixed with a letter "x". This "x" stands for "cross", thus e.g.
+  <xcopy> should be read as "cross copy". Let's explain the difference on
+  the example of <xcopy>.
+
+  When you copy, you have to specify what are you copying and where are you
+  copying to, so you have to specify the source and the target. XSH is very
+  much XPath-based so, XPath is used here to specify both of them. However,
+  there might be more than one node that satisfies an XPath expression. So,
+  the rule of thumb is that the "cross" variant of a command places one and
+  every of the source nodes to the location of one and every destination
+  node, while the plain variant works one-by-one, placing the first source
+  node to the first destination, the second source node to the second
+  destination, and so on (as long as there are both source nodes and
+  destinations left).
+
+Example:
+  xsh> create a "<X><A/><Y/><A/></X>";
+  xsh> create b "<X><B/><C/><B/><C/><B/></X>";
+  xsh> xcopy a://A replace b://B;
+  xsh> copy b://C before a://A;
+  xsh> ls a:/;
+  <?xml version="1.0" encoding="utf-8"?>
+  <X><C/><A/><Y/><C/><A/></X>
+  
+  xsh> ls b:/;
+  <?xml version="1.0" encoding="utf-8"?>
+  <X><A/><A/><C/><A/><A/><C/><A/><A/></X>
+
+  As already indicated by the example, another issue of tree modification
+  is the way in which the destination node determines the target location.
+  Should the source node be placed before, after, or into the resulting
+  node? Should it replace it completely? This information has to be given
+  in the <location> argument that usually precedes the destination XPath.
+
+  Now, what happens if source and destination nodes are of incompatible
+  types? XSH tries to avoid this by implicitly converting between node
+  types when necessary. For example, if a text, comment, and attribute node
+  is copied into, before or after an attribute node, the original value of
+  the attribute is replaced, prepended or appended respectively with the
+  textual content of the source node. Note however, that element nodes are
+  never converted into text, attribute or any other textual node. There are
+  many combinations here, so try yourself and see the results.
+
+  You may even use some more sofisticated way to convert between node
+  types, as shown in the following example, where an element is first
+  commented out and than again uncommented. Note, that the particular
+  approach used for resurrecting the commented XML material works only for
+  well-balanced chunks of XML.
+
+Example: Using string variables to convert between different types of nodes
+
+  xsh> create doc "<?xml version='1.0'?>
+  <book>
+    <chapter>
+      <title>Intro</title>
+    </chapter>
+    <chapter>
+      <title>Rest</title>
+    </chapter>
+  </book>";
+  
+  # comment out the first chapter
+  xsh> ls //chapter[1] |> $chapter_xml;
+  xsh> add comment $chapter_xml replace //chapter[1];
+  
+  # show the result
+  xsh> ls / 0;
+  <?xml version="1.0"?>
+  <book>
+  <!--  <chapter>
+      <title>Intro</title>
+    </chapter>
+  -->
+    <chapter>
+      <title>Rest</title>
+    </chapter>
+  </book>
+  
+  
+  # un-comment the chapter
+  xsh> $comment = string(//comment()[1]);
+  xsh> add chunk $comment replace //comment()[1];
+  
+  # show the result
+  xsh> ls / 0;
+  <?xml version="1.0"?>
+  <book>
+    <chapter>
+      <title>Intro</title>
+    </chapter>
+  
+    <chapter>
+      <title>Rest</title>
+    </chapter>
+  </book>
+
+END
+
+$HELP{'flow'}=[<<'END'];
+Flow control
+------------
+
+  What a scripting language XSH would be had it not some kind of
+  conditional statements, loops and other stuff that influences the way in
+  which XSH commands are processed.
+
+  Most notable XSH's feature in this area is that some of the basic flow
+  control statements, namely <if>, <unless>, <while> and <foreach> have two
+  variants, an XPath-based one and a Perl-based one. The XPath-based
+  variant uses <xpath> expressions to specify the condition or node-lists
+  to iterate, while the other one utilizes <perl-code> for this purpose.
+  See descriptions of the individual statements for more detail.
+
+END
+
+$HELP{'information'}=[<<'END'];
+Retrieving more information
+---------------------------
+
+  Beside the possibility to browse the DOM tree and list some parts of it
+  (as described in <navigation>), XSH provides commands to obtain other
+  information related to open documents as well as the XSH interpreter
+  itself. These commands are listed bellow.
+
+END
+
+$HELP{'argtypes'}=[<<'END'];
+Argument Types
+--------------
+
+  XSH commands accept different types of arguments, such as usual strings
+  (<expression>) or <XPath expressions>XPath expressions. Notably, these
+  two types and types based on them support string variable interpolation.
+  See documentation of the individual types for more information.
+
+END
+
+$HELP{'variables'}=[<<'END'];
+Variables
+---------
+
+  In the current version, XSH supports two types of variables: string
+  (scalar) variables and node-list variables. Perl programmers that might
+  miss some other kinds of variables (arrays or hashes) may use the support
+  for <interacting with Perl>interacting with Perl to access these types
+  (see some examples below).
+
+  These two kinds of variables differ syntactically in the prefix: string
+  variables are prefixed with a dollar sign (`$') while node-list variables
+  are prefixed with a percent sign (`%').
+
+  String Variables
+  ----------------
+
+    Every string variable name consists of a dollar sign (`$') prefix and
+    an <id>, that has to be unique among other scalar variables, e.g.
+    `$variable'. Values are assigned to variables either by simple
+    <assignments>assignments of the form `$variable = <xpath>' or by
+    capturing the output of some command with a variable redirection of the
+    form `command |> $variable'.
+
+    String variables may be used in <string expressions>string expressions,
+    <XPath expressions>XPath expressions, or even in perl-code as $<id> or
+    ${<id>}. In the first two cases, variables act as macros in the sense
+    that all variables occurences are replaced by the corresponding values
+    before the expression itself is evaluated.
+
+    To display current value of a variable, use the <print> command,
+    <variables> command or simply the variable name:
+
+Example:
+    xsh> $b="chapter";
+    xsh> $file="${b}s.xml";
+    xsh> open f=$file;
+    xsh> ls //$b[count(descendant::para)>10]
+    xsh> print $b
+    chapter
+    xsh> $b
+    $b='chapter';
+    xsh> variables
+    $a='chapters.xml';
+    $b='chapter';
+
+  Node-list Variables
+  -------------------
+
+    Every string variable name consists of a percent sign (`%') prefix and
+    an <id>, that has to be unique among other node-list variables, e.g.
+    `%variable'.
+
+    Node-list variables can be used to store lists of nodes that result
+    from evaluating an XPath. This is especially useful when several
+    changes are performed on some set of nodes and evaluating the XPath
+    expression repeatedly would take too long. Other important use is to
+    remember a node that would otherwise be extremely hard or even
+    impossible to locate by XPath expressions after some changes to the
+    tree structure are made, since such an XPath cannot be predicted in
+    advance.
+
+    Although node-list variables act just like XPath expressions that would
+    result in the same node-list, for implementation reasons it is not
+    possible to use node-list variables as parts of complex XPath
+    expressions except for one case. They may be only used at the very
+    beginning of an XPath expression. So while constructions such as
+    `%creatures[4]', `%creatures[@race='elf']', or
+    `%creatures/parents/father' do work as expected,
+    `string(%creatures[2]/@name)' `//creature[%creatures[2]/@name=@name]',
+    or `%creatures[@race='elf'][2]' do not. In the first two cases it is
+    because node-list variables cannot be evaluated in the middle of an
+    XPath expression. The third case fails because this construction
+    actually translates into a sequence of evaluations of
+    `self::*[@race='elf'][2]' for each node in the `%creatures' node-list,
+    which is not equivallent to the intended expression as the `[2]' filter
+    does not apply to the whole result of `%creatures[@race='elf']' at once
+    but rather to the partial results.
+
+    Fortunatelly, it is usually possible to work around these unsupported
+    constructions quite easily. This is typically done by introducing some
+    more variables as well as using the <foreach> statement. The following
+    example should provide some idea on how to do this:
+
+Example:
+    # work around for $name=string(%creatures[2]/@name)
+    xsh> foreach %creatures[2] $name=string(@name)
+    # work around for ls //creature[%creatures[2]/@name=@name]
+    xsh> ls //creature[$name=@name]
+    # work around for ls %creatures[@race='elf'][2]
+    xsh> %elves = %creatures[@race='elf']
+    xsh> ls %elves[2]
+
+    Remember, that when a node is deleted from a tree it is at the same
+    time removed from all node-lists it occurs in. Note also, that unlike
+    string variables, node-list variables can not be (and are not intended
+    to be) directly accessed from Perl code.
+
+  Accessing Perl Variables
+  ------------------------
+
+    All XSH string variables are usual Perl scalar variables from the
+    `XML::XSH::Map' namespace, which is the default namespace for any Perl
+    code evaluated from XSH. Thus it is possible to arbitrarily intermix
+    XSH and Perl assignments:
+
+Example:
+    xsh> ls //chapter[1]/title
+    <title>Introduction</title>
+    xsh> $a=string(//chapter[1]/title)
+    xsh> eval { $b="CHAPTER 1: ".uc($a); }
+    xsh> print $b
+    CHAPTER 1: INTRODUCTION
+
+    If needed, it is, however, possible to use any other type of Perl
+    variables by means of evaluating a corresponding perl code. The
+    following example demonstrates using Perl hashes to collect and print
+    some simple racial statistics about the population of Middle-Earth:
+
+Example:
+    foreach a:/middle-earth/creature { 
+      $race=string(@race);
+      eval { $races{$race}++ };
+    }
+    print "Middle-Earth Population (race/number of creatures)"
+    eval { 
+      echo map "$_/$races{$_}\n",
+        sort ($a cmp $b), keys(%races); 
+    };
+
+END
+
+$HELP{'configuration'}=[<<'END'];
+Options
+-------
+
+  The following commands are used to modify the default behaviour of the
+  XML parser or XSH itself. Some of the commands are switch between two
+  different modes according to a given expression (which is expected to
+  result either in zero or non-zero value). Other commands also working as
+  a flip-flop have their own explicit counterpart (e.g. <verbose> and
+  <quiet> or <debug> and <nodebug>). This misconsistency is due to
+  historical reasons.
+
+  The <encoding> and <query-encoding> options allow to specify character
+  encoding that should be expected from user as well as the encoding to be
+  used by XSH on output. This is particularly useful when you work with
+  UTF-8 encoded documents on a console which supports only 8-bit
+  characters.
+
+  The <options> command displays current settings by means of XSH commands.
+  Thus it can not only be used to review current values, but also to store
+  them future use, e.g. in ~/.xshrc file.
+
+Example:
+  xsh> options | cat > ~/.xshrc
+
+END
+
+$HELP{'perl_shell'}=[<<'END'];
+Interacting with Perl and Shell
+-------------------------------
+
+  To allow more complex tasks to be achieved, XSH provides ways for
+  interaction with the Perl programming language and the system shell.
+
+  Calling Perl
+  ------------
+
+    Perl is a language optimized for scanning arbitrary text files,
+    extracting information from those text files, and printing reports
+    based on that information. It's also a good language for many system
+    management tasks. The language is intended to be practical (easy to
+    use, efficient, and complete). XSH itself is written in Perl, so it is
+    extremely easy to support this language as an extension to XSH.
+
+    Perl <expressions or blocks of code>expressions or blocks of code can
+    either be simply evaluated with the <perl> command, used to do quick
+    changes to nodes of the DOM tree (see <map> command), used to provide
+    list of strings to iterate over in a <foreach> loop, or to specify more
+    complex conditions for <if>, <unless>, and <while> statements.
+
+    To prevent conflict between XSH internals and the evaluated perl code,
+    XSH runs such code in the context of a special namespace
+    `XML::XSH::Map'. As described in the section <variables>, XSH string
+    variables may be accessed and possibly assigned from Perl code in the
+    most obvious way, since they actually are Perl variables defined in the
+    `XML::XSH::Map' namespace.
+
+    The interaction between XSH and Perl actually works also the other way
+    round, so that you may call back XSH from the evaluated Perl code. For
+    this, Perl function `xsh' is defined in the `XML::XSH::Map' namespace.
+    All parameters passed to this function are interpreted as XSH commands.
+    To simplify evaluation of XPath expressions, another three functions:
+    The first one, named `count', returns the same value as would be
+    printed by <count> command in XSH on the same XPath expression. The
+    second function, named `literal', returns the result of XPath
+    evaluation as if the whole expression was wrapped with the XPath
+    `string()' function. In other words, `literal('doc:expression')'
+    returns the same value as `count('doc:string(expression)')'. The third
+    function, named `xml_list', returns the result of the XPath search as a
+    XML string which is equivallent to the output of a <ls> on the same
+    XPath expression (without indentation and without folding and any other
+    limitation on the depth of the listing).
+
+    In the following examples we use Perl to populate the Middle-Earth with
+    Hobbits whose names are read from a text file called `hobbits.txt',
+    unless there are some Hobbits in Middle-Earth already.
+
+Example: Use Perl to read text files
+
+    unless (//creature[@race='hobbit']) {
+      perl 'open $file, "hobbits.txt"';
+      perl '@hobbits=<$file>';
+      perl 'close $file';
+      foreach { @hobbits } {
+        insert element "<creature name='$__' race='hobbit'>"
+          into m:/middle-earth/creatures;
+      }
+    }
+
+Example: The same code as a single Perl block
+
+    perl {
+      unless (count(//creature[@race='hobbit'])) {
+        open my $file, "hobbits.txt";
+        foreach (<$file>) {
+          xsh(qq{insert element "<creature name='$_' race='hobbit'>"
+            into m:/middle-earth/creatures});
+        }
+        close $file;
+      }
+    };
+
+  Calling the System Shell
+  ------------------------
+
+    In the interactive mode, XSH interprets all lines starting with a
+    exclamation mark (`!') as shell commands and invokes the system shell
+    to interpret them (this is to mimic FTP command-line interpreters).
+
+Example:
+    xsh> !ls -l
+    -rw-rw-r--    1 pajas    pajas        6355 Mar 14 17:08 Artistic
+    drwxrwxr-x    2 pajas    users         128 Sep  1 10:09 CVS
+    -rw-r--r--    1 pajas    pajas       14859 Aug 26 15:19 ChangeLog
+    -rw-r--r--    1 pajas    pajas        2220 Mar 14 17:03 INSTALL
+    -rw-r--r--    1 pajas    pajas       18009 Jul 15 17:35 LICENSE
+    -rw-rw-r--    1 pajas    pajas         417 May  9 15:16 MANIFEST
+    -rw-rw-r--    1 pajas    pajas         126 May  9 15:16 MANIFEST.SKIP
+    -rw-r--r--    1 pajas    pajas       20424 Sep  1 11:04 Makefile
+    -rw-r--r--    1 pajas    pajas         914 Aug 26 14:32 Makefile.PL
+    -rw-r--r--    1 pajas    pajas        1910 Mar 14 17:17 README
+    -rw-r--r--    1 pajas    pajas         438 Aug 27 13:51 TODO
+    drwxrwxr-x    5 pajas    users         120 Jun 15 10:35 blib
+    drwxrwxr-x    3 pajas    users        1160 Sep  1 10:09 examples
+    drwxrwxr-x    4 pajas    users          96 Jun 15 10:35 lib
+    -rw-rw-r--    1 pajas    pajas           0 Sep  1 16:23 pm_to_blib
+    drwxrwxr-x    4 pajas    users         584 Sep  1 21:18 src
+    drwxrwxr-x    3 pajas    users         136 Sep  1 10:09 t
+    -rw-rw-r--    1 pajas    pajas          50 Jun 16 00:06 test
+    drwxrwxr-x    3 pajas    users         496 Sep  1 20:18 tools
+    -rwxr-xr-x    1 pajas    pajas        5104 Aug 30 17:08 xsh
+
+    To invoke a system shell command or program from the non-interactive
+    mode or from a complex XSH construction, use the <exec> command.
+
+    Since UNIX shell commands are very powerful tool for processing textual
+    data, XSH supports direct redirection of XSH commands output to system
+    shell command. This is very similarly to the redirection known from
+    UNIX shells, except that here, of course, the first command in the
+    pipe-line colone is an XSH command. Since semicolon (`;') is used in
+    XSH to separate commands, it has to be prefixed with a backslash if it
+    should be used for other purposes.
+
+Example: Use grep and less to display context of `funny'
+
+    xsh> ls //chapter[5]/para | grep funny | less
+
+Example: The same on Windows 2000/XP systems
+
+    xsh> ls //chapter[5]/para | find "funny" | more
+
+END
 
 
 1;

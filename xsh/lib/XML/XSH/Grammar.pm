@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Fri Nov  1 18:37:34 2002
+# Sun Nov  3 21:23:38 2002
 
 
 package XML::XSH::Grammar;
@@ -178,14 +178,11 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(local)\s/ variable '=' xpath
 		{ [\&XML::XSH::Functions::xpath_assign_local,$item[2],$item[4]] }
   	
-	  | /(local)\s/ variable
-		{ [\&XML::XSH::Functions::xpath_assign_local,$item[2],undef] }
-  	
 	  | /(local)\s/ nodelistvariable '=' xpath
 		{ [\&XML::XSH::Functions::nodelist_assign_local,$item[2],$item[4]] }
   	
-	  | /(local)\s/ nodelistvariable
-		{ [\&XML::XSH::Functions::nodelist_assign_local,$item[2],["",""]] }
+	  | /(local)\s/ anyvariable(s)
+		{ [\&XML::XSH::Functions::make_local,@{$item[2]}] }
   	
 	  | variable
 		{ [\&XML::XSH::Functions::print_var,$item[1]] }
@@ -342,9 +339,9 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | double_quoted_string
 
   exp_inline_count:
-	    /\${\((.+?)\)}/
-	  | /\${{{(.+?)}}}/
-	  | /\${{([^{].*?)}}/
+	    /\$\{\((.+?)\)\}/
+	  | /\$\{\{\{(.+?)\}\}\}/
+	  | /\$\{\{([^{].*?)\}\}/
 
   expression:
 	    exp_part <skip:""> expression(?)
@@ -544,6 +541,14 @@ $grammar=<<'_EO_GRAMMAR_';
 	 }
   	
 	  | <error?:Parse error near: "}.substr(0,40,$text).qq{ ..."> <reject>
+
+  anyvariable:
+	    variable
+		{ ['$',$item[1]] }
+  	
+	  | nodelistvariable
+		{ ['%',$item[1]] }
+  	
 
   match_typedargs:
 	   
