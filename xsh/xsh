@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.11 2002-10-22 16:47:58 pajas Exp $
+# $Id: xsh,v 1.12 2002-10-29 11:23:18 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -15,7 +15,7 @@ use strict;
 
 use Getopt::Std;
 use vars qw/$opt_q $opt_w $opt_i $opt_h $opt_V $opt_E $opt_e $opt_d $opt_c $opt_s
-            $opt_f $opt_g $opt_v/;
+            $opt_f $opt_g $opt_v $opt_T/;
 use vars qw/$VERSION $REVISION/;
 
 use IO::Handle;
@@ -27,9 +27,9 @@ use XML::XSH qw(&xsh_set_output &xsh_get_output &xsh &xsh_init
 require Term::ReadLine if $opt_i;
 
 BEGIN {
-  getopts('scqgvwdfhViE:e:');
+  getopts('scqgvwdfhViTE:e:');
   $VERSION='0.9';
-   $REVISION='$Revision: 1.11 $';
+   $REVISION='$Revision: 1.12 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -48,6 +48,7 @@ if ($opt_h) {
   print "   -v   start with validation 1 and load_ext_dtd 1\n\n";
   print "   -w   start with validation 0 and load_ext_dtd 0\n\n";
   print "   -V   print version\n\n";
+  print "   -T   trace grammar\n\n";
   print "   -h   help\n\n";
   exit 1;
 }
@@ -62,6 +63,7 @@ if ($opt_V) {
 $::RD_ERRORS = 1; # Make sure the parser dies when it encounters an error
 $::RD_WARN   = 1; # Enable warnings. This will warn on unused rules &c.
 $::RD_HINT   = 1; # Give out hints to help fix problems.
+$::RD_TRACE   = $opt_T; # Give out hints to help fix problems.
 
 my $module;
 if ($opt_g) {
@@ -75,6 +77,12 @@ set_opt_q($opt_q);
 set_opt_d($opt_d);
 set_opt_c($opt_c);
 
+$XML::XSH::Functions::SIGSEGV_SAFE=$opt_s;
+
+my $doc=XML::XSH::Functions::create_doc("scratch","scratch");
+#XML::XSH::Functions::set_last_id("scratch");
+XML::XSH::Functions::set_local_xpath(['scratch','/']);
+
 if ($opt_w) {
   XML::XSH::Functions::set_validation(0);
   XML::XSH::Functions::set_load_ext_dtd(0);
@@ -82,12 +90,6 @@ if ($opt_w) {
   XML::XSH::Functions::set_validation(1);
   XML::XSH::Functions::set_load_ext_dtd(1);
 }
-
-$XML::XSH::Functions::SIGSEGV_SAFE=$opt_s;
-
-my $doc=XML::XSH::Functions::create_doc("scratch","scratch");
-#XML::XSH::Functions::set_last_id("scratch");
-XML::XSH::Functions::set_local_xpath(['scratch','/']);
 
 my $string=join " ",@ARGV;
 my $l;
@@ -106,6 +108,8 @@ if ($@) {
 
 if ($opt_i) {
   $XML::XSH::Functions::TRAP_SIGINT=1;
+  $XML::XSH::Functions::TRAP_SIGPIPE=1;
+  $XML::XSH::Functions::_die_on_err=0;
   unless ($opt_q) {
     my $rev=$REVISION;
     $rev=~s/\s*\$//g;
@@ -118,7 +122,7 @@ if ($opt_i) {
     print STDERR "either the GNU GPL Version 2, or under the Perl Artistic License.\n";
   }
 } else {
-  $XML::XSH::Functions::_die_on_err=0;
+  $XML::XSH::Functions::_die_on_err=1;
 }
 
 if ($string) {
