@@ -780,6 +780,7 @@ sub new {
       <ruleref ref="help_command"/>
       <ruleref ref="exec_command"/>
       <ruleref ref="include_command"/>
+      <ruleref ref="ifinclude_command"/>
       <ruleref ref="assign_command"/>
       <ruleref ref="local_command"/>
       <ruleref ref="print_var_command"/>
@@ -820,6 +821,7 @@ sub new {
       <ruleref ref="xpath_completion_command"/>
       <ruleref ref="xpath_axis_completion_command"/>
       <ruleref ref="doc_info_command"/>
+      <ruleref ref="ignore_use_command"/>
       <!-- ADD NEW COMMANDS HERE -->
       <production>
 	<ruleref ref="call_command"/>
@@ -831,7 +833,6 @@ sub new {
 	</description>
       </documentation>
     </rule>
-
     <rule id="statement">
       <production>
 	<lookahead/>
@@ -1202,6 +1203,57 @@ END
       <production><ruleref ref="ID"/></production>
       <production><ruleref ref="variable"/></production>
     </rule>
+    <!-- ================== scheme (DTD,RNG,XSD) ====================== -->
+    <rule id="public_dtd">
+      <production>
+	<string>PUBLIC</string>
+	<ruleref ref="expression"/>
+	<action>$item[2]</action>
+      </production>
+    </rule>
+    <rule id="system_dtd">
+      <production>
+	<regexp>SYSTEM|FILE</regexp>
+	<ruleref ref="filename"/>
+	<action>$item[2]</action>
+      </production>
+    </rule>
+    <rule id="validation_scheme">
+      <production>
+	<string>DTD</string>
+	<ruleref ref="public_dtd"/>
+	<ruleref ref="system_dtd"/>
+	<action>['DTD','FILE',$item[2],$item[3]]</action>
+      </production>
+      <production>
+	<string>DTD</string>
+	<ruleref ref="public_dtd"/>
+	<action>['DTD','FILE',$item[2],undef]</action>
+      </production>
+      <production>
+	<string>DTD</string>
+	<ruleref ref="system_dtd"/>
+	<action>['DTD','FILE',undef,$item[2]]</action>
+      </production>
+      <production>
+	<string>DTD</string>
+	<string>STRING</string>
+	<ruleref ref="expression"/>
+	<action>['DTD','STRING',$item[3]]</action>
+      </production>
+      <production>
+	<regexp>RNG|RelaxNG|RELAXNG</regexp>
+	<regexp>FILE|STRING|DOC</regexp>
+	<ruleref ref="filename"/>
+	<action>['RNG',@item[2,3]]</action>
+      </production>
+      <production>
+	<regexp>Schema|SCHEMA|XSD</regexp>
+	<regexp>FILE|STRING|DOC</regexp>
+	<ruleref ref="filename"/>
+	<action>['XSD',@item[2,3]]</action>
+      </production>
+    </rule>
     <!-- ================== filename ====================== -->
     <rule id="filename" type="argtype">
       <production>
@@ -1211,7 +1263,8 @@ END
 	<title>Filename argument type</title>
 	<shortdesc>file name</shortdesc>
 	<description>
-	  <para>An <xref linkend="expression"/> which interpolates to a valid file name.</para>
+	  <para>An <xref linkend="expression"/> which interpolates to
+	  a valid file name or URL.</para>
 	</description>
       </documentation>
     </rule>
@@ -1265,8 +1318,9 @@ END
 	  <para>
 	    <literal>xsh:grep(node-set, regexp-string)</literal> -
 	    returns a node set consisting of nodes of the
-	    given <literal>node-set</literal> whose content (as
-	    returned by the built-in XPath function <literal>string()</literal>
+	    given <literal>node-set</literal> whose content 
+	    (as returned by the built-in XPath 
+	    function <literal>string()</literal>)
 	    matches the regular expression given in <literal>regexp-string</literal>.
 	  </para>
 	  <para>
@@ -2178,6 +2232,29 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</see-also>
       </documentation>
     </rule>
+    <rule id="ifinclude_command" type="command" name="ifinclude" inline="yes">
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="filename"/>
+	<action>[\&amp;XML::XSH::Functions::include,$item[3],1]</action>
+      </production>
+      <documentation sections="Flow">
+	<usage>ifinclude <xref linkend="filename"/></usage>
+	<shortdesc>conditionally include another XSH source in current position</shortdesc>
+	<description>
+	  <para>
+	    Include a file named <xref linkend="filename"/> and execute all XSH
+	    commands therein unless the file was already included
+	    using either <xref linkend="include_command"/> of <xref
+	    linkend="ifinclude_command"/>.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="include_command"/>
+	</see-also>
+      </documentation>
+    </rule>
     <rule id="include_command" type="command" name="include" inline="yes">
       <aliases>
 	<alias name="." regexp="\."/>
@@ -2197,6 +2274,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    commands therein.
 	  </para>
 	</description>
+	<see-also>
+	  <ruleref ref="include_command"/>
+	</see-also>
       </documentation>
     </rule>
     <rule id="match_typedargs">
@@ -2441,7 +2521,9 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    relative to the corresponding node matched by the second
 	    <xref linkend="xpath"/> according to the order in which are
 	    nodes matched. Thus, the n'th node matching the first <xref linkend="xpath"/> is copied to the location relative to the
-	    n'th node matching the second <xref linkend="xpath"/>. The
+	    n'th node matching the second <xref linkend="xpath"/>.
+          </para>
+          <para>The
 	    possible values for <xref linkend="loc"/> are: after,
 	    before, into, replace and cause copying the source nodes
 	    after, before, into (as the last child-node).  the
@@ -2462,9 +2544,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    attribute to append, prepend or replace the destination
 	    attribute value. They may also replace the destination
 	    attribute completely (both its name and value).
-	  </para>
-	  <para>
-	    To simply copy an attribute from one element to another,
+	    To copy an attribute from one element to another,
 	    simply copy the attribute node into the destination element.
 	  </para>
 	  <para>
@@ -2936,7 +3016,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<usage>strip <xref linkend="xpath"/></usage>
 	<shortdesc>strip leading and trailing whitespace</shortdesc>
 	<description>
-	  <para><literal>strip</literal> removes all leading and
+	  <para><literal>strip-whitespace</literal> removes all leading and
 	    trailing whitespace from given nodes. If applied to an
 	    element node, it removes all leading and trailing child
 	    text nodes and CDATA sections that consist entirely of
@@ -3453,18 +3533,24 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       </production>
       <production>
 	<regexp>save(as|_as|-as)?((\s*|_|-)(HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?((\s*|_|-)(FILE|file|STRING|string))?</regexp>
-	<directive type="commit"/>
 	<ruleref ref="expression"/>
 	<ruleref ref="encoding_param" rep="?"/>
-	<action>[\&amp;XML::XSH::Functions::save_doc,@item[1,3],undef,$item[4]]</action>
+	<action>[\&amp;XML::XSH::Functions::save_doc,@item[1,2],undef,$item[3]]</action>
       </production>
       <production>
 	<regexp>save(as|_as|-as)?([-_](HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?</regexp>
+	<directive type="commit"/>
 	<action>[\&amp;XML::XSH::Functions::save_doc,$item[1]]</action>
       </production>
       <documentation sections="Documents">
-	<usage>save [HTML|XML|XInclude]? [FILE|PIPE|STRING]? <xref linkend="ID"/> <xref
-	    linkend="expression"/>? [encoding <xref linkend="enc_string"/>]</usage>
+	<usage>save [HTML|XML|XInclude] [FILE|PIPE|STRING] <xref linkend="ID"/> <xref
+	    linkend="expression"/> [encoding <xref
+	    linkend="enc_string"/>]
+or
+	  save <xref linkend="ID"/>
+or
+	  save
+</usage>
 	<shortdesc>save a document as XML or HTML</shortdesc>
 	<description>
 	  <para>
@@ -3642,19 +3728,65 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
     <rule id="validate_command" type="command" name="validate" inline="yes">
       <production>
 	<selfref sep="no"/>
+	<ruleref ref="validation_scheme"/>
+	<ruleref ref="optional_expression" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::validate_doc,1,$item[2],@{$item[3]}]</action>
+      </production>
+      <production>
+	<selfref sep="no"/>
 	<directive type="commit"/>
 	<ruleref ref="optional_expression" rep="?"/>
-	<action>[\&amp;XML::XSH::Functions::validate_doc,@{$item[3]}]</action>
+	<action>[\&amp;XML::XSH::Functions::validate_doc,1,[],@{$item[3]}]</action>
       </production>
       <documentation sections="Information">
-	<usage>validate [<xref linkend="ID"/>]</usage>
-	<shortdesc>validate a document against its DTD</shortdesc>
+	<usage>validate [<xref linkend="ID"/>]
+or
+validate DTD PUBLIC <xref linkend="expression"/> [SYSTEM <xref
+	    linkend="filename"/>] <xref linkend="ID"/>
+or
+validate (DTD|RelaxNG|XSD) FILE <xref linkend="filename"/> [<xref
+	    linkend="ID"/>]
+or
+validate (DTD|RelaxNG|XSD) STRING <xref linkend="filename"/> [<xref
+	    linkend="ID"/>]
+or
+validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
+	<shortdesc>validate a document against a DTD, RelaxNG, or XSD schemas</shortdesc>
 	<description>
 	  <para>
-	    Try to validate the document identified with <xref linkend="ID"/> according to its DTD, report all validity
-	    errors.  If no document identifier is given, the current
-	    document is used.
+	    This command validates the document identified with <xref
+	      linkend="ID"/> against a DTD, RelaxNG or XSD schema and
+	      report all validity errors. If no document identifier
+	      is given, the current document is used. A DTD can be
+	      specified either by its PUBLIC or SYSTEM identifier (or
+	      both), or as a STRING.  RelaxNG and XSD schemas can be
+	      specified either as a filename or url (FILE <xref
+	      linkend="filename"/>), as a string (STRING <xref
+	      linkend="expression"/>), or as a XSH document (DOC <xref
+	      linkend="ID"/>).  If no schema is specified, validation
+	      is performed against the internal or external DTD subset
+	      of the document being validated.
 	  </para>
+	  <example>
+	    <code>open mydoc="test.xml"</code>
+	    <code># in all examples below, mydoc can be ommited</code>
+	    <code>validate mydoc; # validate against the documet's DOCTYPE</code>
+	    <code>validate DTD PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" mydoc</code>
+	    <code>validate DTD SYSTEM "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" mydoc</code>
+	    <code>validate DTD FILE "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" mydoc</code>
+	  </example>
+	  <example>
+	    <code>validate RelaxNG FILE "test.rng" mydoc</code>
+	    <code>validate RelaxNG STRING $relaxschema mydoc</code>
+	    <code>open rng="test.rng"</code>
+	    <code>validate RelaxNG DOC rng mydoc</code>
+	  </example>
+	  <example>
+	    <code>validate XSD FILE "test.xsd" mydoc</code>
+	    <code>validate XSD STRING $xsdschema mydoc</code>
+	    <code>open xsd="test.xsd"</code>
+	    <code>validate XSD DOC xsd mydoc</code>
+	  </example>
 	</description>
 	<see-also>
 	  <ruleref ref="valid_command"/>
@@ -3665,18 +3797,32 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
     <rule id="valid_command" type="command" name="valid" inline="yes">
       <production>
 	<selfref sep="no"/>
+	<ruleref ref="validation_scheme"/>
+	<ruleref ref="optional_expression" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::validate_doc,0,$item[2],@{$item[3]}]</action>
+      </production>
+      <production>
+	<selfref sep="no"/>
 	<directive type="commit"/>
 	<ruleref ref="optional_expression" rep="?"/>
-	<action>[\&amp;XML::XSH::Functions::valid_doc,@{$item[3]}]</action>
+	<action>[\&amp;XML::XSH::Functions::validate_doc,0,[],@{$item[3]}]</action>
       </production>
       <documentation sections="Information">
-	<usage>valid [<xref linkend="ID"/>]</usage>
-	<shortdesc>check if the document is valid (according to its DTD)</shortdesc>
+	<usage>valid [validation-scheme] [<xref linkend="ID"/>]</usage>
+	<shortdesc>check if the document is valid (according to a
+	DTD, RelaxNG, or XSD schemas)</shortdesc>
 	<description>
 	  <para>
-	    Check and report the validity of a document.  Prints &quot;yes&quot;
-	    if the document is valid and &quot;no&quot; otherwise.  If no document
-	    identifier is given, the current document is used.
+	    Check and report the validity of the document <xref
+	    linkend="ID"/> with respect to a DTD, RelaxNG, or XSD
+	    schemas specified in <literal>validation-scheme</literal>
+	    (see <xref linkend="validate_command"/> for information,
+	    on how <literal>validation-scheme</literal> may be
+	    specified).  Prints &quot;yes&quot; if the document is
+	    valid and &quot;no&quot; otherwise.  If no document
+	    identifier is given, the current document is used. If no
+	    <literal>validation-scheme</literal> is specified, the
+	    validity against the DTD subset is checked.
 	  </para>
 	</description>
 	<see-also>
@@ -5074,6 +5220,14 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	  <ruleref ref="set_standalone_command"/>
 	</see-also>
       </documentation>
+    </rule>
+    <rule id="ignore_use_command" name="use" inline="yes">
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<regexp>Inline::XSH</regexp>
+	<action>1</action>
+      </production>
     </rule>
   </rules>  
 </recdescent-xml>
