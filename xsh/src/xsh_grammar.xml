@@ -660,6 +660,7 @@ sub new {
   <rules>
     <!-- ================== commands and options ====================== -->
     <rule id="command" type="list">
+      <ruleref ref="cdonopen"/>
       <ruleref ref="backups"/>
       <ruleref ref="nobackups"/>
       <ruleref ref="quiet"/>
@@ -691,8 +692,6 @@ sub new {
       <ruleref ref="map_command"/>
       <ruleref ref="sort_command"/>
       <ruleref ref="close_command"/>
-      <ruleref ref="openhtml_command"/>
-      <ruleref ref="openpipe_command"/>
       <ruleref ref="validate_command"/>
       <ruleref ref="valid_command"/>
       <ruleref ref="list_dtd_command"/>
@@ -701,9 +700,6 @@ sub new {
       <ruleref ref="clone_command"/>
       <ruleref ref="count_command"/>
       <ruleref ref="eval_command"/>
-      <ruleref ref="saveas_command"/>
-      <ruleref ref="savexinclude_command"/>
-      <ruleref ref="savehtml_command"/>
       <ruleref ref="save_command"/>
       <ruleref ref="files_command"/>
       <ruleref ref="xslt_command"/>
@@ -711,7 +707,6 @@ sub new {
       <ruleref ref="xinsert_command"/>
       <ruleref ref="help_command"/>
       <ruleref ref="exec_command"/>
-      <ruleref ref="call_command"/>
       <ruleref ref="include_command"/>
       <ruleref ref="assign_command"/>
       <ruleref ref="local_command"/>
@@ -734,6 +729,9 @@ sub new {
       <ruleref ref="open_command"/>
       <ruleref ref="fold_command"/>
       <ruleref ref="unfold_command"/>
+      <production>
+	<ruleref ref="call_command"/>
+      </production>
       <documentation>
 	<title>List of XSH commands</title>
 	<description>
@@ -749,19 +747,27 @@ sub new {
 	  <production><ruleref ref="unless"/></production>
 	  <production><ruleref ref="while"/></production>
 	  <production><ruleref ref="foreach"/></production>
-	  <production><ruleref ref="def"/></production>
 	</group>
 	<action>$item[1]</action>
       </production>
-      <production><directive type="error"/></production>
+<!--      <production><directive type="error"/></production> -->
     </rule>
 
+    <rule id="simple_command_or_statement">
+      <production>
+	<ruleref ref="statement"/>
+      </production>
+      <production>
+	<ruleref ref="command"/>
+      </production>
+    </rule>
+    
     <rule id="complex_command">
       <production>
 	<string>;</string>
       </production>
       <production>
-	<ruleref ref="command"/>
+	<ruleref ref="simple_command_or_statement"/>
 	<ruleref ref="trail" rep="?"/>
 	<group>
 	  <production>
@@ -784,12 +790,14 @@ sub new {
 	  $r
 	</action>
       </production>
-      <production><directive type="error"/></production>
+<!--      <production><directive type="error"/></production> -->
     </rule>
 
     <rule id="statement_or_command">
-      <production><ruleref ref="statement"/></production>
+      <production><ruleref ref="def"/></production>
       <production><ruleref ref="complex_command"/></production>
+      <production><ruleref ref="statement"/></production>
+      <production><directive type="error">Syntax error near "}.substr($text,0,40).qq{"</directive></production>
     </rule>
 
     <rule id="block" type="argtype" name="command-block">
@@ -1019,7 +1027,7 @@ sub new {
 	<action>[undef,$item[1]]</action>
       </production>
       <production>
-	<directive type="error"/>
+	<directive type="error">ID:XPath or XPath expected!</directive>
       </production>
       <documentation sections="argtypes navigation manipulation variables">
 	<title>Xpath argument type</title>
@@ -1058,6 +1066,10 @@ sub new {
 	<directive type="skip">&quot;&quot;</directive>
 	<ruleref ref="xp" rep="?"/>
 	<action>$item[1].join(&quot;&quot;,@{$item[3]})</action>
+      </production>
+      <production>
+	<ruleref ref="xp"/>
+	<action>$item[1]</action>
       </production>
     </rule>
     <rule id="xp">
@@ -1136,7 +1148,7 @@ sub new {
     </rule>
     <rule id="xpsimple">
       <production>
-	<regexp>[^]|&quot;' [();]+</regexp>
+	<regexp>[^]}|&quot;' [();]+</regexp>
       </production>
       <production>
 	<ruleref ref="xpbrackets"/>
@@ -1186,12 +1198,12 @@ sub new {
 	<ruleref ref="shell"/>
 	<directive type="commit"/>
 	<ruleref ref="eof"/>
-	<action>XML::XSH::Functions::run_commands($item[1])</action>
+	<action>XML::XSH::Functions::run_commands($item[1],1)</action>
       </production>
       <production>
 	<ruleref ref="statement_or_command" rep="s"/>
 	<ruleref ref="eof"/>
-	<action>XML::XSH::Functions::run_commands($item[1])</action>
+	<action>XML::XSH::Functions::run_commands($item[1],1)</action>
       </production>
     </rule>
     <rule id="trail">
@@ -1428,8 +1440,7 @@ sub new {
       </production>
       <documentation sections="flow">
 	<usage>foreach <xref linkend="xpath"/>|<xref linkend="perl_code"/> 
-	  <xref linkend="command"/>
-	  <xref linkend="block"/></usage>
+	  <xref linkend="command"/>|<xref linkend="block"/></usage>
 	<shortdesc>loop iterating over a node-list or perl array</shortdesc>
 	<description>
 	  <para>
@@ -1479,14 +1490,15 @@ sub new {
 	<directive type="commit"/>
 	<ruleref ref="ID"/>
 	<ruleref ref="typedvariable" rep="s?"/>
-	<ruleref ref="block"/>
+	<ruleref ref="block" rep="?"/>
 	<action>
 	  &amp;XML::XSH::Functions::def($item[3],$item[5],$item[4]);
 	</action>
       </production>
       <documentation sections="flow">
-	<usage>def <xref linkend="ID"/> [$<xref linkend="ID"/> | %<xref linkend="ID"/>]*
-	  <xref linkend="block"/>
+	<usage>def <xref linkend="ID"/> [$<xref linkend="ID"/> | %<xref linkend="ID"/>]* <xref linkend="block"/>
+         or
+	def <xref linkend="ID"/> [$<xref linkend="ID"/> | %<xref linkend="ID"/>]*;
 	</usage>
 	<shortdesc>sub-routine (macro) declaration</shortdesc>
 	<description>
@@ -1516,11 +1528,23 @@ sub new {
 	    the value of the parametric variable for the time of the
 	    subroutine's run-time.
 	  </para>
+	  <para>
+	    Note that subroutine has to be declared before it is
+	    called with <xref linkend="call_command"/>. If you cannot
+	    do so, e.g. if you want to call a subroutine recursively,
+	    you have to pre-declare the subroutine using a
+	    <literal>def</literal> with no <xref linkend="block"/>.
+	    There may be only one full declaration (and possibly one
+	    pre-declaration) of a subroutine for one <xref
+	    linkend="ID"/> and the declaration and pre-declaration has
+	    to define the same number of arguments and their types
+	    must match.
+	  </para>
 	  <example>
 	    <code>def l3 %v {
-	      <tab/>ls %v 3; # list given nodes upto depth 3
-	      }
-	      call l3 //chapter;
+<tab/>ls %v 3; # list given nodes upto depth 3
+}
+call l3 //chapter;
 	    </code>
 	  </example>
 	  <example>
@@ -1529,7 +1553,7 @@ sub new {
 def comment
 <tab/><tab/>%n      # nodes to move to comments
 <tab/><tab/>$mark   # maybe some handy mark to recognize such comments
-<tab/>{
+{
 <tab/>echo "MARK: $mark\n";
 
 <tab/>foreach %n {
@@ -1680,10 +1704,20 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       </production>
       <production>
 	<selfref/>
+	<ruleref ref="variable"/>
+	<action>[\&amp;XML::XSH::Functions::xpath_assign_local,$item[2],undef]</action>
+      </production>
+      <production>
+	<selfref/>
 	<ruleref ref="nodelistvariable"/>
 	<string>=</string>
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::nodelist_assign_local,$item[2],$item[4]]</action>
+      </production>
+      <production>
+	<selfref/>
+	<ruleref ref="nodelistvariable"/>
+	<action>[\&amp;XML::XSH::Functions::nodelist_assign_local,$item[2],["",""]]</action>
       </production>
       <documentation sections="variables">
 	<usage>local $<xref linkend="ID"/>=<xref linkend="xpath"/>
@@ -1793,22 +1827,49 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
     </rule>
     <rule id="match_typedargs">
       <production>
-	<action>(@arg and $arg[0]=~m/^%/) ? shift(@arg) : undef</action>
+	<action>
+	  $return = ((@arg and $arg[0]&lt;=$#arg and $arg[$arg[0]]=~m/^%/) 
+	            ? $arg[$arg[0]] : undef)
+	</action>
 	<ruleref ref="xpath"/>
-	<ruleref ref="match_typedargs" arguments="@arg"/>
-	<action>[$item[2],@{$item[3]}];</action>
+	<ruleref ref="match_typedargs" arguments="$arg[0]+1,@arg[1..$#arg]"/>
+	<action>
+	  $return=(defined($item[3]) ? [$item[2],@{$item[3]}] : undef);
+	</action>
       </production>
       <production>
-	<action>(@arg and $arg[0]=~m/^\$/) ? shift(@arg) : undef</action>
+	<action>
+	  $return = ((@arg and $arg[0]&lt;=$#arg and $arg[$arg[0]]=~m/^\$/)
+  	            ? $arg[$arg[0]] : undef)
+	</action>
 	<ruleref ref="expression"/>
-	<ruleref ref="match_typedargs" arguments="@arg"/>
-	<action>[$item[2],@{$item[3]}];</action>
+	<ruleref ref="match_typedargs" arguments="$arg[0]+1,@arg[1..$#arg]"/>
+	<action>
+	  $return=(defined($item[3]) ? [$item[2],@{$item[3]}] : undef);
+	</action>
       </production>
       <production>
-	<action>$return=(!@arg) ? [] : undef</action>
+	<action>
+	  $return= (($arg[0]==$#arg+1) ? [] : undef);
+	</action>
       </production>
     </rule>
-    <rule id="call_command" type="command" name="call" inline="yes">
+    <rule id="subroutine_arguments">
+      <production>
+	<action>
+	  if (exists($XML::XSH::Functions::_defs{$arg[0]})) {
+	    $return=[ @{$XML::XSH::Functions::_defs{$arg[0]}} ];
+	    shift @$return;
+          } else { 
+	    $return=undef;
+	  }
+	</action>
+      </production>
+      <production>
+	<directive type="error">Call to undefined subroutine $arg[0]!</directive>
+      </production>
+    </rule>
+    <rule id="call_command" type="command" name="call" inline="no">
       <production>
 	<directive type="rulevar"> @args</directive>
       </production>
@@ -1816,20 +1877,11 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref/>
 	<directive type="commit"/>
 	<ruleref ref="ID"/>
+	<ruleref ref="subroutine_arguments" arguments="$item[3]"/>
+	<ruleref ref="match_typedargs" arguments="1,@{$item[4]}"/>
 	<action>
-	  if (exists($XML::XSH::Functions::_defs{$item[3]})) {
-	    @args=@{ $XML::XSH::Functions::_defs{$item[3]} };
-	    shift @args;
-	    $return=1;
-          } else { 
-	    $return=undef;
-	  }
+	  $return=[\&amp;XML::XSH::Functions::call,$item[3],$item[5]]
 	</action>
-	<ruleref ref="match_typedargs" arguments="@args"/>
-	<action>
-	  $return=1;
-	</action>
-	<action>$return=[\&amp;XML::XSH::Functions::call,$item[3],$item[5]]</action>
       </production>
       <documentation sections="flow">
 	<usage>call <xref linkend="ID"/> [<xref linkend="xpath"/> | <xref linkend="expression"/>]*</usage>
@@ -2639,8 +2691,10 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<shortdesc>close document (do not save it, though)</shortdesc>
 	<description>
 	  <para>
-	    Close the document identified by <xref linkend="ID"/>, removing its
-	    parse-tree from memory.
+	    Close the document identified by <xref linkend="ID"/>,
+	    removing its parse-tree from memory (note also that all
+	    nodes belonging to the document are removed from all
+	    nodelists they appear in).
 	  </para>
 	</description>
       </documentation>
@@ -2676,12 +2730,12 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
     </rule>
     <rule id="open_command" type="command" name="open" inline="yes">
       <production>
-	<selfref/>
+	<regexp>open((\s*|_|-)(HTML|XML|DOCBOOK|html|xml|docbook))?((\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?</regexp>
 	<directive type="commit"/>
 	<ruleref ref="id_or_var"/>
 	<regexp>\s*=\s*</regexp>
-	<ruleref ref="filename"/>
-	<action>[\&amp;XML::XSH::Functions::open_doc,@item[3,5]]</action>
+	<ruleref ref="expression"/>
+	<action>[\&amp;XML::XSH::Functions::open_doc,@item[3,5,1]]</action>
       </production>
       <production>
 	<ruleref ref="ID"/>
@@ -2691,15 +2745,20 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::open_doc,@item[1,4]]</action>
       </production>
       <documentation sections="documents">
-	<usage>[open] <xref linkend="ID"/>=<xref linkend="filename"/></usage>
-	<shortdesc>load an XML document form a file or URI</shortdesc>
+	<usage>[open [HTML|XML|DOCBOOK] [FILE|PIPE|STRING]] <xref linkend="ID"/>=<xref linkend="expression"/></usage>
+	<shortdesc>load an XML, HTML, or Docbook SGML document from a
+	file, pipe or URI</shortdesc>
 	<description>
 	  <para>
-	    Open a new document assigning it a symbolic name of <xref linkend="ID"/>.
-	    To identify the document, use simply <xref linkend="ID"/> in commands like
-	    close, save, validate, dtd or enc. In commands which work on
-	    document nodes, use <xref linkend="ID"/>: prefix is XPath expressions to
-	    point the XPath into the document.
+	    Load a new XML, HTML or SGML DOCBOOK document from the
+	    file, URI, command output or string provided by the <xref
+	    linkend="expression"/>.  In XSH
+	    the document is given a symbolic name <xref
+	    linkend="ID"/>.  To identify the documentin commands like
+	    close, save, validate, dtd or enc simply use <xref
+	    linkend="ID"/>. In commands which work on document nodes,
+	    give <xref linkend="ID"/>: prefix to XPath expressions to
+	    point the XPath to the document.
 	  </para>
 	  <example>
 	    <code>
@@ -2708,8 +2767,14 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	      # quote file name if it contains whitespace
 	      xsh&gt; <userinput>open y=&quot;document with a long name with spaces.xml&quot;</userinput>
 
-	      # you may omit the word open (I'm clever enough to find out).
+	      # you may omit the word open when loading an XML file/URI.
 	      xsh&gt; <userinput>z=mybook.xml</userinput>
+
+	      # use HTML or DOCBOOK keywords to load these types
+	      xsh&gt; open HTML <userinput>z=index.htm</userinput>
+
+	      # use PIPE keyword to read output of a command
+	      xsh&gt; open HTML PIPE <userinput>z='wget -O - xsh.sourceforge.net/index.html'</userinput>
 
 	      # use z: prefix to identify the document opened with the
 	      # previous comand in an XPath expression.
@@ -2717,62 +2782,6 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    </code>
 	  </example>
 	</description>
-      </documentation>
-    </rule>
-    <rule id="openhtml_command" type="command" name="open-HTML" inline="yes">
-      <aliases>
-	<alias name="open_HTML"/>
-      </aliases>
-      <production>
-	<selfref/>
-	<directive type="commit"/>
-	<ruleref ref="id_or_var"/>
-	<regexp>\s*=\s*</regexp>
-	<ruleref ref="filename"/>
-	<action>[\&amp;XML::XSH::Functions::open_doc,@item[3,5],'html']</action>
-      </production>
-      <documentation sections="documents">
-	<usage>open_HTML <xref linkend="ID"/>=<xref linkend="filename"/></usage>
-	<shortdesc>load an HTML document from a file or URI</shortdesc>
-	<description>
-	  <para>
-	    Open a new HTML document assigning it a symbolic name of
-	    <xref linkend="ID"/>. To save it as HTML, use save_HTML
-	    command (use of just save or saveas would change it to
-	    XHTML without changing the DOCTYPE declaration).
-	  </para>
-	</description>
-	<see-also>
-	  <ruleref ref="savehtml_command"/>
-	  <ruleref ref="open_command"/>
-	</see-also>
-      </documentation>
-    </rule>
-    <rule id="openpipe_command" type="command" name="open-PIPE" inline="yes">
-      <aliases>
-	<alias name="open_PIPE"/>
-      </aliases>
-      <production>
-	<selfref/>
-	<directive type="commit"/>
-	<ruleref ref="id_or_var"/>
-	<regexp>\s*=\s*</regexp>
-	<ruleref ref="expression"/>
-	<action>[\&amp;XML::XSH::Functions::open_doc,@item[3,5],'pipe']</action>
-      </production>
-      <documentation sections="documents">
-	<usage>open_PIPE <xref linkend="ID"/>=<xref linkend="expression"/></usage>
-	<shortdesc>read a document piped by a system command</shortdesc>
-	<description>
-	  <para>
-	    Run the system command resluting from interpoation of the <xref linkend="expression"/> and parse its output as XML,
-	    associating the resulting DOM tree with the given <xref linkend="ID"/>.
-	  </para>
-	</description>
-	<see-also>
-	  <ruleref ref="open_command"/>
-	  <ruleref ref="openhtml_command"/>
-	</see-also>
       </documentation>
     </rule>
     <rule id="create_command" type="command" name="create" inline="yes">
@@ -2828,24 +2837,75 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
     </rule>
     <rule id="save_command" type="command" name="save" inline="yes">
       <production>
-	<selfref/>
+	<regexp>save(as|_as|-as)?((\s*|_|-)(HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?((\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?</regexp>
+	<ruleref ref="expression"/>
+	<ruleref ref="filename"/>
+	<ruleref ref="encoding_param" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::save_doc,@item[1,2,3,4]]</action>
+      </production>
+      <production>
+	<regexp>save(as|_as|-as)?((\s*|_|-)(HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?((\s*|_|-)(FILE|file|STRING|string))?</regexp>
 	<directive type="commit"/>
 	<ruleref ref="expression"/>
 	<ruleref ref="encoding_param" rep="?"/>
-	<action>[\&amp;XML::XSH::Functions::save_as,$item[3],@{$item[4]}]</action>
+	<action>[\&amp;XML::XSH::Functions::save_doc,@item[1,3],undef,$item[4]]</action>
       </production>
       <documentation sections="documents">
-	<usage>save <xref linkend="ID"/> [encoding <xref linkend="enc_string"/>]</usage>
-	<shortdesc>save a document as XML</shortdesc>
+	<usage>save [HTML|XML|XInclude]? [FILE|PIPE|STRING]? <xref linkend="ID"/> <xref
+	    linkend="expression"/>? [encoding <xref linkend="enc_string"/>]</usage>
+	<shortdesc>save a document as XML or HTML</shortdesc>
 	<description>
 	  <para>
-	    Save the document identified by <xref linkend="ID"/> to its
-	    original XML file, optionally converting it from its original
-	    encoding to <xref linkend="enc_string"/>.
+	    Save the document identified by <xref linkend="ID"/>.
+	    Using one of the <literal>FILE</literal>,
+	    <literal>PIPE</literal>, <literal>STRING</literal>
+	    keywords the user may choose to save the document to a
+	    file send it to a given command's input via a pipe or
+	    simply return its content as a string. If none of the
+	    keywords is used, it defaults to FILE. If saving to a
+	    PIPE, the <xref linkend="expression"/> argument must
+	    provide the coresponding command and all its parameters.
+	    If saving to a FILE, the <xref linkend="expression"/>
+	    argument may provide a filename; if omitted, it defaults
+	    to the original filename of the document. If saving to a
+	    STRING, the <xref linkend="expression"/> argument
+	    is ignored and may freely be omitted.
+	  </para>
+	  <para>
+	    The output format is controlled using one of the XML,
+	    HTML, XInclude keywords (see below). If the format keyword
+	    is ommited, save it defaults to XML.
+	  </para>
+	  <para>
+	    Note, that a document should be saved as HTML only if it
+	    actually is a HTML document.  Note also, that the optional
+	    encoding parameter forces character conversion only; it is
+	    up to the user to declare the document encoding in the
+	    appropriate HTML &lt;META&gt; tag.
+	  </para>
+	  <para>
+	    The XInclude keyword automatically implies XML format and
+	    can be used to force XSH to save all already expanded
+	    XInclude sections back to their original files while
+	    replacing them with &lt;xi:include&gt; tags in the main
+	    XML file. Moreover, all material included within
+	    &lt;include&gt; elements from the
+	    <literal>http://www.w3.org/2001/XInclude</literal>
+	    namespace is saved to separate files too according to the
+	    <literal>href</literal> attribute, leaving only empty
+	    &lt;include&gt; element in the root file. This feature may
+	    be used to split the document to new XInclude fragments.
+	  </para>
+	  <para>
+	    The encoding keyword followed by a <xref
+	    linkend="enc_string"/> can be used to convert the document
+	    from its original encoding to a different encoding.  In
+	    case of XML output, the &lt;?xml?&gt; declaration is
+	    changed accordingly.  This encoding is also set as the
+	    document encoding for the particular document.
 	  </para>
 	</description>
 	<see-also>
-	  <ruleref ref="saveas_command"/>
 	  <ruleref ref="open_command"/>
 	  <ruleref ref="close_command"/>
 	  <ruleref ref="print_enc_command"/>
@@ -2853,120 +2913,6 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</see-also>
       </documentation>
     </rule>    
-    <rule id="savehtml_command" type="command" name="save-HTML" inline="yes">
-      <aliases>
-	<alias name="save_HTML"/>
-      </aliases>
-      <production>
-	<selfref/>
-	<directive type="commit"/>
-	<ruleref ref="expression"/>
-	<ruleref ref="filename"/>
-	<ruleref ref="encoding_param" rep="?"/>
-	<action>[\&amp;XML::XSH::Functions::save_as_html,@item[3,4],@{$item[5]}]</action>
-      </production>
-      <documentation sections="documents">
-	<usage>save_HTML <xref linkend="ID"/> <xref linkend="filename"/> [encoding <xref linkend="enc_string"/>]</usage>
-	<shortdesc>store a document in a local file as HTML</shortdesc>
-	<description>
-	  <para>
-	    Save the document identified by <xref linkend="ID"/> as a
-	    HTML file named <xref linkend="filename"/>, optionally
-	    converting it from its original encoding to <xref linkend="enc_string"/> Note, that this does just
-	    the character conversion, so you
-	    must specify the correct encoding in the META tag yourself.
-	  </para>
-	</description>
-	<see-also>
-	  <ruleref ref="openhtml_command"/>
-	  <ruleref ref="saveas_command"/>
-	  <ruleref ref="save_command"/>
-	</see-also>
-      </documentation>
-    </rule>
-    <rule id="saveas_command" type="command" name="saveas" inline="yes">
-      <aliases>
-	<alias name="save-as"/>
-	<alias name="save_as"/>
-      </aliases>
-      <production>
-	<selfref/>
-	<directive type="commit"/>
-	<ruleref ref="expression"/>
-	<ruleref ref="filename"/>
-	<ruleref ref="encoding_param" rep="?"/>
-	<action>[\&amp;XML::XSH::Functions::save_as,@item[3,4],@{$item[5]}]</action>
-      </production>
-      <documentation sections="documents">
-	<usage>saveas <xref linkend="ID"/> <xref linkend="filename"/> [encoding <xref linkend="enc_string"/>]</usage>
-	<shortdesc>store a document as a given file in XML format</shortdesc>
-	<description>
-	  <para>
-	    Save the document identified by <xref linkend="ID"/> as a
-	    XML file named <xref linkend="filename"/>, optionally
-	    converting it from its original encoding to <xref linkend="enc_string"/>.
-	  </para>
-	</description>
-	<see-also>
-	  <ruleref ref="save_command"/>
-	  <ruleref ref="savehtml_command"/>
-	  <ruleref ref="open_command"/>
-	  <ruleref ref="close_command"/>
-	  <ruleref ref="print_enc_command"/>
-	  <ruleref ref="files_command"/>
-	</see-also>
-      </documentation>
-    </rule>
-    <rule id="savexinclude_command" type="command" name="save-xinclude" inline="yes">
-      <aliases>
-	<alias name="save_xinclude"/>
-      </aliases>
-      <production>
-	<selfref/>
-	<directive type="commit"/>
-	<ruleref ref="expression"/>
-	<ruleref ref="encoding_param" rep="?"/>
-	<action>[\&amp;XML::XSH::Functions::save_xinclude,$item[3],@{$item[4]}]</action>
-      </production>
-      <documentation sections="documents">
-	<usage>save_xinclude <xref linkend="ID"/> [encoding <xref linkend="enc_string"/>]</usage>
-	<shortdesc>save an XML document and all XIncluded parts separately</shortdesc>
-	<description>
-	  <para>
-	    Save the document identified by <xref linkend="ID"/> while
-	    saving all expanded XInclude sections to the original
-	    files (optionally converting it from its original encoding
-	    to <xref linkend="enc_string"/>).  Once expanded, sections
-	    included with XInclude mechanism cannot be normally
-	    distinguished from other parts of the DOM tree by any
-	    XPath expression or XSH command. Internally, however, they
-	    are marked with special DOM nodes. This command uses these
-	    nodes to find the sections and save them to their original
-	    documents while restoring the &lt;xi:include&gt; tags in
-	    the root document. More over, this command may be used to
-	    split the document to new fragments included back by means
-	    of XInclude, since all non-empty fragments containded
-	    within
-	  </para>
-	  <code>
-	    &lt;xi:include xmlns:xi='http://www.w3.org/2001/XInclude'
-   	    href='output-file'&gt;&lt;xi:include/&gt;
-	  </code>
-	  <para>
-	    elements are saved to separate files too, leaving only
-	    empty xi:include element in the root file.
-	  </para>
-	</description>
-	<see-also>
-	  <ruleref ref="save_command"/>
-	  <ruleref ref="savehtml_command"/>
-	  <ruleref ref="open_command"/>
-	  <ruleref ref="close_command"/>
-	  <ruleref ref="print_enc_command"/>
-	  <ruleref ref="files_command"/>
-	</see-also>
-      </documentation>
-    </rule>
     <rule id="list_dtd_command" type="command" name="dtd" inline="yes">
       <production>
 	<selfref sep="no"/>
@@ -3454,9 +3400,17 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<usage>indent <xref linkend="expression"/></usage>
 	<shortdesc>turn on/off pretty-printing</shortdesc>
 	<description>
-	  <para>If the <xref linkend="expression"/> is non-zero,
-	    format the XML output while saving a document
-	    by adding some nice ignorable whitespace.
+	  <para>If the value of <xref linkend="expression"/> is 1,
+	    format the XML output while saving a document by adding
+	    some nice ignorable whitespace. If the value is 2 (or
+	    higher), XSH will act as in case of 1, plus it will add a
+	    leading and a trailing linebreak to each text node.
+	  </para>
+	  <para>Note, that since the underlying C library
+	    (libxml2) uses a hardcoded indentation of 2 space
+	    characters per indentation level, the amount of
+	    whitespace used for indentation can not be
+	    altered on runtime.
 	  </para>
 	</description>
       </documentation>
@@ -3554,6 +3508,28 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<see-also>
 	  <ruleref ref="verbose"/>
 	</see-also>
+      </documentation>
+    </rule>
+    <rule id="cdonopen" type="command" name="switch-to-new-documents"
+      inline="yes">
+      <aliases>
+	<alias name="switch_to_new_documents"/>
+      </aliases>
+      <production>
+	<selfref/>
+	<ruleref ref="expression"/>
+	<action>[\&amp;XML::XSH::Functions::set_cdonopen,$item[2]]</action>
+      </production>
+      <documentation sections="configuration documents">
+	<usage>switch-to-new-documents</usage>
+	<shortdesc>set on/off changing current document to newly
+	  open/created files</shortdesc>
+	<description>
+	  <para>If true, change current node to the document node
+	    of a newly open/created files after <xref
+	      linkend="open_command"/> or <xref linkend="create_command"/>.
+	  </para>
+	</description>
       </documentation>
     </rule>
     <rule id="backups" type="command" name="backups" inline="yes">
