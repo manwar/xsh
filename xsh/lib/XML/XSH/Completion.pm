@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 1.14 2003-06-05 10:28:03 pajas Exp $
+# $Id: Completion.pm,v 1.15 2003-06-05 10:41:07 pajas Exp $
 
 package XML::XSH::Completion;
 
@@ -16,6 +16,9 @@ sub cpl {
     return grep { index($_,$word)==0 } @XML::XSH::CompletionList::XSH_COMMANDS;
   } elsif ($line=~/^\s*call\s+(\S*)$|[;}]\s*call\s+(\S*)$/) {
     return grep { index($_,$1)==0 } XML::XSH::Functions::defs;
+  } elsif ($line=~/^\s*x?(?:insert|add)\s+(\S*)$|[;}]\s*x?(?:insert|add)\s+(\S*)$/) {
+    return grep { index($_,$1)==0 } qw(element attribute attributes text
+                                       cdata pi comment chunk entity_reference);
   } elsif ($line=~/^\s*help\s+(\S*)$|[;}]\s*help\s+(\S*)$/) {
     return grep { index($_,$1)==0 } keys %XML::XSH::Help::HELP;
   } elsif (substr($line,0,$pos)=~
@@ -52,6 +55,9 @@ sub gnu_cpl {
       @perlret = grep { index($_,$1)==0 } XML::XSH::Functions::defs;
     } elsif ($line=~/^\s*help\s+(\S*)$|[;}]\s*help\s+(\S*)$/) {
       @perlret = grep { index($_,$1)==0 } keys %XML::XSH::Help::HELP;
+    } elsif ($line=~/^\s*x?(?:insert|add)\s+(\S*)$|[;}]\s*x?(?:insert|add)\s+(\S*)$/) {
+      @perlret = grep { index($_,$1)==0 } qw(element attribute attributes text
+					     cdata pi comment chunk entity_reference);
     } elsif (substr($line,0,$end)=~
 	   /(?:^|[;}])\s*save(?:\s+|_|-)(?:(?:html|xml|xinclude|HTML|XML|XInclude|XINCLUDE)(?:\s+|_|-))?(?:(?:file|pipe|string|FILE|PIPE|STRING)\s+)?([a-zA-Z0-9_]*)$/) {
       @perlret = grep { index($_,substr($line,$start,$end))==0 } XML::XSH::Functions::docs;
@@ -237,13 +243,14 @@ sub xpath_complete {
   } @$ql}=();
 
   my @completions = sort { $a cmp $b } keys %names;
+#  print "completions so far: @completions\n";
 
   if (($XML::XSH::Functions::XPATH_AXIS_COMPLETION eq 'always' or
        $XML::XSH::Functions::XPATH_AXIS_COMPLETION eq 'when-empty' and !@completions)
-      and $str =~ /[ \n\t\r|\/]([[:alpha:]][-:[:alnum:]]*)?$/ and $1 !~ /::/) {
+      and $str =~ /[ \n\t\r|([=<>+-\/]([[:alpha:]][-:[:alnum:]]*)?$/ and $1 !~ /::/) {
     # complete XML axis
     my ($pre,$axpart)=($word =~ /^(.*[^[:alnum:]])?([[:alpha:]][-[:alnum:]:]*)/);
-    print "\nWORD: $word\nPRE: $pre\nPART: $axpart\nSTR:$str\n";
+#    print "\nWORD: $word\nPRE: $pre\nPART: $axpart\nSTR:$str\n";
     foreach my $axis (qw(following preceding following-or-self preceding-or-self
 			 parent ancestor ancestor-or-self descendant self
 			 descendant-or-self child attribute namespace)) {
