@@ -10,6 +10,7 @@ add
 assign
 backups
 call
+catalog
 cd
 chdir
 chxpath
@@ -48,6 +49,7 @@ indent
 insert
 keep-blanks
 keep_blanks
+last
 lcd
 list
 load-ext-dtd
@@ -63,6 +65,7 @@ map
 move
 mv
 new
+next
 nobackups
 nodebug
 normalize
@@ -91,7 +94,9 @@ query_encoding
 quiet
 quit
 recovering
+redo
 remove
+return
 rm
 run-mode
 run_mode
@@ -106,6 +111,7 @@ switch_to_new_documents
 system
 test-mode
 test_mode
+throw
 transform
 try
 unfold

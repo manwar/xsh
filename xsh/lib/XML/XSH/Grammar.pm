@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Tue Dec 10 19:26:42 2002
+# Wed Jan 22 10:34:41 2003
 
 
 package XML::XSH::Grammar;
@@ -24,10 +24,10 @@ $grammar=<<'_EO_GRAMMAR_';
 		{ [\&XML::XSH::Functions::set_backups,0] }
   	
 	  | /(quiet)/
-		{ [\&XML::XSH::Functions::set_opt_q,1] }
+		{ [\&XML::XSH::Functions::set_quiet,1] }
   	
 	  | /(verbose)/
-		{ [\&XML::XSH::Functions::set_opt_q,0] }
+		{ [\&XML::XSH::Functions::set_quiet,0] }
   	
 	  | /(test-mode|test_mode)/
 		{ ["test-mode"] }
@@ -36,10 +36,10 @@ $grammar=<<'_EO_GRAMMAR_';
 		{ ["run-mode"] }
   	
 	  | /(debug)/
-		{ [\&XML::XSH::Functions::set_opt_d,1] }
+		{ [\&XML::XSH::Functions::set_debug,1] }
   	
 	  | /(nodebug)/
-		{ [\&XML::XSH::Functions::set_opt_d,0] }
+		{ [\&XML::XSH::Functions::set_debug,0] }
   	
 	  | /(version)/
 		{ [\&XML::XSH::Functions::print_version,0] }
@@ -250,6 +250,24 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(strip-whitespace|strip_whitespace)\s/ <commit> xpath
 		{ [\&XML::XSH::Functions::strip_ws,$item[3]] }
   	
+	  | /(last)/ <commit> optional_expression(?)
+		{ [\&XML::XSH::Functions::loop_last,@{$item[3]}] }
+  	
+	  | /(next)/ <commit> optional_expression(?)
+		{ [\&XML::XSH::Functions::loop_next,,@{$item[3]}] }
+  	
+	  | /(redo)/ <commit> optional_expression(?)
+		{ [\&XML::XSH::Functions::loop_redo,@{$item[3]}] }
+  	
+	  | /(return)/
+		{ [\&XML::XSH::Functions::call_return] }
+  	
+	  | /(throw)\s/ expression
+		{ [\&XML::XSH::Functions::throw_exception,$item[2]] }
+  	
+	  | /(catalog)\s/ expression
+		{ [\&XML::XSH::Functions::load_catalog,$item[2]] }
+  	
 	  | call_command
 
   statement:
@@ -266,7 +284,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(foreach|for)\s/ <commit> condition block
 		{ [\&XML::XSH::Functions::foreach_statement,$item[3],$item[4]] }
   	
-	  | /(try)\s/ <commit> block 'catch' variable(?) block
+	  | /(try)\s/ <commit> block 'catch' local_var(?) block
 		{ [\&XML::XSH::Functions::try_catch,$item[3],$item[6],@{$item[5]}] }
   	
 
@@ -326,8 +344,9 @@ $grammar=<<'_EO_GRAMMAR_';
 		{ 
 	  local $_=$item[1];
 	  s/^\'|\'$//g;
-	  s{(\\)(.|\n)|([\$])}{ ($3 eq "\$") ? "\\\$" : (($2 eq "\\")
-	  ? "\\\\" : (($2 eq "'") ? "'" : ( ($2 eq "\$") ? "\\\\\\$2" : "\\\\$2"))) }eg;
+	  s{(\\)(.|\n)|(\$)}{ ($3 eq '$') ? "\\\$" : (($2 eq "\\")
+	  ? "\\\\" : (($2 eq "'") ? "'" : ( ($2 eq '$') ? "\\\\\\$2" :
+	  "\\\\$2"))) }eg;
 	  $_;
 	 }
   	
@@ -537,6 +556,12 @@ $grammar=<<'_EO_GRAMMAR_';
 		{ [] }
   	
 	  | <uncommit> <error:Parse error near keyword else: "}.substr(0,40,$text).qq{ ...">
+
+  local_var:
+	   ( /local\s/
+	   )(?) variable
+		{ [$item[2],@{$item[1]}] }
+  	
 
   typedvariable:
 	    /[\$\%]/ <skip:""> ID

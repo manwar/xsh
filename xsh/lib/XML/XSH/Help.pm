@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Tue Dec 10 19:26:42 2002
+# Wed Jan 22 10:34:42 2003
 
 package XML::XSH::Help;
 use strict;
@@ -68,15 +68,15 @@ Help items:
 
   XSH Commands:
 
-    assign, backups, call, cd, clone, close, copy, count, create, debug,
-    def, defs, dtd, enc, encoding, exec, exit, files, fold, foreach, help,
-    if, include, indent, insert, keep-blanks, lcd, load-ext-dtd, local,
-    locate, ls, map, move, nobackups, nodebug, normalize, open, options,
-    parser-completes-attributes, parser-expands-entities,
-    parser-expands-xinclude, pedantic-parser, perl, print,
-    process-xinclude, pwd, query-encoding, quiet, recovering, remove,
-    run-mode, save, select, sort, strip-whitespace,
-    switch-to-new-documents, test-mode, try, unfold, unless, valid,
+    assign, backups, call, catalog, cd, clone, close, copy, count, create,
+    debug, def, defs, dtd, enc, encoding, exec, exit, files, fold, foreach,
+    help, if, include, indent, insert, keep-blanks, last, lcd,
+    load-ext-dtd, local, locate, ls, map, move, next, nobackups, nodebug,
+    normalize, open, options, parser-completes-attributes,
+    parser-expands-entities, parser-expands-xinclude, pedantic-parser,
+    perl, print, process-xinclude, pwd, query-encoding, quiet, recovering,
+    redo, remove, return, run-mode, save, select, sort, strip-whitespace,
+    switch-to-new-documents, test-mode, throw, try, unfold, unless, valid,
     validate, validation, variables, verbose, version, while, xcopy,
     xinsert, xmove, xslt, xupdate
 
@@ -91,18 +91,18 @@ $HELP{'command'}=[<<'END'];
 List of XSH commands
 
 description:
-	     assign, backups, call, cd, clone, close, copy, count, create,
-	     debug, def, defs, dtd, enc, encoding, exec, exit, files, fold,
-	     foreach, help, if, include, indent, insert, keep-blanks, lcd,
-	     load-ext-dtd, local, locate, ls, map, move, nobackups,
-	     nodebug, normalize, open, options,
+	     assign, backups, call, catalog, cd, clone, close, copy, count,
+	     create, debug, def, defs, dtd, enc, encoding, exec, exit,
+	     files, fold, foreach, help, if, include, indent, insert,
+	     keep-blanks, last, lcd, load-ext-dtd, local, locate, ls, map,
+	     move, next, nobackups, nodebug, normalize, open, options,
 	     parser-completes-attributes, parser-expands-entities,
 	     parser-expands-xinclude, pedantic-parser, perl, print,
 	     process-xinclude, pwd, query-encoding, quiet, recovering,
-	     remove, run-mode, save, select, sort, strip-whitespace,
-	     switch-to-new-documents, test-mode, try, unfold, unless,
-	     valid, validate, validation, variables, verbose, version,
-	     while, xcopy, xinsert, xmove, xslt, xupdate
+	     redo, remove, return, run-mode, save, select, sort,
+	     strip-whitespace, switch-to-new-documents, test-mode, throw,
+	     try, unfold, unless, valid, validate, validation, variables,
+	     verbose, version, while, xcopy, xinsert, xmove, xslt, xupdate
 
 END
 
@@ -243,26 +243,31 @@ END
 
 
 $HELP{'try'}=[<<'END'];
-usage:       try <command-block> catch [$<id>] <command-block>
+usage:       try <command-block> catch [[local] $<id>] <command-block>
              
 description:
 	     Execute <command-block> following the `try' keyword. If an
-	     error occures during the evaluation, execute the `catch'
-	     <command-block>. If the variable $<id> is specified and the
-	     `try' block fails, an error message of the error that caused
-	     the failure is stored to it before the `catch' block is
-	     executed.
+	     error or exception occures during the evaluation, execute the
+	     `catch' <command-block>. If a variable follows `catch' and the
+	     `try' block fails, an error message of the exception occured
+	     is stored to the variable before the `catch' block is
+	     executed. Optionally, the variable name may be preceded with
+	     the keyword `local' in order to make the assignment local to
+	     the `catch' block (see <local>).
+
+	     The <throw> command and the equivalent perl construction `perl
+	     { die "error message" }' allow user to throw custom
+	     exceptions.
 
 Example:     Handle parse errors
 
-             local $error;
              try {
                open XML doc=$input;
              } catch {
                try {
                  echo "XML parser failed, trying HTML";
                  open HTML doc=$input;
-               } catch $error {
+               } catch local $error {
                  echo "Stopping due to errors: $error";
                  exit 1;
                }
@@ -986,8 +991,8 @@ aliases:     strip_whitespace
 description:
 	     `strip' removes all leading and trailing whitespace from given
 	     nodes. If applied to an element node, it removes all leading
-	     and trailing child text nodes and CDATA sections that only
-	     contain whitespace.
+	     and trailing child text nodes and CDATA sections consisting of
+	     whitespace only.
 
 END
 
@@ -1439,6 +1444,8 @@ usage:       verbose
 description:
 	     Turn on verbose messages (default).
 
+	     This is equivalent to setting `$QUIET' variable to 0.
+
 END
 
 
@@ -1450,6 +1457,8 @@ aliases:     test_mode
 description:
 	     Switch into test mode in which no commands are actually
 	     executed and only command syntax is checked.
+
+	     This is equivalent to setting `$TEST_MODE' variable to 1.
 
 END
 
@@ -1464,6 +1473,8 @@ description:
 	     Switch into normal XSH mode in which all commands are
 	     executed.
 
+	     This is equivalent to setting `$TEST_MODE' variable to 0.
+
 END
 
 $HELP{'run_mode'}=$HELP{'run-mode'};
@@ -1474,6 +1485,8 @@ usage:       debug
 description:
 	     Turn on debugging messages.
 
+	     This is equivalent to setting `$DEBUG' variable to 1.
+
 END
 
 
@@ -1482,6 +1495,8 @@ usage:       nodebug
              
 description:
 	     Turn off debugging messages.
+
+	     This is equivalent to setting `$DEBUG' variable to 0.
 
 END
 
@@ -1505,6 +1520,9 @@ description:
 	     <expression> is non-zero or off otherwise. In XSH version 1.6
 	     and later, defaults to off.
 
+	     This command is equivalent to setting the `$VALIDATION'
+	     variable.
+
 END
 
 
@@ -1523,6 +1541,9 @@ description:
 	     without a close tag for the document element (or any other
 	     element inside the document).
 
+	     This command is equivalent to setting the `$RECOVERING'
+	     variable.
+
 END
 
 
@@ -1536,6 +1557,9 @@ description:
 	     <expression> is non-zero on or off otherwise. If entity
 	     expansion is off, any external parsed entities in the document
 	     are left as entities. Defaults to on.
+
+	     This command is equivalent to setting the
+	     `$PARSER_EXPANDS_ENTITIES' variable.
 
 END
 
@@ -1551,6 +1575,9 @@ description:
 	     maintaining whitespace in the document. Non-zero expression
 	     forces the XML parser to preserve all whitespace.
 
+	     This command is equivalent to setting the `$KEEP_BLANKS'
+	     variable.
+
 END
 
 $HELP{'keep_blanks'}=$HELP{'keep-blanks'};
@@ -1563,6 +1590,9 @@ aliases:     pedantic_parser
 description:
 	     If you wish, you can make XML::LibXML more pedantic by passing
 	     a non-zero <expression> to this command.
+
+	     This command is equivalent to setting the `$PEDANTIC_PARSER'
+	     variable.
 
 END
 
@@ -1577,6 +1607,9 @@ description:
 	     If the expression is non-zero, this command allows XML parser
 	     to complete the elements attributes lists with the ones
 	     defaulted from the DTDs. By default, this option is enabled.
+
+	     This command is equivalent to setting the
+	     `$PARSER_COMPLETES_ATTRIBUTES' variable.
 
 END
 
@@ -1599,6 +1632,8 @@ description:
 	     level, the amount of whitespace used for indentation can not
 	     be altered on runtime.
 
+	     This command is equivalent to setting the `$INDENT' variable.
+
 END
 
 
@@ -1610,6 +1645,9 @@ aliases:     parser_expands_xinclude
 description:
 	     If the <expression> is non-zero, the parser is allowed to
 	     expand XIinclude tags imidiatly while parsing the document.
+
+	     This command is equivalent to setting the
+	     `$PARSER_EXPANDS_XINCLUDE' variable.
 
 END
 
@@ -1624,6 +1662,9 @@ description:
 	     If the expression is non-zero, XML parser loads external DTD
 	     subsets while parsing. By default, this option is enabled.
 
+	     This command is equivalent to setting the `$LOAD_EXT_DTD'
+	     variable.
+
 END
 
 $HELP{'load_ext_dtd'}=$HELP{'load-ext-dtd'};
@@ -1633,6 +1674,9 @@ usage:       encoding <enc-string>
              
 description:
 	     Set the default output character encoding.
+
+	     This command is equivalent to setting the `$ENCODING'
+	     variable.
 
 END
 
@@ -1645,6 +1689,9 @@ aliases:     query_encoding
 description:
 	     Set the default query character encoding.
 
+	     This command is equivalent to setting the `$QUERY_ENCODING'
+	     variable.
+
 END
 
 $HELP{'query_encoding'}=$HELP{'query-encoding'};
@@ -1654,6 +1701,8 @@ usage:       quiet
              
 description:
 	     Turn off verbose messages.
+
+	     This command is equivalent to setting the `$QUIET' variable.
 
 END
 
@@ -1669,6 +1718,9 @@ description:
 	     or created with <open> or <create>. Default value for this
 	     option is 1.
 
+	     This command is equivalent to setting the
+	     `$SWITCH_TO_NEW_DOCUMENTS' variable.
+
 END
 
 $HELP{'switch_to_new_documents'}=$HELP{'switch-to-new-documents'};
@@ -1679,6 +1731,9 @@ usage:       backups
 description:
 	     Enable creating backup files on save (default).
 
+	     This command is equivalent to setting the `$BACKUPS' variable
+	     to 1.
+
 END
 
 
@@ -1687,6 +1742,9 @@ usage:       nobackups
              
 description:
 	     Disable creating backup files on save.
+
+	     This command is equivalent to setting the `$BACKUPS' variable
+	     to 0.
 
 END
 
@@ -1728,6 +1786,114 @@ description:
 END
 
 
+$HELP{'redo'}=[<<'END'];
+usage:       redo [<expression>]
+             
+description:
+	     The redo command restarts a loop block without evaluating the
+	     conditional again. The optional <expression> argument may
+	     evaluate to a positive integer number that indicates which
+	     level of the nested loops should be restarted. If omitted, it
+	     defaults to 1, i.e. the innermost loop.
+
+	     Using this command outside a loop causes an immediate run-time
+	     error.
+
+Example:     Restart a higher level loop from an inner one
+
+             while ($i<100) { 
+               # ...
+               foreach //para {
+                 # some code
+                 if $param { 
+                   redo; # redo foreach loop
+                 } else {
+                   redo 2; # redo while loop
+                 }
+               }
+             }
+
+END
+
+
+$HELP{'next'}=[<<'END'];
+usage:       next [<expression>]
+             
+description:
+	     The next command is like the continue statement in C; it
+	     starts the next iteration of an enclosing loop. The optional
+	     <expression> argument may evaluate to a positive integer
+	     number that indicates which level of the nested loops should
+	     be restarted. If omitted, it defaults to 1, i.e. the innermost
+	     loop.
+
+	     Using this command outside a loop causes an immediate run-time
+	     error.
+
+END
+
+
+$HELP{'last'}=[<<'END'];
+usage:       last [<expression>]
+             
+description:
+	     The last command is like the break statement in C (as used in
+	     loops); it immediately exits an enclosing loop. The optional
+	     <expression> argument may evaluate to a positive integer
+	     number that indicates which level of the nested loops to quit.
+	     If this argument is omitted, it defaults to 1, i.e. the
+	     innermost loop.
+
+	     Using this command outside a subroutine causes an immediate
+	     run-time error.
+
+END
+
+
+$HELP{'return'}=[<<'END'];
+usage:       return
+             
+description:
+	     This command immediatelly stops the execution of a procedure
+	     it occurs in and returns the execution to the place of the
+	     script from which the subroutine was called.
+
+	     Using this command outside a subroutine causes an immediate
+	     run-time error.
+
+END
+
+
+$HELP{'throw'}=[<<'END'];
+usage:       throw <expression>
+             
+description:
+	     This command throws and exception containing error message
+	     given by the obligatory <expression> argument. If the
+	     exception is not handled by some surrounding <try> block, the
+	     execution is stopped immediatelly and the error message is
+	     printed.
+
+	     Note: There is a special class of internal exceptions with
+	     error message starting with a word 'UNCATCHABLE'. Such
+	     exceptions are not trapped by <try> constructions and should
+	     be avoided in ordinary XSH scripts.
+
+END
+
+
+$HELP{'catalog'}=[<<'END'];
+usage:       catalog <expression>
+             
+description:
+	     Will use given catalog file as a catalog during all parsing
+	     processes. Using a catalog will significantly speed up parsing
+	     processes if many external ressources are loaded into the
+	     parsed documents (such as DTDs or XIncludes)
+
+END
+
+
 $HELP{'documents'}=[<<'END'];
 Files/Documents
 ---------------
@@ -1742,7 +1908,7 @@ Files/Documents
 
   Every opened document is associated with an identifier (<id>), that is a
   symbolic name for the document in XSH and can be used for example as a
-  prefix of <XPath expressions>XPath expressions.
+  prefix of <xpath>.
 
   In the current version, XSH is only able to save documents locally. To
   store a document on any other location, use <ls> command and pipe
@@ -1755,8 +1921,8 @@ Example: Store XSH document DOC on a remote machine using Secure Shell
 
 
 Related commands:
-  backups, clone, close, create, nobackups, open, process-xinclude, save,
-  select, switch-to-new-documents
+  backups, catalog, clone, close, create, nobackups, open,
+  process-xinclude, save, select, switch-to-new-documents
 
 END
 
@@ -1799,7 +1965,7 @@ Example:
 
 
 Related commands:
-  cd, fold, locate, ls, pwd, select, unfold
+  cd, fold, locate, ls, pwd, redo, select, unfold
 
 END
 
@@ -1933,8 +2099,8 @@ Flow control
 
 
 Related commands:
-  call, def, exit, foreach, if, include, run-mode, test-mode, try, unless,
-  while
+  call, def, exit, foreach, if, include, last, next, return, run-mode,
+  test-mode, throw, try, unless, while
 
 END
 
