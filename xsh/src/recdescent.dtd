@@ -91,7 +91,7 @@
 <!--         type       Directive type                             -->
 <!ATTLIST  directive
              type
-                        (commit|uncommit|reject|score|autoscore|skip|resync|error|rulevar|matchrule|leftop|rightop|defer|nocheck|perl_quotelike|perl_codeblock|perl_variable|token)
+                        (commit|uncommit|reject|score|autoscore|skip|resync|error|error-if-committed|rulevar|matchrule|leftop|rightop|defer|nocheck|perl_quotelike|perl_codeblock|perl_variable|token)
 
 
                                                            #REQUIRED >
