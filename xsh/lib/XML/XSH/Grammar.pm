@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Thu Oct 23 19:46:24 2003
+# Thu Nov 13 15:20:12 2003
 
 
 package XML::XSH::Grammar;
@@ -176,6 +176,12 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(xslt|transform|xsl|xsltproc|process)\s/ <commit> expression filename expression xslt_params(?)
 		{ [\&XML::XSH::Functions::xslt,@item[3,4,5],@{$item[6]}] }
   	
+	  | /(wrap)\s/ <commit> expression namespace(?) xpath store_or_append_nl(?)
+		{ [\&XML::XSH::Functions::wrap,@item[5,3],$item[4][0],@{$item[6]}] }
+  	
+	  | /(wrap-span|wrap_span)\s/ <commit> expression namespace(?) xpath xpath store_or_append_nl(?)
+		{ [\&XML::XSH::Functions::wrap_span,@item[5,6,3],$item[4][0],@{$item[7]}] }
+  	
 	  | /(insert|add)\s/ <commit> nodetype expression namespace(?) loc xpath store_or_append_nl(?)
 		{ [\&XML::XSH::Functions::insert,@item[3,4,7,6],$item[5][0],0,@{$item[8]}] }
   	
@@ -336,8 +342,14 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /(doc-info|doc_info)/ <commit> optional_expression(?)
 		{ [\&XML::XSH::Functions::doc_info,@{$item[3]}] }
   	
-	  | /(use)\s/ <commit> /Inline::XSH/
+	  | /(xpath-extensions|xpath_extensions)/ <commit> optional_expression(?)
+		{ [\&XML::XSH::Functions::xpath_extensions,@{$item[3]}] }
+  	
+	  | /(use)\s/ <commit> /XML::XSH::Inline/
 		{ 1 }
+  	
+	  | /(lineno)/ <commit> xpath(?)
+		{ [\&XML::XSH::Functions::print_lineno,@{$item[3]}] }
   	
 	  | call_command
 
@@ -828,6 +840,102 @@ $grammar=<<'_EO_GRAMMAR_';
 	    /select\s/ xp block
 		{ [$item[2],$item[3]] }
   	
+
+  doc_function:
+	   
+
+  var_function:
+	   
+
+  matches_function:
+	   
+
+  grep_function:
+	   
+
+  substr_function:
+	   
+
+  reverse_function:
+	   
+
+  same_function:
+	   
+
+  max_function:
+	   
+
+  min_function:
+	   
+
+  strmax_function:
+	   
+
+  strmin_function:
+	   
+
+  sum_function:
+	   
+
+  join_function:
+	   
+
+  subst_function:
+	   
+
+  sprintf_function:
+	   
+
+  serialize_function:
+	   
+
+  parse_function:
+	   
+
+  current_function:
+	   
+
+  path_function:
+	   
+
+  if_function:
+	   
+
+  new_attribute_function:
+	   
+
+  new_attributes_function:
+	   
+
+  new_element_function:
+	   
+
+  new_element_ns_function:
+	   
+
+  new_text_function:
+	   
+
+  new_comment_function:
+	   
+
+  new_pi_function:
+	   
+
+  new_cdata_function:
+	   
+
+  new_chunk_function:
+	   
+
+  map_function:
+	   
+
+  split_function:
+	   
+
+  times_function:
+	   
 
 
 

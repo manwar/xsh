@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.81 2003-11-08 10:40:16 pajas Exp $
+# $Id: Functions.pm,v 1.82 2003-12-15 14:39:48 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -26,12 +26,12 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 	    $PEDANTIC_PARSER $LOAD_EXT_DTD $PARSER_COMPLETES_ATTRIBUTES
 	    $PARSER_EXPANDS_XINCLUDE
 	    $XPATH_AXIS_COMPLETION
-	    $XPATH_COMPLETION $DEFAULT_FORMAT
+	    $XPATH_COMPLETION $DEFAULT_FORMAT $LINE_NUMBERS
 	  /;
 
 BEGIN {
   $VERSION='1.8.2';
-  $REVISION='$Revision: 1.81 $';
+  $REVISION='$Revision: 1.82 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -54,6 +54,7 @@ BEGIN {
 		    $PARSER_COMPLETES_ATTRIBUTES
 		    $PARSER_EXPANDS_XINCLUDE
 		    $DEFAULT_FORMAT
+		    $LINE_NUMBERS
 		    /;
   *EMPTY_TAGS=*XML::LibXML::setTagCompression;
   *SKIP_DTD=*XML::LibXML::skipDTD;
@@ -93,6 +94,7 @@ BEGIN {
   $XPATH_COMPLETION=1;
   $XPATH_AXIS_COMPLETION='always'; # never / when-empty
   $DEFAULT_FORMAT='xml';
+  $LINE_NUMBERS=1;
   $_newdoc=1;
   $_die_on_err=1;
   %_nodelist=();
@@ -201,6 +203,7 @@ sub set_xpath_axis_completion { $XPATH_AXIS_COMPLETION=$_[0];
 				  $XPATH_AXIS_COMPLETION='never';
 				}
 				1; }
+sub set_line_numbers         { $LINE_NUMBERS=$_[0]; 1; }
 
 sub get_validation	     { $VALIDATION }
 sub get_recovering	     { $RECOVERING }
@@ -217,7 +220,7 @@ sub get_backups		     { $BACKUPS }
 sub get_cdonopen	     { $SWITCH_TO_NEW_DOCUMENTS }
 sub get_xpath_completion     { $XPATH_COMPLETION }
 sub get_xpath_axis_completion { $XPATH_AXIS_COMPLETION }
-
+sub get_line_numbers	     { $LINE_NUMBERS }
 
 # initialize global XPathContext
 sub xpc_init {
@@ -275,12 +278,10 @@ sub xpath_extensions {
 # ===================== XPATH EXT FUNC ================
 
 sub get_XPATH_extensions {
-  qw(doc var matches substr reverse grep same max
-     strmax min strmin sum join serialize subst
-     parse sprintf current path map if split times
-     new-attribute new-text new-element new-element-ns
-     new-comment new-cdata new-pi new-chunk node-type
-    )
+  qw( current doc grep id2 if join map matches max min new-attribute
+  new-cdata new-chunk new-comment new-element new-element-ns new-pi
+  new-text node-type parse path reverse same serialize split sprintf
+  strmax strmin subst substr sum times var )
 }
 
 sub XPATH_doc {
@@ -536,7 +537,7 @@ sub XPATH_split {
   my $el;
   foreach my $str (split $regexp,$string) {
     $el = $res_doc->createElementNS($XML::XSH::xshNS,'xsh:string');
-    $el->appendText($str->to_literal->value);
+    $el->appendText($str);
     $res_el->appendChild($el);
     push @$res,$el;
   }
@@ -544,19 +545,8 @@ sub XPATH_split {
 }
 
 sub XPATH_new_attribute {
-  die "Wrong number of arguments for function xsh:new-attribute(string, [string, [string]])!"
-    if (!@_ or @_>3);
-  my ($name,$value,$ns)=map {literal_value($_)} @_;
-  my $att=XML::LibXML::Attr->new($name,$value);
-  if ($ns) {
-    $att->setNamespace($ns);
-  }
-  return XML::LibXML::NodeList->new($att);
-}
-
-sub XPATH_new_attributes {
   die "Wrong number of arguments for function xsh:new-attributes(string, string, [string, string,...])!"
-    unless (@_ and @_ % 2);
+    unless (@_ and (scalar(@_) % 2 == 0));
   my %attr=map { literal_value($_) } @_;
   return XML::LibXML::NodeList->new(map {XML::LibXML::Attr->new($_,$attr{$_})} keys %attr);
 }
@@ -576,9 +566,9 @@ sub XPATH_new_element_ns {
   die "Wrong number of arguments for function xsh:new-element-ns(string, string, [string,string])!"
     unless (@_ and (scalar(@_)+1)%2);
   my ($name,$ns,%attrs)=map {literal_value($_)} @_;
-  my ($name,$prefix) = split ':',$name;
+  my ($prefix,$name) = split ':',$name;
   my $e=XML::LibXML::Element->new($name);
-  $e->setNamespace($ns,$prefix,1);
+  $e->setNamespace("$ns","$prefix",1);
   foreach my $aname (keys %attrs) {
     $e->setAttribute($aname,$attrs{$aname});
   }
@@ -614,7 +604,8 @@ sub XPATH_new_pi {
   die "Wrong number of arguments for function xsh:new-pi(string,[ string])!"
     if (!@_ or @_>2);
   my ($name,$value)=map { literal_value($_) } @_;
-  my $pi = XML::LibXML->createProcessingInstruction($name => $value);
+  my $d=XML::LibXML::Document->new;
+  my $pi = $d->createPI($name => $value);
   return XML::LibXML::NodeList->new($pi);
 }
 
@@ -645,6 +636,34 @@ sub XPATH_if {
   } else {
     return $else;
   }
+}
+
+sub XPATH_id2 {
+  die "Wrong number of arguments for function xsh:id2(object,string)!"
+    if (@_!=2);
+  my ($nl, $id)=@_;
+  die "Wrong type of argument 1 for function xsh:id2(object,string)!"
+    if (!ref($nl) or not $nl->isa("XML::LibXML::NodeList"));
+  die "Argument 2 for function xsh:id2(object,string) isn't a valid qname!"
+    if ($id =~ /'/);
+  my $res=XML::LibXML::NodeList->new();
+  if ($nl->[0]) {
+    push @$res, $nl->[0]->findnodes("id('".$id."')");
+  }
+  return $res;
+}
+
+sub XPATH_lineno {
+  die "Wrong number of arguments for function xsh:lineno(node-set)!"
+    if (@_!=1);
+  my ($nl, $id)=@_;
+  die "Wrong type of argument 1 for function xsh:lineno(node-set)!"
+    if (!ref($nl) or not $nl->isa("XML::LibXML::NodeList"));
+  my $res=-1;
+  if ($nl->[0]) {
+    $res=$nl->[0]->line_number;
+  }
+  return XML::LibXML::Number->new($res);
 }
 
 
@@ -1933,6 +1952,22 @@ sub locate {
   return 1;
 }
 
+# print line numbers of matching nodes
+sub print_lineno {
+  my ($xp)=@_;
+  my ($id,$query,$doc)=_xpath($xp);
+  die "Line numbers not supported!\n"
+    unless XML::LibXML::Node->can('line_number');
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+  my $ql=find_nodes($xp);
+  foreach (@$ql) {
+    out(fromUTF8($ENCODING, $_->line_number ),"\n");
+  }
+  return 1;
+}
+
 # evaluate given xpath and output the result
 sub count {
   my ($xp)=@_;
@@ -2065,7 +2100,9 @@ sub perlmap {
       }
     } elsif ($node->can('setData') and $node->can('getData')) {
       my $val=$node->getData();
-      $node->setData(eval_substitution("$val",$expr));
+      my $data = eval_substitution("$val",$expr);
+      $data = "" unless defined($data);
+      $node->setData($data);
     }
   }
   return 1;
@@ -2458,6 +2495,7 @@ sub insert_node {
     if ($where eq 'into') {
       my $value=$_xml_module->is_element($node) ?
 	$node->textContent() : $node->getData();
+      $value = "" unless defined $value;
       $dest->setData($value);
       push @$rl,$dest if $rl;
     } elsif ($where eq 'append') {
@@ -2559,6 +2597,9 @@ sub copy {
       }
     }
   } else {
+    _warn("Different number of source and destination nodes.\n".
+	  "(Maybe you wanted to call xcopy/xmove?)\n".
+	  "Continuing anyway!") if (@$fl != @$tl);
     while (ref(my $fp=shift @$fl) and ref(my $tp=shift @$tl)) {
       my $replace=insert_node($fp,$tp,$tdoc,$where,undef,$rl);
       if ($replace eq 'remove') {
@@ -2711,6 +2752,7 @@ sub create_nodes {
     } elsif ($type eq 'pi') {
       my ($name,$data)=($exp=~/^\s*(?:\<\?)?(\S+)(?:\s+(.*?)(?:\?\>)?)?$/);
       my $pi = $doc->createProcessingInstruction($name);
+      $data = "" unless defined $data;
       $pi->setData($data);
       print STDERR "pi=<?$name ... $data?>\n" if $DEBUG;
       push @nodes,$pi;
@@ -2932,6 +2974,7 @@ sub strip_ws {
        ) {
       my $data=_trim_ws($node->getData());
       if ($data ne "") {
+	$data = "" unless defined $data;
 	$node->setData($data);
       } else {
 	$node->unbindNode();
@@ -2951,6 +2994,7 @@ sub strip_ws {
 	    $_xml_module->is_cdata_section($child)) {
 	  my $data=_trim_ws($child->getData());
 	  if ($data ne "") {
+	    $data = "" unless defined $data;
 	    $child->setData($data);
 	    last;
 	  } else {
@@ -2971,6 +3015,7 @@ sub strip_ws {
 	    $_xml_module->is_cdata_section($child)) {
 	  my $data=_trim_ws($child->getData());
 	  if ($data ne "") {
+	    $data = "" unless defined $data;
 	    $child->setData($data);
 	    last;
 	  } else {
@@ -4075,25 +4120,25 @@ sub unregister_func {
 
 sub node_type {
   my ($node)=@_;
-  if ($_xml_module->is_element($_)) {
+  if ($_xml_module->is_element($node)) {
     return 'element';
-  } elsif ($_xml_module->is_attribute($_)) {
+  } elsif ($_xml_module->is_attribute($node)) {
     return 'attribute';
-  } elsif ($_xml_module->is_text($_)) {
+  } elsif ($_xml_module->is_text($node)) {
     return 'text';
-  } elsif ($_xml_module->is_cdata_section($_)) {
+  } elsif ($_xml_module->is_cdata_section($node)) {
     return 'cdata';
-  } elsif ($_xml_module->is_pi($_)) {
+  } elsif ($_xml_module->is_pi($node)) {
     return 'pi';
-  } elsif ($_xml_module->is_entity_reference($_)) {
+  } elsif ($_xml_module->is_entity_reference($node)) {
     return 'entity_reference';
-  } elsif ($_xml_module->is_document($_)) {
+  } elsif ($_xml_module->is_document($node)) {
     return 'document';
-  } elsif ($_xml_module->is_document_fragment($_)) {
+  } elsif ($_xml_module->is_document_fragment($node)) {
     return 'chunk';
-  } elsif ($_xml_module->is_comment($_)) {
+  } elsif ($_xml_module->is_comment($node)) {
     return 'comment';
-  } elsif ($_xml_module->is_namespace($_)) {
+  } elsif ($_xml_module->is_namespace($node)) {
     return 'namespace';
   } else {
     return 'unknown';
@@ -4141,7 +4186,7 @@ sub serialize {
   return $result;
 }
 
-sub xml_list { xml_list(@_) }
+sub xml_list { serialize(@_) }
 
 sub literal {
   my ($xp)=@_;

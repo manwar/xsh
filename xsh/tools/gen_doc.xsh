@@ -21,7 +21,7 @@ create d <<EOF;
   <section id="intro">
     <title>XSH Language</title>
   </section>
-  <section id="command">
+  <section id="cmd">
     <title>Command Reference</title>
   </section>
   <section id="type">
@@ -65,10 +65,11 @@ EOF
   }
 }
 
-foreach { qw(command type function) } {
+foreach { qw(cmd type function) } {
   print "FILLING: ${__}"; print "";
   local %sec=d:/article/section[@id='${__}'];
   if ('$__'='type') $__='argtype';
+  if ('$__'='cmd') $__='command';
   local %type=x:(//rule[@type='$__']);
   sort (@name|documentation/title)[1] { $a cmp $b } %type;
   foreach %type {

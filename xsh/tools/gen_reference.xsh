@@ -37,18 +37,24 @@ def transform_section %s {
     insert element "simplelist type='inline'" before . result %sl;
     foreach split("\\s",@types) {
       foreach X:(/recdescent-xml/rules/rule[@type=current()]) {
-	insert chunk
-	  ${(concat("<member>",if(@name,@name,@id),"</member>"))} into %sl;
+	local $c;
+	if (@id) {
+	  $c=concat("<member><xref linkend='",@id,"'/></member>");
+	} else {
+	  $c=concat("<member>",@name,"</member>");
+	}
+	insert chunk $c into %sl;
       }
     }
     rm .;
   }
   foreach %s//xref {
-    $linkend=string(@linkend);
-    foreach X:(id("$linkend")) {
-      local $content=string(if(name()="section",title,if(@name,@name,@id)));
-      add chunk "<ulink url='s_$linkend.html'>$content</ulink>" replace .;
+    local $c;
+    local $l=string(@linkend);
+    foreach X:(id("${l}")) {
+      $c=string(if(name()="section",title,if(@name,@name,@id)));
     }
+    add chunk "<ulink url='s_${l}.html'>${c}</ulink>" replace .;
   };
   foreach %s//link {
     map { $_='ulink' } .;
@@ -77,6 +83,7 @@ def transform_section %s {
 }
 
 echo 'index';
+perl {
 $toc_template=<<"EOF";
 <html>
   <head>
@@ -96,7 +103,7 @@ $toc_template=<<"EOF";
   </body>
 </html>
 EOF
-
+};
 new I <<"EOF";
 <html>
   <head>
@@ -170,7 +177,7 @@ save_HTML T "doc/frames/t_syntax.html";
 close T;
 
 # COMMANDS, TYPES AND FUNCTIONS
-foreach { qw(command type function) } {
+foreach { qw(command type function list) } {
   echo $__;
   new T $toc_template;
 
@@ -194,7 +201,7 @@ foreach { qw(command type function) } {
     } else {
       add chunk "<title>${{string(@name)}}</title>" into %section;
     }
-    map { s/\s+argument\s+type//i; $_=lcfirst } %section/title/text();
+    map { s/\s+argument\s+type//i; $_=lcfirst if lc(lcfirst($_)) eq lcfirst} %section/title/text();
     for %section/title {
       add chunk "<a href='s_${ref}.html' target='mainWindow'>${{string(.)}}</a><br/>"
 	into T:/html/body/small;

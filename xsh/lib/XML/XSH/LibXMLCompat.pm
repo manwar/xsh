@@ -1,11 +1,12 @@
 # -*- cperl -*-
-# $Id: LibXMLCompat.pm,v 1.15 2003-10-23 17:43:20 pajas Exp $
+# $Id: LibXMLCompat.pm,v 1.16 2003-12-15 14:39:48 pajas Exp $
 
 package XML::XSH::LibXMLCompat;
 
 use strict;
 use XML::LibXML;
 use XML::LibXML::Iterator;
+use XML::LibXML::NodeList;
 
 sub module {
   return "XML::LibXML";
@@ -73,18 +74,17 @@ sub doc_process_xinclude {
 
 sub init_parser {
   my ($class,$parser)=@_;
-  $parser->validation($XML::XSH::Functions::VALIDATION);
-  $parser->recover($XML::XSH::Functions::RECOVERING) if $parser->can('recover');
-  $parser->expand_entities($XML::XSH::Functions::PARSER_EXPANDS_ENTITIES);
-  $parser->keep_blanks($XML::XSH::Functions::KEEP_BLANKS);
-  $parser->pedantic_parser($XML::XSH::Functions::PEDANTIC_PARSER);
-  $parser->load_ext_dtd($XML::XSH::Functions::LOAD_EXT_DTD);
-  $parser->complete_attributes($XML::XSH::Functions::PARSER_COMPLETES_ATTRIBUTES);
-  $parser->expand_xinclude($XML::XSH::Functions::PARSER_EXPANDS_XINCLUDE);
-#   if ($parser->can('line_numbers')) {
-#     $parser->line_numbers(1);
-#     print "parser will remember line numbers\n";
-#   }
+  $parser->validation(0+$XML::XSH::Functions::VALIDATION);
+  $parser->recover(0+$XML::XSH::Functions::RECOVERING) if $parser->can('recover');
+  $parser->expand_entities(0+$XML::XSH::Functions::PARSER_EXPANDS_ENTITIES);
+  $parser->keep_blanks(0+$XML::XSH::Functions::KEEP_BLANKS);
+  $parser->pedantic_parser(0+$XML::XSH::Functions::PEDANTIC_PARSER);
+  $parser->load_ext_dtd(0+$XML::XSH::Functions::LOAD_EXT_DTD);
+  $parser->complete_attributes(0+$XML::XSH::Functions::PARSER_COMPLETES_ATTRIBUTES);
+  $parser->expand_xinclude(0+$XML::XSH::Functions::PARSER_EXPANDS_XINCLUDE);
+  if ($parser->can('line_numbers')) {
+    $parser->line_numbers(0+$XML::XSH::Functions::LINE_NUMBERS);
+  }
 }
 
 sub load_catalog {
@@ -349,31 +349,41 @@ sub subtree_iterator {
 
     return $node;
 }
-package XML::LibXML::NodeList;
 
-use overload 
-		'""' => \&value,
-                'bool' => \&to_boolean,
-		'fallback' => \&value;
+{
+  local $^W=0;
+  eval <<'EOF';
+  package XML::LibXML::NodeList;
 
-sub value {
-  my $self = CORE::shift;
-  my $result = join('', grep {defined $_} map { $_->string_value } @$self);
-  return $result;
-}
+  use overload 'XML::LibXML::NodeList',
+               '""' => \&value,
+               'bool' => \&to_boolean,
+	       'fallback' => \&value;
 
-package XML::LibXML::Number;
-sub new {
-    my $class = shift;
-    my $number = shift;
-    if ($number !~ /^\s*(-\s*)?(\d+(\.\d*)?|\.\d+)\s*$/) {
-        $number = undef;
-    }
-    else {
-        $number =~ s/\s*//g;
-    }
-    bless \$number, $class;
-}
+  sub value {
+    my $self = CORE::shift;
+    my $result = join('', grep {defined $_} map { $_->string_value } @$self);
+    return $result;
+  }
+
+  package XML::LibXML::Number;
+
+  sub new {
+     my $class = shift;
+     my $number = shift;
+     if ($number !~ /^\s*(-\s*)?(\d+(\.\d*)?|\.\d+)\s*$/) {
+         $number = undef;
+     }
+     else {
+         $number =~ s/\s*//g;
+     }
+     bless \$number, $class;
+  }
+
+EOF
+
+};
+
 
 
 1;

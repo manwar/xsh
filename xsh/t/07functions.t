@@ -266,38 +266,25 @@ call x_assert 'xsh:sprintf("%09.4f",13.123)="0013.1230"';
 call x_assert 'xsh:sprintf("%e",13.123)="1.312300e+01"';
 
 call x_assert 'xsh:sprintf("%s-%e-%s-%s","foo",13.123,"bar",/a)="foo-1.312300e+01-bar-abcb"';
-EOF
-  @xsh_test=split /\n\n/, <<'EOF';
-quiet;
-def x_assert $cond
-{ perl { xsh("unless ($cond) throw \"Assertion failed \$cond\"") } }
-call x_assert '/scratch';
-try {
-  call x_assert '/xyz';
-  throw "x_assert failed";
-} catch local $err {
-  unless { $err eq 'Assertion failed /xyz' } throw $err;
-};
-
 
 create doc4 '<a><b>abc</b><c>efg</c></a>';
 
-call x_assert 'xsh:map(/a/*,"string(text())")/self::xsh:string[1] = "abc"';
+call x_assert '(xsh:map(/a/*,"string(text())")/self::xsh:string[1] = "abc")';
 
 call x_assert '(xsh:map(/a/*,"string(text())")/self::xsh:string)[2] = "efg"';
 
-call x_assert 'xsh:map(/a,"count(*)")/self::xsh:float[1] = 2';
+call x_assert '(xsh:map(/a,"count(*)")/self::xsh:number[1] = 2)';
 
-call x_assert 'xsh:map(/a,"*")/self::b';
+call x_assert '(xsh:map(/a,"*")/self::b)';
 
-call x_assert 'xsh:map(/a,"*")/self::c';
+call x_assert '(xsh:map(/a,"*")/self::c)';
 
-call x_assert 'xsh:same(xsh:map(/a,"*")/self::b,/a/b)';
+call x_assert '(xsh:same(xsh:map(/a,"*")/self::b,/a/b))';
 
-call x_assert 'xsh:same(xsh:map(/a,"*")/self::c,/a/c)';
+call x_assert '(xsh:same(xsh:map(/a,"*")/self::c,/a/c))';
 
 foreach //node() {
-  call x_assert 'xsh:same(xsh:current(),.)';
+  call x_assert '(xsh:same(xsh:current(),.))';
 }
 
 foreach //b {

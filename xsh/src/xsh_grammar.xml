@@ -7,7 +7,8 @@
     <description>
       <para>
 	XSH acts as a command interpreter.  Individual commands must
-	be separated with a semicolon. Each command may be followed by
+	be separated with a semicolon. Each <xref linkend="command"/>
+	may be followed by
 	a pipeline redirection to capture the command's output. In the
 	interactive shell, backslash may be used at the end of line to
 	indicate that the command follows on the next line.
@@ -33,7 +34,7 @@
 	In order to store a command's output in a string variable, the
 	pipeline redirection must take the form <literal>xsh-command
 	|&gt; $variable</literal> where <literal>xsh-command</literal> is
-	any XSH command and <literal>$variable</literal> is any valid
+	any XSH <xref linkend="command"/> and <literal>$variable</literal> is any valid
 	name for a string <link linkend="Variables">variable</link>.
       </para>
       <example>
@@ -42,7 +43,7 @@
       </example>
       <para>
 	<literal><xref linkend="help_command"/> command</literal>
-	gives a list of all XSH commands.
+	gives a list of all XSH <link linkend="command">commands</link>.
       </para>
       <para>
 	<literal><xref linkend="help_command"/> type</literal> gives a
@@ -712,7 +713,7 @@ drwxrwxr-x    3 pajas    users         496 Sep  1 20:18 tools
 	  XSH commands output to system shell command.  This is very
 	  similarly to the redirection known from UNIX shells, except
 	  that here, of course, the first command in the pipe-line
-	  colone is an XSH command. Since semicolon (<literal>;</literal>)
+	  colone is an XSH <xref linkend="command"/>. Since semicolon (<literal>;</literal>)
 	  is used in XSH to separate commands, it has to be prefixed
 	  with a backslash if it should be used for other purposes.
 	</para>
@@ -862,15 +863,37 @@ sub new {
       <ruleref ref="doc_info_command"/>
       <ruleref ref="xpath_extensions_command"/>
       <ruleref ref="ignore_use_command"/>
+      <ruleref ref="lineno_command"/>
       <!-- ADD NEW COMMANDS HERE -->
       <production>
 	<ruleref ref="call_command"/>
       </production>
       <documentation>
-	<title>List of XSH commands</title>
+	<title>XSH command</title>
 	<description>
-	  <para><typeref types="command"/></para>
+	  <para>
+	    XSH command consists of a command name
+	    and possibly command parameters separated
+	    by whitespace. Individual <link linkend="command">XSH commands</link> are
+	    separated with a semicolon. 
+	    A command may optinally be followed
+	    by an output redirection directive
+	    (see <xref linkend="binding_shell"/> for output
+	    redirection to a command
+	    and <xref linkend="string_variables"/> for output
+	    redirection to variable).
+	    Most commands have aliases, so for example
+	    <xref linkend="prune_command"/> command
+	    may also be invoked as <literal>del</literal> or
+	    <literal>rm</literal>.
+	  </para>
+	  <para>XSH recognizes the following commands
+	    (not including aliases):
+	    <typeref types="command"/></para>
 	</description>
+	<see-also>
+	  <ruleref ref="block"/>
+	</see-also>
       </documentation>
     </rule>
     <rule id="statement">
@@ -957,8 +980,8 @@ sub new {
 	<shortdesc>single XSH command or a block of XSH commands</shortdesc>
 	<description>
 	  <para>
-	    XSH command or a block of semicolon-separated
-	    commands enclosed within curly brackets.
+	    XSH <xref linkend="command"/> or a block of semicolon-separated
+	    commands enclosed within braces.
 	  </para>
 	  <example>
 	    <title>Count paragraphs in each chapter</title>
@@ -1060,8 +1083,10 @@ sub new {
 	    $text=$item[6].$text;
 	    local $_=$item[7]; s/\n$item[3]\s*$//;
 	    if ($item[2] eq "'") {
-	      s{(\\)(.|\n)|(\$)}{ ($3 eq '$') ? "\\\$" : (($2 eq "\\")
-	      ? "\\\\" : (($2 eq "'") ? "'" : ( ($2 eq '$') ? "\\\\\\$2" :
+	      s{(\\)(.|\n)|(\$)}{ (defined($3) and $3 eq '$') ? "\\\$"
+	    : ((defined($2) and $2 eq "\\")
+	      ? "\\\\" : ((defined($2) and $2 eq "'") ? "'" : (
+	    (defined($2) and $2 eq '$') ? "\\\\\\$2" :
 	      "\\\\$2"))) }eg;
           }
 	    $_;
@@ -1942,8 +1967,8 @@ xsh> include my_defs.xsh</code>
       </production>
       <documentation sections="Flow">
 	<usage>def <xref linkend="ID"/> [$<xref linkend="ID"/> | %<xref linkend="ID"/>]* <xref linkend="block"/>
-         or
-	def <xref linkend="ID"/> [$<xref linkend="ID"/> | %<xref linkend="ID"/>]*;
+	</usage>
+	<usage>def <xref linkend="ID"/> [$<xref linkend="ID"/> | %<xref linkend="ID"/>]*;
 	</usage>
 	<shortdesc>sub-routine (macro) declaration</shortdesc>
 	<description>
@@ -3363,7 +3388,7 @@ xsh foo:/> ls /;
 	<shortdesc>in-line code in Perl programming language</shortdesc>
 	<description>
 	  <para>
-	    A block of perl code enclosed in curly brackets or an
+	    A block of perl code enclosed in braces or an
 	    expression which interpolates to a perl
 	    expression. Variables defined in XSH are visible in perl
 	    code as well. Since, in the interactive mode, XSH
@@ -3797,11 +3822,10 @@ xsh foo:/> ls /;
 	<usage>save [HTML|XML|XInclude] [FILE|PIPE|STRING] <xref linkend="ID"/> <xref
 	    linkend="expression"/> [encoding <xref
 	    linkend="enc_string"/>]
-or
-	  save <xref linkend="ID"/>
-or
-	  save
-</usage>
+	</usage>
+	<usage>save <xref linkend="ID"/>
+	</usage>
+	<usage>save</usage>
 	<shortdesc>save a document as XML or HTML</shortdesc>
 	<description>
 	  <para>
@@ -3990,18 +4014,16 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	<action>[\&amp;XML::XSH::Functions::validate_doc,1,[],@{$item[3]}]</action>
       </production>
       <documentation sections="Information">
-	<usage>validate [<xref linkend="ID"/>]
-or
-validate DTD PUBLIC <xref linkend="expression"/> [SYSTEM <xref
-	    linkend="filename"/>] <xref linkend="ID"/>
-or
-validate (DTD|RelaxNG|XSD) FILE <xref linkend="filename"/> [<xref
-	    linkend="ID"/>]
-or
-validate (DTD|RelaxNG|XSD) STRING <xref linkend="filename"/> [<xref
-	    linkend="ID"/>]
-or
-validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
+	<usage>validate [<xref linkend="ID"/>]</usage>
+	<usage>validate DTD PUBLIC <xref linkend="expression"/> [SYSTEM <xref
+	    linkend="filename"/>] <xref linkend="ID"/></usage>
+	<usage>validate (DTD|RelaxNG|XSD) FILE <xref linkend="filename"/> [<xref
+	    linkend="ID"/>]</usage>
+	<usage>validate (DTD|RelaxNG|XSD) STRING <xref linkend="filename"/> [<xref
+	    linkend="ID"/>]</usage>
+	<usage>validate (RelaxNG|XSD) DOC <xref linkend="ID"/> [<xref
+	    linkend="ID"/>]</usage>
+
 	<shortdesc>validate a document against a DTD, RelaxNG, or XSD schemas</shortdesc>
 	<description>
 	  <para>
@@ -5571,11 +5593,33 @@ xsh> ls grep(//word,"^.*tion$")</code>
 	</see-also>
       </documentation>
     </rule>
+    <rule id="lineno_command" type="command" name="lineno" inline="yes">
+      <production>
+	<selfref sep="no"/>
+	<directive type="commit"/>
+	<ruleref ref="xpath" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::print_lineno,@{$item[3]}]</action>
+      </production>
+      <documentation sections="Information">
+	<usage>lineno [<xref linkend="xpath"/>]</usage>
+	<shortdesc>print line-numbers corresponding to matching nodes</shortdesc>
+	<description>
+	  <para>
+	    <literal>lineno</literal>
+	    command prints line numbers of
+	    all nodes matching given XPath expression.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="locate_command"/>
+	</see-also>
+      </documentation>
+    </rule>
     <rule id="ignore_use_command" name="use" inline="yes">
       <production>
 	<selfref/>
 	<directive type="commit"/>
-	<regexp>Inline::XSH</regexp>
+	<regexp>XML::XSH::Inline</regexp>
 	<action>1</action>
       </production>
     </rule>
@@ -5894,10 +5938,144 @@ xsh> ls grep(//word,"^.*tion$")</code>
 	</see-also>
       </documentation>
     </rule>
+    <rule id="if_function" type="function" name="xsh:if">
+      <production/>
+      <documentation>
+	<usage>object xsh:if(object CONDITION, object YES, object NO)</usage>
+	<description>
+	  <para>
+	    This function returns the <literal>YES</literal> object
+	    if <literal>CONDITION</literal> is an non-empty
+	    node-set or a string, boolean or integer 
+	    evaluating to non-zero boolean. Otherwise the
+	    <literal>NO</literal> object is returned.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="new_attribute_function" type="function"
+      name="xsh:new-attribute">
+      <production/>
+      <documentation>
+	<usage>node-set xsh:new-attribute(string NAME1,string
+	VALUE1,[string NAME2, string VALUE2, ...])</usage>
+	<description>
+	  <para>
+	    Return a node-set consisting
+	    of newly created attribute nodes
+	    with given names and respective values.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="new_element_function" type="function"
+      name="xsh:new-element">
+      <production/>
+      <documentation>
+	<usage>node-set xsh:new-element(string NAME,[string ATTR1-NAME1,
+	string ATTR-VALUE1, ...])</usage>
+	<description>
+	  <para>
+	    Create a new element node with given
+	    <literal>NAME</literal> and optionally attributes with
+	    given names and values and return a node-set containing
+	    the new node as its only member.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="new_element_ns_function" type="function"
+      name="xsh:new-element-ns">
+      <production/>
+      <documentation>
+	<usage>node-set xsh:new-element-ns(string NAME,string NS,[string ATTR1-NAME1,
+	string ATTR-VALUE1, ...])</usage>
+	<description>
+	  <para>
+	    Create a new element node with given <literal>NAME</literal> and
+	    namespace-uri <literal>NS</literal> and optionally attributes with given
+	    names and values and return a node-set
+	    containing the new node as its only member.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="new_text_function" type="function"
+      name="xsh:new-text">
+      <production/>
+      <documentation>
+	<usage>node-set xsh:new-text(string DATA)</usage>
+	<description>
+	  <para>
+	    Create a new text node containing given
+	    <literal>DATA</literal> and return a node-set containing
+	    the new node as its only member.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="new_comment_function" type="function"
+      name="xsh:new-comment">
+      <production/>
+      <documentation>
+	<usage>node-set xsh:new-comment(string DATA)</usage>
+	<description>
+	  <para>
+	    Create a new comment node containing given
+	    <literal>DATA</literal> and return a node-set containing
+	    the new node as its only member.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="new_pi_function" type="function"
+      name="xsh:new-pi">
+      <production/>
+      <documentation>
+	<usage>node-set xsh:new-pi(string NAME, [string DATA])</usage>
+	<description>
+	  <para>
+	    Create a new processing instruction node node with given
+	    <literal>NAME</literal> and (optionally) given
+	    <literal>DATA</literal> and return a node-set containing
+	    the new node as its only member.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="new_cdata_function" type="function"
+      name="xsh:new-cdata">
+      <production/>
+      <documentation>
+	<usage>node-set xsh:new-cdata(string DATA)</usage>
+	<description>
+	  <para>
+	    Create a new cdata section node node filled with
+	    given <literal>DATA</literal> and return a node-set
+	    containing the new node as its only member.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="new_chunk_function" type="function"
+      name="xsh:new-chunk">
+      <production/>
+      <documentation>
+	<usage>node-set xsh:new-chunk(string XML)</usage>
+	<description>
+	  <para>
+	    This is just an alias for <xref
+	    linkend="parse_function"/>.  It parses given piece of XML
+	    and returns a node-set consisting of the top-level element
+	    within the parsed tree.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
     <rule id="map_function" type="function" name="xsh:map">
       <production/>
       <documentation>
-	<usage>mode-set xsh:map(node-set NODE, string XPATH)</usage>
+	<usage>node-set xsh:map(node-set NODE, string XPATH)</usage>
 	<description>
 	  <para>
 	    This function is very similar to EXSLT
@@ -5991,6 +6169,48 @@ xsh> ls grep(//word,"^.*tion$")</code>
 	<see-also>
 	  <ruleref ref="pwd_command"/>
 	</see-also>
+      </documentation>
+    </rule>
+    <rule id="split_function" type="function"
+      name="xsh:split">
+      <production/>
+      <documentation>
+	<usage>node-set xsh:split(string PATTERN, string STRING)</usage>
+	<description>
+	  <para>
+	    This function provides direct access to the very powerfull
+	    Perl function <literal>split</literal>. It splits
+	    <literal>STRING</literal> to a list of
+	    fields. <literal>PATTERN</literal> is a regular expression
+	    specifing strings delimiting individual fields of
+	    <literal>STRING</literal>. If <literal>PATTERN</literal>
+	    is empty, <literal>STRING</literal> is split to individual
+	    characters. If the regular expression in
+	    <literal>PATTERN</literal> is enclosed in brackets, then
+	    strings matching <literal>PATTERN</literal> are also
+	    included in the resulting list.
+	  </para>
+	  <para>
+	    The function returns a node-set consisting of
+	    newly created <literal>&lt;xsh:string&gt;</literal>
+	    elements containing individual strings of the resulting
+	    list as their only text child nodes.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="times_function" type="function" name="xsh:times">
+      <production/>
+      <documentation>
+	<usage>node-set xsh:times(string STRING, float COUNT)</usage>
+	<description>
+	  <para>
+	    This function returns a string
+	    resulting from concatenation of <literal>COUNT</literal>
+	    copies of <literal>STRING</literal>.
+	    <literal>COUNT</literal> must be a non-negative integer value.
+	  </para>
+	</description>
       </documentation>
     </rule>
   </rules>  

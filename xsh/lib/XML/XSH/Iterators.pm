@@ -1,4 +1,4 @@
-# $Id: Iterators.pm,v 1.1 2003-03-12 14:01:31 pajas Exp $
+# $Id: Iterators.pm,v 1.2 2003-12-15 14:39:48 pajas Exp $
 
 package XML::XSH::Iterators;
 
@@ -232,7 +232,10 @@ sub get_next_node {
 
 package XML::XSH::FilteredIterator;
 use strict;
-use XML::LibXML::Iterator;
+BEGIN {
+  local $^W=0; # suppress warning with perl5.8.2
+  require XML::LibXML::Iterator;
+};
 use base qw(XML::LibXML::Iterator);
 
 sub new {

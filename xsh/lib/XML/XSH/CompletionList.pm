@@ -59,6 +59,7 @@ keep-blanks
 keep_blanks
 last
 lcd
+lineno
 list
 load-ext-dtd
 load-xinclude
@@ -155,6 +156,9 @@ vars
 verbose
 version
 while
+wrap
+wrap-span
+wrap_span
 xadd
 xcopy
 xcp
@@ -165,8 +169,10 @@ xmove
 xmv
 xpath-axis-completion
 xpath-completion
+xpath-extensions
 xpath_axis_completion
 xpath_completion
+xpath_extensions
 xsl
 xslt
 xsltproc
@@ -203,6 +209,9 @@ lcd
 chdir
 insert
 add
+wrap
+wrap-span
+wrap_span
 xinsert
 xadd
 clone
@@ -267,6 +276,8 @@ xpath-axis-completion
 xpath_axis_completion
 doc-info
 doc_info
+xpath-extensions
+xpath_extensions
 );
 
 1;

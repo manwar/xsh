@@ -6,18 +6,9 @@ TODO:
 * alias 'help commands' for 'help command'?
 * document the installation process for ActiveState perl
 * support DTD modification
-* 'locate' - allow use also nearest id() 
+* 'locate' - allow use also nearest id() (needs support in LibXML)
 * xsh-grammar: parse xslt parameters as XPATH instead of XSH expressions ??
 * check the XML::LibXML module for XPath-ruled tree additions
-
-
-- add new "wrap" command:
-wrap document /*            (wrap root element into <document>)
-wrap "foo bar='baz'" //para (wrap all <para> elements to <foo bar="baz">, 
-                             so that they become 
-                             <foo bar="baz"><para>...</para></foo>)
-
-
 
 - add different examples for using namespaces:
 
@@ -41,8 +32,6 @@ wrap "foo bar='baz'" //para (wrap all <para> elements to <foo bar="baz">,
 
 - rename the command files to documents, make files and docs aliases
 
-+ check that cd reports error on trying to enter a non-existing node
-
 
 USER-LEVEL IMPLEMENTABLE
 
@@ -53,12 +42,4 @@ USER-LEVEL IMPLEMENTABLE
 IMPLEMENTED BUT SOME MORE REFINEMENT IS NEEDED:
 
 o fold/unfold command (fold/unfold elements for subsequent ls commands)
-
-FINISHED:
-* better support for namespaces (e.g. registering as soon as it's available
-  in XML::LibXML(::XPath?)
-
-* add new command "namespaces": lists all currently in effect or if an
-xpath argument is given, those in effect for the individual nodes
-matched
 
