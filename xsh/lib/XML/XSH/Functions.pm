@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.62 2003-08-08 14:02:46 pajas Exp $
+# $Id: Functions.pm,v 1.63 2003-08-11 14:21:11 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -28,7 +28,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.8';
-  $REVISION='$Revision: 1.62 $';
+  $REVISION='$Revision: 1.63 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -2105,12 +2105,12 @@ sub create_attributes {
   my ($exp)=@_;
   my (@ret,$value,$name);
   while ($exp!~/\G$/gsco) {
-    if ($exp=~/\G\s*([^\s=]+)=/gsco) {
+    if ($exp=~/\G\s*([^ \n\r\t=]+)=/gsco) {
       my $name=$1;
       print STDERR "attribute_name=$1\n" if $DEBUG;
       if ($exp=~/\G"((?:[^\\"]|\\.)*)"/gsco or
 	  $exp=~/\G'((?:[^\\']|\\.)*)'/gsco or
-	  $exp=~/\G(.*?\S)(?=\s*[^\s=]+=|\s*$)/gsco) {
+	  $exp=~/\G(.*?\S)(?=\s*[^ \n\r\t=]+=|\s*$)/gsco) {
 	$value=$1;
 	$value=~s/\\(.)/$1/g;
 	print STDERR "creating $name=$value attribute\n" if $DEBUG;
