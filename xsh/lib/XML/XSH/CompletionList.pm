@@ -28,6 +28,8 @@ define
 defs
 del
 delete
+docs
+documents
 dtd
 dup
 echo
@@ -65,6 +67,7 @@ ls
 map
 move
 mv
+namespaces
 new
 next
 nobackups

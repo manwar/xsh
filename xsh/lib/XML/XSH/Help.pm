@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Mon Apr 14 16:00:15 2003
+# Fri May  2 18:48:23 2003
 
 package XML::XSH::Help;
 use strict;
@@ -56,31 +56,31 @@ Help items:
 
   XSH Language Topics:
 
-    argtypes - Argument Types
-    configuration - Options
-    documents - Files/Documents
-    flow - Flow control
-    information - Retrieving more information
-    manipulation - Tree modification
-    navigation - Tree navigation
-    perl_shell - Interacting with Perl and Shell
-    variables - Variables
+    Argtypes - Argument Types
+    Configuration - Options
+    Documents - Files/Documents
+    Flow - Flow control
+    Information - Retrieving more information
+    Manipulation - Tree modification
+    Navigation - Tree navigation
+    Perl_shell - Interacting with Perl and Shell
+    Variables - Variables
 
   XSH Commands:
 
     assign, backups, call, catalog, cd, clone, close, copy, count, create,
-    debug, def, defs, dtd, enc, encoding, exec, exit, files, fold, foreach,
-    help, if, include, indent, insert, iterate, keep-blanks, last, lcd,
-    load-ext-dtd, local, locate, ls, map, move, next, nobackups, nodebug,
-    normalize, open, options, parser-completes-attributes,
-    parser-expands-entities, parser-expands-xinclude, pedantic-parser,
-    perl, prev, print, process-xinclude, pwd, query-encoding, quiet,
-    recovering, redo, register-function, register-namespace,
-    register-xhtml-namespace, remove, rename, return, run-mode, save,
-    select, sort, stream, strip-whitespace, switch-to-new-documents,
-    test-mode, throw, try, unfold, unless, valid, validate, validation,
-    variables, verbose, version, while, xcopy, xinsert, xmove, xslt,
-    xupdate
+    debug, def, defs, documents, dtd, enc, encoding, exec, exit, fold,
+    foreach, help, if, include, indent, insert, iterate, keep-blanks, last,
+    lcd, load-ext-dtd, local, locate, ls, map, move, namespaces, next,
+    nobackups, nodebug, normalize, open, options,
+    parser-completes-attributes, parser-expands-entities,
+    parser-expands-xinclude, pedantic-parser, perl, prev, print,
+    process-xinclude, pwd, query-encoding, quiet, recovering, redo,
+    register-function, register-namespace, register-xhtml-namespace,
+    remove, rename, return, run-mode, save, select, sort, stream,
+    strip-whitespace, switch-to-new-documents, test-mode, throw, try,
+    unfold, unless, valid, validate, validation, variables, verbose,
+    version, while, xcopy, xinsert, xmove, xslt, xupdate
 
   XSH Argument Types:
 
@@ -94,19 +94,19 @@ List of XSH commands
 
 description:
 	     assign, backups, call, catalog, cd, clone, close, copy, count,
-	     create, debug, def, defs, dtd, enc, encoding, exec, exit,
-	     files, fold, foreach, help, if, include, indent, insert,
+	     create, debug, def, defs, documents, dtd, enc, encoding, exec,
+	     exit, fold, foreach, help, if, include, indent, insert,
 	     iterate, keep-blanks, last, lcd, load-ext-dtd, local, locate,
-	     ls, map, move, next, nobackups, nodebug, normalize, open,
-	     options, parser-completes-attributes, parser-expands-entities,
-	     parser-expands-xinclude, pedantic-parser, perl, prev, print,
-	     process-xinclude, pwd, query-encoding, quiet, recovering,
-	     redo, register-function, register-namespace,
-	     register-xhtml-namespace, remove, rename, return, run-mode,
-	     save, select, sort, stream, strip-whitespace,
-	     switch-to-new-documents, test-mode, throw, try, unfold,
-	     unless, valid, validate, validation, variables, verbose,
-	     version, while, xcopy, xinsert, xmove, xslt, xupdate
+	     ls, map, move, namespaces, next, nobackups, nodebug,
+	     normalize, open, options, parser-completes-attributes,
+	     parser-expands-entities, parser-expands-xinclude,
+	     pedantic-parser, perl, prev, print, process-xinclude, pwd,
+	     query-encoding, quiet, recovering, redo, register-function,
+	     register-namespace, register-xhtml-namespace, remove, rename,
+	     return, run-mode, save, select, sort, stream,
+	     strip-whitespace, switch-to-new-documents, test-mode, throw,
+	     try, unfold, unless, valid, validate, validation, variables,
+	     verbose, version, while, xcopy, xinsert, xmove, xslt, xupdate
 
 END
 
@@ -513,12 +513,12 @@ Example:     Some caveats of counting node-lists
              ## WRONG (@name results in a singleton node-list) !!!
              xsh> $name=@name
              xsh> $name
-             $a=1
+             $name=1
              
              ## CORRECT (use string() function)
              xsh> $name=string(@name)
              xsh> $name
-             $a=Biblo
+             $name=Bilbo
 
 	     In the other two cases (where percent sign appears) find all
 	     nodes matching a given <xpath> and store the resulting
@@ -666,14 +666,18 @@ $HELP{'xsl'}=$HELP{'xslt'};
 $HELP{'xsltproc'}=$HELP{'xslt'};
 $HELP{'process'}=$HELP{'xslt'};
 
-$HELP{'files'}=[<<'END'];
+$HELP{'documents'}=[<<'END'];
 usage:       files
              
+aliases:     files docs
+
 description:
 	     List open files and their identifiers.
 
 END
 
+$HELP{'files'}=$HELP{'documents'};
+$HELP{'docs'}=$HELP{'documents'};
 
 $HELP{'variables'}=[<<'END'];
 usage:       variables
@@ -1057,7 +1061,7 @@ description:
 	     the reference to the terminal file handle.
 
 	     For more information about embedded Perl code in XSH,
-	     predefined functions etc. see <perl_shell>.
+	     predefined functions etc. see <Perl_shell>.
 
 Example:
              xsh> $i="foo";
@@ -2107,7 +2111,7 @@ description:
 END
 
 
-$HELP{'documents'}=[<<'END'];
+$HELP{'Documents'}=[<<'END'];
 Files/Documents
 ---------------
 
@@ -2134,13 +2138,13 @@ Example: Store XSH document DOC on a remote machine using Secure Shell
 
 
 Related commands:
-  backups, catalog, clone, close, create, nobackups, open,
+  backups, catalog, clone, close, create, documents, nobackups, open,
   process-xinclude, register-function, register-namespace,
   register-xhtml-namespace, save, select, switch-to-new-documents
 
 END
 
-$HELP{'navigation'}=[<<'END'];
+$HELP{'Navigation'}=[<<'END'];
 Tree navigation
 ---------------
 
@@ -2183,7 +2187,7 @@ Related commands:
 
 END
 
-$HELP{'manipulation'}=[<<'END'];
+$HELP{'Manipulation'}=[<<'END'];
 Tree modification
 -----------------
 
@@ -2296,7 +2300,7 @@ Related commands:
 
 END
 
-$HELP{'flow'}=[<<'END'];
+$HELP{'Flow'}=[<<'END'];
 Flow control
 ------------
 
@@ -2318,23 +2322,23 @@ Related commands:
 
 END
 
-$HELP{'information'}=[<<'END'];
+$HELP{'Information'}=[<<'END'];
 Retrieving more information
 ---------------------------
 
   Beside the possibility to browse the DOM tree and list some parts of it
-  (as described in <navigation>), XSH provides commands to obtain other
+  (as described in <Navigation>), XSH provides commands to obtain other
   information related to open documents as well as the XSH interpreter
   itself. These commands are listed bellow.
 
 
 Related commands:
-  count, defs, dtd, enc, files, help, locate, ls, options, print, pwd,
+  count, defs, documents, dtd, enc, help, locate, ls, options, print, pwd,
   valid, validate, variables, version
 
 END
 
-$HELP{'argtypes'}=[<<'END'];
+$HELP{'Argtypes'}=[<<'END'];
 Argument Types
 --------------
 
@@ -2345,7 +2349,7 @@ Argument Types
 
 END
 
-$HELP{'variables'}=[<<'END'];
+$HELP{'Variables'}=[<<'END'];
 Variables
 ---------
 
@@ -2481,7 +2485,7 @@ Related commands:
 
 END
 
-$HELP{'configuration'}=[<<'END'];
+$HELP{'Configuration'}=[<<'END'];
 Options
 -------
 
@@ -2516,7 +2520,7 @@ Related commands:
 
 END
 
-$HELP{'perl_shell'}=[<<'END'];
+$HELP{'Perl_shell'}=[<<'END'];
 Interacting with Perl and Shell
 -------------------------------
 
@@ -2541,7 +2545,7 @@ Interacting with Perl and Shell
 
     To prevent conflict between XSH internals and the evaluated perl code,
     XSH runs such code in the context of a special namespace
-    `XML::XSH::Map'. As described in the section <variables>, XSH string
+    `XML::XSH::Map'. As described in the section <Variables>, XSH string
     variables may be accessed and possibly assigned from Perl code in the
     most obvious way, since they actually are Perl variables defined in the
     `XML::XSH::Map' namespace.

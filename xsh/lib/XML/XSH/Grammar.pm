@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Mon Apr 14 16:00:14 2003
+# Fri May  2 18:48:22 2003
 
 
 package XML::XSH::Grammar;
@@ -149,7 +149,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | /save(as|_as|-as)?((\s*|_|-)(HTML|html|XML|xml|XINCLUDE|Xinclude|xinclude))?((\s*|_|-)(FILE|file|STRING|string))?/ <commit> expression encoding_param(?)
 		{ [\&XML::XSH::Functions::save_doc,@item[1,3],undef,$item[4]] }
   	
-	  | /(files)/
+	  | /(documents|files|docs)/
 		{ [\&XML::XSH::Functions::files] }
   	
 	  | /(xslt|transform|xsl|xsltproc|process)\s/ <commit> expression filename expression xslt_params(?)
@@ -288,6 +288,9 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 	  | /(stream)\s/ <commit> /input((\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?\s/ filename /output((\s*|_|-)(FILE|file|PIPE|pipe|STRING|string))?\s/ filename stream_select(s)
 		{ [\&XML::XSH::Functions::stream_process,$item[3],$item[4],$item[5],$item[6],$item[7]] }
+  	
+	  | /(namespaces)\s/ <commit> xpath(?)
+		{ [\&XML::XSH::Functions::list_namespaces,@{$item[3]}] }
   	
 	  | call_command
 

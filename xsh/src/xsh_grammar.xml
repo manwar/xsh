@@ -34,7 +34,7 @@
 	pipeline redirection must take the form <literal>xsh-command
 	|&gt; $variable</literal> where <literal>xsh-command</literal> is
 	any XSH command and <literal>$variable</literal> is any valid
-	name for a string <link linkend="variables">variable</link>.
+	name for a string <link linkend="Variables">variable</link>.
       </para>
       <example>
 	<title>Store the number of all words in a variable named count.</title>
@@ -54,7 +54,7 @@
 	particular command or argument type.
       </para>
     </description>
-    <section id="documents">
+    <section id="Documents">
       <title>Files/Documents</title>
       <para>
 	XSH is intended to query and manipulate XML and HTML
@@ -65,7 +65,7 @@
 	and optionally validates (see <xref linkend="validation"/> and
 	<xref linkend="load_ext_dtd"/>) the document. Parsed documents
 	are stored in memory as <ulink url="http://www.w3.org/DOM/">DOM</ulink> trees, that can be
-	<link linkend="navigation">navigated</link> and <link linkend="manipulation">manipulated</link> quite similarly to a
+	<link linkend="Navigation">navigated</link> and <link linkend="Manipulation">manipulated</link> quite similarly to a
 	local filesystem.
       </para>
       <para>
@@ -83,11 +83,11 @@
 	<code>xsh&gt; <userinput>ls DOC:/ | ssh my.remote.org 'cat &gt; test.xml'</userinput></code>
       </example>
     </section>
-    <section id="navigation">
+    <section id="Navigation">
       <title>Tree navigation</title>
       <para>
 	With XSH, it is possible to browse <link
-	linkend="documents">document trees</link> as if they were a
+	linkend="Documents">document trees</link> as if they were a
 	local filesystem, except that <link
 	linkend="xpath">XPath</link> expressions are used instead of
 	ordinary UNIX paths.</para> <para>Current position in the
@@ -130,7 +130,7 @@
 	</code>
       </example>
     </section>
-    <section id="manipulation">
+    <section id="Manipulation">
       <title>Tree modification</title>
       <para>
 	XSH provides mechanisms not only to browse and inspect the DOM
@@ -254,7 +254,7 @@
 	</code>
       </example>
     </section>
-    <section id="flow">
+    <section id="Flow">
       <title>Flow control</title>
       <para>
 	What a scripting language XSH would be had it not some kind of
@@ -270,15 +270,15 @@
 	descriptions of the individual statements for more detail.
       </para>
     </section>
-    <section id="information">
+    <section id="Information">
       <title>Retrieving more information</title>
       <para> Beside the possibility to browse the DOM tree and
-	list some parts of it (as described in <xref linkend="navigation"/>), XSH provides commands to obtain other
+	list some parts of it (as described in <xref linkend="Navigation"/>), XSH provides commands to obtain other
 	information related to open documents as well as the XSH
 	interpreter itself. These commands are listed bellow.
       </para>
     </section>
-    <section id="argtypes">
+    <section id="Argtypes">
       <title>Argument Types</title>
       <para>
 	XSH commands accept different types of arguments, such as
@@ -289,13 +289,13 @@
 	of the individual types for more information.
       </para>
     </section>
-    <section id="variables">
+    <section id="Variables">
       <title>Variables</title>
       <para>
 	In the current version, XSH supports two types of variables:
 	string (scalar) variables and node-list variables.  Perl
 	programmers that might miss some other kinds of variables
-	(arrays or hashes) may use the support for <link linkend="perl_shell">interacting
+	(arrays or hashes) may use the support for <link linkend="Perl_shell">interacting
 	with Perl</link> to access these types (see some examples below).
       </para>
       <para>
@@ -459,7 +459,7 @@
 	</example>
       </section>
     </section>
-    <section id="configuration">
+    <section id="Configuration">
       <title>Options</title> <para>The following commands are used to
 	modify the default behaviour of the XML parser or XSH itself.
 	Some of the commands are switch between two different modes
@@ -486,7 +486,7 @@
 	<code>xsh&gt; <userinput>options | cat &gt; ~/.xshrc</userinput></code>
       </example>
     </section>
-    <section id="perl_shell">
+    <section id="Perl_shell">
       <title>Interacting with Perl and Shell</title>
       <para>
 	To allow more complex tasks to be achieved, XSH provides ways
@@ -519,7 +519,7 @@
 	  To prevent conflict between XSH internals and the evaluated
 	  perl code, XSH runs such code in the context of a special
 	  namespace <literal>XML::XSH::Map</literal>. As described in
-	  the section <xref linkend="variables"/>, XSH string
+	  the section <xref linkend="Variables"/>, XSH string
 	  variables may be accessed and possibly assigned from Perl
 	  code in the most obvious way, since they actually
 	  <emphasis>are</emphasis> Perl variables defined in the
@@ -759,6 +759,7 @@ sub new {
       <ruleref ref="registerns_xhtml_command"/>
       <ruleref ref="registerfunc_command"/>
       <ruleref ref="stream_process_command"/>
+      <ruleref ref="namespaces_command"/>
       <!-- ADD NEW COMMANDS HERE -->
       <production>
 	<ruleref ref="call_command"/>
@@ -849,7 +850,7 @@ sub new {
 	<string>}</string>
 	<action>[grep ref,@{$item[3]}]</action>
       </production>
-      <documentation sections="argtypes flow">
+      <documentation sections="Argtypes Flow">
 	<title>command-block argument type</title>
 	<shortdesc>single XSH command or a block of XSH commands</shortdesc>
 	<description>
@@ -951,7 +952,7 @@ sub new {
 	<ruleref ref="expression" rep="?"/>
 	<action>$item[1].join(&quot;&quot;,@{$item[3]})</action>
       </production>
-      <documentation sections="argtypes variables manipulation perl_shell">
+      <documentation sections="Argtypes Variables Manipulation Perl_shell">
 	<title>expression argument type</title>
 	<shortdesc>string-like expression</shortdesc>
 	<description>
@@ -1053,7 +1054,7 @@ sub new {
       <production>
 	<ruleref ref="expression"/>
       </production>
-      <documentation sections="argtypes configuration">
+      <documentation sections="Argtypes Configuration">
 	<title>enc_string argument type</title>
 	<shortdesc>character encoding (codepage) identifier</shortdesc>
 	<description>
@@ -1070,7 +1071,7 @@ sub new {
       <production>
 	<regexp>[a-zA-Z_][a-zA-Z0-9_]*</regexp>
       </production>
-      <documentation sections="argtypes variables documents">
+      <documentation sections="Argtypes Variables Documents">
 	<title>id argument type</title>
 	<shortdesc>identifier</shortdesc>
 	<description>
@@ -1091,7 +1092,7 @@ sub new {
       <production>
 	<ruleref ref="expression"/>
       </production>
-      <documentation sections="argtypes documents">
+      <documentation sections="Argtypes Documents">
 	<title>Filename argument type</title>
 	<shortdesc>file name</shortdesc>
 	<description>
@@ -1115,7 +1116,7 @@ sub new {
       <production>
 	<directive type="error">expected ID:XPath or XPath, but got "}.substr($text,0,40).qq{ ..."</directive>
       </production>
-      <documentation sections="argtypes navigation manipulation variables">
+      <documentation sections="Argtypes Navigation Manipulation Variables">
 	<title>Xpath argument type</title>
 	<shortdesc>XPath expression</shortdesc>
 	<description>
@@ -1410,7 +1411,7 @@ sub new {
 	<ruleref ref="block"/>
 	<action>[\&amp;XML::XSH::Functions::try_catch,$item[3],$item[6],@{$item[5]}]</action>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>try <xref linkend="block"/> catch [[local] $<xref linkend="ID"/>] <xref linkend="block"/></usage>
 	<shortdesc>try/catch statement</shortdesc>
 	<description>
@@ -1465,7 +1466,7 @@ sub new {
 	<ruleref ref="else_block"/>
 	<action>[\&amp;XML::XSH::Functions::if_statement,[$item[3],$item[4]],@{$item[5]},@{$item[6]}]</action>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>if <xref linkend="xpath"/>|<xref linkend="perl_code"/> <xref linkend="command"/>
 	</usage>
 	<usage>
@@ -1528,7 +1529,7 @@ sub new {
 	<ruleref ref="else_block" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::unless_statement,$item[3],$item[4],@{$item[5]}]</action>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>unless <xref linkend="xpath"/>|<xref linkend="perl_code"/>
 	  <xref linkend="command"/>
 	</usage>
@@ -1572,7 +1573,7 @@ sub new {
 	<ruleref ref="block"/>
 	<action>[\&amp;XML::XSH::Functions::while_statement,$item[3],$item[4]]</action>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>while <xref linkend="xpath"/>|<xref linkend="perl_code"/> <xref linkend="block"/></usage>
 	<shortdesc>simple while loop</shortdesc>
 	<description>
@@ -1615,7 +1616,7 @@ sub new {
 	<ruleref ref="block"/>
 	<action>[\&amp;XML::XSH::Functions::foreach_statement,$item[3],$item[4]]</action>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>foreach <xref linkend="xpath"/>|<xref linkend="perl_code"/> 
 	  <xref linkend="command"/>|<xref linkend="block"/></usage>
 	<shortdesc>loop iterating over a node-list or perl array</shortdesc>
@@ -1676,7 +1677,7 @@ sub new {
 	<directive type="error-if-committed">Parse error near: "}.substr($text,0,40).qq{ ..."</directive>
 	<directive type="reject"/>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>def <xref linkend="ID"/> [$<xref linkend="ID"/> | %<xref linkend="ID"/>]* <xref linkend="block"/>
          or
 	def <xref linkend="ID"/> [$<xref linkend="ID"/> | %<xref linkend="ID"/>]*;
@@ -1799,7 +1800,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::nodelist_assign,$item[2],$item[4]]</action>
       </production>
-      <documentation sections="variables">
+      <documentation sections="Variables">
 	<usage>assign $<xref linkend="ID"/>=<xref linkend="xpath"/>
 	</usage>
 	<usage>
@@ -1855,12 +1856,12 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	      ## WRONG (@name results in a singleton node-list) !!!
 	      xsh&gt; <userinput>$name=@name</userinput>
 	      xsh&gt; <userinput>$name</userinput>
-	      $a=1
+	      $name=1
 
 	      ## CORRECT (use string() function)
 	      xsh&gt; <userinput>$name=string(@name)</userinput>
 	      xsh&gt; <userinput>$name</userinput>
-	      $a=Biblo
+	      $name=Bilbo
 	    </code>
 	  </example>
 	  <para> 
@@ -1906,7 +1907,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="anyvariable" rep="s"/>
 	<action>[\&amp;XML::XSH::Functions::make_local,@{$item[2]}]</action>
       </production>
-      <documentation sections="variables">
+      <documentation sections="Variables">
 	<usage>local $<xref linkend="ID"/> = <xref linkend="xpath"/></usage>
 	<usage>local %<xref linkend="ID"/> = <xref linkend="xpath"/></usage>
 	<usage>local $<xref linkend="ID"/>|%<xref linkend="ID"/> [ $<xref linkend="ID"/>|%<xref linkend="ID"/> ... ] </usage>
@@ -1960,7 +1961,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<directive type="commit"/>
 	<action>[\&amp;XML::XSH::Functions::list_flags]</action>
       </production>
-      <documentation sections="information configuration">
+      <documentation sections="Information Configuration">
 	<usage>options</usage>
 	<shortdesc>list current settings using XSH syntax</shortdesc>
 	<description>
@@ -1979,7 +1980,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<directive type="commit"/>
 	<action>[\&amp;XML::XSH::Functions::list_defs]</action>
       </production>
-      <documentation sections="information">
+      <documentation sections="Information">
 	<usage>defs</usage>
 	<shortdesc>list all user-defined routines (macros)</shortdesc>
 	<description>
@@ -2001,7 +2002,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="filename"/>
 	<action>[\&amp;XML::XSH::Functions::include,$item[3]]</action>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>include <xref linkend="filename"/></usage>
 	<shortdesc>include another XSH source in current position</shortdesc>
 	<description>
@@ -2070,7 +2071,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  $return=[\&amp;XML::XSH::Functions::call,$item[3],$item[5]]
 	</action>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>call <xref linkend="ID"/> [<xref linkend="xpath"/> | <xref linkend="expression"/>]*</usage>
 	<shortdesc>call user-defined routine (macro)</shortdesc>
 	<description>
@@ -2099,7 +2100,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::help,@{$item[3]}]</action>
       </production>
-      <documentation sections="information">
+      <documentation sections="Information">
 	<usage>help <xref linkend="command"/>|argument-type</usage>
 	<shortdesc>on-line documentation</shortdesc>
 	<description>
@@ -2117,7 +2118,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression" rep="s"/>
 	<action>[\&amp;XML::XSH::Functions::sh,join(&quot; &quot;,@{$item[3]})]</action>
       </production>
-      <documentation sections="perl_shell">
+      <documentation sections="Perl_shell">
 	<usage>exec <xref linkend="expression"/> [<xref linkend="expression"/> ...]</usage>
 	<shortdesc>execute a shell command</shortdesc>
 	<description>
@@ -2158,7 +2159,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xslt_params" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::xslt,@item[3,4,5],@{$item[6]}]</action>
       </production>
-      <documentation sections="manipulation">
+      <documentation sections="Manipulation">
 	<usage>xslt <xref linkend="ID"/> <xref linkend="filename"/> <xref linkend="ID"/> [(params|parameters) name=<xref linkend="expression"/> [name=<xref linkend="expression"/> ...]]</usage>
 	<shortdesc>transform document with XSLT</shortdesc>
 	<description>
@@ -2188,12 +2189,17 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[$item[1],$item[3]]</action>
       </production>
     </rule>
-    <rule id="files_command" type="command" name="files" inline="yes">
+    <rule id="files_command" type="command" name="documents"
+	inline="yes">
+      <aliases>
+	<alias name="files"/>
+	<alias name="docs"/>
+      </aliases>
       <production>
 	<selfref/>
 	<action>[\&amp;XML::XSH::Functions::files]</action>
       </production>
-      <documentation sections="information">
+      <documentation sections="Information Documents">
 	<usage>files</usage>
 	<shortdesc>display a list of open files</shortdesc>
 	<description>
@@ -2214,7 +2220,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref/>
 	<action>[\&amp;XML::XSH::Functions::variables]</action>
       </production>
-      <documentation sections="information">
+      <documentation sections="Information">
 	<usage>variables</usage>
 	<shortdesc>display a list of defined variables</shortdesc>
 	<description>
@@ -2238,7 +2244,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::copy,@item[3,5,4]]</action>
       </production>
-      <documentation sections="manipulation">
+      <documentation sections="Manipulation">
 	<usage>copy <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/></usage>
 	<shortdesc>copy nodes (in the one-to-one mode)</shortdesc>
 	<description>
@@ -2301,7 +2307,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::copy,@item[3,5,4],1]</action>
       </production>
-      <documentation sections="manipulation">
+      <documentation sections="Manipulation">
 	<usage>xcopy <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/></usage>
 	<shortdesc>copy nodes (in the all-to-every mode)</shortdesc>
 	<description>
@@ -2331,7 +2337,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::cd,@{$item[3]}]</action>
       </production>
-      <documentation sections="perl_shell">
+      <documentation sections="Perl_shell">
 	<usage>lcd <xref linkend="expression"/></usage>
 	<shortdesc>change system working directory</shortdesc>
 	<description>
@@ -2358,7 +2364,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::insert,@item[3,4,7,6],$item[5][0],0]</action>
       </production>
-      <documentation sections="manipulation">
+      <documentation sections="Manipulation">
 	<usage>insert <xref linkend="nodetype"/> <xref linkend="expression"/> [namespace <xref linkend="expression"/>] <xref linkend="loc"/><xref linkend="xpath"/>
 	</usage>
 	<shortdesc>create a node in on a given target location</shortdesc>
@@ -2389,7 +2395,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::insert,@item[3,4,7,6],$item[5][0],1]</action>
       </production>
-      <documentation sections="manipulation">
+      <documentation sections="Manipulation">
 	<usage>xinsert <xref linkend="nodetype"/> <xref linkend="expression"/> [namespace <xref linkend="expression"/>] <xref linkend="loc"/><xref linkend="xpath"/>
 	</usage>
 	<shortdesc>create nodes on all target locations</shortdesc>
@@ -2455,7 +2461,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       <production>
 	<regexp>element|attribute|attributes|text|cdata|pi|comment|chunk|entity_reference</regexp>
       </production>
-      <documentation sections="argtypes manipulation">
+      <documentation sections="Argtypes Manipulation">
 	<title>Node-type argument type</title>
 	<shortdesc>node type specification (such as element, attribute, etc.)</shortdesc>
 	<description>
@@ -2502,7 +2508,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       <production><regexp>(replace|instead( of)?)\s</regexp>
 	<action>&quot;replace&quot;</action>
       </production>
-      <documentation sections="argtypes manipulation">
+      <documentation sections="Argtypes Manipulation">
 	<title>Location argument type</title>
 	<shortdesc>relative destination specification (such as after, before, etc.)</shortdesc>
 	<description>
@@ -2588,7 +2594,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::move,@item[3,5,4]]</action>
       </production>
-      <documentation sections="manipulation">
+      <documentation sections="Manipulation">
 	<usage>move <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/></usage>
 	<shortdesc>move nodes (in the one-to-one mode)</shortdesc>
 	<description>
@@ -2628,7 +2634,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::move,@item[3,5,4],1]</action>
       </production>
-      <documentation sections="manipulation">
+      <documentation sections="Manipulation">
 	<usage>xmove <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/></usage>
 	<shortdesc>move nodes (in the all-to-every mode)</shortdesc>
 	<description>
@@ -2685,7 +2691,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::clone,@item[3,5]]</action>
       </production>
-      <documentation sections="manipulation documents">
+      <documentation sections="Manipulation Documents">
 	<usage>clone <xref linkend="ID"/>=<xref linkend="ID"/></usage>
 	<shortdesc>clone a given document</shortdesc>
 	<description>
@@ -2709,7 +2715,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::normalize_nodes,$item[3]]</action>
       </production>
-      <documentation sections="manipulation">
+      <documentation sections="Manipulation">
 	<usage>normalize <xref linkend="xpath"/></usage>
 	<shortdesc>normalizes adjacent textnodes</shortdesc>
 	<description>
@@ -2736,7 +2742,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::strip_ws,$item[3]]</action>
       </production>
-      <documentation sections="manipulation">
+      <documentation sections="Manipulation">
 	<usage>strip <xref linkend="xpath"/></usage>
 	<shortdesc>trip leading and trailing whitespace</shortdesc>
 	<description>
@@ -2768,7 +2774,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref/>
 	<action>[\&amp;XML::XSH::Functions::list,[undef,'.'],1]</action>
       </production>
-      <documentation sections="navigation information">
+      <documentation sections="Navigation Information">
 	<usage>ls <xref linkend="xpath"/> [<xref linkend="expression"/>]</usage>
 	<shortdesc>list a given part of a document as XML</shortdesc>
 	<description>
@@ -2811,7 +2817,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::print_count,$item[3]]</action>
       </production>
-      <documentation sections="information">
+      <documentation sections="Information">
 	<usage>count <xref linkend="xpath"/></usage>
 	<shortdesc>calculate a given XPath expression and enumerate node-lists</shortdesc>
 	<description>
@@ -2831,7 +2837,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
       <production>
 	<ruleref ref="perl_expression"/>
       </production>
-      <documentation sections="argtypes perl_shell">
+      <documentation sections="Argtypes Perl_shell">
 	<title>Perl-code argument type</title>
 	<shortdesc>in-line code in Perl programming language</shortdesc>
 	<description>
@@ -2851,7 +2857,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  </para>
 	  <para>
 	    For more information about embedded Perl code in XSH, predefined
-	    functions etc. see <xref linkend="perl_shell"/>.
+	    functions etc. see <xref linkend="Perl_shell"/>.
 	  </para>
 	  <example>
 	    <code>
@@ -2875,7 +2881,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="perl_code"/>
 	<action>[\&amp;XML::XSH::Functions::print_eval,$item[3]]</action>
       </production>
-      <documentation sections="perl_shell">
+      <documentation sections="Perl_shell">
 	<usage>eval <xref linkend="perl_code"/></usage>
 	<shortdesc>evaluate in-line Perl code</shortdesc>
 	<description>
@@ -2899,7 +2905,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::prune,$item[3]]</action>
       </production>
-      <documentation sections="manipulation">
+      <documentation sections="Manipulation">
 	<usage>remove <xref linkend="xpath"/></usage>
 	<shortdesc>remove given nodes</shortdesc>
 	<description>
@@ -2924,7 +2930,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref/>
 	<action>[\&amp;XML::XSH::Functions::echo]</action>
       </production>
-      <documentation sections="information">
+      <documentation sections="Information">
 	<usage>print <xref linkend="expression"/> [<xref linkend="expression"/> ...]</usage>
 	<shortdesc>print given stuff on standard console output</shortdesc>
 	<description>
@@ -3012,7 +3018,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::perlmap,@item[4,3]]</action>
       </production>
-      <documentation sections="perl_shell">
+      <documentation sections="Perl_shell">
 	<usage>map <xref linkend="perl_code"/> <xref linkend="xpath"/></usage>
 	<shortdesc>quickly modify node value/data using Perl code</shortdesc>
 	<description>
@@ -3054,7 +3060,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::perlrename,@item[4,3]]</action>
       </production>
-      <documentation sections="perl_shell">
+      <documentation sections="Perl_shell">
 	<usage>rename <xref linkend="perl_code"/> <xref linkend="xpath"/></usage>
 	<shortdesc>quickly rename nodes with in-line Perl code</shortdesc>
 	<description>
@@ -3091,7 +3097,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::close_doc,$item[3]]</action>
       </production>
-      <documentation sections="documents">
+      <documentation sections="Documents">
 	<usage>close <xref linkend="ID"/></usage>
 	<shortdesc>close document (do not save it, though)</shortdesc>
 	<description>
@@ -3111,7 +3117,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::set_local_xpath,[$item[3],&quot;/&quot;]]</action>
       </production>
-      <documentation sections="documents navigation">
+      <documentation sections="Documents Navigation">
 	<usage>select <xref linkend="ID"/></usage>
 	<shortdesc>make a given document the current one</shortdesc>
 	<description>
@@ -3149,7 +3155,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="filename"/>
 	<action>[\&amp;XML::XSH::Functions::open_doc,@item[1,4]]</action>
       </production>
-      <documentation sections="documents">
+      <documentation sections="Documents">
 	<usage>[open [HTML|XML|DOCBOOK] [FILE|PIPE|STRING]] <xref linkend="ID"/>=<xref linkend="expression"/></usage>
 	<shortdesc>load an XML, HTML, or Docbook SGML document from a
 	file, pipe or URI</shortdesc>
@@ -3200,7 +3206,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::create_doc,@item[3,4]]</action>
       </production>
-      <documentation sections="documents">
+      <documentation sections="Documents">
 	<usage>create <xref linkend="ID"/> <xref linkend="expression"/></usage>
 	<shortdesc>make a new document from a given XML fragment</shortdesc>
 	<description>
@@ -3255,7 +3261,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="encoding_param" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::save_doc,@item[1,3],undef,$item[4]]</action>
       </production>
-      <documentation sections="documents">
+      <documentation sections="Documents">
 	<usage>save [HTML|XML|XInclude]? [FILE|PIPE|STRING]? <xref linkend="ID"/> <xref
 	    linkend="expression"/>? [encoding <xref linkend="enc_string"/>]</usage>
 	<shortdesc>save a document as XML or HTML</shortdesc>
@@ -3329,7 +3335,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::list_dtd,@{$item[3]}]</action>
       </production>
-      <documentation sections="information">
+      <documentation sections="Information">
 	<usage>dtd [<xref linkend="ID"/>]</usage>
 	<shortdesc>show document's DTD</shortdesc>
 	<description>
@@ -3351,7 +3357,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::print_enc,@{$item[3]}]</action>
       </production>
-      <documentation sections="information">
+      <documentation sections="Information">
 	<usage>enc [<xref linkend="ID"/>]</usage>
 	<shortdesc>show document's original character encoding</shortdesc>
 	<description>
@@ -3370,7 +3376,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::validate_doc,@{$item[3]}]</action>
       </production>
-      <documentation sections="information">
+      <documentation sections="Information">
 	<usage>validate [<xref linkend="ID"/>]</usage>
 	<shortdesc>validate a document against its DTD</shortdesc>
 	<description>
@@ -3393,7 +3399,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::valid_doc,@{$item[3]}]</action>
       </production>
-      <documentation sections="information">
+      <documentation sections="Information">
 	<usage>valid [<xref linkend="ID"/>]</usage>
 	<shortdesc>check if the document is valid (according to its DTD)</shortdesc>
 	<description>
@@ -3419,7 +3425,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::quit,@{$item[3]}]</action>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>exit [<xref linkend="expression"/>]</usage>
 	<shortdesc>exit XSH shell</shortdesc>
 	<description>
@@ -3451,7 +3457,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::process_xinclude,@{$item[3]}]</action>
       </production>
-      <documentation sections="manipulation documents">
+      <documentation sections="Manipulation Documents">
 	<usage>process_xinclude [<xref linkend="ID"/>]</usage>
 	<shortdesc>load and insert XInclude sections</shortdesc>
 	<description>
@@ -3474,7 +3480,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_xpath" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::set_local_xpath,@{$item[3]}]</action>
       </production>
-      <documentation sections="navigation">
+      <documentation sections="Navigation">
 	<usage>cd [<xref linkend="xpath"/>]</usage>
 	<shortdesc>change current context node</shortdesc>
 	<description>
@@ -3490,7 +3496,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref/>
 	<action>[\&amp;XML::XSH::Functions::print_pwd]</action>
       </production>
-      <documentation sections="navigation information">
+      <documentation sections="Navigation Information">
 	<usage>pwd</usage>
 	<shortdesc>show current context node location (as a cannonical XPath)</shortdesc>
 	<description>
@@ -3510,7 +3516,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_xpath" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::locate,@{$item[3]}]</action>
       </production>
-      <documentation sections="navigation information">
+      <documentation sections="Navigation Information">
 	<usage>locate <xref linkend="xpath"/></usage>
 	<shortdesc>show a given node location (as a cannonical XPath)</shortdesc>
 	<description>
@@ -3530,7 +3536,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::xupdate,$item[3],@{$item[4]}]</action>
       </production>
-      <documentation sections="manipulation">
+      <documentation sections="Manipulation">
 	<usage>xupdate <xref linkend="ID"/> [<xref linkend="ID"/>]</usage>
 	<shortdesc>apply XUpdate commands on a document</shortdesc>
 	<description>
@@ -3559,7 +3565,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref/>
 	<action>[\&amp;XML::XSH::Functions::set_quiet,0]</action>
       </production>
-      <documentation sections="configuration">
+      <documentation sections="Configuration">
 	<usage>verbose</usage>
 	<shortdesc>make XSH print many messages</shortdesc>
 	<description>
@@ -3580,7 +3586,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref/>
 	<action>[&quot;test-mode&quot;]</action>
       </production>
-      <documentation sections="flow configuration">
+      <documentation sections="Flow Configuration">
 	<usage>test-mode</usage>
 	<shortdesc>do not execute any command, only check the syntax</shortdesc>
 	<description>
@@ -3604,7 +3610,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref/>
 	<action>[&quot;run-mode&quot;]</action>
       </production>
-      <documentation sections="flow configuration">
+      <documentation sections="Flow Configuration">
 	<usage>run-mode</usage>
 	<shortdesc>switch into normal execution mode (quit <xref linkend="test_mode"/>)</shortdesc>
 	<description>
@@ -3625,7 +3631,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref/>
 	<action>[\&amp;XML::XSH::Functions::set_debug,1]</action>
       </production>
-      <documentation sections="configuration">
+      <documentation sections="Configuration">
 	<usage>debug</usage>
 	<shortdesc>display many annoying debugging messages</shortdesc>
 	<description>
@@ -3643,7 +3649,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref/>
 	<action>[\&amp;XML::XSH::Functions::set_debug,0]</action>
       </production>
-      <documentation sections="configuration">
+      <documentation sections="Configuration">
 	<usage>nodebug</usage>
 	<shortdesc>turn off debugging messages</shortdesc>
 	<description>
@@ -3661,7 +3667,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref/>
 	<action>[\&amp;XML::XSH::Functions::print_version,0]</action>
       </production>
-      <documentation sections="information">
+      <documentation sections="Information">
 	<usage>version</usage>
 	<shortdesc>show version information</shortdesc>
 	<description>
@@ -3680,7 +3686,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::set_validation,$item[3]]</action>
       </production>
-      <documentation sections="configuration">
+      <documentation sections="Configuration">
 	<usage>validation <xref linkend="expression"/></usage>
 	<shortdesc>turn on/off validation in XML parser</shortdesc>
 	<description>
@@ -3701,7 +3707,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::set_recovering,$item[3]]</action>
       </production>
-      <documentation sections="configuration">
+      <documentation sections="Configuration">
 	<usage>recovering <xref linkend="expression"/></usage>
 	<shortdesc>turn on/off parser's ability to fix broken XML</shortdesc>
 	<description>
@@ -3732,7 +3738,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::set_expand_entities,$item[3]]</action>
       </production>
-      <documentation sections="configuration">
+      <documentation sections="Configuration">
 	<usage>parser_expands_entities <xref linkend="expression"/></usage>
 	<shortdesc>turn on/off parser's tendency to expand entities</shortdesc>
 	<description>
@@ -3757,7 +3763,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::set_keep_blanks,$item[3]]</action>
       </production>
-      <documentation sections="configuration">
+      <documentation sections="Configuration">
 	<usage>keep_blanks <xref linkend="expression"/></usage>
 	<shortdesc>turn on/off ignorable whitespace preservation</shortdesc>
 	<description>
@@ -3781,7 +3787,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::set_pedantic_parser,$item[3]]</action>
       </production>
-      <documentation sections="configuration">
+      <documentation sections="Configuration">
 	<usage>pedantic_parser <xref linkend="expression"/></usage>
 	<shortdesc>make the parser more pedantic</shortdesc>
 	<description>
@@ -3806,7 +3812,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::set_complete_attributes,$item[3]]</action>
       </production>
-      <documentation sections="configuration">
+      <documentation sections="Configuration">
 	<usage>parser-completes-attributes <xref linkend="expression"/></usage>
 	<shortdesc>turn on/off parser's ability to fill default attribute values</shortdesc>
 	<description>
@@ -3827,7 +3833,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::set_indent,$item[3]]</action>
       </production>
-      <documentation sections="configuration">
+      <documentation sections="Configuration">
 	<usage>indent <xref linkend="expression"/></usage>
 	<shortdesc>turn on/off pretty-printing</shortdesc>
 	<description>
@@ -3858,7 +3864,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::set_expand_xinclude,$item[3]]</action>
       </production>
-      <documentation sections="configuration">
+      <documentation sections="Configuration">
 	<usage>parser_expands_xinclude <xref linkend="expression"/></usage>
 	<shortdesc>turn on/off transparent XInclude insertion by parser</shortdesc>
 	<description>
@@ -3885,7 +3891,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::set_load_ext_dtd,$item[3]]</action>
       </production>
-      <documentation sections="configuration">
+      <documentation sections="Configuration">
 	<usage>load_ext_dtd <xref linkend="expression"/></usage>
 	<shortdesc>turn on/off external DTD fetching</shortdesc>
 	<description>
@@ -3905,7 +3911,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::set_encoding,$item[3]]</action>
       </production>
-      <documentation sections="configuration">
+      <documentation sections="Configuration">
 	<usage>encoding <xref linkend="enc_string"/></usage>
 	<shortdesc>choose output charset</shortdesc>
 	<description>
@@ -3925,7 +3931,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::set_qencoding,$item[3]]</action>
       </production>
-      <documentation sections="configuration">
+      <documentation sections="Configuration">
 	<usage>query-encoding <xref linkend="enc_string"/></usage>
 	<shortdesc>declare the charset of XSH source files and terminal input</shortdesc>
 	<description>
@@ -3940,7 +3946,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref/>
 	<action>[\&amp;XML::XSH::Functions::set_quiet,1]</action>
       </production>
-      <documentation sections="configuration">
+      <documentation sections="Configuration">
 	<usage>quiet</usage>
 	<shortdesc>turn off many XSH messages</shortdesc>
 	<description>
@@ -3963,7 +3969,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::set_cdonopen,$item[2]]</action>
       </production>
-      <documentation sections="configuration documents">
+      <documentation sections="Configuration Documents">
 	<usage>switch-to-new-documents <xref linkend="expression"/></usage>
 	<shortdesc>set on/off changing current document to newly
 	  open/created files</shortdesc>
@@ -3985,7 +3991,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref/>
 	<action>[\&amp;XML::XSH::Functions::set_backups,1]</action>
       </production>
-      <documentation sections="configuration documents">
+      <documentation sections="Configuration Documents">
 	<usage>backups</usage>
 	<shortdesc>turn on backup file creation</shortdesc>
 	<description>
@@ -4003,7 +4009,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref/>
 	<action>[\&amp;XML::XSH::Functions::set_backups,0]</action>
       </production>
-      <documentation sections="configuration documents">
+      <documentation sections="Configuration Documents">
 	<usage>nobackups</usage>
 	<shortdesc>turn off backup file creation</shortdesc>
 	<description>
@@ -4023,7 +4029,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::mark_fold,$item[2],@{$item[3]}]</action>
       </production>
-      <documentation sections="navigation">
+      <documentation sections="Navigation">
 	<usage>fold <xref linkend="xpath"/> [<xref
 	linkend="expression"/>]</usage>
 	<shortdesc>mark elements to be folded by list
@@ -4063,7 +4069,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="xpath"/>
 	<action>[\&amp;XML::XSH::Functions::mark_unfold,$item[2]]</action>
       </production>
-      <documentation sections="navigation">
+      <documentation sections="Navigation">
 	<usage>unfold <xref linkend="xpath"/></usage>
 	<shortdesc>unfold elements folded with fold command</shortdesc>
 	<description>
@@ -4090,7 +4096,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::loop_redo,@{$item[3]}]</action>
       </production>
-      <documentation sections="navigation">
+      <documentation sections="Navigation">
 	<usage>redo [<xref linkend="expression"/>]</usage>
 	<shortdesc>restart the innermost enclosing loop block</shortdesc>
 	<description>
@@ -4138,7 +4144,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::loop_next,@{$item[3]}]</action>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>next [<xref linkend="expression"/>]</usage>
 	<shortdesc>start the next iteration of an enclosing
 	loop</shortdesc>
@@ -4173,7 +4179,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::loop_prev,@{$item[3]}]</action>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>prev [<xref linkend="expression"/>]</usage>
 	<shortdesc>restart an iteration on a previous node</shortdesc>
 	<description>
@@ -4201,7 +4207,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="optional_expression" rep="?"/>
 	<action>[\&amp;XML::XSH::Functions::loop_last,@{$item[3]}]</action>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>last [<xref linkend="expression"/>]</usage>
 	<shortdesc>immediately exit an enclosing loop</shortdesc>
 	<description>
@@ -4232,7 +4238,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<selfref/>
 	<action>[\&amp;XML::XSH::Functions::call_return]</action>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>return</usage>
 	<shortdesc>return from a subroutine</shortdesc>
 	<description>
@@ -4258,7 +4264,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::throw_exception,$item[2]]</action>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>throw <xref linkend="expression"/></usage>
 	<shortdesc>throw an exception</shortdesc>
 	<description>
@@ -4290,7 +4296,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="expression"/>
 	<action>[\&amp;XML::XSH::Functions::load_catalog,$item[2]]</action>
       </production>
-      <documentation sections="documents">
+      <documentation sections="Documents">
 	<usage>catalog <xref linkend="expression"/></usage>
 	<shortdesc>use a catalog file during all parsing processes</shortdesc>
 	<description>
@@ -4337,7 +4343,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<ruleref ref="block"/>
 	<action>[\&amp;XML::XSH::Functions::iterate,$item[4],@{$item[3]}]</action>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>iterate <xref linkend="xpath"/> <xref linkend="block"/></usage>
 	<shortdesc>iterate a block over current subtree</shortdesc>
 	<description>
@@ -4431,7 +4437,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::register_ns,
                  $item[3],$item[4]]</action>
       </production>
-      <documentation sections="documents">
+      <documentation sections="Documents">
 	<usage>register-namespace <xref linkend="expression"/> <xref linkend="expression"/></usage>
 	<shortdesc>register namespace prefix to use XPath expressions</shortdesc>
 	<description>
@@ -4453,7 +4459,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::register_ns,
                  $item[3],'http://www.w3.org/1999/xhtml']</action>
       </production>
-      <documentation sections="documents">
+      <documentation sections="Documents">
 	<usage>register-xhtml-namespace <xref linkend="expression"/></usage>
 	<shortdesc>register XHTML namespace prefix to use XPath expressions</shortdesc>
 	<description>
@@ -4475,7 +4481,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<action>[\&amp;XML::XSH::Functions::register_func,
                  $item[3],$item[4]]</action>
       </production>
-      <documentation sections="documents">
+      <documentation sections="Documents">
 	<usage>register-function <xref linkend="expression"/> <xref linkend="perl_code"/></usage>
 	<shortdesc>define XPath extension function (EXPERIMENTAL)</shortdesc>
 	<description>
@@ -4507,7 +4513,7 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
         <ruleref ref="stream_select" rep="s"/>
 	<action>[\&amp;XML::XSH::Functions::stream_process,$item[3],$item[4],$item[5],$item[6],$item[7]]</action>
       </production>
-      <documentation sections="flow">
+      <documentation sections="Flow">
 	<usage>stream input [FILE|PIPE|STRING] <xref linkend="expression"/>
                       output [FILE|PIPE|STRING] <xref linkend="expression"/>
                       select <xref linkend="xpath"/> <xref linkend="block"/>
@@ -4572,6 +4578,15 @@ call uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  </para>
 	</description>
       </documentation>
+    </rule>
+    <rule id="namespaces_command" type="command" name="namespaces"
+	    inline="yes">
+      <production>
+	<selfref/>
+	<directive type="commit"/>
+	<ruleref ref="xpath" rep="?"/>
+	<action>[\&amp;XML::XSH::Functions::list_namespaces,@{$item[3]}]</action>
+      </production>
     </rule>
   </rules>  
 </recdescent-xml>

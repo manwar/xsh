@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.50 2003-04-16 14:56:12 pajas Exp $
+# $Id: Functions.pm,v 1.51 2003-05-02 16:59:08 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -26,7 +26,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT $LOCAL_ID $LOCA
 
 BEGIN {
   $VERSION='1.7';
-  $REVISION='$Revision: 1.50 $';
+  $REVISION='$Revision: 1.51 $';
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -1394,6 +1394,37 @@ sub list {
   return 1;
 }
 
+# list namespaces in scope of the given nodes
+sub list_namespaces {
+  my $xp = $_[0] || '.';
+  my ($id,$query,$doc)=_xpath($xp);
+  unless (ref($doc)) {
+    die "No such document '$id'!\n";
+  }
+  print STDERR "listing namespaces for $query from $id=$_files{$id}\n\n" if "$DEBUG";
+
+  my $ql=find_nodes($xp);
+  foreach my $node (@$ql) {
+    my $n=$node;
+    my %namespaces;
+    while ($n) {
+      foreach my $ns ($n->getNamespaces) {
+	$namespaces{$ns->getName()}=$ns->getData()
+	  unless (exists($namespaces{$ns->getName()}));
+      }
+      $n=$n->parentNode();
+    }
+    out(fromUTF8($ENCODING,pwd($node)),":\n");
+    foreach (sort { $a cmp $b } keys %namespaces) {
+      out("xmlns", ($_ ne "" ? ":" : ""),
+	  fromUTF8($ENCODING,$_),"=\"",
+	  fromUTF8($ENCODING,$namespaces{$_}),"\"\n");
+    }
+    out("\n");
+  }
+  return 1;
+}
+
 sub mark_fold {
   my ($xp,$depth)=@_;
   $depth=expand($depth);
@@ -2121,7 +2152,7 @@ sub create_nodes {
     }
   } elsif ($type eq 'element') {
     my ($name,$attributes);
-    if ($exp=~/^\<?([^\s\/<>]+)(\s+.*)?(?:\/?\>)?\s*$/) {
+    if ($exp=~/^\<?([^ \t\n\/\<\>]+)(\s+.*)?(?:\/?\>)?\s*$/) {
       print STDERR "element_name=$1\n" if $DEBUG;
       print STDERR "attributes=$2\n" if $DEBUG;
       my ($elt,$att)=($1,$2);
