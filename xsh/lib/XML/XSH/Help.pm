@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Wed Sep 10 16:27:47 2003
+# Wed Sep 10 17:53:03 2003
 
 package XML::XSH::Help;
 use strict;
@@ -70,16 +70,16 @@ Help items:
   XSH Commands:
 
     assign, backups, call, catalog, cd, clone, close, copy, count, create,
-    debug, def, defs, doc-info, documents, dtd, enc, encoding, exec, exit,
-    fold, foreach, help, if, ifinclude, include, indent, insert, iterate,
-    keep-blanks, last, lcd, load-ext-dtd, local, locate, ls, map, move,
-    namespaces, next, nobackups, nodebug, normalize, open, options,
-    parser-completes-attributes, parser-expands-entities,
+    debug, def, defs, doc-info, documents, dtd, empty-tags, enc, encoding,
+    exec, exit, fold, foreach, help, if, ifinclude, include, indent,
+    insert, iterate, keep-blanks, last, lcd, load-ext-dtd, local, locate,
+    ls, map, move, namespaces, next, nobackups, nodebug, normalize, open,
+    options, parser-completes-attributes, parser-expands-entities,
     parser-expands-xinclude, pedantic-parser, perl, prev, print,
     process-xinclude, pwd, query-encoding, quiet, recovering, redo,
     register-function, register-namespace, register-xhtml-namespace,
     register-xsh-namespace, remove, rename, return, run-mode, save, select,
-    set-enc, set-standalone, sort, stream, strip-whitespace,
+    set-enc, set-standalone, skip-dtd, sort, stream, strip-whitespace,
     switch-to-new-documents, test-mode, throw, try, undef, unfold, unless,
     unregister-function, unregister-namespace, valid, validate, validation,
     variables, verbose, version, while, xcopy, xinsert, xmove,
@@ -97,18 +97,18 @@ List of XSH commands
 
 description:
 	     assign, backups, call, catalog, cd, clone, close, copy, count,
-	     create, debug, def, defs, doc-info, documents, dtd, enc,
-	     encoding, exec, exit, fold, foreach, help, if, ifinclude,
-	     include, indent, insert, iterate, keep-blanks, last, lcd,
-	     load-ext-dtd, local, locate, ls, map, move, namespaces, next,
-	     nobackups, nodebug, normalize, open, options,
-	     parser-completes-attributes, parser-expands-entities,
+	     create, debug, def, defs, doc-info, documents, dtd,
+	     empty-tags, enc, encoding, exec, exit, fold, foreach, help,
+	     if, ifinclude, include, indent, insert, iterate, keep-blanks,
+	     last, lcd, load-ext-dtd, local, locate, ls, map, move,
+	     namespaces, next, nobackups, nodebug, normalize, open,
+	     options, parser-completes-attributes, parser-expands-entities,
 	     parser-expands-xinclude, pedantic-parser, perl, prev, print,
 	     process-xinclude, pwd, query-encoding, quiet, recovering,
 	     redo, register-function, register-namespace,
 	     register-xhtml-namespace, register-xsh-namespace, remove,
 	     rename, return, run-mode, save, select, set-enc,
-	     set-standalone, sort, stream, strip-whitespace,
+	     set-standalone, skip-dtd, sort, stream, strip-whitespace,
 	     switch-to-new-documents, test-mode, throw, try, undef, unfold,
 	     unless, unregister-function, unregister-namespace, valid,
 	     validate, validation, variables, verbose, version, while,
@@ -1944,6 +1944,42 @@ description:
 END
 
 
+$HELP{'empty-tags'}=[<<'END'];
+usage:       empty-tags <expression>
+             
+aliases:     empty_tags
+
+description:
+	     If the value of <expression> is 1 (non-zero), empty tags are
+	     serialized as a start-tag/end-tag pair (`<foo></foo>'). This
+	     option affects both <ls> and <save> and possibly other
+	     commands. Otherwise, they are compacted into a short-tag form
+	     (`<foo/>'). Default value is `0'.
+
+	     This command is equivalent to setting the `$EMPTY_TAGS'
+	     variable.
+
+END
+
+$HELP{'empty_tags'}=$HELP{'empty-tags'};
+
+$HELP{'skip-dtd'}=[<<'END'];
+usage:       skip-dtd <expression>
+             
+aliases:     skip_dtd
+
+description:
+	     If the value of <expression> is 1 (non-zero), DTD DOCTYPE
+	     declaration is omitted from any serialization of XML documents
+	     (including <ls> and <save>). Default value is `0'.
+
+	     This command is equivalent to setting the `$SKIP_DTD'
+	     variable.
+
+END
+
+$HELP{'skip_dtd'}=$HELP{'skip-dtd'};
+
 $HELP{'parser-expands-xinclude'}=[<<'END'];
 usage:       parser_expands_xinclude <expression>
              
@@ -2936,11 +2972,11 @@ Example:
 
 
 Related commands:
-  backups, debug, encoding, indent, keep-blanks, load-ext-dtd, nobackups,
-  nodebug, options, parser-completes-attributes, parser-expands-entities,
-  parser-expands-xinclude, pedantic-parser, query-encoding, quiet,
-  recovering, register-function, register-namespace,
-  register-xhtml-namespace, register-xsh-namespace, run-mode,
+  backups, debug, empty-tags, encoding, indent, keep-blanks, load-ext-dtd,
+  nobackups, nodebug, options, parser-completes-attributes,
+  parser-expands-entities, parser-expands-xinclude, pedantic-parser,
+  query-encoding, quiet, recovering, register-function, register-namespace,
+  register-xhtml-namespace, register-xsh-namespace, run-mode, skip-dtd,
   switch-to-new-documents, test-mode, unregister-function,
   unregister-namespace, validation, verbose, xpath-axis-completion,
   xpath-completion

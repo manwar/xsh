@@ -35,6 +35,8 @@ documents
 dtd
 dup
 echo
+empty-tags
+empty_tags
 enc
 encoding
 eval
@@ -122,6 +124,8 @@ sed
 select
 set-enc
 set-standalone
+skip-dtd
+skip_dtd
 sort
 stream
 strip-whitespace

@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Wed Sep 10 16:27:47 2003
+# Wed Sep 10 17:53:03 2003
 
 
 package XML::XSH::Grammar;
@@ -64,6 +64,12 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 	  | /(indent)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_indent,$item[3]] }
+  	
+	  | /(empty-tags|empty_tags)\s/ <commit> expression
+		{ [\&XML::XSH::Functions::set_empty_tags,$item[3]] }
+  	
+	  | /(skip-dtd|skip_dtd)\s/ <commit> expression
+		{ [\&XML::XSH::Functions::set_skip_dtd,$item[3]] }
   	
 	  | /(parser-expands-xinclude|parser_expands_xinclude)\s/ <commit> expression
 		{ [\&XML::XSH::Functions::set_expand_xinclude,$item[3]] }
