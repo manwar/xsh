@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 1.2 2004-12-02 17:52:07 pajas Exp $
+# $Id: Functions.pm,v 2.1 2004-12-02 19:26:36 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.0';
-  $REVISION=q($Revision: 1.2 $);
+  $REVISION=q($Revision: 2.1 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING

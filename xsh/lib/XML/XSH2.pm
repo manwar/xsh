@@ -1,4 +1,4 @@
-# $Id: XSH2.pm,v 2.0 2004-12-02 17:26:11 pajas Exp $
+# $Id: XSH2.pm,v 2.1 2004-12-02 19:26:36 pajas Exp $
 
 package XML::XSH2;
 

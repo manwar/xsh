@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 2.0 2004-12-02 17:26:10 pajas Exp $
+# $Id: Makefile.PL,v 2.1 2004-12-02 19:26:35 pajas Exp $
 
 use strict;
 

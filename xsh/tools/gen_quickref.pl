@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_quickref.pl,v 2.0 2004-12-02 17:26:52 pajas Exp $
+# $Id: gen_quickref.pl,v 2.1 2004-12-02 19:26:41 pajas Exp $
 
 use strict;
 use XML::LibXML;

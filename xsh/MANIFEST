@@ -9,7 +9,6 @@ lib/XML/XSH2/Completion.pm
 lib/XML/XSH2/CompletionList.pm
 lib/XML/XSH2/DummyXPathContext.pm
 lib/XML/XSH2/Functions.pm
-lib/XML/XSH2/GDOMECompat.pm
 lib/XML/XSH2/Grammar.pm
 lib/XML/XSH2/Help.pm
 lib/XML/XSH2/Inline.pm

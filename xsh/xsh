@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # -*- cperl -*-
 
-# $Id: xsh,v 2.0 2004-12-02 17:26:10 pajas Exp $
+# $Id: xsh,v 2.1 2004-12-02 19:26:35 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -61,7 +61,7 @@ BEGIN {
 			) or $usage=1;
 #  getopts('atscqvwdfhVinTE:e:l:pP');
   $VERSION='0.12';
-   $REVISION=q($Revision: 2.0 $);
+   $REVISION=q($Revision: 2.1 $);
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
