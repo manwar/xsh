@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_help.pl,v 1.1 2002-03-05 13:59:48 pajas Exp $
+# $Id: gen_help.pl,v 1.2 2002-03-08 18:02:52 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -126,7 +126,7 @@ sub get_text {
 	$text.=">";
       } elsif ($n->nodeName() eq 'typeref') {
 	foreach (split /\s/,$n->getAttribute('types')) {
-	  $text.=join ", ", map { get_name($_) } $node->findnodes("//rules/rule[\@type='$_']");
+	  $text.=join ", ", sort map { get_name($_) } $node->findnodes("//rules/rule[\@type='$_']");
 	}
       } else {
 	$text.=get_text($n);
