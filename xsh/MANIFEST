@@ -19,7 +19,11 @@ src/recdescent.dtd
 src/tests.xsh
 src/xsh_grammar.xml
 t/01basic.t
+t/02gdome.t
+test
 tools/gen_completions.pl
+tools/gen_doc.xsh
 tools/gen_grammar.pl
 tools/gen_help.pl
+tools/gen_reference.xsh
 xsh

@@ -10,3 +10,5 @@
 ^MakeMaker-\d
 .#$
 \.tar\.gz$
+^doc/
+\.#

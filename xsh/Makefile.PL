@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 1.8 2002-08-26 14:32:50 pajas Exp $
+# $Id: Makefile.PL,v 1.9 2002-09-02 15:37:54 pajas Exp $
 
 use strict;
 
@@ -32,6 +32,9 @@ xml:
 	tools/gen_help.pl src/xsh_grammar.xml > lib/XML/XSH/Help.pm
 	tools/gen_completions.pl src/xsh_grammar.xml > lib/XML/XSH/CompletionList.pm
 	cd lib/XML/XSH; perl -MGrammar -e XML::XSH::Grammar::compile
+
+docs:
+	./xsh < tools/gen_reference.xsh
 '
 }
 
