@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Tue Mar  5 13:51:28 2002
+# Fri Mar  8 18:58:17 2002
 
 package XML::XSH::Help;
 use strict;
@@ -25,17 +25,17 @@ Example: which counts any attributes that contain string foo in its name or
   In the interactive shell use slash in the end of line to indicate that
   the command follows on next line.
 
-  Argument types: expression, enc-string, id, filename, xpath,
-  command-block, parameter-list, location, perl-code
+  Argument types: command-block, enc-string, expression, filename, id,
+  location, parameter-list, perl-code, xpath
 
-  Available commands: quiet, verbose, test-mode, run-mode, debug, nodebug,
-  version, validation, parser_expands_entities, keep_blanks,
-  pedantic_parser, complete_attributes, indent, parser_expands_xinclude,
-  load_ext_dtd, encoding, query-encoding, if, unless, while, foreach, def,
-  assign, defs, include, call, help, exec, xslt, files, variables, copy,
-  xcopy, cd, insert, xinsert, move, xmove_command, clone, list, count,
-  eval, remove, print, map, close, select, open, create, save, saveas, dtd,
-  print_enc_command, validate, valid, exit, process_xinclude
+  Available commands: assign, call, cd, clone, close, complete_attributes,
+  copy, count, create, debug, def, defs, dtd, encoding, eval, exec, exit,
+  files, foreach, help, if, include, indent, insert, keep_blanks, list,
+  load_ext_dtd, map, move, nodebug, open, parser_expands_entities,
+  parser_expands_xinclude, pedantic_parser, print, print_enc_command,
+  process_xinclude, query-encoding, quiet, remove, run-mode, save, saveas,
+  select, test-mode, unless, valid, validate, validation, variables,
+  verbose, version, while, xcopy, xinsert, xmove_command, xslt
 
   Type help <command|type> to get more information on a given command or
   argument type.
@@ -262,15 +262,15 @@ END
 $HELP{'command'}=[<<'END'];
 List of XSH commands
 
-description: quiet, verbose, test-mode, run-mode, debug, nodebug, version, validation,
-	     parser_expands_entities, keep_blanks, pedantic_parser,
-	     complete_attributes, indent, parser_expands_xinclude,
-	     load_ext_dtd, encoding, query-encoding, if, unless, while,
-	     foreach, def, assign, defs, include, call, help, exec, xslt,
-	     files, variables, copy, xcopy, cd, insert, xinsert, move,
-	     xmove_command, clone, list, count, eval, remove, print, map,
-	     close, select, open, create, save, saveas, dtd,
-	     print_enc_command, validate, valid, exit, process_xinclude
+description: assign, call, cd, clone, close, complete_attributes, copy, count, create,
+	     debug, def, defs, dtd, encoding, eval, exec, exit, files,
+	     foreach, help, if, include, indent, insert, keep_blanks, list,
+	     load_ext_dtd, map, move, nodebug, open,
+	     parser_expands_entities, parser_expands_xinclude,
+	     pedantic_parser, print, print_enc_command, process_xinclude,
+	     query-encoding, quiet, remove, run-mode, save, saveas, select,
+	     test-mode, unless, valid, validate, validation, variables,
+	     verbose, version, while, xcopy, xinsert, xmove_command, xslt
 
 END
 
@@ -306,13 +306,10 @@ END
 $HELP{'unless'}=[<<'END'];
 usage:       unless
 
-aliases:     if !
-
 description: Like if but negating the result of the <xpath> expression.
 
 END
 
-$HELP{'if !'}=$HELP{unless};
 
 $HELP{'while'}=[<<'END'];
 usage:       while <xpath> <command-block>

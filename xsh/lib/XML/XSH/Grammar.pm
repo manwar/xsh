@@ -1,5 +1,5 @@
 # This file was automatically generated from src/xsh_grammar.xml on 
-# Tue Mar  5 13:51:28 2002
+# Fri Mar  8 18:58:17 2002
 
 
 package XML::XSH::Grammar;
@@ -83,13 +83,13 @@ $grammar=<<'_EO_GRAMMAR_';
   xp:
 	    xpsimple <skip:"">
 	  ( xpfilters
-	  | xpbracket
+	  | xpbrackets
 	   ) <skip:""> xp
 		{ "$item[1]$item[3]$item[5]" }
   	
 	  | xpsimple <skip:"">
 	  ( xpfilters
-	  | xpbracket
+	  | xpbrackets
 	   )
 		{ "$item[1]$item[3]" }
   	
@@ -112,10 +112,16 @@ $grammar=<<'_EO_GRAMMAR_';
 		{ "($item[2])" }
   	
 
+  xpbrackets:
+	    xpbracket <skip:""> xpfilters
+		{ "$item[1]$item[3]" }
+  	
+	  | xpbracket
+
   xpinter:
 	    xps
-	  ( xpfilter
-	  | xpbracket
+	  ( xpfilters
+	  | xpbrackets
 	   ) <skip:""> xpinter
 		{ "$item[1]$item[2]$item[4]" }
   	
@@ -128,8 +134,8 @@ $grammar=<<'_EO_GRAMMAR_';
 	    /'[^']*'|"[^"]*"/
 
   xpsimple:
-	    /[^]"' [();]+/
-	  | xpbracket
+	    /[^]|"' [();]+/
+	  | xpbrackets
 
   perl_expression:
 	    expression
@@ -141,28 +147,35 @@ $grammar=<<'_EO_GRAMMAR_';
 
   eof:
 	    /$/
+		{ 1; }
+  	
 
   startrule:
 	    statement eof
+		{ $item[1] }
+  	
 	  | <error>
 
-  statement:
-	    shell
-	  | commands '|' cmdline
-		{ XML::XSH::Functions::pipe_command($item[1],$item[3]) }
+  pipe:
+	    command '|' cmdline
+		{ [[\&XML::XSH::Functions::pipe_command,$item[1],$item[3]]] }
   	
-	  | commands
+
+  statement:
+	    commands
 		{ XML::XSH::Functions::run_commands($item[1]) }
   	
 	  | <error:error while parsing line $thisline near $text>
 
   shell:
 	    /!\s*/ cmdline
-		{ XML::XSH::Functions::sh($item[2]) }
+		{ [[\&XML::XSH::Functions::sh,$item[2]]] }
   	
 
   cmdline:
-	    /[^\n]*/
+	    /[^\n]*(\n|$)/
+		{ chomp($item[1]); $item[1] }
+  	
 
   option:
 	    quiet
@@ -195,12 +208,12 @@ $grammar=<<'_EO_GRAMMAR_';
 
   test_mode:
 	    /(test-mode)/
-		{ XML::XSH::Functions::set_opt_c(1) }
+		{ ["test-mode"] }
   	
 
   run_mode:
 	    /(run-mode)/
-		{ XML::XSH::Functions::set_opt_c(0) }
+		{ ["run-mode"] }
   	
 
   debug:
@@ -268,14 +281,24 @@ $grammar=<<'_EO_GRAMMAR_';
 		{ [\&XML::XSH::Functions::set_qencoding,$item[2]] }
   	
 
+  cmd_or_pipe:
+	    shell
+	  | pipe
+	  | command
+
   commands:
 	    command ';' commands
 		{ [ @{$item[1]},@{$item[3]} ] }
   	
-	  | command ';'
+	  |( pipe
+	  | shell
+	   ) commands
+		{ [ @{$item[1]},@{$item[2]} ] }
+  	
+	  | cmd_or_pipe ';'
 		{ $item[1] }
   	
-	  | command
+	  | cmd_or_pipe
 
   block:
 	    '{' commands '}'
@@ -293,8 +316,8 @@ $grammar=<<'_EO_GRAMMAR_';
 	  | map_command
 	  | close_command
 	  | open_command
-	  | valid_command
 	  | validate_command
+	  | valid_command
 	  | list_dtd_command
 	  | print_enc_command
 	  | cd_command
@@ -330,20 +353,41 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 
   command_block:
-	   ( command
+	   ( cmd_or_pipe
 	  | block
 	   )
 
   if:
 	    /(if)\s/ xpath
-	  ( command
+	  ( cmd_or_pipe
+	  | block
+	   ) /else\s/
+	  ( cmd_or_pipe
+	  | block
+	   )
+		{ [\&XML::XSH::Functions::if_statement,$item[2],$item[3],$item[5]] }
+  	
+	  | /(if)\s/ xpath
+	  ( cmd_or_pipe
 	  | block
 	   )
 		{ [\&XML::XSH::Functions::if_statement,$item[2],$item[3]] }
   	
 
   unless:
-	    /(unless|if\s*!)\s/ xpath
+	    /(unless)\s/ xpath
+	  ( cmd_or_pipe
+	  | block
+	   ) /else\s/
+	  ( cmd_or_pipe
+	  | block
+	   )
+		{ [\&XML::XSH::Functions::unless_statement,$item[2],$item[3],$item[5]] }
+  	
+	  | /(unless)\s/ xpath
+	  ( cmd_or_pipe
+	  | block
+	   )
 		{ [\&XML::XSH::Functions::unless_statement,$item[2],$item[3]] }
   	
 
@@ -367,7 +411,7 @@ $grammar=<<'_EO_GRAMMAR_';
 		{ [\&XML::XSH::Functions::xpath_assign,$item[2],$item[4]] }
   	
 	  | variable '=' xpath
-		{ [\&XML::XSH::Functions::xpath_assign,$item[2],$item[4]] }
+		{ [\&XML::XSH::Functions::xpath_assign,$item[1],$item[3]] }
   	
 
   print_var_command:
@@ -433,12 +477,12 @@ $grammar=<<'_EO_GRAMMAR_';
   	
 
   copy_command:
-	    xpath loc xpath
+	    /(copy|cp)\s/ xpath loc xpath
 		{ [\&XML::XSH::Functions::copy,@item[2,4,3]] }
   	
 
   xcopy_command:
-	    xpath loc xpath
+	    /(xcopy|xcp)\s/ xpath loc xpath
 		{ [\&XML::XSH::Functions::copy,@item[2,4,3],1] }
   	
 
@@ -452,7 +496,7 @@ $grammar=<<'_EO_GRAMMAR_';
 
   insert_command:
 	    /(insert|add)\s/ nodetype expression loc xpath
-		{ [\&XML::XSH::Functions::insert,@item[2,3,5,4],0] }
+		{ [\&XML::XSH::Functions::insert,@item[2,3,5,4],undef,0] }
   	
 	  | /(insert|add)\s/ nodetype expression namespace loc xpath
 		{ [\&XML::XSH::Functions::insert,@item[2,3,6,5,4],0] }
@@ -460,7 +504,7 @@ $grammar=<<'_EO_GRAMMAR_';
 
   xinsert_command:
 	    /(xinsert|xadd)\s/ nodetype expression loc xpath
-		{ [\&XML::XSH::Functions::insert,@item[2,3,5,4],1] }
+		{ [\&XML::XSH::Functions::insert,@item[2,3,5,4],undef,1] }
   	
 	  | /(xinsert|xadd)\s/ nodetype expression namespace loc xpath
 		{ [\&XML::XSH::Functions::insert,@item[2,3,6,5,4],1] }
@@ -619,7 +663,7 @@ $grammar=<<'_EO_GRAMMAR_';
 	    /(valid)\s/ ID
 		{ [\&XML::XSH::Functions::valid_doc,$item[2]] }
   	
-	  | /(valid)\s/ ID
+	  | /(valid)/
 		{ [\&XML::XSH::Functions::valid_doc,undef] }
   	
 

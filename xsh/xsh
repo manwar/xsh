@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.1 2002-03-05 13:52:21 pajas Exp $
+# $Id: xsh,v 1.2 2002-03-08 18:01:49 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -18,7 +18,6 @@ use vars qw/$opt_q $opt_i $opt_h $opt_V $opt_E $opt_e $opt_d $opt_c/;
 use vars qw/$VERSION $REVISION/;
 
 use IO::Handle;
-use Parse::RecDescent;
 
 use XML::XSH qw(&xsh_set_output &xsh &xsh_init
 		&set_opt_q &set_opt_d &set_opt_c);
@@ -28,13 +27,13 @@ require Term::ReadLine if $opt_i;
 BEGIN {
   getopts('cqdhViE:e:');
   $VERSION='0.9';
-  $REVISION='$Revision: 1.1 $';
+  $REVISION='$Revision: 1.2 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
 if ($opt_h) {
   print "Usage: $0 [-q] [-e output-encoding] [-E query-encoding] <commands>\n";
-  print "or $0 -h $0 -V\n\n";
+  print "or $0 -h or $0 -V\n\n";
   print "   -e   output encoding (default is the document encoding)\n";
   print "   -E   query encoding (default is the output encoding)\n\n";
   print "   -q   quiet\n\n";
@@ -48,25 +47,12 @@ if ($opt_h) {
 
 if ($opt_V) {
   print "Current version is $VERSION ($REVISION)\n";
+  exit 1;
 }
 
 $::RD_ERRORS = 1; # Make sure the parser dies when it encounters an error
 $::RD_WARN   = 1; # Enable warnings. This will warn on unused rules &c.
 $::RD_HINT   = 1; # Give out hints to help fix problems.
-
-# unless (eval { require XML::XSH::Parser; } ) {
-#   printflush STDERR "Plase wait, parsing grammar...";
-
-#   require XML::XSH::Grammar;
-#   use Cwd 'getcwd';
-#   my $dir=getcwd();
-#   chdir $FindBin::RealBin;
-#   chdir "XML/XSH";
-#   XML::XSH::Grammar::compile();
-#   chdir $dir;
-#   print STDERR "done.\n";
-# }
-
 
 xsh_init();
 
@@ -96,9 +82,9 @@ if ($opt_i) {
 }
 
 if ($string) {
-  print "xsh> $string\n";
+  print "xsh> $string\n" if ($opt_i and not $opt_q);
   xsh($string);
-  print "\n";
+  print "\n" if ($opt_i and not $opt_q);
 }
 
 if ($opt_i) {

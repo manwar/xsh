@@ -250,7 +250,7 @@ sub new {
 	  <ruleref ref="xpfilters"/>
 	</production>
 	<production>
-	  <ruleref ref="xpbracket"/>
+	  <ruleref ref="xpbrackets"/>
 	</production>
       </group>
       <directive type="skip">""</directive>
@@ -265,7 +265,7 @@ sub new {
 	  <ruleref ref="xpfilters"/>
 	</production>
 	<production>
-	  <ruleref ref="xpbracket"/>
+	  <ruleref ref="xpbrackets"/>
 	</production>
       </group>
       <action>"$item[1]$item[3]"</action>
@@ -304,12 +304,23 @@ sub new {
       <action>"($item[2])"</action>
     </production>
   </rule>
+    <rule id="xpbrackets">
+      <production>
+	<ruleref ref="xpbracket"/>
+	<directive type="skip">""</directive>
+	<ruleref ref="xpfilters"/>
+	<action>"$item[1]$item[3]"</action>
+      </production>
+      <production>
+	<ruleref ref="xpbracket"/>
+      </production>
+    </rule>
   <rule id="xpinter">
     <production>
       <ruleref ref="xps"/>
       <group>
-	<production><ruleref ref="xpfilter"/></production>
-	<production><ruleref ref="xpbracket"/></production>	
+	<production><ruleref ref="xpfilters"/></production>
+	<production><ruleref ref="xpbrackets"/></production>	
       </group>
       <directive type="skip">""</directive>
       <ruleref ref="xpinter"/>
@@ -329,10 +340,10 @@ sub new {
   </rule>
   <rule id="xpsimple">
     <production>
-      <regexp>[^]"' [();]+</regexp>
+      <regexp>[^]|"' [();]+</regexp>
     </production>
     <production>
-      <ruleref ref="xpbracket"/>
+      <ruleref ref="xpbrackets"/>
     </production>
   </rule>
   <rule id="perl_expression">
@@ -351,27 +362,28 @@ sub new {
   <rule id="eof">
     <production>
       <regexp>$</regexp>
+	<action>1;</action>
     </production>
   </rule>
   <rule id="startrule">
     <production>
-      <ruleref ref="statement"/>
-      <ruleref ref="eof"/>
+	<ruleref ref="statement"/>
+	<ruleref ref="eof"/>
+	<action>$item[1]</action>
     </production>
     <production>
       <directive type="error"></directive>
     </production>    
   </rule>
+    <rule id="pipe">
+      <production>
+	<ruleref ref="command"/>
+	<literal>|</literal>
+	<ruleref ref="cmdline"/>
+	<action>[[\&amp;XML::XSH::Functions::pipe_command,$item[1],$item[3]]]</action>
+      </production>
+    </rule>
   <rule id="statement">
-    <production>
-      <ruleref ref="shell"/>
-    </production>
-    <production>
-      <ruleref ref="commands"/>
-      <literal>|</literal>
-      <ruleref ref="cmdline"/>
-      <action>XML::XSH::Functions::pipe_command($item[1],$item[3])</action>
-    </production>
     <production>
       <ruleref ref="commands"/>
       <action>XML::XSH::Functions::run_commands($item[1])</action>
@@ -384,12 +396,13 @@ sub new {
     <production>
       <regexp>!\s*</regexp>
       <ruleref ref="cmdline"/>
-      <action>XML::XSH::Functions::sh($item[2])</action>
+      <action>[[\&amp;XML::XSH::Functions::sh,$item[2]]]</action>
     </production>
   </rule>
   <rule id="cmdline">
     <production>
-      <regexp>[^\n]*</regexp>
+      <regexp>[^\n]*(\n|$)</regexp>
+      <action>chomp($item[1]); $item[1]</action>
     </production>
   </rule>
   <rule id="option">
@@ -444,7 +457,7 @@ sub new {
   <rule type='command' id="test_mode" name="test-mode">
     <production>
       <selfref/>
-      <action>XML::XSH::Functions::set_opt_c(1)</action>
+      <action>["test-mode"]</action>
     </production>
     <documentation>
       <usage>test-mode</usage>
@@ -462,7 +475,7 @@ sub new {
   <rule type='command' id="run_mode" name="run-mode">
     <production>
       <selfref/>
-      <action>XML::XSH::Functions::set_opt_c(0)</action>
+      <action>["run-mode"]</action>
     </production>
     <documentation>
       <usage>run-mode</usage>
@@ -684,6 +697,11 @@ sub new {
       </description>
     </documentation>
   </rule>
+    <rule id="cmd_or_pipe">
+      <production><ruleref ref="shell"/></production>
+      <production><ruleref ref="pipe"/></production>
+      <production><ruleref ref="command"/></production>
+    </rule>
   <rule id="commands">
     <production>
       <ruleref ref="command"/>
@@ -692,12 +710,20 @@ sub new {
       <action>[ @{$item[1]},@{$item[3]} ]</action>
     </production>
     <production>
-      <ruleref ref="command"/>
+	<group>
+	  <production><ruleref ref="pipe"/></production>
+	  <production><ruleref ref="shell"/></production>
+	</group>
+      <ruleref ref="commands"/>
+      <action>[ @{$item[1]},@{$item[2]} ]</action>
+    </production>
+    <production>
+      <ruleref ref="cmd_or_pipe"/>
       <literal>;</literal>
       <action>$item[1]</action>
     </production>
     <production>
-      <ruleref ref="command"/>
+      <ruleref ref="cmd_or_pipe"/>
     </production>
   </rule>
   <rule id="block">
@@ -721,8 +747,8 @@ sub new {
 	<production><ruleref ref="map_command"/></production>
 	<production><ruleref ref="close_command"/></production>
 	<production><ruleref ref="open_command"/></production>
-	<production><ruleref ref="valid_command"/></production>
 	<production><ruleref ref="validate_command"/></production>
+	<production><ruleref ref="valid_command"/></production>
 	<production><ruleref ref="list_dtd_command"/></production>
 	<production><ruleref ref="print_enc_command"/></production>
 	<production><ruleref ref="cd_command"/></production>
@@ -766,7 +792,7 @@ sub new {
   <rule id="command_block" type="argtype" name="command-block">
     <production>
       <group>
-	<production><ruleref ref="command"/></production>
+	<production><ruleref ref="cmd_or_pipe"/></production>
 	<production><ruleref ref="block"/></production>
       </group>
     </production>
@@ -797,7 +823,21 @@ sub new {
       <selfref/>
       <ruleref ref="xpath"/>
       <group>
-	<production><ruleref ref="command"/></production>
+	<production><ruleref ref="cmd_or_pipe"/></production>
+	<production><ruleref ref="block"/></production>
+      </group>
+	<regexp>else\s</regexp>
+	<group>
+	  <production><ruleref ref="cmd_or_pipe"/></production>
+	  <production><ruleref ref="block"/></production>
+	</group>
+	<action>[\&amp;XML::XSH::Functions::if_statement,$item[2],$item[3],$item[5]]</action>
+    </production>
+    <production>
+      <selfref/>
+      <ruleref ref="xpath"/>
+      <group>
+	<production><ruleref ref="cmd_or_pipe"/></production>
 	<production><ruleref ref="block"/></production>
       </group>
       <action>[\&amp;XML::XSH::Functions::if_statement,$item[2],$item[3]]</action>
@@ -819,7 +859,25 @@ sub new {
     <production>
       <selfref/>
       <ruleref ref="xpath"/>
-      <action>[\&amp;XML::XSH::Functions::unless_statement,$item[2],$item[3]]</action>
+	<group>
+	  <production><ruleref ref="cmd_or_pipe"/></production>
+	  <production><ruleref ref="block"/></production>
+	</group>
+	<regexp>else\s</regexp>
+	<group>
+	  <production><ruleref ref="cmd_or_pipe"/></production>
+	  <production><ruleref ref="block"/></production>
+	</group>
+	<action>[\&amp;XML::XSH::Functions::unless_statement,$item[2],$item[3],$item[5]]</action>
+    </production>    
+    <production>
+      <selfref/>
+      <ruleref ref="xpath"/>
+	<group>
+	  <production><ruleref ref="cmd_or_pipe"/></production>
+	  <production><ruleref ref="block"/></production>
+	</group>
+	<action>[\&amp;XML::XSH::Functions::unless_statement,$item[2],$item[3]]</action>
     </production>    
     <documentation>
       <usage>unless</usage>
@@ -920,7 +978,7 @@ sub new {
       <ruleref ref="variable"/>
       <literal>=</literal>
       <ruleref ref="xpath"/>
-      <action>[\&amp;XML::XSH::Functions::xpath_assign,$item[2],$item[4]]</action>
+      <action>[\&amp;XML::XSH::Functions::xpath_assign,$item[1],$item[3]]</action>
     </production>
     <documentation>
       <usage>assign $<xref linkend='ID'/>=<xref
@@ -1140,6 +1198,7 @@ sub new {
       <alias name="cp"/>
     </aliases>
     <production>
+	<selfref/>
       <ruleref ref="xpath"/>
       <ruleref ref="loc"/>
       <ruleref ref="xpath"/>
@@ -1203,6 +1262,7 @@ sub new {
       <alias name="xcp"/>
     </aliases>
     <production>
+	<selfref/>
       <ruleref ref="xpath"/>
       <ruleref ref="loc"/>
       <ruleref ref="xpath"/>
@@ -1263,7 +1323,7 @@ sub new {
       <ruleref ref="expression"/>
       <ruleref ref="loc"/>
       <ruleref ref="xpath"/>
-      <action>[\&amp;XML::XSH::Functions::insert,@item[2,3,5,4],0]</action>
+      <action>[\&amp;XML::XSH::Functions::insert,@item[2,3,5,4],undef,0]</action>
     </production>
     <production>
       <selfref/>
@@ -1302,7 +1362,7 @@ sub new {
       <ruleref ref="expression"/>
       <ruleref ref="loc"/>
       <ruleref ref="xpath"/>
-      <action>[\&amp;XML::XSH::Functions::insert,@item[2,3,5,4],1]</action>
+      <action>[\&amp;XML::XSH::Functions::insert,@item[2,3,5,4],undef,1]</action>
     </production>
     <production>
       <selfref/>
@@ -1993,7 +2053,6 @@ sub new {
     </production>
     <production>
       <selfref/>
-      <ruleref ref="ID"/>
       <action>[\&amp;XML::XSH::Functions::valid_doc,undef]</action>
     </production>
     <documentation>
