@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.32 2003-09-10 13:35:31 pajas Exp $
+# $Id: xsh,v 1.33 2003-10-23 17:41:39 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -19,7 +19,7 @@ use Pod::Usage;
 use vars qw($opt_q $opt_w $opt_i $help $opt_V $opt_E $opt_e $opt_d
             $opt_c $opt_s $opt_f $opt_g $opt_v $opt_t $opt_T $opt_a
             $opt_l $opt_n $opt_p $opt_P $usage $manpage $opt_HTML
-            $opt_XML $input $output $process $format);
+            $opt_XML $input $output $process $format $opt_C);
 use vars qw($VERSION $REVISION);
 
 use IO::Handle;
@@ -45,6 +45,7 @@ BEGIN {
 			 "interactive|i" => \$opt_i,
 			 "input|I=s" => \$input,
 			 "output|O=s" => \$output,
+			 "commands|C" => \$opt_C,
 			 "process|P=s" => \$process,
 			 "non-interactive|n" => \$opt_n,
 			 "pipe|p" => \$opt_p,
@@ -59,7 +60,7 @@ BEGIN {
 			) or $usage=1;
 #  getopts('atscqvwdfhVinTE:e:l:pP');
   $VERSION='0.12';
-   $REVISION='$Revision: 1.32 $';
+   $REVISION='$Revision: 1.33 $';
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -80,10 +81,18 @@ if ($manpage) {
   pod2usage(-exitstatus => 0, -verbose => 2);
 }
 
+die "Incompatible options: -a, -C\n" if $opt_a+$opt_C > 1;
+
 my $string;
-if ($opt_a) {
+if (!$opt_C and !$opt_a and $opt_l eq "" and -f $ARGV[0]) {
+  # suppose the 1st argument is a script,
+  # and the rest is its parameters
+  $opt_l = shift @ARGV;
+  @XML::XSH::Map::ARGV=@ARGV;
+} elsif ($opt_a) {
   @XML::XSH::Map::ARGV=@ARGV;
 } else {
+  # suppose the arguments are XSH commands
   $string=join " ",@ARGV;
 }
 
@@ -309,7 +318,8 @@ sub get_line {
       print "\n" unless $term->ReadLine eq 'Term::ReadLine::Perl'; # clear screen
       return $retonint;
     } else {
-      die $@;
+      print STDERR $@,"\n";
+      return undef;
     }
   }
   return $line;
@@ -329,7 +339,7 @@ xsh - XML Editing Shell
 
 =head1 SYNOPSIS
 
-  xsh [options] commands
+  xsh [options] script_or_command
   xsh [options] -al script [arguments ...]
   xsh [options] -p commands < input.xml > output.xml
   xsh [options] -I input.xml -O output.xml commands
@@ -368,10 +378,15 @@ Load and execute given XSH script (the script is executed before all
 other commands provided on the command-line, but after executed
 ~/.xshrc).
 
+=item B<--commands|-C>
+
+Indicate, that the command-line arguments are XSH commands.
+
 =item B<--arguments|-a>
 
-Command-line contains arguments accessible to the script via
-C<@XML::XSH::Map::ARGV> rather than XSH commands.
+Indicate, that the command-line arguments are should be
+passed to the script via C<@XML::XSH::Map::ARGV>. This
+option is incompatible with C<--commands>.
 
 =item B<--stdin|-t>
 
