@@ -30,7 +30,9 @@ Instalation:
 ------------
 
 Download and install all required perl modules. See INSTALL for a
-list.  Put xsh.pl to some location in your PATH.
+list. To install xsh itself, check PREFIX in config.mk and type `make
+install'. If you don't trust make-files, read INSTALL for details on
+manual installation.
 
 Usage:
 ------
