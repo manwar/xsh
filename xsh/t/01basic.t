@@ -119,13 +119,17 @@ valid;
 
 validate;
 
+list | cat 1>&2
+
 xinsert element silly after //br
+
+list | cat 1>&2
 
 count count(//br[./following-sibling::silly])=2
 
-ls scratch:/ | cat 1>&2
-ls t:/ | cat 1>&2
-ls new1:/ | cat 1>&2
+ls scratch:/ | cat 1>&2;
+ls t:/ | cat 1>&2;
+ls new1:/ | cat 1>&2;
 ls new2:/ | cat 1>&2
 
 select t
