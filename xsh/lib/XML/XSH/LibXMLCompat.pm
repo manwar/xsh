@@ -1,4 +1,4 @@
-# $Id: LibXMLCompat.pm,v 1.11 2003-04-16 14:55:42 pajas Exp $
+# $Id: LibXMLCompat.pm,v 1.12 2003-08-07 13:56:25 pajas Exp $
 
 package XML::XSH::LibXMLCompat;
 
@@ -200,7 +200,8 @@ sub is_entity_reference {
 
 sub is_document {
   my ($class,$node)=@_;
-  return $node->nodeType == XML::LibXML::XML_DOCUMENT_NODE();
+  return $node->nodeType == XML::LibXML::XML_DOCUMENT_NODE() ||
+    $node->nodeType == XML::LibXML::XML_HTML_DOCUMENT_NODE();
 }
 
 sub is_document_fragment {
@@ -216,6 +217,18 @@ sub is_comment {
 sub is_namespace {
   my ($class,$node)=@_;
   return $node->nodeType == XML::LibXML::XML_NAMESPACE_DECL();
+}
+
+sub document_type {
+  my ($class,$node)=@_;
+  my $doc=$class->owner_document($node);
+  if ($doc->nodeType == XML::LibXML::XML_DOCUMENT_NODE) {
+    return 'xml';
+  } elsif ($doc->nodeType == XML::LibXML::XML_HTML_DOCUMENT_NODE) {
+    return 'html';
+  } else {
+    return 'unknown';
+  }
 }
 
 sub has_dtd {
