@@ -1,4 +1,4 @@
-# $Id: Functions.pm,v 1.10 2002-03-27 16:46:30 pajas Exp $
+# $Id: Functions.pm,v 1.11 2002-04-17 13:15:01 pajas Exp $
 
 package XML::XSH::Functions;
 
@@ -12,7 +12,7 @@ use XML::XSH::Help;
 use Exporter;
 use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $OUT $LOCAL_ID $LOCAL_NODE
             $_xsh $_parser $_encoding $_qencoding %_nodelist
-            $_quiet $_debug $_test $_newdoc $_indent $SIGSEGV_SAFE
+            $_quiet $_debug $_test $_newdoc $_indent $SIGSEGV_SAFE $TRAP_SIGINT
             %_doc %_files %_iconv %_defs/;
 
 BEGIN {
@@ -28,6 +28,7 @@ BEGIN {
   %EXPORT_TAGS = (default => [@EXPORT_OK]);
 
   $SIGSEGV_SAFE=0;
+  $TRAP_SIGINT=0;
   $_indent=1;
   $_encoding='iso-8859-2';
   $_qencoding='iso-8859-2';
@@ -147,8 +148,13 @@ sub set_encoding { $_encoding=expand($_[0]); return 1; }
 sub set_qencoding { $_qencoding=expand($_[0]); return 1; }
 
 sub sigint {
-  $OUT->print("\nCtrl-C pressed. \n");
-  die "Interrupted by user.";
+  if ($TRAP_SIGINT) {
+    $OUT->print("\nCtrl-C pressed. \n");
+    die "Interrupted by user.";
+  } else {
+    print STDERR "\nCtrl-C pressed. \n";
+    exit 1;
+  }
 };
 
 
@@ -839,18 +845,28 @@ sub insert_node {
       }
     }
   } else {
+    __debug("xxxx 1\n");
     my $copy=$node->cloneNode(1);
-    $copy->setOwnerDocument($dest_doc);
+    __debug("xxxx 2\n");
+#    $copy->setOwnerDocument($dest_doc);
+    $dest_doc->importNode($copy);
+    __debug("xxxx 3\n");
     if ($where eq 'after') {
+      __debug("xxxx 4\n");
       $dest->parentNode()->insertAfter($copy,$dest);
     } elsif ($where eq 'as_child') {
+      __debug("xxxx 5\n");
       $dest->appendChild($copy);
     } elsif ($where eq 'replace') {
+      __debug("xxxx 6\n");
       $dest->parentNode()->insertBefore($copy,$dest);
+      __debug("xxxx 7\n");
       remove_node($dest);
     } else {
+      __debug("xxxx 8\n");
       $dest->parentNode()->insertBefore($copy,$dest);
     }
+    __debug("xxxx 9\n");
   }
   return 1;
 }
@@ -1541,8 +1557,8 @@ package XML::LibXML::Document;
 sub XML::LibXML::Document::findnodes {
     my ($self, $xpath) = @_;
     my $dom=$self->getDocumentElement();
-    
-    if ($xpath!~m/^\s*\// and $xpath!~m/^\s*(?:id|key)\s*\(/) {
+
+    if ($xpath!~m/^\s*\// and $xpath!~m/^\s*(?:id|document|key)\s*\(/) {
       $xpath='/'.$xpath;
     }
     my @nodes = $dom->findnodes($xpath);
@@ -1553,6 +1569,13 @@ sub XML::LibXML::Document::findnodes {
       return XML::LibXML::NodeList->new(@nodes);
     }
 }
+
+sub XML::LibXML::Document::find {
+  my ($self, $xpath) = @_;
+  my $dom=$self->getDocumentElement();
+  return $dom->find($xpath);
+}
+
 
 package Text::Iconv::Dummy;
 
