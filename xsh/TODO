@@ -1,20 +1,14 @@
 TODO:
 
-### Ideas comming from e-mail discusion with Hoylen Sue
-
 * get rid of the XSH subdirectory in the CVS tree
-* 'help commands'?
-* consider making perl{} blocks a type of an expression
-
-###
-
-* check the XML::LibXML module for XPath-ruled tree additions
-* document installation proces in ActiveState perl
+* alias 'help commands' for 'help commands'?
+* document the installation process for ActiveState perl
 * support DTD modification
 * better support for namespaces (e.g. registering as soon as it's available
   in XML::LibXML(::XPath?)
 * 'locate' - allow use also nearest id() 
 * xsh-grammar: parse xslt parameters as XPATH instead of XSH expressions ??
+* check the XML::LibXML module for XPath-ruled tree additions
 
 USER-LEVEL IMPLEMENTABLE
 
@@ -26,16 +20,3 @@ IMPLEMENTED BUT SOME MORE REFINEMENT IS NEEDED:
 
 o fold/unfold command (fold/unfold elements for subsequent ls commands)
 
-
-IMPLEMENTED:
-+ document new location argument-type semantics
-+ check adding fragments into /
-+ adding into/appending/prepending /
-+ better Ctrl+C handling
-+ die in perl fragments dies the execution
-+ unify open,open_HTML,open_PIPE,open_DOCBOOK to 
-  open [XML|HTML|DOCBOOK] =[|] file|command
-+ port to XML::LibXML-1.53
-+ allow entity reference insertion
-+ allow parameters for user defined functions
-+ external xinclude save support
