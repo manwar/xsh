@@ -1,25 +1,25 @@
 #!xsh
 # -*- cperl -*-
 
-if ("$xsh_grammar_file" = "") $xsh_grammar_file="src/xsh_grammar.xml";
+$xsh_grammar_file ||= "src/xsh_grammar.xml";
 
 quiet;
 load-ext-dtd 1;
 validation 1;
 parser-completes-attributes 1;
 
-open x = $xsh_grammar_file;
+$x := open $xsh_grammar_file;
 
 load-ext-dtd 0;
 validation 0;
 
-create d <<EOF;
+$d := create <<EOF;
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" 
   "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
 <article>
-  <title>XSH Reference</title>
+  <title>XSH2 Reference</title>
   <section id="intro">
-    <title>XSH Language</title>
+    <title>XSH2 Language</title>
   </section>
   <section id="cmd">
     <title>Command Reference</title>
@@ -33,17 +33,17 @@ create d <<EOF;
 </article>
 EOF
 
-xcopy x:/recdescent-xml/doc/description/node() into d:/article/section[@id='intro'];
-xcopy x:/recdescent-xml/doc/section into d:/article/section[@id='intro'];
+xcopy $x/recdescent-xml/doc/description/node() into $d/article/section[@id='intro'];
+xcopy $x/recdescent-xml/doc/section into $d/article/section[@id='intro'];
 
 
-foreach d:/article/section[@id='intro']/section {
-  local $id=string(@id);
-  local %rules=x:/recdescent-xml/rules/rule[documentation[id(@sections)[@id='$id']]];
-  echo section: $id, rules: ${{%rules}};
+foreach $d/article/section[@id='intro']/section {
+  my $id=@id;
+  my $rules=$x/recdescent-xml/rules/rule[documentation[id(@sections)[@id=$id]]];
+  echo "section: ${id}, rules: " count($rules);
 
-  if %rules[@type='command' or @type='argtype' or @type='function']
-    add chunk <<"EOF" append .;
+  if $rules[@type='command' or @type='argtype' or @type='function']
+    add chunk <<EOF append .;
 <section>
   <title>Related topics</title>
   <para>
@@ -51,113 +51,118 @@ foreach d:/article/section[@id='intro']/section {
   </para>
  </section>
 EOF
-  local %varlist=./section[last()]/para/variablelist;
-  local $a $b;
-  sort (@name|@id) { $a cmp $b } %rules;
-  foreach %rules {
-    add chunk <<"EOF" into %varlist;
+
+  my $varlist=./section[last()]/para/variablelist;
+  foreach &{ sort :k (@name|@id) $rules} {
+    add chunk <<"EOF" into $varlist;
     <varlistentry>
-      <term><xref linkend='${{string(./@id)}}'/></term>
+      <term><xref linkend='${(./@id)}'/></term>
       <listitem><para/></listitem>
     </varlistentry>
 EOF
-    xcopy ./documentation/shortdesc/node() into %varlist/varlistentry[last()]/listitem/para;
+  for ./documentation/shortdesc/node() xcopy . into $varlist/varlistentry[last()]/listitem/para;
   }
 }
 
-foreach { qw(cmd type function) } {
+foreach my $__ in { qw(cmd type function) } {
   print "FILLING: ${__}"; print "";
-  local %sec=d:/article/section[@id='${__}'];
-  if ('$__'='type') $__='argtype';
-  if ('$__'='cmd') $__='command';
-  local %type=x:(//rule[@type='$__']);
-  sort (@name|documentation/title)[1] { $a cmp $b } %type;
-  foreach %type {
-    local $ref=string(@id);
-
-    cd x:id('$ref');
+  my $sec=$d/article/section[@id=$__];
+  if ($__='type') $__='argtype';
+  if ($__='cmd') $__='command';
+  my $type := sort :k (@name|documentation/title)[1] $x//rule[@type=$__];
+  foreach {$type} {
+    cd xsh:id2($x,@id);
     # TITLE
-    add element "section id='$ref'" into %sec;
-
-    local %section=%sec/section[last()];
-
+    copy xsh:new-element('section','id',@id,'role',$__) into $sec;
+    my $section=$sec/section[last()];
     if (./documentation/title) {
-      xcopy ./documentation/title into %section;
+      xcopy ./documentation/title into $section;
     } else {
-      add chunk "<title>${{string(@name)}}</title>" into %section;
+      add chunk concat("<title>",string(@name),"</title>") into $section;
     }
-    map { s/\s+argument\s+type//i; $_=lcfirst } %section/title/text();
-
+    map { s/\s+argument\s+type//i; $_=lcfirst } $section/title/text();
 
     #USAGE
     if (./documentation/usage) {
-      local %us;
-      add chunk "<simplesect><title>Usage</title><para></para></simplesect>"
-	into %section result %us;
-      copy ./documentation/usage into %us/para;
-      rename { $_='literal' } %us/para/usage;
+      my $us :=
+	add chunk "<simplesect role='usage'><title>Usage</title><para></para></simplesect>"
+	into $section;
+      xcopy ./documentation/usage into $us/para;
+      rename { $_='literal' } $us/para/usage;
     }
 
     #ALIASES
     if (./aliases/alias) {
-      local %us;
-      add chunk <<CHUNK into %section result %us;
- <simplesect>
+      my $us :=
+	add chunk <<CHUNK into $section;
+ <simplesect role='aliases'>
    <title>Aliases</title>
    <para><literal> </literal></para>
  </simplesect>
 CHUNK
       foreach (./aliases/alias) {
-	copy ./@name append %us/para/literal/text()[last()];
+	copy ./@name append $us/para/literal/text()[last()];
 	if (following-sibling::alias) {
-	  add text ", " append %us/para/literal/text()[last()];
+	  add text ", " append $us/para/literal/text()[last()];
 	}
       }
     }
 
     #DESCRIPTION
     if (./documentation/description) {
-      local %us;
-      add chunk "<simplesect><title>Description</title></simplesect>"
-	into %section result %us;
-      xcopy ./documentation/description/node() into %us;
+      my $us :=
+	add chunk "<simplesect role='description'><title>Description</title></simplesect>"
+	  into $section;
+      xcopy ./documentation/description/node() into $us;
     }
 
     #SEE ALSO
     if (./documentation/see-also/ruleref) {
-      local %us;
-      add chunk "<simplesect><title>See Also</title><para/></simplesect>"
-	into %section result %us;
+      my $us :=
+	add chunk "<simplesect role='seealso'><title>See Also</title><para/></simplesect>"
+	  into $section;
       foreach (./documentation/see-also/ruleref) {
-	add element "<xref linkend='${{string(@ref)}}'/>"
-	  into %us/para;
-	if (following-sibling::ruleref) add text ", " into %us/para;
+	copy xsh:new-element('xref','linkend',string(@ref)) into $us/para;
+	if (following-sibling::ruleref) add text ", " into $us/para;
       }
     }
   }
 };
 
-map { s/^[ \t]+//; s/\n[ \t]+/\n/g; } d://code/descendant::text();
-foreach d://tab {
-  insert text ${{{ "  " x literal('@count') }}} replace .;
+map { s/^[ \t]+//; s/\n[ \t]+/\n/g; } $d//code/descendant::text();
+foreach $d//tab {
+  insert text {"  " x literal('@count')} replace .;
 }
-map { $_='programlisting' } d://code;
+map { $_='programlisting' } $d//code;
+map { $_='orderedlist' } $d//enumerate;
 
-foreach d://xref {
+foreach $d/descendant::typeref {
+  my $sl := insert element "simplelist type='inline'" before .;
+  foreach split("\\s",@types) {
+    foreach ($x/recdescent-xml/rules/rule[@type=current()]) {
+      insert chunk
+	(concat("<member>",if(@id,concat("<xref linkend='",@id,"'/>"),@name),"</member>")) into $sl;
+    }
+  }
+  rm .;
+}
+
+
+foreach $d//xref {
   map { $_='link' } .;
-  local $linkend=string(@linkend);
-  insert text "${( x:(xsh:if(id('${linkend}')/@name,id('${linkend}')/@name,
-			    id('${linkend}')/@id)) )}" into .;
+  insert text xsh:if(xsh:id2($x,@linkend)/@name,
+		     xsh:id2($x,@linkend)/@name,
+		     xsh:id2($x,@linkend)/@id) into .;
 };
 
-foreach d://variablelist {
-  local $termlength=1;
+foreach $d//variablelist {
+  my $termlength=1;
   foreach varlistentry/term {
-    local $length=0;
+    my $length=0;
     map { $length+=length($_) } descendant::text();
     perl { $termlength = $termlength < $length ? $length : $termlength };
   }
-  insert attribute termlength=$termlength into .;
+  copy xsh:new-attribute('termlength',$termlength) into .;
 }
 
 indent 1;
@@ -165,4 +170,4 @@ rename {$_='informalexample'} //example[not(title)]; # for validity sake
 for { 1..5 } {
   rename {$_='sect'.$__} //section[not(ancestor::section)]; # for validity sake
 }
-saveas d 'doc/xsh_reference.xml';
+save --file 'doc/xsh_reference.xml' $d;

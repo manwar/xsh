@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_grammar.pl,v 1.10 2004-07-16 21:45:38 pajas Exp $
+# $Id: gen_grammar.pl,v 2.0 2004-12-02 17:26:52 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -18,6 +18,7 @@ EOF
 my $parser=XML::LibXML->new();
 $parser->load_ext_dtd(1);
 $parser->validation(1);
+$parser->complete_attributes(1);
 my $doc=$parser->parse_file($ARGV[0]);
 
 my $dom=$doc->getDocumentElement();
@@ -29,12 +30,12 @@ print "# This file was automatically generated from $ARGV[0] on \n# ",scalar(loc
 
 print get_text($preamb,1);
 
-foreach my $r ($rules->findnodes('rule[ not(@inline="yes") and not(@type="function") ]')) {
+foreach my $r ($rules->findnodes('./rule[@inline!="yes" and production]')) {
   print "\n  ",$r->getAttribute('id'),":\n\t   ";
   print join("\n\t  |",create_productions($r)),"\n";
 }
 print get_text($postamb,1);
-
+print "\n";
 exit;
 
 ## ================================================
@@ -50,7 +51,11 @@ sub get_text {
   my ($node,$no_strip)=@_;
   my $text="";
   foreach ($node->childNodes()) {
-    if ($_->nodeType() == XML::LibXML::XML_TEXT_NODE ||
+    if ($_->nodeType() == XML::LibXML::XML_ELEMENT_NODE &&
+	$_->nodeName() eq 'lineinfo') {
+#      $text.='0,0,0,$XML::XSH2::Functions::SCRIPT'
+      $text.='$thisline,$thiscolumn,$thisoffset,$XML::XSH2::Functions::SCRIPT';
+    } elsif ($_->nodeType() == XML::LibXML::XML_TEXT_NODE ||
 	$_->nodeType() == XML::LibXML::XML_CDATA_SECTION_NODE) {
       $text.=$_->getData();
     }
@@ -107,7 +112,7 @@ sub create_rule_production {
     if ($name eq 'lookahead') {
       $result.=' ...' . ($item->getAttribute('negative') eq 'yes' ? '!' : '');
     } elsif ($name eq 'regexp') {
-      $result.=" /".get_text($item)."/";
+      $result.=" /".get_text($item)."/".$item->getAttribute('mod');
     } elsif ($name eq 'directive') {
       my $text=get_text($item);
       my $type=$item->getAttribute('type');
@@ -144,10 +149,38 @@ sub create_rule_production {
 	      $rule->findnodes('ancestor-or-self::rule'),
 	      grep {defined($_)} $rule->findnodes("./aliases/alias"))
 	. ')'
-	. (($item->getAttribute('sep') ne 'no' and has_sibling($item)) ? '\s/' : '/');
+	. (($item->getAttribute('sep') ne 'no' and has_sibling($item)) ? '\b/' : '/');
+    } elsif ($name eq 'paramlist') {
+      $result.="\n\t  (( ";
+      my $count = 0;
+      foreach my $param ($item->childNodes()) {
+	next unless
+	  $param->nodeType == XML::LibXML::XML_ELEMENT_NODE
+	  and $param->nodeName eq 'param';
+	$result.="\n\t   | " if $count++;
+	my $name=$param->getAttribute('name');
+	my $short=$param->getAttribute('short');
+	my $arg=$param->getAttribute('argument');
+	my $type=$param->getAttribute('type');
+	my $prefix=$param->getAttribute('prefix');
+	my $shortprefix=$param->getAttribute('shortprefix');
+	$result.='/'.$prefix.$name;
+	$result.='|'.$shortprefix.$short if $short ne "";
+	$result.='/';
+	if ($arg ne '') {
+	  $result.=' '.$arg." { [ '$type/$name' => \$item[2] ] }";
+	} else {
+	  $result.=" { [ '/$name' => 1 ] }";
+	}
+      }
+      $result.="\n\t   )(s?) { [ map { \@\$_ } \@{\$item[1]} ] }\n\t  )\n";
+#(( /:fold\s/                { [":fold" => 1] }
+#           | /:encoding\s/ expression { [":encoding" => $item[2]] }
+#           )(s)
+#           { [ map { @$_ } @{$item[1]} ] })
     }
   }
-
+  
   return $result;
 }
 

@@ -10,30 +10,20 @@ BEGIN {
   @xsh_test=split /\n\n/, <<'EOF';
 quiet;
 def x_assert $cond
-{ perl { xsh("unless ($cond) throw \"Assertion failed \$cond\"") } }
+{ perl { xsh("unless ($cond) throw concat('Assertion failed ',\$cond)") } }
 call x_assert '/scratch';
 try {
   call x_assert '/xyz';
   throw "x_assert failed";
 } catch local $err {
-  unless { $err eq 'Assertion failed /xyz' } throw $err;
+  unless { $err =~ /Assertion failed \/xyz/ } throw $err;
 };
 
-#function xsh:doc
-create doc2 'foo';
-
-call x_assert 'xsh:doc("scratch")/scratch';
-
-call x_assert 'xsh:doc("doc2")/foo';
-
-insert text 'scratch' into (xsh:doc("doc2")/foo);
-
-call x_assert 'xsh:doc("doc2")/foo/text()[.="scratch"]';
-
-call x_assert 'string(xsh:doc("doc2")/foo)=name(xsh:doc("scratch")/*)';
+$doc2 := create 'foo';
+insert text 'scratch' into ($doc2/foo);
 
 #function xsh:var
-%var=//node();
+$var=//node();
 
 call x_assert 'count(xsh:var("var"))=2';
 
@@ -111,10 +101,10 @@ call x_assert 'not(xsh:same(/bar,/baz))';
 
 call x_assert 'not(xsh:same(/foo,/bar))';
 
-call x_assert 'xsh:same(/*,xsh:doc("doc2")/*)';
+call x_assert 'xsh:same(/*,$doc2/*)';
 
 #function xsh:max
-create doc3 '<a><b>4</b><b>-3</b><b>2</b></a>';
+$doc3 := create '<a><b>4</b><b>-3</b><b>2</b></a>';
 
 call x_assert 'xsh:max(//b)=4';
 
@@ -131,7 +121,7 @@ call x_assert 'xsh:max(3,9,7)=9';
 call x_assert 'xsh:max(-4,-9,0)=0';
 
 #function xsh:min
-create doc3 '<a><b>4</b><b>-3</b><b>2</b></a>';
+$doc3 := create '<a><b>4</b><b>-3</b><b>2</b></a>';
 
 call x_assert 'xsh:min(//b)=-3';
 
@@ -177,7 +167,7 @@ call x_assert 'xsh:sum(3,4,5)=12';
 call x_assert 'xsh:sum(-3,4,-5)=-4';
 
 #function xsh:strmax
-create doc3 '<a><b>abc</b><b>bde</b><b>bbc</b></a>';
+$doc3 := create '<a><b>abc</b><b>bde</b><b>bbc</b></a>';
 
 call x_assert 'xsh:strmax(//a)="abcbdebbc"';
 
@@ -188,7 +178,7 @@ call x_assert 'xsh:strmax(//b/text())="bde"';
 call x_assert 'xsh:strmax(//b[1],//b[3])="bbc"';
 
 #function xsh:strmin
-create doc3 '<a><b>abc</b><b>bde</b><b>bbc</b></a>';
+$doc3 := create '<a><b>abc</b><b>bde</b><b>bbc</b></a>';
 
 call x_assert 'xsh:strmin(//a)="abcbdebbc"';
 
@@ -210,7 +200,7 @@ call x_assert 'xsh:join(";;",//b[1],//b,//b[3])="abc;;abc;;bde;;bbc;;bbc"';
 #function xsh:serialize
 $xml = '<a>abc<!--foo--><?bar bug?> <dig/></a>';
 
-create doc3 $xml;
+$doc3 := create $xml;
 
 call x_assert 'xsh:serialize(//dig)="<dig/>"';
 
@@ -228,7 +218,7 @@ call x_assert 'xsh:serialize(//node())="${xml}abc<!--foo--><?bar bug?> <dig/>"';
 call x_assert 'xsh:serialize(/a,//dig,//text())="${xml}<dig/>abc "';
 
 #function xsh:subst
-create doc4 '<a>abcb</a>';
+$doc4 := create '<a>abcb</a>';
 
 call x_assert 'xsh:subst("foo","fo",12)="12o"';
 
@@ -248,7 +238,7 @@ call x_assert 'xsh:subst("foobar","(.{2}b)","uc($1)","e")="fOOBar"';
 
 call x_assert 'xsh:subst("foobar","o","/","g")="f//bar"';
 
-call x_assert 'xsh:subst("foobar","o","\\\\","g")="f\\\\\\\\bar"';
+call x_assert 'xsh:subst("foobar","o","[\\]","g")="f[\][\]bar"';
 
 call x_assert 'xsh:subst(/a,"b","X","g")="aXcX"';
 
@@ -267,7 +257,7 @@ call x_assert 'xsh:sprintf("%e",13.123)="1.312300e+01"';
 
 call x_assert 'xsh:sprintf("%s-%e-%s-%s","foo",13.123,"bar",/a)="foo-1.312300e+01-bar-abcb"';
 
-create doc4 '<a><b>abc</b><c>efg</c></a>';
+$doc4 := create '<a><b>abc</b><c>efg</c></a>';
 
 call x_assert '(xsh:map(/a/*,"string(text())")/self::xsh:string[1] = "abc")';
 
@@ -294,7 +284,9 @@ foreach //b {
 local $pwd;
 foreach //node() {
   pwd |> $pwd;
+  count $pwd;
   perl { chomp $pwd; chomp $pwd };
+  count $pwd;
   call x_assert 'xsh:path(.)="${pwd}"';
 }
 
@@ -303,7 +295,7 @@ EOF
   plan tests => 4+@xsh_test;
 }
 END { ok(0) unless $loaded; }
-use XML::XSH qw/&xsh &xsh_init &set_quiet &xsh_set_output/;
+use XML::XSH2 qw/&xsh &xsh_init &set_quiet &xsh_set_output/;
 $loaded=1;
 ok(1);
 
@@ -315,7 +307,7 @@ $::RD_ERRORS = 1; # Make sure the parser dies when it encounters an error
 $::RD_WARN   = 1; # Enable warnings. This will warn on unused rules &c.
 $::RD_HINT   = 1; # Give out hints to help fix problems.
 
-xsh_set_output(\*STDERR);
+#xsh_set_output(\*STDERR);
 set_quiet(0);
 xsh_init();
 
@@ -323,13 +315,15 @@ print STDERR "\n" if $verbose;
 ok(1);
 
 print STDERR "\n" if $verbose;
-ok ( XML::XSH::Functions::create_doc("scratch","scratch") );
+ok ( XML::XSH2::Functions::create_doc("scratch","scratch") );
 
 print STDERR "\n" if $verbose;
-ok ( XML::XSH::Functions::set_local_xpath(['scratch','/']) );
+ok ( XML::XSH2::Functions::set_local_xpath('/') );
 
 foreach (@xsh_test) {
   print STDERR "\n\n[[ $_ ]]\n" if $verbose;
-  ok( xsh($_) );
+  eval { xsh($_) };
+  print STDERR $@ if $@;
+  ok( !$@ );
 }
 

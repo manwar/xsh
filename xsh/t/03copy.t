@@ -12,39 +12,39 @@ quiet;
 
 indent 1;
 
-create t test;
+$t := create 'test';
 
-insert chunk "<x n='1'>abc</x><x n='2'/><x n='3'/>" into t:/test;
+insert chunk "<x n='1'>abc</x><x n='2'/><x n='3'/>" into $t/test;
 
-insert chunk "<z u='v'>zzz</z>" into t:/test;
+insert chunk "<z u='v'>zzz</z>" into $t/test;
 
 $expect='<test><x n="1">abc</x><x n="2"/><x n="3"/><z u="v">zzz</z></test>';
 
-if { xml_list('t:/test') ne $expect } {
+if { xml_list('$t/test') ne $expect } {
   perl { die "Resulting XML does not match what was expected:\n<RESULT>".
-              xml_list('t:/test').
+              xml_list('$t/test').
              "</RESULT>\nversus\n".
              "<EXPECTED>$expect</EXPECTED>\n"
        }
 }
 
 foreach (/test/x/@n|/test/x|/test/x/text()) {
-  unless (self::*|self::text()) insert attribute after_attribute=b after .;
-  copy /test/z after .;
-  insert text after_text after .;
-  insert pi after_pi after .;
-  insert comment after_comment after .;
+  unless (self::*|self::text()) insert attribute 'after_attribute=b' after .;
+  xcopy /test/z after .;
+  insert text 'after_text' after .;
+  insert pi 'after_pi' after .;
+  insert comment 'after_comment' after .;
   unless (. = ../@*) insert chunk '<after_chunk>a</after_chunk><after_chunk>b</after_chunk>' after .;
 }
 
-ls /test 2 | cat
+ls --depth 2 /test | cat
 
 EOF
 
   plan tests => 4+@xsh_test;
 }
 END { ok(0) unless $loaded; }
-use XML::XSH qw/&xsh &xsh_init &set_quiet &xsh_set_output/;
+use XML::XSH2 qw/&xsh &xsh_init &set_quiet &xsh_set_output/;
 $loaded=1;
 ok(1);
 
@@ -56,7 +56,7 @@ $::RD_HINT   = 1; # Give out hints to help fix problems.
 
 my $verbose=$ENV{HARNESS_VERBOSE};
 
-xsh_set_output(\*STDERR);
+#xsh_set_output(\*STDERR);
 set_quiet(0);
 xsh_init();
 
@@ -64,12 +64,14 @@ print STDERR "\n" if $verbose;
 ok(1);
 
 print STDERR "\n" if $verbose;
-ok ( XML::XSH::Functions::create_doc("scratch","scratch") );
+ok ( XML::XSH2::Functions::create_doc("scratch","scratch") );
 
 print STDERR "\n" if $verbose;
-ok ( XML::XSH::Functions::set_local_xpath(['scratch','/']) );
+ok ( XML::XSH2::Functions::set_local_xpath('/') );
 
 foreach (@xsh_test) {
   print STDERR "\n\n[[ $_ ]]\n" if $verbose;
-  ok( xsh($_) );
+  eval { xsh($_) };
+  print STDERR $@ if $@;
+  ok( !$@ );
 }

@@ -1,7 +1,7 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # -*- cperl -*-
 
-# $Id: xsh,v 1.33 2003-10-23 17:41:39 pajas Exp $
+# $Id: xsh,v 2.0 2004-12-02 17:26:10 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -24,9 +24,9 @@ use vars qw($VERSION $REVISION);
 
 use IO::Handle;
 
-use XML::XSH qw(&xsh_set_output &xsh_get_output &xsh &xsh_init
-		&xsh_pwd &xsh_local_id &set_quiet &set_debug
-		&set_compile_only_mode);
+use XML::XSH2 qw(&xsh_set_output &xsh_get_output &xsh &xsh_init
+		&xsh_pwd &set_quiet &set_debug &xsh_context_var
+		&set_compile_only_mode &xsh_set_script);
 
 BEGIN {
   my $optparser=new Getopt::Long::Parser(config => ["bundling"]);
@@ -52,6 +52,7 @@ BEGIN {
 			 "html|H" => \$opt_HTML,
 			 "xml|X" => \$opt_XML,
 			 "trace-grammar|T" => \$opt_T,
+			 "benchmark|B" => \$XML::XSH2::Functions::BENCHMARK,
 			 "query-encoding|E=s" => \$opt_E,
 			 "encoding|e=s" => \$opt_e,
 			 "load|l=s" => \$opt_l,
@@ -60,7 +61,7 @@ BEGIN {
 			) or $usage=1;
 #  getopts('atscqvwdfhVinTE:e:l:pP');
   $VERSION='0.12';
-   $REVISION='$Revision: 1.33 $';
+   $REVISION=q($Revision: 2.0 $);
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -88,9 +89,9 @@ if (!$opt_C and !$opt_a and $opt_l eq "" and -f $ARGV[0]) {
   # suppose the 1st argument is a script,
   # and the rest is its parameters
   $opt_l = shift @ARGV;
-  @XML::XSH::Map::ARGV=@ARGV;
+  @XML::XSH2::Map::ARGV=@ARGV;
 } elsif ($opt_a) {
-  @XML::XSH::Map::ARGV=@ARGV;
+  @XML::XSH2::Map::ARGV=@ARGV;
 } else {
   # suppose the arguments are XSH commands
   $string=join " ",@ARGV;
@@ -98,9 +99,9 @@ if (!$opt_C and !$opt_a and $opt_l eq "" and -f $ARGV[0]) {
 
 die "Incompatible options: --html, --xml\n" if $opt_XML+$opt_HTML > 1;
 if ($opt_HTML) {
-  $XML::XSH::Functions::DEFAULT_FORMAT='html';
+  $XML::XSH2::Functions::DEFAULT_FORMAT='html';
 } elsif ($opt_XML) {
-  $XML::XSH::Functions::DEFAULT_FORMAT='xml';
+  $XML::XSH2::Functions::DEFAULT_FORMAT='xml';
 }
 
 if ($opt_p) {
@@ -118,10 +119,10 @@ require Term::ReadLine if $opt_i;
 if ($opt_V) {
   my $rev=$REVISION;
   $rev=~s/\s*\$//g;
-  my $funcrev=$XML::XSH::Functions::REVISION;
+  my $funcrev=$XML::XSH2::Functions::REVISION;
   $funcrev=~s/\s*\$//g;
   print "xsh $VERSION ($rev)\n";
-  print "XML::XSH::Functions $XML::XSH::Functions::VERSION ($funcrev)\n";
+  print "XML::XSH2::Functions $XML::XSH2::Functions::VERSION ($funcrev)\n";
   exit 1;
 }
 
@@ -132,62 +133,68 @@ $::RD_TRACE   = $opt_T; # Give out hints to help fix problems.
 
 my $module;
 #if ($opt_g) {
-#  $module="XML::XSH::GDOMECompat";
+#  $module="XML::XSH2::GDOMECompat";
 #} else {
-  $module="XML::XSH::LibXMLCompat";
+  $module="XML::XSH2::LibXMLCompat";
 #}
 xsh_init($module);
-
+XML::XSH2::Functions::set_encoding($opt_e) if $opt_e;
+XML::XSH2::Functions::set_qencoding($opt_E) if $opt_E;
 set_quiet($opt_q);
 set_debug($opt_d);
 set_compile_only_mode($opt_c);
 
-my $doc=XML::XSH::Functions::create_doc("scratch","scratch",'xml');
-#XML::XSH::Functions::set_last_id("scratch");
-XML::XSH::Functions::set_local_xpath(['scratch','/']);
+my $doc=XML::XSH2::Functions::create_doc('$scratch',"scratch",'xml');
+XML::XSH2::Functions::set_local_xpath('/');
+
+# XPath variant of perlish {@ARGV} ($ARGV[1] is the first arg though)
+$XML::XSH2::Map::ARGV = XML::LibXML::NodeList->new(map { XML::XSH2::Functions::cast_value_to_objects($_) } @XML::XSH2::Map::ARGV);
 
 if ($opt_w) {
-  XML::XSH::Functions::set_validation(0);
-  XML::XSH::Functions::set_load_ext_dtd(0);
-  XML::XSH::Functions::set_expand_entities(0);
-  XML::XSH::Functions::set_complete_attributes(0);
+  XML::XSH2::Functions::set_validation(0);
+  XML::XSH2::Functions::set_load_ext_dtd(0);
+  XML::XSH2::Functions::set_expand_entities(0);
+  XML::XSH2::Functions::set_complete_attributes(0);
 } elsif ($opt_v) {
-  XML::XSH::Functions::set_validation(1);
-  XML::XSH::Functions::set_load_ext_dtd(1);
-  XML::XSH::Functions::set_expand_entities(1);
-  XML::XSH::Functions::set_complete_attributes(1);
+  XML::XSH2::Functions::set_validation(1);
+  XML::XSH2::Functions::set_load_ext_dtd(1);
+  XML::XSH2::Functions::set_expand_entities(1);
+  XML::XSH2::Functions::set_complete_attributes(1);
 }
 
 if ($format) {
-  XML::XSH::Functions::set_keep_blanks(0);
-  XML::XSH::Functions::set_indent(1);
-  print "FORMAT: $XML::XSH::Map::INDENT $XML::XSH::Map::KEEP_BLANKS\n";
+  XML::XSH2::Functions::set_keep_blanks(0);
+  XML::XSH2::Functions::set_indent(1);
+  print "FORMAT: $XML::XSH2::Map::INDENT $XML::XSH2::Map::KEEP_BLANKS\n";
 }
 
 my $l;
 
-eval {
-  my $ini = "$ENV{HOME}/.xshrc";
-  if (-r $ini) {
-    open INI, $ini || die "cannot open $ini";
-    $XML::XSH::Functions::_includes{$ini}=1;
-    xsh(join("",<INI>));
-    close INI;
+unless ($opt_f) {
+  eval {
+    my $ini = "$ENV{HOME}/.xsh2rc";
+    if (-r $ini) {
+      open my $INI, '<:bytes',$ini || die "cannot open $ini";
+      $XML::XSH2::Functions::_includes{$ini}=1;
+      xsh_set_script($ini);
+      xsh(join("",<$INI>));
+      close $INI;
+    }
+  };
+  if ($@) {
+    print STDERR "Error occured while reading ~/.xsh2rc\n";
+    print STDERR "$@\n";
   }
-};
-if ($@) {
-  print STDERR "Error occured while reading ~/.xshrc\n";
-  print STDERR "$@\n";
 }
 
 if ($opt_i) {
-  $XML::XSH::Functions::TRAP_SIGINT=1;
-  $XML::XSH::Functions::TRAP_SIGPIPE=1;
-  $XML::XSH::Functions::_die_on_err=0;
+  $XML::XSH2::Functions::TRAP_SIGINT=1;
+  $XML::XSH2::Functions::TRAP_SIGPIPE=1;
+  $XML::XSH2::Functions::_die_on_err=0;
   unless ($opt_q) {
     my $rev=$REVISION;
     $rev=~s/\s*\$//g;
-    $rev=" xsh - XML Editing Shell version $XML::XSH::Functions::VERSION/$VERSION ($rev)\n";
+    $rev=" xsh - XML Editing Shell version $XML::XSH2::Functions::VERSION/$VERSION ($rev)\n";
     print STDERR "-"x length($rev),"\n";
     print STDERR $rev;
     print STDERR "-"x length($rev),"\n\n";
@@ -196,7 +203,7 @@ if ($opt_i) {
     print STDERR "either the GNU GPL Version 2, or under the Perl Artistic License.\n";
   }
 } else {
-  $XML::XSH::Functions::_die_on_err=1;
+  $XML::XSH2::Functions::_die_on_err=1;
 }
 
 if ($process ne "") {
@@ -214,36 +221,40 @@ foreach ($input, $output) {
   s(')(\\')g;
 }
 
-print STDERR "open _='$input'\n" if $opt_d;
-xsh("open _='$input'") if ($input);
+print STDERR "\$INPUT open := '$input'\n" if $opt_d;
+xsh_set_script('<CMD-LINE>');
+xsh("\$INPUT := open '$input'") if ($input);
+
+if ($opt_l) {
+  open(my $load,'<:bytes',"$opt_l") || do { print STDERR "Error loading $opt_l: $!\n"; exit 1 };
+  xsh_set_script($opt_l);
+  my $s = join "",<$load>;
+  close $load;
+  xsh($s);
+}
 
 if ($string) {
   print "xsh> $string\n" if ($opt_i and not $opt_q);
+  xsh_set_script('<CMD-LINE>');
   xsh($string);
   print "\n" if ($opt_i and not $opt_q);
 }
 
-if ($opt_l) {
-  my $load;
-  open($load,"$opt_l") || do { print STDERR "Error loading $opt_l: $!\n"; exit 1 };
-  xsh(join "",<$load>);
-  close $load;
-}
 
 my $term;
 sub _term { $term };
 
 if ($opt_i) {
   $term = new Term::ReadLine('xsh');
-  $XML::XSH::Functions::_on_exit=
+  $XML::XSH2::Functions::_on_exit=
     [sub { 
        my ($exit_code,$term)=@_;
        if ($term->can('GetHistory')) {
 	 eval {
 	   print STDERR "saving $ENV{HOME}/.xsh_history\n";
-	   open HIST,"> $ENV{HOME}/.xsh_history" || die "cannot open $ENV{HOME}/.xsh_history";
-	   print HIST join("\n",$term->GetHistory());
-	   close HIST;
+	   open my $HIST,'>:bytes',"$ENV{HOME}/.xsh_history" || die "cannot open $ENV{HOME}/.xsh_history";
+	   print $HIST join("\n",$term->GetHistory());
+	   close $HIST;
 	   print STDERR "done\n";
 	 };
 	 if ($@) {
@@ -256,9 +267,9 @@ if ($opt_i) {
 
   eval {
     if (-r "$ENV{HOME}/.xsh_history") {
-      open HIST,"$ENV{HOME}/.xsh_history";
-      $term->addhistory(map { chomp; $_ } <HIST>);
-      close HIST;
+      open my $HIST,'<:bytes',"$ENV{HOME}/.xsh_history";
+      $term->addhistory(map { chomp; $_ } <$HIST>);
+      close $HIST;
     }
   };
   if ($@) {
@@ -266,13 +277,14 @@ if ($opt_i) {
     print STDERR "$@\n";
   }
 
-#  XML::XSH::Completion::cpl();
+#  XML::XSH2::Completion::cpl();
   if ($term->ReadLine eq "Term::ReadLine::Gnu") {
-    $term->Attribs->{attempted_completion_function} = \&XML::XSH::Completion::gnu_complete;
+    $term->Attribs->{attempted_completion_function} = \&XML::XSH2::Completion::gnu_complete;
     $term->Attribs->{completion_entry_function} = sub { return () };
     $term->Attribs->{completer_word_break_characters} = " =\t\n\r\"'`;|&})[{(]";
+    $term->Attribs->{horizontal_scroll_mode} = 0;
   } else {
-    $readline::rl_completion_function = 'XML::XSH::Completion::perl_complete';
+    $readline::rl_completion_function = 'XML::XSH2::Completion::perl_complete';
     $readline::rl_completer_word_break_characters = " =\t\n\r\"'`;|&})[{(]";
   }
 
@@ -283,7 +295,7 @@ if ($opt_i) {
   }
   while (defined ($l=get_line($term,prompt(),''))) {
     while ($l=~/\\+\s*$/) {
-      $l=~s/\\+\s*$//;
+      $l=~s/\\+(\s*)$/\n/;
       my $a=get_line($term,'> ',undef);
       if (defined($a)) {
 	$l.=$a
@@ -292,16 +304,26 @@ if ($opt_i) {
       }
     }
     if ($l=~/\S/) {
-      xsh($l);
+      xsh_set_script('<STDIN>');
+      eval { xsh($l); };
+      warn $@ if $@;
 #      $term->addhistory($l);
     }
   }
   print STDERR "Good bye!\n" if $opt_i and not "$opt_q";
 } elsif ((!$opt_p and $string eq "" and $opt_l eq "") or $opt_t) {
-  xsh(join "",<STDIN>);
+  xsh_set_script('<STDIN>');
+  binmode STDIN,':bytes';
+  my $s = join "",<STDIN>;
+  close STDIN;
+  xsh($s);
 }
 
-xsh("save _ '$output'") if ($output);
+xsh_set_script('<CMD-LINE>');
+if ($output) {
+  local $XML::XSH2::Map::OUTFILE=$output;
+  xsh('save --file $OUTFILE $INPUT');
+}
 
 # get a line of input from ReadLine
 # if ^C interruption by user occures return $retonint
@@ -326,12 +348,13 @@ sub get_line {
 }
 
 sub prompt {
-  return 'xsh '.xsh_local_id().":".xsh_pwd().'> ';
+  return xsh_context_var().xsh_pwd().'> ';
 }
 
 
 __END__
 
+=pod
 
 =head1 xsh
 
@@ -376,7 +399,7 @@ to get help on a particular command.
 
 Load and execute given XSH script (the script is executed before all
 other commands provided on the command-line, but after executed
-~/.xshrc).
+~/.xsh2rc).
 
 =item B<--commands|-C>
 
@@ -385,7 +408,7 @@ Indicate, that the command-line arguments are XSH commands.
 =item B<--arguments|-a>
 
 Indicate, that the command-line arguments are should be
-passed to the script via C<@XML::XSH::Map::ARGV>. This
+passed to the script via C<@XML::XSH2::Map::ARGV>. This
 option is incompatible with C<--commands>.
 
 =item B<--stdin|-t>
@@ -423,7 +446,7 @@ Print some debug messages.
 
 =item B<--no-init|-f>
 
-Ignore ~/.xshrc
+Ignore ~/.xsh2rc
 
 =item B<--version|-V>
 
@@ -443,7 +466,7 @@ Force non-interactive mode.
 
 This is a special mode in which xsh acts as a pipe-line processing
 tool.  In this mode, first the standard input is read and opened as a
-document _ (underscore), then all XSH commands given in ~/.xshrc,
+document _ (underscore), then all XSH commands given in ~/.xsh2rc,
 command-line and given XSH scripts are applied and finally the
 (possibly modified) document _ is dumped back on the standard output.
 It is equivallent to C<-I - -O -> and C<-P ->.

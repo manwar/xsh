@@ -25,7 +25,7 @@ New features:
      skip-dtd ($SKIP_DTD)
 
 Support:
-   - new Perl module: Inline::XSH to simplify inclusion of inline XSH
+   - new Perl module: XML::XSH2::Inline to simplify inclusion of inline XSH
      code in Perl programs
 
 Bug fixes:

@@ -1,31 +1,34 @@
-# $Id: XSH.pm,v 1.12 2003-09-08 15:52:58 pajas Exp $
+# $Id: XSH2.pm,v 2.0 2004-12-02 17:26:11 pajas Exp $
 
-package XML::XSH;
+package XML::XSH2;
 
 use strict;
-use vars qw(@EXPORT_OK @EXPORT @ISA $VERSION $xshNS);
-
-use Exporter;
-use XML::XSH::Functions qw(:default);
-use XML::XSH::Completion;
+use vars qw(@EXPORT_OK @EXPORT @ISA $VERSION);
 
 BEGIN {
   $VERSION   = '1.2';
   @ISA       = qw(Exporter);
   @EXPORT = qw(&xsh);
-  @EXPORT_OK = @XML::XSH::Functions::EXPORT_OK;
-  $xshNS = 'http://xsh.sourceforge.net/xsh/';
+  @EXPORT_OK = @XML::XSH2::Functions::EXPORT_OK;
+  *xshNS = \'http://xsh.sourceforge.net/xsh/';
+
+  use Exporter;
+  use XML::XSH2::Functions qw(:default);
+  use XML::XSH2::Completion;
+
 }
+
+
 
 1;
 
 =head1 NAME
 
-XML::XSH - A powerfull scripting language/shell for XPath-based editing of XML
+XML::XSH2 - A powerfull scripting language/shell for XPath-based editing of XML
 
 =head1 SYNOPSIS
 
- use XML::XSH;
+ use XML::XSH2;
  xsh(<<'__XSH__');
 
    # ... XSH Language commands (example borrowed from Kip Hampton's article) ...
@@ -59,7 +62,7 @@ This module implements XSH sripting language. XSH stands for XML
 (editing) SHell. XSH language is documented in L<XSH>
 and on L<http://xsh.sourceforge.net/doc>.
 
-The distribution package of XML::XSH module includes XSH shell
+The distribution package of XML::XSH2 module includes XSH shell
 interpreter called C<xsh> (see L<xsh>). To use it interactively, run
 C<xsh -i>.
 

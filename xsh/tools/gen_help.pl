@@ -1,12 +1,12 @@
 #!/usr/bin/perl
 
-# $Id: gen_help.pl,v 1.13 2003-11-03 07:11:18 pajas Exp $
+# $Id: gen_help.pl,v 2.0 2004-12-02 17:26:52 pajas Exp $
 
 use strict;
 use XML::LibXML;
 use Text::Wrap qw(wrap);
 
-if ($ARGV[0]=~'^(-h|--help)?$') {
+if ($ARGV[0]=~'^(-h|--help)?\$') {
   print <<EOF;
 Generates help module from RecDescentXML source.
 
@@ -36,7 +36,7 @@ my $desc;
 print "# This file was automatically generated from $ARGV[0] on \n# ",scalar(localtime),"\n";
 print <<'PREAMB';
 
-package XML::XSH::Help;
+package XML::XSH2::Help;
 use strict;
 use vars qw($HELP %HELP);
 
@@ -44,9 +44,12 @@ use vars qw($HELP %HELP);
 PREAMB
 
 print "\$HELP=<<'END';\n";
-print "General notes:\n\n";
+print "\n  Welcome to XSH help\n";
+print "  -------------------\n\n";
+print "  In this help:\n  [topic] is a cross reference that can be followed using 'help topic'\n\n";
 ($desc)=$dom->findnodes('./doc/description');
 print_description($desc,"  ","  ") if ($desc);
+print "\n\n  Within the interactive shell, press <TAB> for auto-completion.\n";
 print "END\n\n";
 
 print "\$HELP{'toc'}=[<<'END'];\n";
@@ -189,24 +192,24 @@ sub get_text {
       $text.=$data;
     } elsif ($n->nodeType() == XML::LibXML::XML_ELEMENT_NODE) {
       if ($n->nodeName() eq 'link') {
-	$text.="<".get_text($n,1).">";
+	$text.="[".get_text($n,1)."]";
       } elsif ($n->nodeName() eq 'xref') {
-	$text.="<";
+	$text.="[";
 	my ($ref)=$node->findnodes("id('".$n->getAttribute('linkend')."')");
 	if ($ref) {
 	  $text.=get_name($ref);
 	} else {
 	  print STDERR "Reference to undefined identifier: ",$n->getAttribute('linkend'),"\n";
 	}
-	$text.=">";
+	$text.="]";
       } elsif ($n->nodeName() eq 'typeref') {
 	foreach (split /\s/,$n->getAttribute('types')) {
 	  $text.=join ", ", sort map { get_name($_) } grep {defined($_)} $node->findnodes("//rules/rule[\@type='$_']");
 	}
       } elsif ($n->nodeName() eq 'tab') {
 	$text.="\t" x $n->getAttribute('count');
-      } if ($n->nodeName() eq 'literal') {
-	$text.="`".get_text($n,1)."'";
+      } elsif ($n->nodeName() eq 'literal') {
+	$text.="'".get_text($n,1)."'";
       } else {
 	$text.=get_text($n);
       }
@@ -234,6 +237,17 @@ sub  print_description {
 	  print $bigindent.'-' x length($t),"\n\n";
 	}
 	print_description($c,$indent."  ",$bigindent."  ");
+      } elsif ($c->nodeName eq 'enumerate') {
+	my $n=1;
+	foreach my $item ($c->findnodes('listitem')) {
+	  print_description($item,$indent."  ".($n++).". ",$bigindent."  ");
+	}
+      } elsif ($c->nodeName eq 'code') {
+	local $_ = get_text($c);
+	s/\n[ ]*/\n$bigindent/mg;
+	s/\\\n/\\\n$bigindent  /g;
+	s/\t/  /g;
+	print "$bigindent$_\n";
       } elsif ($c->nodeName eq 'example') {
 	foreach (map { get_text($_) } $c->findnodes('./title')) {
 	  s/\s+/ /g;
@@ -243,13 +257,7 @@ sub  print_description {
 	  print "Example:";
 	}
 	print "\n";
-	foreach (map { get_text($_) } $c->findnodes('./code')) {
-	  s/\n[ ]*/\n$bigindent/mg;
-
-	  s/\\\n/\\\n$bigindent  /g;
-	  s/\t/  /g;
-	  print "$bigindent$_\n";
-	}
+	print_description($c,$indent,$bigindent);
 	print "\n";
       }
     }

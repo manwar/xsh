@@ -9,6 +9,8 @@
 <!ENTITY % paracont    "#PCDATA | xref | ulink | link | typeref 
                         | emphasis | literal">
 
+<!ENTITY % textblock   "para | code |enumerate | example">
+
 
 <!--                    RecDescent                                 -->
 <!--                    RecDescent grammar and documentation
@@ -20,7 +22,7 @@
 <!ELEMENT  doc          (title?, shortdesc?, description?, section*) >
 
 <!--                    Section                                    -->
-<!ELEMENT  section      (title, (para | code | example)*, section*)  >
+<!ELEMENT  section      (title, (%textblock;)*, section*)  >
 <!--         id         section identifier                         -->
 <!ATTLIST  section
              id         ID                                 #REQUIRED >
@@ -42,7 +44,7 @@
 <!--                    Rule                                       -->
 <!--                    RecDescent grammar rule, its action and,
                         optionally, documentation                  -->
-<!ELEMENT  rule        (aliases?, (production|ruleref)+, comment?, documentation?) >
+<!ELEMENT  rule        (aliases?, (command|(production|ruleref)*), comment?, documentation?) >
 <!--         id         rule identificator
              type       rule type (you may categorize your rules)
              name       rule/command descriptive name             
@@ -72,7 +74,29 @@
 
 <!--                    Production                                 -->
 <!--                    The rule production                        -->
-<!ELEMENT  production   (selfref | group | regexp | directive | ruleref | string | lookahead | action)*    >
+<!ELEMENT  production   (selfref | paramlist | group | regexp | directive | ruleref | string | lookahead | action )*    >
+
+<!--                    XSH command                                -->
+<!ELEMENT  command      (param)*                                     >
+<!ATTLIST  command
+             minargs    CDATA                              #IMPLIED
+             maxargs    CDATA                              #IMPLIED
+             func       CDATA                              #REQUIRED
+             extraargs  CDATA                              #IMPLIED  >
+
+<!--                    paramlist                                  -->
+<!ELEMENT  paramlist    (param)*                                     >
+
+<!--                    param                                      -->
+<!ELEMENT  param        EMPTY                                        >
+<!ATTLIST  param
+             name       CDATA                              #REQUIRED
+             short      CDATA                              #IMPLIED
+             prefix     CDATA                              '--'
+             shortprefix  CDATA                            ':'
+             repeatable (yes|no)                           'no'
+             type       CDATA                              #IMPLIED
+             argument   IDREF                              #IMPLIED  >
 
 <!--                    lookahead                                  -->
 <!ELEMENT  lookahead    EMPTY                                        >
@@ -83,6 +107,9 @@
 <!--                    RegExp                                     -->
 <!--                    Token matched by a regular expression      -->
 <!ELEMENT  regexp       (#PCDATA)                                    >
+<!--         mod        modifier                                   -->
+<!ATTLIST  regexp
+             mod        CDATA                              #IMPLIED  >
 
 
 
@@ -115,7 +142,7 @@
 <!--                    Action                                     -->
 <!--                    Perl code which is evaluated on successful
                         production                                 -->
-<!ELEMENT  action       (#PCDATA)                                    >
+<!ELEMENT  action       (#PCDATA | lineinfo)*                                    >
 
 
 
@@ -140,7 +167,7 @@
 
 <!--                    Description                                -->
 <!--                    Command description                        -->
-<!ELEMENT  description  (para | code | example)*                     >
+<!ELEMENT  description  (%textblock;)*                     >
 
 
 <!--                    See-also                                   -->
@@ -232,6 +259,14 @@
 <!ELEMENT  userinput    (#PCDATA | tab)*                             >
 
 
+<!ELEMENT  lineinfo     EMPTY                                        >
+
+<!--                    enumerate                                  -->
+<!--                    numbered list in documentation             -->
+<!ELEMENT  enumerate    (listitem+)                                  >
+<!--                    listitem                                   -->
+<!--                    list item in a numbered                    -->
+<!ELEMENT  listitem     (%textblock;)*                               >
 
 <!-- ============================================================= -->
 <!--                    End of RecDescent command definition DTD   -->

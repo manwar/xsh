@@ -11,7 +11,7 @@ automatically (highly recommended):
 From CPAN:
 
 $ perl -MCPAN -e shell
-cpan> install XML::XSH
+cpan> install XML::XSH2
 
 From tar-ball
 

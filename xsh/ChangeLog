@@ -1,3 +1,361 @@
+2004-10-31  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* lib/XML/XSH/Help.pm: updated
+
+	* src/xsh_grammar.xml: documentation
+
+	* lib/XML/XSH/Functions.pm:
+	avoid printing a space after each line with echo
+
+2004-10-10  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* tools/gen_doc.xsh, tools/gen_reference.xsh:
+	added @role to various generated docbook elements
+
+	* src/xsh_grammar.xml: docu
+
+	* src/xsh_grammar.xml: docu updates
+
+	* xsh: changed $ARGV implementation
+
+2004-09-23  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* lib/XML/XSH/Functions.pm: fixed XInclude support
+
+2004-07-23  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* lib/XML/XSH/Commands.pm, lib/XML/XSH/Completion.pm, lib/XML/XSH/Functions.pm:
+	locale
+
+	* xsh: *** empty log message ***
+
+2004-07-16  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* lib/XML/XSH/Help.pm: - regenerated
+
+	* src/xsh_grammar.xml: - save, open have more options now
+	- doc updates
+
+	* lib/XML/XSH/Functions.pm: save, open have more options now
+
+	* lib/XML/XSH/Commands.pm, lib/XML/XSH/Grammar.pm: regenerated
+
+	* xsh:
+	added $ARGV as XPath variable ($ARGV[1] is the 1st arg, though, sinc
+	XPath does'nt allow $ARGV[0])
+
+2004-07-12  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* src/xsh_grammar.xml: docu update
+
+	* BUGS: update
+
+	* xsh: - don't overwrite default utf8 encodings with ''
+
+	* lib/XML/XSH/Functions.pm:
+	- $PROGRAM_NAME variable contains current script name
+	- fixed bug regarding too few parameters
+	- automatic perl->XML object conversion selects the text nodes
+	  within xsh:* elements rather than the elements themselves.
+
+	* src/xsh_grammar.xml:
+	documentation: minor enhancements, added xsh2delta
+
+2004-07-12  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* BUGS: update
+
+	* xsh: - don't overwrite default utf8 encodings with ''
+
+	* lib/XML/XSH/Functions.pm:
+	- $PROGRAM_NAME variable contains current script name
+	- fixed bug regarding too few parameters
+	- automatic perl->XML object conversion selects the text nodes
+	  within xsh:* elements rather than the elements themselves.
+
+	* src/xsh_grammar.xml:
+	documentation: minor enhancements, added xsh2delta
+
+2004-07-07  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* lib/XML/XSH/Functions.pm:
+	- select $OUT, so that "print" from Perl prints to the proper terminal handle
+	- cleanup and minor updates
+
+	* lib/XML/XSH/Commands.pm, lib/XML/XSH/Completion.pm, lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm, lib/XML/XSH/Parser.pm:
+	regenerated
+
+	* lib/XML/XSH/LibXMLCompat.pm: overload - for NodeLists
+
+	* tools/gen_reference.xsh: *** empty log message ***
+
+	* t/01basic.t, t/03copy.t, t/04flow.t, t/05misc.t, t/06wrap.t, t/07functions.t:
+	avoid setting $OUT to STDERR
+
+	* src/xsh_grammar.xml: many documentation updates
+
+	* TODO, XSH2_NOTES: update
+
+2004-06-10  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* lib/XML/XSH/Functions.pm: fixed serialize, etc.
+
+	* t/01basic.t, t/07functions.t, src/xsh_grammar.xml: fix
+
+	* lib/XML/XSH/Functions.pm: *** empty log message ***
+
+2004-05-26  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm, lib/XML/XSH/Parser.pm:
+	- regenerated
+
+	* src/xsh_grammar.xml: - stream command reworked
+	- documentation updates
+
+	* lib/XML/XSH/Functions.pm: stream command reworked
+
+2004-05-23  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* tools/gen_doc.xsh, tools/gen_help.pl, tools/gen_reference.xsh:
+	allow enumerate
+
+	* tools/gen_grammar.pl: allow regular expression modifiers
+
+	* lib/XML/XSH/Commands.pm, lib/XML/XSH/CompletionList.pm, lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm, lib/XML/XSH/Parser.pm:
+	regenerated
+
+	* lib/XML/XSH/Functions.pm:
+	- ${ ... } interpolation reworked and changed in an incompatible way
+	- xsh:doc() XPath extension function syntax and semantics changed (now
+	  maps given node-set to document nodes
+	- xslt command reworked (allows precompiled xslt, and xslt docs)
+	- validate command reworked
+	- valid command removed (replaced with validate --yesno)
+	- cleanup
+
+	* src/xsh_grammar.xml: - xslt command reworked
+	- validate command reworked
+	- valid command removed (replaced with validate --yesno)
+	- documentation updates
+	- grammar cleanup
+
+	* src/recdescent.dtd: added enumerate
+
+2004-05-19  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* xsh: fix -I option
+
+	* lib/XML/XSH/Functions.pm: *** empty log message ***
+
+2004-05-09  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* lib/XML/XSH/Commands.pm, lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm, lib/XML/XSH/Parser.pm:
+	regenerated
+
+	* tools/gen_doc.xsh, tools/gen_reference.xsh, t/05misc.t:
+	- sort command reworked
+
+	* src/xsh_grammar.xml:
+	- added lc,uc,lcfirst,ucfirts XPath extension functions
+	- save --print | --string added/changed, save --var removed
+	- sort command reworked
+	- xslt command reworked
+
+	* lib/XML/XSH/Functions.pm:
+	- added lc,uc,lcfirst,ucfirts XPath extension functions
+	- some error messages cleanup
+	- save --print | --string added/changed, save --var removed
+	- sort command reworked
+	- xslt command reworked
+	- added current() and position() functions to  XML::XSH::Map
+
+	* BUGS: *** empty log message ***
+
+2004-05-07  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* BUGS: - fixed: implicit conversion to XML has some problems
+	  in XML::LibXML: try
+	  ls &{edit "foo"}
+	  you'll get empty nodelist, which seems incorrect.
+
+	* lib/XML/XSH/Functions.pm:
+	- wrap allows loose parsing of the element name expression
+	- fixed implicit conversion bug
+	- better argument checking in safe_insert
+	- implicit conversion on unknown type is a fatal error
+
+	* lib/XML/XSH/Completion.pm: completion code update for xsh2
+
+2004-05-05  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* lib/XML/XSH/Commands.pm, lib/XML/XSH/CompletionList.pm, lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm:
+	regenerated
+
+	* src/xsh_grammar.xml:
+	- documentation for variables updated (argtypes still need rewrite!!!)
+	- options command renamed to settings
+
+	* tools/gen_reference.xsh: fix argtype section
+
+	* lib/XML/XSH/Commands.pm, lib/XML/XSH/CompletionList.pm, lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm, lib/XML/XSH/Parser.pm:
+	regenerated
+
+	* lib/XML/XSH/Functions.pm: - allow uppercase value for save --format
+	- die on unknown save --format value
+
+	* tools/gen_reference.xsh: remove 'echo "foo"' :-)
+
+	* tools/gen_doc.xsh: converted to XSH2
+
+	* src/xsh_grammar.xml: - add edit, sort to Manipulation section
+	- allow ||=, &&= and :||=,:&&= assignments
+	- documented xsh:id2 function
+
+	* tools/gen_reference.xsh:
+	insert returns value (--result arg was removed)
+
+	* BUGS: ok, not a bug in xsh2, but in the script:-)
+
+	* BUGS: update
+
+	* XSH2_NOTES: *** empty log message ***
+
+	* XSH2_NOTES: developer's notes - initial commit
+
+	* tools/gen_reference.xsh: - some fixes
+
+	* lib/XML/XSH/Functions.pm:
+	- use native libxml2 getPath for pwd if available
+	- node-constructors should be little safer
+
+2004-05-04  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* tools/gen_completions.pl, tools/gen_doc.xsh, tools/gen_grammar.pl, tools/gen_reference.xsh, t/01basic.t, t/02gdome.t, t/03copy.t, t/06wrap.t, t/07functions.t:
+	update
+
+	* src/xsh_grammar.xml: - cleanup
+	- minor docu update for edit
+	- removed --result and --append-result
+	- many commands return value now, instead of taking a variable argument
+
+	* lib/XML/XSH/Commands.pm, lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm, lib/XML/XSH/Parser.pm:
+	regenerated
+
+	* lib/XML/XSH/Functions.pm: minor fixes and cleanup
+
+	* BUGS: update
+
+2004-04-23  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* lib/XML/XSH/Commands.pm, lib/XML/XSH/CompletionList.pm, lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm, lib/XML/XSH/Parser.pm:
+	regenerated
+
+	* src/xsh_grammar.xml: parse &{ commands } as expressions
+
+	* lib/XML/XSH/Functions.pm:
+	added semantics for &{ commands } expressions
+
+	* lib/XML/XSH/Commands.pm, lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm:
+	regenerated
+
+	* lib/XML/XSH/Functions.pm: - redirection to string fixed
+	- some XML::XSH::Map functions
+
+	* src/xsh_grammar.xml: - added encoding option to include/ifinclude
+
+	* xsh: - encoding fixups
+	- using #!/usr/bin/env perl instead of #!/usr/bin/perl
+
+	* Makefile.PL: use $(PERL) instead of perl
+
+2004-04-20  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* lib/XML/XSH/Functions.pm:
+	- fix error reporting (prevent loosing $@ content)
+
+2004-04-19  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* src/xsh_grammar.xml, lib/XML/XSH/Functions.pm: edit, options
+
+	* xsh: safe shell
+
+	* lib/XML/XSH/Functions.pm: - variable resolving/assigning fixes
+	- syntax error fix
+
+	* t/05misc.t: fix
+
+	* tools/gen_reference.xsh: update
+
+	* t/01basic.t, t/02gdome.t, t/03copy.t, t/04flow.t, t/05misc.t, t/06wrap.t, t/07functions.t:
+	updates for use with new XSH2 syntax
+
+	* lib/XML/XSH/Commands.pm: generated
+
+	* lib/XML/XSH/CompletionList.pm, lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm, lib/XML/XSH/Parser.pm:
+	regenerated
+
+	* lib/XML/XSH/LibXMLCompat.pm: - overload + for nodelists
+
+	* lib/XML/XSH/Completion.pm: - remove nodelist variables completion
+
+	* lib/XML/XSH/Functions.pm:
+	- support for unified command parsing rules (preprocessing)
+	- commands may return values
+	- cleanup
+
+	* src/recdescent.dtd: element for unified command parsing rules
+
+	* src/xsh_grammar.xml:
+	reworked grammar - uses unified command parsing rules
+
+	* tools/gen_grammar.pl: use \b instead of \s
+
+	* tools/gen_commands.pl: initial commit
+
+	* xsh: benchmark
+
+	* Makefile.PL: generate command specifications
+
+	* MANIFEST: update
+
+2004-04-16  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* xsh: apply -f flag
+
+	* src/xsh_grammar.xml: fix expression parsing
+
+	* lib/XML/XSH/Functions.pm: fix argument passing to call
+
+	* lib/XML/XSH/Completion.pm:
+	avoid calling non-existing Functions::doc (completion needs rewrite anyway)
+
+2004-04-01  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* tools/gen_reference.xsh: - reworked for xsh2
+
+	* src/xsh_grammar.xml:
+	- speedup parsing by avoiding use of P::RD tied hashes for retrieving line-number info
+	- docu updates
+
+	* lib/XML/XSH/Functions.pm: - $WARNINGS option variable
+	- lineno added to list of registered xpath functions
+	- clenup
+
+	* src/xsh_grammar.xml: - allow variable de-referencing ($$var)
+	- cleanup
+	- save command fix
+
+	* lib/XML/XSH/Functions.pm: - allow variable de-referencing ($$var)
+	- cleanup
+
+	* xsh: - use ~/.xsh2rc instead of ~/.xshrc
+	- minor fixes
+
+2004-03-30  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
+
+	* src/xsh_grammar.xml, README, TODO, lib/XML/XSH.pm, lib/XML/XSH/Completion.pm, lib/XML/XSH/CompletionList.pm, lib/XML/XSH/Functions.pm, lib/XML/XSH/LibXMLCompat.pm, src/recdescent.dtd, t/01basic.t, t/02gdome.t, t/03copy.t, t/04flow.t, t/05misc.t, t/06wrap.t, t/07functions.t, tools/gen_grammar.pl, tools/gen_pod.pl, tools/gen_reference.xsh, xsh:
+	Major changes and rewrites for XSH2 branch
+
 2003-09-10  Petr Pajas  <pajas@ufal.ms.mff.cuni.cz>
 
 	* lib/XML/XSH/CompletionList.pm, lib/XML/XSH/Grammar.pm, lib/XML/XSH/Help.pm, lib/XML/XSH/Parser.pm:

@@ -1,11 +1,18 @@
 KNOWN BUGS
 
-- there are some know issues concerning 
-  combination XML::LibXML and XML::LibXSLT which
-  may affect XSH when using xslt command, but in most
-  cases, xslt works fine.
+- TODO: close command doesn't remove document references neither from
+  lexical variables nor global variables whose content has been
+  temporarily replaced by localization
 
 - it is not possible to perform XPath searches on namespace
   nodes (it's a limitation of libxml2)
 
+
+- possibly 
+
+  undefined namespace prefix `table' at /home/pajas/Documents/normalize_addresses.xsh line 41, column 97, offset 1160.
+ at /home/pajas/Documents/normalize_addresses.xsh line 41, column 97, offset 1160
+
+- namespaces .
+utf-8/:
 

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_pod.pl,v 1.1 2003-08-11 15:08:51 pajas Exp $
+# $Id: gen_pod.pl,v 2.0 2004-12-02 17:26:52 pajas Exp $
 
 use strict;
 use vars qw(%enc);
@@ -95,6 +95,14 @@ foreach my $r (sort {get_name($a) cmp get_name($b)}
     print_description($desc,'','');
   }
 }
+
+print "\n=head1 XPATH EXTENSION FUNCTION REFERENCE\n\n";
+print "=over 4\n\n";
+foreach my $r (sort {get_name($a) cmp get_name($b)}
+	       $rules->findnodes('./rule[@type="function"]')) {
+  print_rule_desc($r);
+}
+
 print "\n\n=back\n\n";
 
 print "\n";
@@ -247,7 +255,7 @@ Petr Pajas, pajas@matfyz.cz
 
 =head1 SEE ALSO
 
-L<xsh>, L<XML::XSH>, L<XML::LibXML>, L<XML::XUpdate>, L<http://xsh.sourceforge.net/doc>
+L<xsh>, L<XML::XSH2>, L<XML::LibXML>, L<XML::XUpdate>, L<http://xsh.sourceforge.net/doc>
 
 =cut
 

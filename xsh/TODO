@@ -1,45 +1,39 @@
-TODO:
+TODO XSH2:
 
-- MORE TESTS: open STRING, stream, and similar
+- loose parsing of xpath in assignment and count: allow $a - 1
+- swap nodes command (maybe reorder: reorder {(2,1,3,4)} //foo) ?
+  now doable with sort:
+    $neword = {my $i=0; { map { $i => $_ } (2,1,3,4)} };
+    xmove &{ sort :k {$neword{position()}} //foo } replace //foo;
 
-* get rid of the XSH subdirectory in the CVS tree
-* alias 'help commands' for 'help command'?
+- MORE TESTS
+
 * document the installation process for ActiveState perl
-* support DTD modification
+* support DTD modification (isn't that obsolete in 21st century?)
 * 'locate' - allow use also nearest id() (needs support in LibXML)
-* xsh-grammar: parse xslt parameters as XPATH instead of XSH expressions ??
-* check the XML::LibXML module for XPath-ruled tree additions
 
-- add different examples for using namespaces:
+- document different examples for using namespaces:
 
-	1) if the ttt prefix is aready declared in the context of ., you may
+	if the ttt prefix is aready declared in the context of ., you may
 	simply do 
 
 	add element ttt:para into . 
 	and the new element ttt:para will be bound with that namespace so
 	doing
-	xsh> ls //ttt:para
-	xsh> ls//*[local-name()='ttt' and namespace-uri()='http://myuri.com']
+	  ls //ttt:para;
+	  ls//*[local-name()='ttt' and namespace-uri()='http://myuri.com'];
 	should both list it.
 
-	xsh> add element "ttt:para" namespace http://myuri.com into 
-	is intended (as you write) for adding a new element together with a
+	  add --namespace http://myuri.com into element "ttt:para" into .
+	is intended for adding a new element together with a
 	xmlns declaration of its prefix and the given namespace.
 
 - namespace-rename-uri uri new-prefix [nodes]
 - namespace-rename-prefix old-prefix new-prefix [nodes]
 - namespace-change-uri old-uri new-uri [nodes]
 
-- rename the command files to documents, make files and docs aliases
-
-
 USER-LEVEL IMPLEMENTABLE
 
 - untag/split element                //(on user-level easy with def)
 - comment-out node (?? uncomment ??) //(on user-level easy with def)
-
-
-IMPLEMENTED BUT SOME MORE REFINEMENT IS NEEDED:
-
-o fold/unfold command (fold/unfold elements for subsequent ls commands)
 
