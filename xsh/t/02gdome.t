@@ -138,8 +138,6 @@ END {
 unless ($no_gdome) {
   require XML::XSH;
   import XML::XSH qw/&xsh &xsh_init &set_quiet &xsh_set_output/;
-  $XML::XSH::Functions::SIGSEGV_SAFE=1;
-  $XML::XSH::Functions::SIGSEGV_SAFE=1;
   $loaded=1;
   ok(1);
 

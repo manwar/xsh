@@ -174,7 +174,6 @@ EOF
 }
 END { ok(0) unless $loaded; }
 use XML::XSH qw/&xsh &xsh_init &set_quiet &xsh_set_output/;
-$XML::XSH::Functions::SIGSEGV_SAFE=1;
 $loaded=1;
 ok(1);
 
