@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.8 2005-02-21 17:41:15 pajas Exp $
+# $Id: Functions.pm,v 2.9 2005-04-23 23:43:48 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.2';
-  $REVISION=q($Revision: 2.8 $);
+  $REVISION=q($Revision: 2.9 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -370,7 +370,7 @@ sub xpath_extensions {
 # ===================== XPATH EXT FUNC ================
 
 sub get_XPATH_extensions {
-  qw( current doc grep id2 if join lc uc ucfirst lcfirst
+  qw( current doc filename grep id2 if join lc uc ucfirst lcfirst
   lineno map matches max min new-attribute
   new-cdata new-chunk new-comment new-element new-element-ns new-pi
   new-text node-type parse path reverse same serialize split sprintf
@@ -384,6 +384,23 @@ sub XPATH_doc {
     unless (ref($nodelist) and UNIVERSAL::isa($nodelist,'XML::LibXML::NodeList'));
   use utf8;
   return XML::LibXML::NodeList->new(grep { ref($_) } map { $_->ownerDocument } @$nodelist);
+}
+
+sub XPATH_filename {
+  die "Wrong number of arguments for function xsh:doc(nodeset?)!\n" if (@_>1);
+  my $doc;
+  if (@_) {
+    die "1st argument must be a node in xsh:filename(nodeset?)!\n"
+      unless (ref($_[0]) and UNIVERSAL::isa($_[0],'XML::LibXML::NodeList'));
+  }
+  if ($_[0]) {
+    return XML::LibXML::Literal->new('') unless $_[0][0];
+    $doc = $_[0][0]->ownerDocument;
+  } else {
+    $doc = $XML::XSH2::Functions::_xpc->getContextNode();
+  }
+  use utf8;
+  return XML::LibXML::Literal->new($doc->URI());
 }
 
 sub XPATH_var {
@@ -2065,7 +2082,7 @@ sub open_doc {
 
     my $doc;
     if ($source eq 'pipe') {
-      open my $F,"$file|";
+      open my $F,"$file|" || die "Can't open pipe: $!\n";
       $F || die "Cannot open pipe to $file: $!\n";
       if ($format eq 'xml') {
 	$doc=$_xml_module->parse_fh($_parser,$F);
@@ -2080,6 +2097,7 @@ sub open_doc {
       $root_element="<$root_element/>" unless ($root_element=~/^\s*</);
       $root_element=~s/^\s+//;
       $doc=xsh_parse_string($root_element,$format);
+      die "Failed to parse string\n" unless (ref($doc));
       $_newdoc++;
     } else  {
       if ($format eq 'xml') {
@@ -2089,6 +2107,7 @@ sub open_doc {
       } elsif ($format eq 'docbook') {
 	$doc=$_xml_module->parse_sgml_file($_parser,$file,$QUERY_ENCODING);
       }
+      die "Failed to parse $file as $format\n" unless (ref($doc));
     }
     print STDERR "done.\n" unless "$QUIET";
     _set_context([$doc]) if $SWITCH_TO_NEW_DOCUMENTS;
@@ -2711,7 +2730,9 @@ sub perlmap {
 }
 
 sub perlrename {
-  my ($perl, $exp)=@_;
+  my ($opts,$perl, $exp)=@_;
+  $opts = _ev_opts($opts);
+  my $ns = $opts->{namespace};
   my $ql=_ev_nodelist($exp);
   foreach my $node (@$ql) {
     if ($_xml_module->is_attribute($node) ||
@@ -2719,7 +2740,25 @@ sub perlrename {
 	$_xml_module->is_pi($node)) {
       if ($node->can('setName')) {
 	my $val=$node->getName();
-	$node->setName(eval_substitution("$val",$perl));
+	if (defined($ns)) {
+	  my $name;
+	  if ($perl=~/^[-\w:]+$/) {
+	    $name = $perl;
+	  } else {
+	    $name = eval_substitution("$val",$perl);
+	  }
+	  $node->setName($name);
+	  if ($node->nodeName=~/^([^:]+):(.*)$/) {
+	    $node->setNamespace($ns,$1,1);
+	  }
+
+	} else {
+	  if ($perl=~/^[-\w:]+$/) {
+	    $node->setName($perl)
+	  } else {
+	    $node->setName(eval_substitution("$val",$perl));
+	  }
+	}
       } else {
 	_err "Node renaming not supported by ",ref($node);
       }
@@ -4358,12 +4397,16 @@ sub _save_context {
 
 sub _set_context {
   my ($node,$size,$pos)=@{$_[0]};
-  $_xpc->setContextNode($node);
-  if (defined($size) and defined($pos) and $_xpc->can('setContextSize')) {
-    die "invalid size $size\n" if ($size < -1);
-    $_xpc->setContextSize($size);
-    die "invalid position $pos (size is $size)\n" if ($pos < -1 or $pos>$size);
-    $_xpc->setContextPosition($pos);
+  if ($node) {
+    $_xpc->setContextNode($node);
+    if (defined($size) and defined($pos) and $_xpc->can('setContextSize')) {
+      die "invalid size $size\n" if ($size < -1);
+      $_xpc->setContextSize($size);
+      die "invalid position $pos (size is $size)\n" if ($pos < -1 or $pos>$size);
+      $_xpc->setContextPosition($pos);
+    }
+  } else {
+    die "Trying to change current node to an undefined value\n";
   }
 }
 
@@ -4754,7 +4797,7 @@ sub stream_process_node {
   my $old_context = _save_context();
   eval {
     foreach (1) {
-      _set_context([$node]);
+      _set_context([$node,1,1]);
       eval {
 	run_commands($command);
       };
@@ -4795,7 +4838,7 @@ sub stream_process {
   if (grep {/^input-/} keys %$opts>1) {
     die "Only one --input-xxxx parameter can be specified\n";
   }
-  if (grep {/^output-/} keys %$opts>1) {
+  if (grep {/^output-/} grep { !/^output-encoding/ } keys %$opts>1) {
     die "Only one --output-xxxx parameter can be specified\n";
   }
 
@@ -4808,9 +4851,20 @@ sub stream_process {
   my $input = $opts->{'input-string'} || $opts->{'input-pipe'} ||
               $opts->{'input-file'} || '-';
 
-  if (exists $opts->{'output-pipe'}) {
-    open $out,'| '.$output;
-    $out || die "Cannot open pipe to ".$output."\n";
+  if (exists $opts->{'output-file'}) {
+    open $out,'>'.$output || die "Cannot open output file ".$output."\n";
+    if ($] >= 5.008) {
+      binmode ($out,
+	($opts->{'output-encoding'} ? 
+	   ":encoding(".$opts->{'output-encoding'}.")" : ":utf8"));
+    }
+  } elsif (exists $opts->{'output-pipe'}) {
+    open $out,'| '.$output || die "Cannot open pipe to ".$output."\n";
+    if ($] >= 5.008) {
+      binmode ($out,
+	($opts->{'output-encoding'} ? 
+	   ":encoding(".$opts->{'output-encoding'}.")" : ":utf8"));
+    }
   } elsif (exists $opts->{'output-string'}) {
     my $output = $opts->{'output-string'};
     if ($output =~ /^\$(\$?[a-zA-Z_][a-zA-Z0-9_]*)$/) {
@@ -4906,9 +4960,11 @@ sub iterate {
 
   my $old_context=_save_context();
 
+  my $count = 1;
+  my $pos = 1;
   eval {
   ITER: while ($iterator->current()) {
-      _set_context([$iterator->current()]);
+      _set_context([$iterator->current(),$count,$pos]);
       eval {
 	run_commands($code);
       };
@@ -4918,9 +4974,11 @@ sub iterate {
 	  die $@; # propagate to a higher level
 	}
 	if ($@->label eq 'next') {
+	  $count ++; $pos ++;
 	  $iterator->next() || last;
 	  next;
 	} elsif ($@->label eq 'prev') {
+	  $pos --;
 	  $iterator->prev() || die("No previous node to iterate to!");
 	  next;
 	} elsif ($@->label eq 'last') {
@@ -4933,6 +4991,7 @@ sub iterate {
       } elsif ($@) {
 	die $@; # propagate
       }
+      $count ++; $pos ++;
       $iterator->next() || last;
     }
   };
