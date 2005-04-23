@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.9 2005-04-23 23:43:48 pajas Exp $
+# $Id: Functions.pm,v 2.10 2005-04-23 23:54:35 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.2';
-  $REVISION=q($Revision: 2.9 $);
+  $REVISION=q($Revision: 2.10 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -1387,7 +1387,8 @@ sub print_var {
 
 sub echo {
   my $opts = _ev_opts(shift);
-  my $val = join(" ",(map _ev_string($_),@_)).($opts->{nonl} ? "" : "\n");
+  my $val = join(($opts->{nospace} ? "" : " ") ,
+		 (map _ev_string($_),@_)).($opts->{nonl} ? "" : "\n");
   $opts->{stderr} ? (print STDERR $val) : out($val);
   return 1;
 }
@@ -1763,7 +1764,8 @@ sub xpath_assign {
   } elsif ($type eq 'local') {
     store_variables(0,$name);
   }
-  _assign($name,_ev($exp),$op);
+  my $val = _ev($exp);
+  _assign($name,$val,$op);
   return 1;
 }
 
@@ -3363,7 +3365,7 @@ sub run_editor {
   my ($fh, $filename) = tempfile( DIR => $dir );
   binmode $fh,'bytes';
   $fh->print(fromUTF8($encoding,$data));
-  $fh->flush;
+  $fh->flush if $fh->can('flush');
   close($fh);
   if (system($editor." ".$filename) == 0) {
     open $fh,$filename;
@@ -4265,12 +4267,14 @@ sub pipe_command {
   my $err=$@;
   do {
     local $SIG{INT}=\&flagsigint;
-    flush $OUT;
-    flush $OUT;
+    if (UNIVERSAL::can($OUT,'flush')) {
+      flush $OUT;
+      flush $OUT;
+    }
     close $OUT;
     waitpid($pid,0);
     $OUT=$out;
-    flush $OUT;
+    flush $OUT  if UNIVERSAL::can($OUT,'flush');
     propagate_flagsigint();
   };
   die $err if $err; # propagate
