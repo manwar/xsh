@@ -4030,18 +4030,25 @@ xsh $foo/&gt; ls /;
       </documentation>
     </rule>
     <rule id="rename_command" type="command" name="rename" inline="yes">
-      <command minargs="2" maxargs="2" func="perlrename"/>
+      <command minargs="2" maxargs="2" func="perlrename">
+      	<param name="namespace" short="n" type="exp" argument="exp"/>
+      </command>
       <documentation sections="Perl_shell Manipulation">
-	<usage>rename <xref linkend="perl_code"/> <xref linkend="exp"/></usage>
+	<usage>rename <xref linkend="exp"/> <xref linkend="exp"/></usage>
 	<shortdesc>quickly rename nodes with in-line Perl code</shortdesc>
 	<description>
 	  <para>
 	    This command is very similar to the <xref linkend="map_command"/>
 	    command, except that it operates on nodes' names rather
-	    than their data/values. For every element, attribute or
+	    than their data/values. It changes
+	    name of every element, attribute or
 	    processing-instruction contained
-	    in the node-list specified by a given <xref linkend="exp"/>,
-	    the following procedure is
+	    in the node-list specified in the second argument <xref
+	      linkend="exp"/>, according to the first argument
+	    <xref linkend="exp"/>. If the first argument is
+	    a name, it is set as name of the node.
+	    In all other cases, the second argument is considered
+	    to be a perl code and the following procedure is
 	    used: 1) the name of the node is stored into Perl's
 	    <literal>$_</literal> variable, 2) the <xref linkend="perl_code"/> is evaluated, and 3) the (posibly modified) content of the <literal>$_</literal> variable is
 	    used as a new name for the node.
@@ -5694,7 +5701,9 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	  <param name="input-file" short="f" type="string" argument="filename"/>
 	  <param name="input-pipe" short="p" type="string" argument="filename"/>
 	  <param name="input-string" short="s" type="exp" argument="exp"/>
-	  <param name="output-file" short="F" type="string" argument="filename"/>
+	  <param name="output-file" short="F" type="string"
+	    argument="filename"/>
+	  <param name="output-encoding" short="E" type="string" argument="enc_string"/>
 	  <param name="output-pipe" short="P" type="string" argument="filename"/>
 	  <param name="output-string" short="S"/>
 	</paramlist>
@@ -5963,7 +5972,7 @@ ls grep(//word,"^.*tion$");</code>
     <rule id="edit_string_command" type="command" name="edit-string" inline="yes">
       <command minargs="1" maxargs="1" func="edit" extraargs="1">
 	<param name="editor" short="E" type="string" argument="exp"/>
-	<param name="encoding" short="e" type="string" argument="exp"/>
+	<param name="encoding" short="e" type="string" argument="enc_string"/>
 	<param name="allow-empty" short="0"/>
       </command>
       <documentation sections="Manipulation">
@@ -6001,7 +6010,7 @@ ls grep(//word,"^.*tion$");</code>
 	<param name="keep-blanks" short="k"/>
 	<param name="allow-empty" short="0"/>
 	<param name="no-comment" short="q"/>
-	<param name="encoding" short="e" type="string" argument="exp"/>
+	<param name="encoding" short="e" type="string" argument="enc_string"/>
       </command>
       <documentation sections="Manipulation">
 	<usage>edit [--editor|:E <xref linkend="filename"/>]
@@ -6078,6 +6087,18 @@ ls grep(//word,"^.*tion$");</code>
 	  <para>
 	    Returns a node-set consisting of the owner document nodes
 	    of all nodes in the given node-set.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="doc_function" type="function" name="xsh:filename" inline="no">
+      <documentation>
+	<usage>node-set xsh:filename(node-set?)</usage>
+	<description>
+	  <para>Returns filename (URL) of the document containing
+	    the first node in the given node-set.
+	    If called without arguments, or if the node-set is 
+	    empty, returns filename of the document containing the current node.
 	  </para>
 	</description>
       </documentation>
