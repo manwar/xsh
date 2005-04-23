@@ -3874,10 +3874,11 @@ xsh $foo/&gt; ls /;
       </aliases>
       <command func="echo">
 	<param name="nonl" short="n"/>
+	<param name="nospace" short="s"/>
 	<param name="stderr" short="e"/>
       </command>
       <documentation sections="Information">
-	<usage>print [--nonl|:n] [--stderr|:e] <xref linkend="exp"/> [<xref linkend="exp"/> ...]</usage>
+	<usage>print [--nonl|:n] [--nospace|:s] [--stderr|:e] <xref linkend="exp"/> [<xref linkend="exp"/> ...]</usage>
 	<shortdesc>print stuff on standard or standard error output</shortdesc>
 	<description>
 	  <para>Evaluate given expression(s) and print the results
@@ -3889,6 +3890,10 @@ xsh $foo/&gt; ls /;
 	  <para>
 	    <literal>--nonl</literal> or <literal>:n</literal>
 	    can be used to avoid printing a trailing new-line.
+	  </para>
+	  <para>
+	    <literal>--nospace</literal> or <literal>:s</literal>
+	    suppresses printing additional spaces between individual arguments.
 	  </para>
 	  <para>
 	    <literal>--stderr</literal> or <literal>:e</literal>
@@ -3983,7 +3988,7 @@ xsh $foo/&gt; ls /;
 	  <example>
 	    <title>Sort a node-list by a pre-computed score (Perl-based sort)</title>
 	    <code>
-	      $results := sort --numeric --descendant --key { $scores{literal('@name')} } $players;
+	      $results := sort --numeric --descending --key { $scores{literal('@name')} } $players;
 	    </code>
 	  </example>
 	</description>
