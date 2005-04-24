@@ -6096,7 +6096,7 @@ ls grep(//word,"^.*tion$");</code>
 	</description>
       </documentation>
     </rule>
-    <rule id="doc_function" type="function" name="xsh:filename" inline="no">
+    <rule id="filename_function" type="function" name="xsh:filename" inline="no">
       <documentation>
 	<usage>node-set xsh:filename(node-set?)</usage>
 	<description>
