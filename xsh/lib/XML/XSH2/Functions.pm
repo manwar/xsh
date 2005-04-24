@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.10 2005-04-23 23:54:35 pajas Exp $
+# $Id: Functions.pm,v 2.11 2005-04-24 00:19:17 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.2';
-  $REVISION=q($Revision: 2.10 $);
+  $REVISION=q($Revision: 2.11 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -131,14 +131,18 @@ BEGIN {
 sub min { $_[0] > $_[1] ? $_[1] : $_[0] }
 
 sub out {
-  foreach (ref($OUT) eq 'IO::MyString' ? @_ : map(fromUTF8($ENCODING,$_), @_)) {
-    my $l = length;
-    my $i = 1;
-    while ($l > $i*$MAXPRINTLENGTH) {
-      print $OUT (substr($_,($i-1)*$MAXPRINTLENGTH,$MAXPRINTLENGTH));
-      $i++;
+  if (ref($OUT) eq 'IO::MyString') {
+    $OUT->print(@_);
+  } else {
+    foreach (map(fromUTF8($ENCODING,$_), @_)) {
+      my $l = length;
+      my $i = 1;
+      while ($l > $i*$MAXPRINTLENGTH) {
+	print $OUT (substr($_,($i-1)*$MAXPRINTLENGTH,$MAXPRINTLENGTH));
+	$i++;
+      }
+      print $OUT (substr($_,($i-1)*$MAXPRINTLENGTH)); # the rest
     }
-    print $OUT (substr($_,($i-1)*$MAXPRINTLENGTH)); # the rest
   }
 }
 
