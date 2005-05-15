@@ -1687,7 +1687,7 @@ sub new {
     <rule id="xps" inline="no">
       <production>
 	<regexp mod="x">
-	  (?: [^\$\[\]()'"]+ |
+	  (?: [^\$\[\]()'";]+ |
               \$(?!\{) |
               \$\{ (?:\$?[a-zA-Z_][a-zA-Z0-9_]* |
                        \{.*?\} |
@@ -1746,7 +1746,28 @@ sub new {
 	  }</action>
       </production>
     </rule>
-    <!-- ================== general expression ====================== -->
+    <!-- ================== general expression ======================
+    -->
+    <rule id="loose_exp" inline="no">
+      <production>
+	<regexp>^(?={)</regexp>
+	<ruleref ref="perl_block" arguments=""/>
+	<action>$item[2]</action>
+      </production>
+      <production>
+	<string>&amp;</string>
+	<ruleref ref="block" arguments=""/>
+	<action>$item[2]</action>
+      </production>
+      <production>
+	<regexp>^(?=&lt;&lt;)</regexp>
+	<ruleref ref="inline_doc" arguments=""/>
+	<action>$item[2]</action>
+      </production>
+      <production>
+	<ruleref ref="xpinter" arguments=""/>
+      </production>
+    </rule>
     <rule id="exp" type="argtype" name="expression" inline="no">
       <production>
 	<regexp>^(?={)</regexp>
@@ -2571,7 +2592,7 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  <production>
 	    <regexp>(?:[\-\+\*\/%x.]|\|\||\&amp;\&amp;)?=</regexp>
 	    <directive type="commit"/>
-	    <ruleref ref="exp" arguments=""/>
+	    <ruleref ref="loose_exp" arguments=""/>
 	    <action>[\&amp;XML::XSH2::Functions::xpath_assign,$item[3],$item[1]]</action>
 	  </production>
 	  <production>
