@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.11 2005-04-24 00:19:17 pajas Exp $
+# $Id: Functions.pm,v 2.12 2005-05-15 09:30:02 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -28,15 +28,15 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 	    $VALIDATION $RECOVERING $PARSER_EXPANDS_ENTITIES $KEEP_BLANKS
 	    $PEDANTIC_PARSER $LOAD_EXT_DTD $PARSER_COMPLETES_ATTRIBUTES
 	    $PARSER_EXPANDS_XINCLUDE $MAXPRINTLENGTH
-	    $XPATH_AXIS_COMPLETION
+	    $XPATH_AXIS_COMPLETION $STRICT_PWD
 	    $XPATH_COMPLETION $DEFAULT_FORMAT $LINE_NUMBERS
             $RT_LINE $RT_COLUMN $RT_OFFSET $RT_SCRIPT $SCRIPT
             $BENCHMARK $Xinclude_prefix $HISTFILE
 	  /;
 
 BEGIN {
-  $VERSION='2.0.2';
-  $REVISION=q($Revision: 2.11 $);
+  $VERSION='2.0.3';
+  $REVISION=q($Revision: 2.12 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -63,6 +63,7 @@ BEGIN {
 		    $WARNINGS
 		    $MAXPRINTLENGTH
 		    $HISTFILE
+		    $STRICT_PWD
 		    /;
   *XSH_NS=*XML::XSH2::xshNS;
   *XML::XSH2::Map::XSH_NS=*XML::XSH2::xshNS;
@@ -112,6 +113,7 @@ BEGIN {
   $BENCHMARK=0;
   $MAXPRINTLENGTH=256;
   $HISTFILE="$ENV{HOME}/.xsh2_history";
+  $STRICT_PWD=1;
   *XML::XSH2::Map::CURRENT_SCRIPT=\$RT_SCRIPT;
 
   $_newdoc=1;
@@ -1374,18 +1376,24 @@ sub string_vars {
 }
 
 # print a list of XSH variables and their values
+#
+# KNOWN BUG: $ARGV doesn't map to the correct i.e. (no) package
+#
+
 sub variables {
   no strict 'refs';
   foreach (string_vars()) {
-    out(qq(\$$_=\'),var_value(q($).$_),qq(\';\n));
+    my $value = var_value(q($).$_);
+    if (!defined($value)) { 
+      out(qq(\$$_={ )."undef".qq( };\n));
+    } elsif (ref($value)) {
+      out(qq(\$$_={ ).var_value(q($).$_).qq( };\n));
+    } elsif (0+$value eq $value) {
+      out(qq(\$$_=).var_value(q($).$_).qq(;\n));
+    } else {
+      out(qq(\$$_=\').var_value(q($).$_).qq(\';\n));
+    }
   }
-  return 1;
-}
-
-# print value of an XSH variable
-sub print_var {
-  no strict;
-  out(qq(\$$1=\'),var_value(q($).$_));
   return 1;
 }
 
@@ -1552,12 +1560,31 @@ sub set_local_xpath {
   return 1;
 }
 
+sub cannon_name {
+  my ($node)=@_;
+  my $local_name =$node->localname();
+  my $uri = $node->namespaceURI();
+  if ($node->namespaceURI() ne '') {
+    my $prefix=$node->prefix;
+    if ($prefix eq '') {
+      my %r = reverse %_ns;
+      $prefix = $r{ $uri };
+    }
+    if ($prefix ne '') {
+      return $prefix.':'.$local_name 
+    } else {
+      return '*[name()="'.$local_name.'"]';
+    }
+  }
+  return $local_name;
+}
+
 # return XPath identifying a node within its parent's subtree
 sub node_address {
   my ($node)=@_;
   my $name;
   if ($_xml_module->is_element($node)) {
-    $name=$node->getName();
+    $name=cannon_name($node);
   } elsif ($_xml_module->is_text($node) or
 	   $_xml_module->is_cdata_section($node)) {
     $name="text()";
@@ -1566,15 +1593,17 @@ sub node_address {
   } elsif ($_xml_module->is_pi($node)) {
     $name="processing-instruction()";
   } elsif ($_xml_module->is_attribute($node)) {
-    return "@".$node->getName();
+    return "@".cannon_name($node);
   }
+  
   if ($node->parentNode) {
     my @children;
-    if ($_xml_module->is_element($node)) {
-      @children=$node->parentNode->findnodes("./*[name()='$name']");
-    } else {
-      @children=$node->parentNode->findnodes("./$name");
-    }
+#    if ($_xml_module->is_element($node)) {
+#      @children=$_xpc->findnodes("./$name",$node->parentNode);
+#    } else {
+      my $context = $_xpc->getContextNode;
+      @children= eval { $_xpc->findnodes("./$name",$node->parentNode) };
+#    }
     if (@children == 1 and $_xml_module->xml_equal($node,$children[0])) {
       return "$name";
     }
@@ -1602,7 +1631,7 @@ sub tree_parent_node {
 sub pwd {
   my $node=$_[0] || $_xpc->getContextNode();
   return undef unless ref($node);
-  return $node->nodePath() if UNIVERSAL::can($node,'nodePath');
+  return $node->nodePath() if !$STRICT_PWD and UNIVERSAL::can($node,'nodePath');
   my @pwd=();
   do {
     unshift @pwd,node_address($node);
@@ -5044,6 +5073,10 @@ sub unregister_ns {
   return 1;
 }
 
+sub get_registered_ns {
+  return $_ns{$_[0]};
+}
+
 sub register_func {
   my ($name,$code)=@_;
   $name=_ev_string($name);
@@ -5156,7 +5189,7 @@ sub serialize {
 }
 
 sub literal {
-  my $xp=$_[0];
+  my $xp=$_[0] || current();
   return XML::XSH2::Functions::to_literal(ref($xp) ? $xp : XML::XSH2::Functions::_ev($xp));
 }
 
