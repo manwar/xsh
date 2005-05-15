@@ -1,10 +1,10 @@
 TODO XSH2:
 
-- xsh:... function completion
-- --xx and :x (parameter/flag) completion
-- xsh:filename(doc) function
 - reopen . command
 
+- setting attribute values is hard
+
+- rename doesn't work for namespaced nodes - can't unset namespace
 
 - support name-like and XPath expressions for rename
 - split [after|before] ...
@@ -35,7 +35,7 @@ TODO XSH2:
 	  ls//*[local-name()='ttt' and namespace-uri()='http://myuri.com'];
 	should both list it.
 
-	  add --namespace http://myuri.com into element "ttt:para" into .
+	  add --namespace http://myuri.com element "ttt:para" into .
 	is intended for adding a new element together with a
 	xmlns declaration of its prefix and the given namespace.
 
