@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 2.1 2004-12-02 19:26:36 pajas Exp $
+# $Id: Completion.pm,v 2.2 2005-05-15 09:27:00 pajas Exp $
 
 package XML::XSH2::Completion;
 
@@ -19,6 +19,14 @@ our $match_help=qr/${M}(?:\?|help)\s+(\S*)$/o; # help topic completion
 our $match_filename=qr/${M}(?:\.|include|open|save)${F}\s+(\S*)$|^\s*!\s*\S+\s+/o;
 our $match_dir=qr/${M}(?:lcd)\s+(\S*)$/o;
 our $match_path_filename=qr/${M}(?:system\s|exec\s)\s*\S*$|^\s*\!\s*\S*$|\s\|\s*\S*$/o;
+
+our $NAMECHAR = '[-_.[:alnum:]]';
+our  $NNAMECHAR = '[-:_.[:alnum:]]';
+our $NAME = "${NAMECHAR}*${NNAMECHAR}*[_.[:alpha:]]";
+
+our $WILDCARD = '\*(?!\*|${NAME}|\)|\]|\.)';
+our $OPER = qr/(?:[,=<>\+\|]|-(?!${NAME})|(?:vid|dom|dna|ro)(?=\s*\]|\s*\)|\s*[0-9]+(?!${NNAMECHAR})|\s+{$NAMECHAR}|\s+\*))/;
+
 
 # PATH-completion: system, !, exec, |, 
 
@@ -169,12 +177,6 @@ sub xpath_complete_str {
   my $str = reverse($_[0]);
   my $debug = $_[1];
   my $result="";
-  my $NAMECHAR = '[-_.[:alnum:]]';
-  my $NNAMECHAR = '[-:_.[:alnum:]]';
-  my $NAME = "${NAMECHAR}*${NNAMECHAR}*[_.[:alpha:]]";
-
-  my $WILDCARD = '\*(?!\*|${NAME}|\)|\]|\.)';
-  my $OPER = qr/(?:[,=<>\+\|]|-(?!${NAME})|(?:vid|dom|dna|ro)(?=\s*\]|\s*\)|\s*[0-9]+(?!${NNAMECHAR})|\s+{$NAMECHAR}|\s+\*))/;
 
   print "'$str'\n" if $debug;
   my $localmatch;
@@ -187,16 +189,25 @@ sub xpath_complete_str {
 
  STEP1:
   if ( $str =~ /\G(${NAMECHAR}+)?(?::(${NAMECHAR}+))?/gsco ) {
-    if ($2 ne "") {
-      $localmatch=reverse($2).":".reverse($1);
-      if ($1 ne "") {
-	$result=reverse($2).':*[starts-with(local-name(),"'.reverse($1).'")]'.$result;
+    my $name = reverse($1);
+    my $prefix = reverse($2);
+    if ($prefix ne "") {
+      $localmatch=$prefix.":".$name;
+#       my $uri = get_registered_ns($prefix);
+#       my $base='';
+#       if ($uri ne "") {
+# 	$base=$prefix.':*[namespace-uri()="'.$uri.'"]';
+#       } else {
+# 	$base=$prefix.':*';
+#       }
+      if ($name ne "") {
+	$result=$prefix.':*[starts-with(local-name(),"'.$name.'")]'.$result;
       } else {
-	$result=reverse($2).':*'.$result;
+	$result=$prefix.':*'.$result;
       }
     } else {
-      $localmatch=reverse($1);
-      $result='*[starts-with(name(),"'.$localmatch.'")]'.$result;
+      $localmatch=$name;
+      $result='*[namespace-uri()="" and starts-with(name(),"'.$localmatch.'")]'.$result;
     }
   } else {
     $result='*'.$result;
@@ -295,12 +306,13 @@ sub xpath_complete {
   my $ql= eval { XML::XSH2::Functions::_ev_nodelist($xp) };
   return () if $@;
   my %names;
+  my $prefix = ($local=~/^(${NAMECHAR}+:)/) ? $1 : '';
   @names{ map { 
     XML::XSH2::Functions::fromUTF8($XML::XSH2::Functions::QUERY_ENCODING,
 				  substr(substr($str,0,
 						length($str)
 						-length($local)).
-					 $_->nodeName(),$pos))
+					 $prefix.$_->nodeName(),$pos))
   } @$ql}=();
 
   my @completions = sort { $a cmp $b } keys %names;
@@ -310,14 +322,28 @@ sub xpath_complete {
        $XML::XSH2::Functions::XPATH_AXIS_COMPLETION eq 'when-empty' and !@completions)
       and $str =~ /[ \n\t\r|([=<>+-\/]([[:alpha:]][-:[:alnum:]]*)?$/ and $1 !~ /::/) {
     # complete XML axis
-    my ($pre,$axpart)=($word =~ /^(.*[^[:alnum:]])?([[:alpha:]][-[:alnum:]:]*)/);
+    my ($pre,$axpart)=($word =~ /^(.*[^-:[:alnum:]])?([[:alpha:]][-[:alnum:]:]*)/);
 #    print "\nWORD: $word\nPRE: $pre\nPART: $axpart\nSTR:$str\n";
     foreach my $axis (qw(following-sibling following preceding 
 			 preceding-sibling
 			 parent ancestor ancestor-or-self descendant self
 			 descendant-or-self child attribute namespace)) {
-      if ($axis =~ /^${axpart}/) {
+      if ($axis =~ /^\Q${axpart}\E/) {
 	push @completions, "${pre}${axis}::";
+      }
+    }
+
+    foreach my $func (qw(boolean ceiling comment concat contains count
+                         document false
+                         floor id lang last local-name name
+                         namespace-uri node normalize-space not number
+                         position processing-instruction round
+                         starts-with string string-length substring
+                         substring-after substring-before sum
+                         text translate true),
+		      map { 'xsh:'.$_ } XML::XSH2::Functions::get_XPATH_extensions()) {
+      if ($func =~ /^\Q${axpart}\E/) {
+	push @completions, "${pre}${func}(";
       }
     }
   }
