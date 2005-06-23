@@ -6160,6 +6160,21 @@ ls grep(//word,"^.*tion$");</code>
 	</description>
       </documentation>
     </rule>
+    <rule id="match_function" type="function" name="xsh:match" inline="no">
+      <documentation>
+	<usage>boolean xsh:match(string STR,string PATTERN,options STR)</usage>
+	<description>
+	  <para>
+	    Searches a given string for a pattern match
+	    specified by a regular expression <literal>PATTERN</literal>
+	    and returns a node-set consisting of
+	    <literal>&lt;xsh:string&gt;</literal>
+	    elements containing portions of the string matched
+	    by the pattern subexpressions enclosed in parentheses.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
     <rule id="grep_function" type="function" name="xsh:grep" inline="no">
       <documentation>
 	<usage>node-set xsh:grep(node-set NODES, string PATTERN)</usage>

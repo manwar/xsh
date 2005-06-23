@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 2.3 2005-06-23 13:45:26 pajas Exp $
+# $Id: Completion.pm,v 2.4 2005-06-23 13:52:06 pajas Exp $
 
 package XML::XSH2::Completion;
 
@@ -333,7 +333,8 @@ sub xpath_complete {
       }
     }
 
-    foreach my $func (qw(boolean ceiling comment concat contains count
+    unless ($pre=~m{/$}) {
+      foreach my $func (qw(boolean ceiling comment concat contains count
                          document false
                          floor id lang last local-name name
                          namespace-uri node normalize-space not number
@@ -341,9 +342,14 @@ sub xpath_complete {
                          starts-with string string-length substring
                          substring-after substring-before sum
                          text translate true),
-		      map { 'xsh:'.$_ } XML::XSH2::Functions::get_XPATH_extensions()) {
-      if ($func =~ /^\Q${axpart}\E/) {
-	push @completions, "${pre}${func}(";
+			(map { 'xsh:'.$_ } XML::XSH2::Functions::get_XPATH_extensions()),
+			map { /^(.*)\n(.*)$/s ?
+				XML::XSH2::Functions::get_registered_prefix($2).":$1" : $_
+			} keys %XML::XSH2::Functions::_func,
+		       ) {
+	if ($func =~ /^\Q${axpart}\E/) {
+	  push @completions, "${pre}${func}(";
+	}
       }
     }
   }

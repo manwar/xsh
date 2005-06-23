@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.13 2005-06-23 13:45:26 pajas Exp $
+# $Id: Functions.pm,v 2.14 2005-06-23 13:52:06 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.3';
-  $REVISION=q($Revision: 2.13 $);
+  $REVISION=q($Revision: 2.14 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -377,7 +377,7 @@ sub xpath_extensions {
 
 sub get_XPATH_extensions {
   qw( current doc filename grep id2 if join lc uc ucfirst lcfirst
-  lineno map matches max min new-attribute
+  lineno map matches match max min new-attribute
   new-cdata new-chunk new-comment new-element new-element-ns new-pi
   new-text node-type parse path reverse same serialize split sprintf
   strmax strmin subst substr sum times var )
@@ -661,8 +661,34 @@ sub XPATH_map {
   return $res;
 }
 
+sub XPATH_match {
+  die "Wrong number of arguments for function xsh:match(string,regexp,options?)!\n" if (@_!=2 and @_!=3);
+  use utf8;
+  my ($string,$regexp,$options)=@_;
+  $string=literal_value($string);
+  $regexp=literal_value($regexp);
+  $options=literal_value($options);
+
+  die "Invalid options: $options (should only consist of 'cgimosx')!\n"
+    unless ($options =~ /^[cgimosx]*$/);
+  my @result = eval "\$string=~/\$regexp/$options";
+  die $@ if $@;
+  my $res = XML::LibXML::NodeList->new();
+  my $res_doc=XML::LibXML::Document->new();
+  my $res_el=$res_doc->createElementNS($XML::XSH2::xshNS,'xsh:result');
+  $res_doc->setDocumentElement($res_el);
+  my $el;
+  foreach my $str (@result) {
+    $el = $res_doc->createElementNS($XML::XSH2::xshNS,'xsh:string');
+    $el->appendText($str);
+    $res_el->appendChild($el);
+    push @$res,$el;
+  }
+  return $res;
+}
+
 sub XPATH_split {
-  die "Wrong number of arguments for function xsh:split(string,string)!\n"
+  die "Wrong number of arguments for function xsh:split(regexp,string)!\n"
     if (@_!=2);
   my ($regexp,$string)=@_;
   $regexp=literal_value($regexp);
@@ -2327,6 +2353,8 @@ sub save_doc {
   local $BACKUPS = 0 if $opts->{'no-backup'};
   local $BACKUPS = 1 if $opts->{'backup'};
 
+  __debug("$XML::LibXML::skipXMLDeclaration\n");
+
   my $format = $DEFAULT_FORMAT;
 
   if (exists($opts->{format})) {
@@ -2570,7 +2598,7 @@ sub list_namespaces {
       }
       $n=$n->parentNode();
     }
-    out($ENCODING,pwd($node),":\n");
+    out(pwd($node),":\n");
     foreach (sort { $a cmp $b } keys %namespaces) {
       out("xmlns", ($_ ne "" ? ":" : ""),
 	  $_,"=\"",
@@ -5117,6 +5145,11 @@ sub unregister_ns {
 
 sub get_registered_ns {
   return $_ns{$_[0]};
+}
+
+sub get_registered_prefix {
+  my %r = reverse %_ns;
+  return $r{$_[0]};
 }
 
 sub register_func {
