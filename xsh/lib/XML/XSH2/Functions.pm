@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.12 2005-05-15 09:30:02 pajas Exp $
+# $Id: Functions.pm,v 2.13 2005-06-23 13:45:26 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.3';
-  $REVISION=q($Revision: 2.12 $);
+  $REVISION=q($Revision: 2.13 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -2970,6 +2970,49 @@ sub _expand_fragment {
     $_[0]->childNodes : $_[0];
 }
 
+sub _is_attached {
+  my ($node)=@_;
+  while ($node and !$_xml_module->is_document_fragment($node)
+	 and !$_xml_module->is_document($node)) {
+    $node=$node->parentNode;
+  }
+  return $node && !$_xml_module->is_document_fragment($node);
+}
+
+# use the XPathToXML module to build
+# up a XML structure
+sub xpath_set {
+  my ($exp,$value)=@_;
+  require XML::XSH2::XPathToXML;
+  my $xtx = XML::XSH2::XPathToXML->new(namespaces => \%_ns,
+				 XPathContext => $_xpc,
+				 node => xsh_context_node(),
+				);
+  $value = _ev($value);
+  if (ref($value) and UNIVERSAL::isa($value,'XML::LibXML::NodeList')) {
+    my $result = $xtx->createNode($exp);
+    if ($_xml_module->is_element($result)) {
+      # if it's an element, try to clone or attach given nodes
+      foreach my $node (@$value) {
+	if ($_xml_module->is_document_fragment($node) or
+	    $node->parentNode and 
+	    $_xml_module->is_document_fragment($node->parentNode)) {
+	  # it's a fragment
+	  $result->appendChild($node);
+	} else {
+	  # safely insert a copy
+	  insert_node($node,$result,undef,'into',undef,undef);
+	}
+      }
+    } else {
+      $result->setValue(to_literal($value));
+    }
+    return $result;
+  } else {
+    return $xtx->createNode($exp,to_literal($value));
+  }
+}
+
 # insert given node to given destination performing
 # node-type conversion if necessary
 sub insert_node {
@@ -3374,9 +3417,8 @@ sub create_nodes {
       print STDERR "cdata=$str\n" if $DEBUG;
     } elsif ($type eq 'pi') {
       my ($name,$data)=($str=~/^\s*(?:\<\?)?(\S+)(?:\s+(.*?)(?:\?\>)?)?$/);
-      my $pi = $doc->createProcessingInstruction($name);
       $data = "" unless defined $data;
-      $pi->setData($data);
+      my $pi = $doc->createPI($name,$data);
       print STDERR "pi=<?$name ... $data?>\n" if $DEBUG;
       push @nodes,$pi;
       #    print STDERR "cannot add PI yet\n" if $DEBUG;

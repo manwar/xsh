@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 2.2 2005-05-15 09:27:00 pajas Exp $
+# $Id: Completion.pm,v 2.3 2005-06-23 13:45:26 pajas Exp $
 
 package XML::XSH2::Completion;
 
@@ -21,7 +21,7 @@ our $match_dir=qr/${M}(?:lcd)\s+(\S*)$/o;
 our $match_path_filename=qr/${M}(?:system\s|exec\s)\s*\S*$|^\s*\!\s*\S*$|\s\|\s*\S*$/o;
 
 our $NAMECHAR = '[-_.[:alnum:]]';
-our  $NNAMECHAR = '[-:_.[:alnum:]]';
+our $NNAMECHAR = '[-:_.[:alnum:]]';
 our $NAME = "${NAMECHAR}*${NNAMECHAR}*[_.[:alpha:]]";
 
 our $WILDCARD = '\*(?!\*|${NAME}|\)|\]|\.)';

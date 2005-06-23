@@ -3808,6 +3808,14 @@ xsh $foo/&gt; ls /;
 	</see-also>
       </documentation>
     </rule>
+    <rule id="set_command" type="command" name="set" inline="yes">
+      <command minargs="1" maxargs="2" func="xpath_set"/>
+      <documentation>
+	<description>
+	  <para>TODO</para>
+	</description>
+      </documentation>
+    </rule>
     <rule id="expression_command" type="command" name="get" inline="yes">
       <aliases>
 	<alias name="exp"/>
