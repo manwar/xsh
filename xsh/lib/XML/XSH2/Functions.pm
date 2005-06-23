@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.14 2005-06-23 13:52:06 pajas Exp $
+# $Id: Functions.pm,v 2.15 2005-06-23 16:16:19 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.3';
-  $REVISION=q($Revision: 2.14 $);
+  $REVISION=q($Revision: 2.15 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -2353,7 +2353,7 @@ sub save_doc {
   local $BACKUPS = 0 if $opts->{'no-backup'};
   local $BACKUPS = 1 if $opts->{'backup'};
 
-  __debug("$XML::LibXML::skipXMLDeclaration\n");
+  #__debug("$XML::LibXML::skipXMLDeclaration\n");
 
   my $format = $DEFAULT_FORMAT;
 
