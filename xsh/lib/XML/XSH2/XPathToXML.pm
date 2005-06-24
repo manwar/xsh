@@ -1,10 +1,11 @@
-package XML::XPathToXML;
+package XML::XSH2::XPathToXML;
 ###
 #
-# Name: XML::XPathToXML
+# Name: XML::XSH2::XPathToXML
 # Version: 0.05
 # Description: Parses a list of XPath/value pairs and returns an XML::LibXML note-tree.
-# Author: Kurt George Gjerde
+# Original author: Kurt George Gjerde
+# Extended by Petr Pajas
 # Copyright: InterMedia, University of Bergen (2002)
 # Licence: Same as Perl
 #
