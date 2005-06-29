@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: LibXMLCompat.pm,v 2.2 2004-12-09 08:41:14 pajas Exp $
+# $Id: LibXMLCompat.pm,v 2.3 2005-06-29 14:10:53 pajas Exp $
 
 package XML::XSH2::LibXMLCompat;
 
@@ -114,7 +114,6 @@ sub parse_html_file {
 sub parse_html_fh {
   my ($class,$parser,$fh)=@_;
   $class->init_parser($parser);
-  print STDERR ("$parser $fh\n");
   my $doc=$parser->parse_html_fh($fh);
   return $doc;
 }
