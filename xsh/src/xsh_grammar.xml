@@ -2825,9 +2825,6 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
       </documentation>
     </rule>
     <rule id="help_command" type="command" name="help" inline="yes">
-      <aliases>
-	<alias name="?" regexp="\?"/>
-      </aliases>
       <command minargs="0" maxargs="1" func="help"/>
       <documentation sections="Information">
 	<usage>help <xref linkend="command"/>|argument-type|xsh:xpath-function</usage>
@@ -6592,7 +6589,7 @@ ls grep(//word,"^.*tion$");</code>
 	  </para>
 	</description>
       </documentation>
-    </rule>
+    </rule>    
     <rule id="map_function" type="function" name="xsh:map" inline="no">
       <documentation>
 	<usage>node-set xsh:map(node-set NODE, string XPATH)</usage>
@@ -6686,10 +6683,98 @@ ls grep(//word,"^.*tion$");</code>
 	  </para>
 	</description>
 	<see-also>
-	  <ruleref ref="pwd_command" arguments=""/>
+	  <ruleref ref="evaluate_function" arguments=""/>
 	</see-also>
       </documentation>
     </rule>
+    <rule id="evaluate_function" type="function" name="xsh:evaluate" inline="no">
+      <documentation>
+	<usage>node-set xsh:evaluate(string XPATH)</usage>
+	<description>
+	  <para>
+	    This function is very similar to EXSLT
+	    <literal>dynamic:evaluate</literal> function.  The description
+	    below is almost literally taken from the <ulink url="http://www.exslt.org/dyn/functions/map/index.html">EXSLT
+	    specification</ulink>.
+	  </para>
+	  <para>
+	    The <literal>xsh:evaluate</literal> function evaluates a string as an XPath expression
+	    and returns the resulting value, which might be a boolean, number,
+	    string, node set, result tree fragment or external object. The sole
+	    argument is the string to be evaluated. 
+	  </para>
+	  <para>
+	    The string is always evaluated exactly as if it had been literally
+	    included in place of the call to the <literal>xsh:evaluate</literal> function.
+	  </para>
+	  <para>
+	    In other words, the context information used when evaluating the
+	    XPath expression passed as the argument to the <literal>xsh:evaluate</literal>
+	    function is exactly the same as the context information used when
+	    evaluating the <literal>xsh:evaluate</literal> function. This context information
+	    includes: 
+	  </para>
+	  <enumerate>
+	    <listitem>
+	      <para>
+		the context node, such that paths are evaluated relative to the
+		context node at the point where the <literal>xsh:evaluate</literal> function is
+		called
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		the context position, such that the expression can contain
+		calls to the position function
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		the context size, such that the expression can contain calls to
+		the last function
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		variable bindings, such that the expression can contain
+		variable references
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		function library, such that the expression can contain calls to
+		extension functions
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		namespace declarations, such that paths can contain prefixes
+		the current node, such that the expression can contain calls to
+		the current function
+	      </para>
+	    </listitem>
+	  </enumerate>
+	  <para>
+	    If the expression string passed as the second argument is an
+	    invalid XPath expression (including an empty string), this function
+	    returns an empty node set. 
+	  </para>
+	  <para>
+	    You should only use this function if the expression must be
+	    constructed dynamically - otherwise it is much more efficient to
+	    use the expression literally. For expressions that simply give an
+	    element or attribute's name (to select a child element or
+	    attribute), it is more efficient to use an expression 
+	    in the style: 
+	  </para>
+	  <code>*[name() = $expression]</code>	      
+	</description>
+	<see-also>
+	  <ruleref ref="map_function" arguments=""/>
+	</see-also>
+      </documentation>
+    </rule>
+
     <rule id="split_function" type="function" name="xsh:split" inline="no">
       <documentation>
 	<usage>node-set xsh:split(string PATTERN, string STRING)</usage>
