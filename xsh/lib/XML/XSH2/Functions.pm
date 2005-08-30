@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.16 2005-08-30 09:08:31 pajas Exp $
+# $Id: Functions.pm,v 2.17 2005-08-30 09:20:39 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.3';
-  $REVISION=q($Revision: 2.16 $);
+  $REVISION=q($Revision: 2.17 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -4548,7 +4548,7 @@ sub foreach_statement {
   my $old_context = _save_context();
   create_block_var($var,$local) if $var ne "";
   eval {
-    my @ql = eval { ($var ne "") ? _ev_list($exp) : _ev_nodelist($exp) };
+    my @ql = ($var ne "") ? _ev_list($exp) : _ev_nodelist($exp);
     my $pos=1;
     my $size = @ql;
     foreach my $node (@ql) {
