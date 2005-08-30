@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 2.3 2004-12-04 21:15:57 pajas Exp $
+# $Id: Makefile.PL,v 2.4 2005-08-30 09:07:26 pajas Exp $
 
 use strict;
 
@@ -11,6 +11,7 @@ WriteMakefile(
     'VERSION_FROM' => 'lib/XML/XSH2/Functions.pm',
     'EXE_FILES' => ['xsh'],
     'PREREQ_PM' => {
+		    'IO::Scalar' => 0,
 		    'XML::LibXML' => 1.56,
 		    'XML::LibXML::Common' => 0.13,
 		    'XML::LibXSLT' => 1.53,
