@@ -287,7 +287,7 @@ sub _createSteps {
 	    # unlink all added siblings
 	    $_->unlinkNode for @auto;
 	    print STDERR $self->{doc}->toString(1),"\n";
-	    die "[$PACKAGE] Max automatic creation of siblings overflow ($self->{maxAutoSiblings}) for '$xpath'!\n";	    
+	    die "[$PACKAGE] Max automatic creation of siblings overflow ($self->{maxAutoSiblings}) for '$xpath'!\n";
 	  }
 	  my ($real_name,$uri) = $self->_lookup_namespace($node,$name);
 	  if ($uri ne "") {
@@ -318,6 +318,8 @@ sub _createSteps {
     print "Setting value for $xpath\n" if $self->{debug};
     if ($node->nodeType == XML::LibXML::XML_ATTRIBUTE_NODE()) {
       $node->setValue($value);
+    } elsif ($node->nodeType != XML::LibXML::XML_ELEMENT_NODE()) {
+      $node->setData($value);
     } else {
       $node->removeChildNodes() if $node->hasChildNodes;
       if (ref($value) and UNIVERSAL::isa($value,'XML::LibXML::Node')) {

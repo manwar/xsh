@@ -1,5 +1,7 @@
 TODO XSH2:
 
+- optimize XPath contstant expressions like "foo" or 1
+
 - reopen . command
 
 - setting attribute values is hard

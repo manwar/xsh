@@ -1,5 +1,10 @@
 KNOWN BUGS
 
+- after open --format html the filename/url is unknown-xxx
+
+- TODO: namespaces --registered (list registered namespace prefixes
+instead of those in scope of a current node)
+
 - TODO: close command doesn't remove document references neither from
   lexical variables nor global variables whose content has been
   temporarily replaced by localization
@@ -15,4 +20,8 @@ KNOWN BUGS
 
 - namespaces .
 utf-8/:
+
+- --skip-xmldecl doesn't work for toFile and toFH so we need a
+workaround. The problem here is compression.
+
 
