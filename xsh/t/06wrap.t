@@ -77,31 +77,31 @@ ls $list;
 
 count "${list}"
 
-call x_assert '"${list}"="<?foo?><foo/><!--foo-->"';
+call x_assert '"${list}"="<?foo ?><foo/><!--foo-->"';
 
 call x_assert '"${list}"=xsh:serialize(//node())';
 
 wrap 'bar' /foo;
 
-call x_assert 'xsh:serialize(/node())="<?foo?><bar><foo/></bar><!--foo-->"';
+call x_assert 'xsh:serialize(/node())="<?foo ?><bar><foo/></bar><!--foo-->"';
 
 delete /bar;
 
-call x_assert 'xsh:serialize(/node())="<?foo?><!--foo-->"';
+call x_assert 'xsh:serialize(/node())="<?foo ?><!--foo-->"';
 
 wrap 'foo' /processing-instruction();
 
 count (xsh:serialize(/node())) | cat 2>&1;
 
-call x_assert 'xsh:serialize(/node())="<foo><?foo?></foo><!--foo-->"';
+call x_assert 'xsh:serialize(/node())="<foo><?foo ?></foo><!--foo-->"';
 
 move /foo/processing-instruction() replace /foo;
 
-call x_assert 'xsh:serialize(/node())="<?foo?><!--foo-->"';
+call x_assert 'xsh:serialize(/node())="<?foo ?><!--foo-->"';
 
 wrap 'foo' /comment();
 
-call x_assert 'xsh:serialize(/node())="<?foo?><foo><!--foo--></foo>"';
+call x_assert 'xsh:serialize(/node())="<?foo ?><foo><!--foo--></foo>"';
 
 $scratch := create '<a><b/>foo<c/><b/><d/><c/><b/><c/></a>';
 
