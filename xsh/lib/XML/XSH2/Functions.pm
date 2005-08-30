@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.15 2005-06-23 16:16:19 pajas Exp $
+# $Id: Functions.pm,v 2.16 2005-08-30 09:08:31 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.3';
-  $REVISION=q($Revision: 2.15 $);
+  $REVISION=q($Revision: 2.16 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -133,7 +133,7 @@ BEGIN {
 sub min { $_[0] > $_[1] ? $_[1] : $_[0] }
 
 sub out {
-  if (ref($OUT) eq 'IO::MyString') {
+  if (ref($OUT) eq 'IO::Scalar') {
     $OUT->print(@_);
   } else {
     foreach (map(fromUTF8($ENCODING,$_), @_)) {
@@ -377,7 +377,7 @@ sub xpath_extensions {
 
 sub get_XPATH_extensions {
   qw( current doc filename grep id2 if join lc uc ucfirst lcfirst
-  lineno map matches match max min new-attribute
+  lineno evaluate map matches match max min new-attribute
   new-cdata new-chunk new-comment new-element new-element-ns new-pi
   new-text node-type parse path reverse same serialize split sprintf
   strmax strmin subst substr sum times var )
@@ -636,6 +636,27 @@ sub XPATH_object_type {
   return XML::LibXML::Literal->new($ret);
 }
 
+sub XPATH_evaluate {
+  die "Wrong number of arguments for function xsh:evaluate(string)!\n"
+    if ((@_==0) or (@_>4));
+  my ($xpath,$node,$size,$pos)=@_;
+  my $old_context;
+  if (@_>1) {
+    $old_context = _save_context();
+    die "Wrong type of argument 1 for xsh:evaluate(string,node?,size?,position?)!\n"
+      unless (ref($node) and UNIVERSAL::isa($node,'XML::LibXML::NodeList'));
+    if (@$node) {
+      _set_context([$node->[0],$size,$pos]);
+    } else {
+      return XML::LibXML::NodeList->new();
+    }
+  }
+  if ($xpath eq "") { return XML::LibXML::NodeList->new() }
+  my $val;
+  eval { $val = $_xpc->find($xpath) };
+  _set_context($old_context) if $old_context;
+  return defined($val) ? $val : XML::LibXML::NodeList->new();
+}
 
 sub XPATH_map {
   die "Wrong number of arguments for function xsh:map(nodeset,string)!\n"
@@ -2690,7 +2711,7 @@ sub prune {
 # evaluate given perl expression
 sub eval_substitution {
   my ($val,$expr)=@_;
-  $_ = $val if defined($val);
+  local $_ = $val if defined($val);
 
   eval lexicalize("$expr");
   die $@ if $@; # propagate
@@ -3017,6 +3038,7 @@ sub xpath_set {
 				 node => xsh_context_node(),
 				);
   $value = _ev($value);
+  $exp = _expand($exp);
   if (ref($value) and UNIVERSAL::isa($value,'XML::LibXML::NodeList')) {
     my $result = $xtx->createNode($exp);
     if ($_xml_module->is_element($result)) {
@@ -4391,14 +4413,15 @@ sub string_pipe_command {
   if ($name ne '') {
     my $out=$OUT;
     print STDERR "Pipe to $name\n" if $DEBUG;
-    $OUT=new IO::MyString;
+    require IO::Scalar;
+    $OUT=new IO::Scalar;
     eval {
       run_commands($cmd);
     };
     my $err;
     do {
       local $SIG{INT}=\&flagsigint;
-      _assign($name,$OUT->value()) unless $@;
+      _assign($name,${$OUT->sref}) unless $@;
       $OUT=$out;
       propagate_flagsigint();
     };
@@ -4525,7 +4548,7 @@ sub foreach_statement {
   my $old_context = _save_context();
   create_block_var($var,$local) if $var ne "";
   eval {
-    my @ql = ($var ne "") ? _ev_list($exp) : _ev_nodelist($exp);
+    my @ql = eval { ($var ne "") ? _ev_list($exp) : _ev_nodelist($exp) };
     my $pos=1;
     my $size = @ql;
     foreach my $node (@ql) {
@@ -5374,29 +5397,6 @@ use vars qw(@ISA);
 
 #######################################################################
 #######################################################################
-
-  package IO::MyString;
-
-use vars qw(@ISA);
-@ISA=qw(IO::Handle);
-
-sub new {
-  my $class=(ref($_[0]) || $_[0]);
-  return bless [""], $class;
-}
-
-sub print {
-  my $self=shift;
-  $self->[0].=join("",@_);
-}
-
-sub value {
-  return $_[0]->[0];
-}
-
-sub close {
-  $_[0]->[0]=undef;
-}
 
   package XML::SAX::Writer::XMLEnc;
 use vars qw(@ISA);
