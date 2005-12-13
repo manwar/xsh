@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.18 2005-12-13 12:36:21 pajas Exp $
+# $Id: Functions.pm,v 2.19 2005-12-13 13:24:51 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.3';
-  $REVISION=q($Revision: 2.18 $);
+  $REVISION=q($Revision: 2.19 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -1462,10 +1462,10 @@ sub test_enc {
   if (
     defined(toUTF8($enc,'')) and defined(fromUTF8($enc,''))
      ) {
-    print STDERR "OK\n";
+#    print STDERR "OK\n";
     return 1;
   } else {
-    print STDERR "NOT-OK\n";
+#    print STDERR "NOT-OK\n";
     _err("Error: Cannot convert between $enc and utf-8\n");
     return 0;
   }
@@ -1474,7 +1474,7 @@ sub test_enc {
 sub set_encoding {
 # print STDERR "ENCOD: @_\n";
  my $enc=_ev_string($_[0]);
-# my $ok=test_enc($enc);
+ my $ok=test_enc($enc);
  $ENCODING=$enc;
  return 1;
 #   my $ok=test_enc($enc);
