@@ -1687,7 +1687,7 @@ sub new {
     <rule id="xps" inline="no">
       <production>
 	<regexp mod="x">
-	  (?: [^\$\[\]()'";]+ |
+	  (?: [^\$\[\]()'"};]+ |
               \$(?!\{) |
               \$\{ (?:\$?[a-zA-Z_][a-zA-Z0-9_]* |
                        \{.*?\} |
