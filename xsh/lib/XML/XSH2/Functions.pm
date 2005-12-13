@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.17 2005-08-30 09:20:39 pajas Exp $
+# $Id: Functions.pm,v 2.18 2005-12-13 12:36:21 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.3';
-  $REVISION=q($Revision: 2.17 $);
+  $REVISION=q($Revision: 2.18 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -907,6 +907,7 @@ sub list_flags {
 sub toUTF8 {
   # encode/decode from UTF8 returns undef if string not marked as utf8
   # by perl (for example ascii)
+#  return $_[1];
   my $res=eval { encodeToUTF8($_[0],$_[1]) };
   if ($@ =~ /^SIGINT/) {
     die $@
@@ -919,6 +920,7 @@ sub toUTF8 {
 sub fromUTF8 {
   # encode/decode from UTF8 returns undef if string not marked as utf8
   # by perl (for example ascii)
+#  return $_[1];
   my $res=eval { decodeFromUTF8($_[0],$_[1]) };
   if ($@ =~ /^SIGINT/) {
     die $@
@@ -1457,30 +1459,37 @@ sub set_compile_only_mode { $TEST_MODE=$_[0]; return 1; }
 
 sub test_enc {
   my ($enc)=@_;
-  if (defined(toUTF8($enc,'')) and
-      defined(fromUTF8($enc,''))) {
+  if (
+    defined(toUTF8($enc,'')) and defined(fromUTF8($enc,''))
+     ) {
+    print STDERR "OK\n";
     return 1;
   } else {
+    print STDERR "NOT-OK\n";
     _err("Error: Cannot convert between $enc and utf-8\n");
     return 0;
   }
 }
 
 sub set_encoding {
-  my $enc=_ev_string($_[0]);
-  my $ok=test_enc($enc);
-  if ($ok) {
-    $ENCODING=$enc;
-#     $enc = "encoding($enc)" unless $enc eq 'utf8';
-#     binmode $OUT;
-#     binmode $OUT,":$enc";
-#     binmode STDOUT;
-#     binmode STDOUT,":$enc";
-#     binmode STDERR;
-#     binmode STDERR,":$enc";
-#     print "Setting encoding to :$enc\n";
-  }
-  return $ok;
+# print STDERR "ENCOD: @_\n";
+ my $enc=_ev_string($_[0]);
+# my $ok=test_enc($enc);
+ $ENCODING=$enc;
+ return 1;
+#   my $ok=test_enc($enc);
+#   if ($ok) {
+#     $ENCODING=$enc;
+# #     $enc = "encoding($enc)" unless $enc eq 'utf8';
+# #     binmode $OUT;
+# #     binmode $OUT,":$enc";
+# #     binmode STDOUT;
+# #     binmode STDOUT,":$enc";
+# #     binmode STDERR;
+# #     binmode STDERR,":$enc";
+# #     print "Setting encoding to :$enc\n";
+#   }
+#   return $ok;
 }
 
 sub set_qencoding { 
@@ -2068,6 +2077,13 @@ sub set_doc {
   _assign($id,$doc);
   set_doc_URI($doc,$file);
   return $doc;
+}
+
+sub set_filename {
+  my ($file, $doc)=@_;
+  $file = _tilde_expand(_ev_string($file));
+  $doc = _ev_doc(defined($doc) ? $doc : '.');
+  set_doc_URI($doc,$file);
 }
 
 sub set_doc_URI {
@@ -4386,9 +4402,20 @@ sub pipe_command {
       my $P;
       $pid = open2('>&O',$P,$pipe) || die "cannot open pipe $pipe\n";
       $OUT=$P;
-    }
+## this is an approach to locate a bug in perl
+#       local *NEWIN;
+#       $pid = open2('>&O',\*NEWIN,$pipe) || die "cannot open pipe $pipe\n";
+#       $OUT=\*NEWIN; #$P;
+#       my $STDOUT=\*STDOUT;
+#       for ($STDOUT,$OUT,$out) {
+# 	print STDERR "$_ => ".$_->fileno."\n";
+#       }
+##    print $OUT "FOO\n";
     run_commands($cmd);
+    }
   };
+#  print STDERR "FILENO:",$OUT->fileno,"\n";
+#  print STDERR `ls -l /proc/$$/fd/`;
   my $err=$@;
   do {
     local $SIG{INT}=\&flagsigint;

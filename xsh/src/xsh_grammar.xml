@@ -2960,6 +2960,28 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	</see-also>
       </documentation>
     </rule>
+    <rule id="set_filename_command" type="command" name="set_filename" inline="yes">
+      <command minargs="1" maxargs="2" func="set_filename"/>
+      <documentation sections="Documents">
+	<usage>set_filename <xref linkend="exp"/> [<xref linkend="document"/>]</usage>
+	<shortdesc>change filename or URL associated with a document</shortdesc>
+	<description>
+	  <para>Changes filename or URL associated with a 
+	    given document (or the current document, if only
+	    one argument is specified). Document filename is initialized
+	    by the <xref linkend="open_command" /> command
+	    and used e.g. by <xref linkend="save_command"/>.
+	    It can be queried in XPath expressions using the
+	    <xref linkend="filename_function"/> function.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="open_command" arguments=""/>
+	  <ruleref ref="save_command" arguments=""/>
+	  <ruleref ref="filename_function" arguments=""/>
+	</see-also>
+      </documentation>
+    </rule>
     <rule id="var_command" type="command" name="variables" inline="yes">
       <aliases>
 	<alias name="vars"/>
