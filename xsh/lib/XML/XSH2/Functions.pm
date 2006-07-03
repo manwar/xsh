@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.19 2005-12-13 13:24:51 pajas Exp $
+# $Id: Functions.pm,v 2.20 2006-07-03 13:21:57 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -35,8 +35,8 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 	  /;
 
 BEGIN {
-  $VERSION='2.0.3';
-  $REVISION=q($Revision: 2.19 $);
+  $VERSION='2.0.4';
+  $REVISION=q($Revision: 2.20 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -762,6 +762,7 @@ sub XPATH_new_element_ns {
   unless (ref($doc) and ref($doc = $doc->ownerDocument())) {
     die "No context document\n";
   }
+#  __debug("ns: $ns");
   my $e=$doc->createElementNS("$ns",$name);
 #  my ($prefix,$name) = split ':',$name;
 #  my $e=XML::LibXML::Element->new($name);
@@ -2894,8 +2895,9 @@ sub node_copy {
   if ($_xml_module->is_element($node) and !$node->hasChildNodes) {
     # -- prepare NS
     $ns=$node->namespaceURI() if ($ns eq "");
-    if ($ns eq "" and name_prefix($node->getName) ne "") {
-      $ns=$dest->lookupNamespaceURI(name_prefix($node->getName));
+    my $prefix = name_prefix($node->getName);
+    if ($ns eq "" and $prefix ne "") {
+      $ns=$dest->lookupNamespaceURI($prefix);
     }
     # --
     $copy=new_element($dest_doc,$node->getName(),$ns,
@@ -3377,17 +3379,27 @@ sub create_attributes {
 sub new_element {
   my ($doc,$name,$ns,$attrs,$dest)=@_;
   my $el;
-  my $prefix;
-  if ($name=~/^([^:>]+):(.*)$/) {
-    $prefix=$1;
-    die "Error: undefined namespace prefix `$prefix'\n"  if ($ns eq "");
-    if ($dest && $_xml_module->is_element($dest)) {
-      $el=$dest->addNewChild($ns,$name);
-      $el->unbindNode();
+  my ($prefix,$localname) = $name=~/^([^:>]+):(.*)$/;
+  if ($prefix ne "" and $ns eq "") {
+    die "Error: namespace error: undefined namespace prefix `$prefix'\n";
+  }
+  if ($dest && $_xml_module->is_element($dest)) {
+    print STDERR "DEST is element\n" if $DEBUG;
+    $el=$dest->addNewChild($ns,$name);
+    
+    if ($prefix eq "" and $ns eq "" and $dest->lookupNamespaceURI(undef) ne "") {
+      print STDERR "CLEAR Default NS\n" if $DEBUG;
+      $el->setNamespace('','',1);
     } else {
-      $el=$doc->createElementNS($ns,$name);
+      print STDERR "prefix: $prefix, ns: $ns, lookup: ",$dest->lookupNamespaceURI(undef),".\n" if $DEBUG;
+      print STDERR $dest->toString(1),"\n" if $DEBUG;
     }
+    $el->unbindNode();
+  } elsif ($ns ne '') {
+    print STDERR "DEST is not element, NS: $ns\n" if $DEBUG;
+    $el=$doc->createElementNS($ns,$name);
   } else {
+    print STDERR "DEST is not element no NS\n" if $DEBUG;
     $el=$doc->createElement($name);
   }
   if (ref($attrs)) {
@@ -3395,10 +3407,17 @@ sub new_element {
       if ($ns ne "" and ($_->[0]=~/^\Q${prefix}\E:/)) {
 	print STDERR "NS: $ns\n" if $DEBUG;
 	$el->setAttributeNS($ns,$_->[0],$_->[1]);
-      } elsif  ($_->[0] eq "xmlns:(.*)") {
+      } elsif  ($_->[0] =~ "xmlns:(.*)") {
+	print STDERR "xmlns: $1\n" if $DEBUG;
 	# don't redeclare NS if already declared on destination node
-	unless ($1 eq $ns or $dest->lookupNamespaceURI($1) eq $_->[2]) {
-	  $el->setAttribute($_->[0],$_->[1]) unless ($_->[1] eq $ns);
+	unless ($_->[1] eq $ns or $dest->lookupNamespaceURI($1) eq $_->[2]) {
+	  $el->setNamespace($_->[1],$1,0) unless ($_->[1] eq $ns);
+	}
+      } elsif  ($_->[0] eq "xmlns") {
+	print STDERR "xmlns: @$_\n" if $DEBUG;
+	# don't redeclare NS if already declared on destination node
+	unless ($->[1] eq $ns or $dest->lookupNamespaceURI('') eq $_->[2]) {
+	  $el->setNamespace($_->[1],'',0) unless ($_->[1] eq $ns);
 	}
       } elsif ($_->[0]=~/^([^:>]+):/) {
 	my $lprefix=$1;
@@ -3433,6 +3452,7 @@ sub create_nodes {
       foreach (create_attributes($str)) {
 	my $at;
 	if ($_->[0]=~/^([^:]+):/ and $1 ne 'xmlns') {
+	  $ns = get_registered_ns($1) if $ns eq "";
 	  die "Error: undefined namespace prefix `$1'\n"  if ($ns eq "");
 	  $at=$doc->createAttributeNS($ns,$_->[0],$_->[1]);
 	} else {
@@ -3447,10 +3467,15 @@ sub create_nodes {
 	print STDERR "attributes=$2\n" if $DEBUG;
 	my ($elt,$att)=($1,$2);
 	my $el;
-	if ($elt=~/^([^:>]+):(.*)$/) {
-	  print STDERR "NS: $ns\n" if $DEBUG;
+	if ($elt=~/^([^:>]+):(.*)$/ or $ns ne "") {
 	  print STDERR "Name: $elt\n" if $DEBUG;
-	  die "Error: undefined namespace prefix `$1'\n"  if ($ns eq "");
+	  if ($ns eq "") {
+	    print STDERR "NS prefix registered as: $ns\n" if $DEBUG;
+	    $ns = get_registered_ns($1) if $ns eq "";
+	  } else {
+	    print STDERR "NS: $ns\n" if $DEBUG;
+	  }
+	  die "Error: undefined namespace prefix `$1'\n"  if ($1 ne "" and $ns eq "");
 	  $el=$doc->createElementNS($ns,$elt);
 	} else {
 	  $el=$doc->createElement($elt);
@@ -3469,6 +3494,7 @@ sub create_nodes {
 	  }
 	}
 	push @nodes,$el;
+	# __debug("ns: $ns\n".$el->toString());
       } else {
 	print STDERR "invalid element $str\n" unless "$QUIET";
       }
@@ -3771,7 +3797,7 @@ sub insert {
   my ($opts,$type,$str,$where,$exp,$to_all)=@_;
   $opts = _ev_opts($opts);
   $str = _ev_string($str);
-  my $ns  = _ev_literal($opts->{namespace});
+  my $ns  = _ev_string($opts->{namespace});
   my $tl=_ev_nodelist($exp);
   unless (@$tl) {
     _warn("Expression '$exp' returns empty node-list");

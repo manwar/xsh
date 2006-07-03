@@ -28,3 +28,8 @@ workaround. The problem here is compression.
 xsh2 as STDIN and encoding is applied (either via $ENCODING variable
 or the encoding command).
 
+- the following seems to be parsed incorectly (from www/cielbleu/make.xsh2):
+
+ if (@lang) { $lang = @lang } else { $lang = $language_prefix }
+
+(adding semicolons to each of the blocks does help)
