@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.20 2006-07-03 13:21:57 pajas Exp $
+# $Id: Functions.pm,v 2.21 2006-08-10 15:19:32 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.4';
-  $REVISION=q($Revision: 2.20 $);
+  $REVISION=q($Revision: 2.21 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -3359,18 +3359,23 @@ sub create_attributes {
       print STDERR "attribute_name=$1\n" if $DEBUG;
       if ($str=~/\G\"((?:[^\\\"]|\\.)*)\"/gsco or
 	  $str=~/\G\'((?:[^\\\']|\\.)*)\'/gsco or
-	  $str=~/\G(.*?\S)(?=\s*[^ \n\r\t=]+=|\s*$)/gsco) {
+	  $str=~/\G(.*?)(?=\s+[^ \n\r\t=]+=|\s*$)/gsco) {
 	$value=$1;
 	$value=~s/\\(.)/$1/g;
-	print STDERR "creating $name=$value attribute\n" if $DEBUG;
+	print STDERR "creating $name='$value' attribute\n" if $DEBUG;
 	push @ret,[$name,$value];
+      } elsif ($str=~/\G(\s*)$/gsco) {
+	$value=$1;
+	print STDERR "creating $name='$1' attribute\n" if $DEBUG;
+	push @ret,[$name,$value];
+	last;
       } else {
-	$str=~/\G(\S*\s*)/gsco;
-	print STDERR "ignoring $name=$1\n";
+	die "Invalid attribute specification near '".substr($str,pos($str))."'";
       }
+    } elsif ($str =~ /\G(.*)/gsco) {
+      die "Invalid attribute specification near '$1'"
     } else {
-      $str=~/\G(\S*\s*)/gsco;
-      print STDERR "ignoring characters $1\n";
+      last;
     }
   }
   return @ret;
