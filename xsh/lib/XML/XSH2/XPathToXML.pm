@@ -30,14 +30,37 @@ our ($QUOT,$NAMECHAR,$NNAMECHAR,$NAME,$STEP,$LAST_STEP,$FILTER,$PREDICATE);
 
 $NAMECHAR = '[-_.[:alnum:]]';
 $NNAMECHAR = '[-:_.[:alnum:]]';
-$NAME = qr(${NAMECHAR}*(?::${NNAMECHAR}+)*[_.[:alpha:]]);
+$NAME = "(?:${NAMECHAR}*(?::${NNAMECHAR}+)*[_.[:alpha:]])";
 
-$QUOT = qr/'[^']+'|"[^"]+"/;
-$PREDICATE = qr/(?:(?> [^][()]* )|\[(??{ $PREDICATE })\]|\((??{ $PREDICATE })\))*/x;
-$FILTER = qr/(?:\[(??{ $PREDICATE })\])/;
+$QUOT = q{(?:'[^']*'|"[^"]*")};
+$PREDICATE = qr/
+  (?:
+     (?> [^][()"']* )   # non-parens without backtracking
+     |
+     '[^']*' | "[^"]*"  # quotes
+     |
+     \[
+       (??{$PREDICATE}) # matching square brackets
+     \]
+     |
+     \(
+       (??{$PREDICATE}) # matching round brackets
+     \)
+   )*
+/;
+#$FILTER = qr/(?:\[(??{$PREDICATE})\])/
+$FILTER = qr/
+  \[ 
+     (?:
+        (?> [^][()"']+ )    # non-parens without backtracking
+        |
+        (??{ $PREDICATE })  # matching parens
+     )*
+  \]
+/x;
 
-$STEP = qr((?:(?:^|/)${NAME}${FILTER}*));
-$LAST_STEP = qr((?:(?:^|/)(?:@?${NAME}|comment[(][)]|text[(][)])|processing-instruction[(]${PREDICATE}[)]|${FILTER}*));
+$STEP = qr{(?:(?:^|/)${NAME}${FILTER}*)};
+$LAST_STEP = qr{(?:(?:^|/)(?:\@?${NAME}|comment[(][)]|text[(][)]|processing-instruction[(]${NAME}[)])${FILTER}*)};
 
 ### NEW
 #
@@ -158,10 +181,11 @@ sub createNode {
   my ($self, $xpath, $value, $context_node) = @_;
 
   # strip the uninteresting part
-  $xpath=~s{^\./}{};
+  $xpath=~s{^\.\s+/}{};
 
   # roughly verify that we have an XPath in a supported form:
   die "[$PACKAGE] Can't create nodes based on XPath $xpath\n" unless $xpath =~ m{^$STEP*$LAST_STEP$};
+#  return;
 
   if ($xpath=~s{^/}{}) {
     # start from the document level

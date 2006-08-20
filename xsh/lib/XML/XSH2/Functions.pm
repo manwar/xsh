@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.21 2006-08-10 15:19:32 pajas Exp $
+# $Id: Functions.pm,v 2.22 2006-08-20 21:43:04 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.4';
-  $REVISION=q($Revision: 2.21 $);
+  $REVISION=q($Revision: 2.22 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -171,6 +171,7 @@ sub _tilde_expand {
 sub _ev_opts {
   my ($opts)=@_;
   return {} unless ref($opts);
+  return $opts if ref($opts) eq 'HASH';
   my %o;
   my @opts = @$opts;
   while (@opts) {
@@ -258,6 +259,10 @@ sub xsh_init {
 
   xpc_init();
   xsh_rd_parser_init();
+
+  # create a first document so that we always have non-empty context
+  create_doc('$scratch',"scratch",'xml');
+  set_local_xpath('/');
 }
 
 sub xsh_rd_parser_init {
@@ -1121,6 +1126,7 @@ sub cast_value_to_objects {
 # evaluate given XPath or Perl expression
 sub _ev {
   my $exp = $_[0];
+  return undef unless defined $exp;
   utf8::upgrade($exp) unless ref($exp);
   if (ref($exp) eq 'ARRAY') {
     return run_commands($exp,0,1);
@@ -1140,6 +1146,8 @@ sub _ev {
     } else {
       return _expand($');
     }
+  } elsif ($exp =~ /^\d$/) {
+    return $exp;
   } elsif ($exp =~ /^{/) {
     return perl_eval($exp);
   } elsif ($exp eq "") {
@@ -1707,7 +1715,7 @@ sub xsh_pwd {
 sub print_pwd {
   my $pwd=pwd();
   if ($pwd) {
-    out("$pwd\n\n");
+    out("$pwd\n");
     return $pwd;
   } else {
     return 0;
@@ -2132,6 +2140,7 @@ sub index_doc {
 sub open_doc {
   my ($opts,$file)=@_;
   $opts = _ev_opts($opts);
+
   $opts->{file} = _tilde_expand($opts->{file}) if exists($opts->{file});
   if (exists($opts->{file})+exists($opts->{pipe})+
       exists($opts->{string})>1) {
@@ -2177,8 +2186,13 @@ sub open_doc {
   if (($source ne 'file') or
       (-f $file) or $file eq "-" or
       ($file=~/^[a-z]+:/)) {
-    print STDERR "parsing $file\n" unless "$QUIET";
-
+    unless ("$QUIET") {
+      if ($source eq 'string') {
+	print STDERR "parsing string\n";
+      } else {
+	print STDERR "parsing $file\n";
+      }
+    }
     my $doc;
     if ($source eq 'pipe') {
       open my $F,"$file|" || die "Can't open pipe: $!\n";
