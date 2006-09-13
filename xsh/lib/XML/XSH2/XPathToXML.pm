@@ -24,7 +24,7 @@ $VERSION = '0.05';
 
 my $PACKAGE = __PACKAGE__;
 
-our ($QUOT,$NAMECHAR,$NNAMECHAR,$NAME,$STEP,$LAST_STEP,$FILTER,$PREDICATE);
+our ($QUOT,$NAMECHAR,$NNAMECHAR,$NAME,$STEP,$LAST_STEP,$FILTER,$PREDICATE,$AXIS);
 
 # regexps to parse XPath steps
 
@@ -47,20 +47,13 @@ $PREDICATE = qr/
        (??{$PREDICATE}) # matching round brackets
      \)
    )*
-/;
-#$FILTER = qr/(?:\[(??{$PREDICATE})\])/
-$FILTER = qr/
-  \[ 
-     (?:
-        (?> [^][()"']+ )    # non-parens without backtracking
-        |
-        (??{ $PREDICATE })  # matching parens
-     )*
-  \]
 /x;
 
+$FILTER = qr/(?:\[$PREDICATE\])/;
+
 $STEP = qr{(?:(?:^|/)${NAME}${FILTER}*)};
-$LAST_STEP = qr{(?:(?:^|/)(?:\@?${NAME}|comment[(][)]|text[(][)]|processing-instruction[(]${NAME}[)])${FILTER}*)};
+$LAST_STEP = qr{(?:(?:^|/)(?:\@?${NAME}|comment[(][)]|text[(][)]|processing-instruction[(](?:\s*"${NAME}"\s*|\s*'${NAME}'\s*)[)])${FILTER}*)};
+$AXIS=qr{(?:(?:following-sibling|following|preceding|preceding-sibling|parent|ancestor|ancestor-or-self|descendant|self|descendant-or-self|child|namespace)::)?};
 
 ### NEW
 #
@@ -231,6 +224,23 @@ sub _lookup_namespace {
   }
 }
 
+sub _insertNode {
+  my ( $self, $axis, $node, $next ) = @_;
+  if ($axis =~ /^$|^child::|^descendant(?:-or-self)?::/) {
+    $node->appendChild( $next );
+  } elsif ($axis =~ /^(following(?:-sibling)?)::/) {
+    my $parent = $node->parentNode;
+    die "Can't create axis $1 on a document node" unless $parent;
+    $parent->insertAfter( $next, $node );
+  } elsif ($axis =~ /^(preceding(?:-sibling)?)::/) {
+    my $parent = $node->parentNode;
+    die "Can't create axis $1 on a document node" unless $parent;
+    $parent->insertBefore( $next, $node );
+  } elsif ($axis =~ /^(parent|ancestor|ancestor-or-self|self|namespace)::/) {
+    die "Can't create axis $1";
+  }
+}
+
 sub _createSteps {
   my ($self,$node,$xpath,$value)=@_;
 
@@ -251,7 +261,7 @@ sub _createSteps {
     unless ($next) {
       # auto-create the node(s) implied by the step 
 
-      if ($step =~ /^@($NAME)/) {
+      if ($step =~ /^(?:@|attribute::)($NAME)/) {
 	my $name = $1;
 	if ($rest eq "") {
 	  print "$xpath : auto-creating attribute $name for $step\n" if $self->{debug};
@@ -266,41 +276,48 @@ sub _createSteps {
 	} else {
 	  die "[$PACKAGE] XPath steps follow after an attribute: $step/$rest\n";
 	}
-      } elsif ($step =~ /^text\(\)/) {
+      } elsif ($step =~ /^($AXIS)text\(\)/) {
+	my $axis = $1;
 	if ($rest eq "") {
 	  print "$xpath : auto-creating text() for $step\n" if $self->{debug};
 	  $next = $self->{doc}->createTextNode($value);
-	  $node->appendChild( $next );	  
+	  $self->_insertNode( $axis, $node, $next );
 	  return $next;
 	} else {
 	  die "[$PACKAGE] XPath steps follow after a text(): $step/$rest\n";
 	}
-      } elsif ($step  =~ /^comment\(\)/) {
+      } elsif ($step  =~ /^($AXIS)comment\(\)/) {
+	my $axis = $1;
 	if ($rest eq "") {
 	  print "$xpath : auto-creating comment <!-- $value --> for $step\n" if $self->{debug};
 	  $next = $self->{doc}->createComment($value);
-	  $node->appendChild( $next );	  
+	  $self->_insertNode( $axis, $node, $next );
 	  return $next;
 	} else {
 	  die "[$PACKAGE] XPath steps follow after a text(): $step/$rest\n";
 	}
-      } elsif ($step  =~ /^processing-instruction\((${PREDICATE})\)/o) {
-	my $name = $1;
-	if ($name=/^\s*${QUOT}\s*$/) {
+      } elsif ($step  =~ /^($AXIS)processing-instruction\((${PREDICATE})\)/o) {
+	my $axis = $1;
+	my $name = $2;
+	if ($name=~/^(?:\s*'([^']*)'|"([^"]*)"\s*)$/) {
+	  $name=$1.$2;
 	  if ($rest eq "") {
 	    print "$xpath : auto-creating comment <!-- $value --> for $step\n" if $self->{debug};
 	    $next = $self->{doc}->createProcessingInstruction($name,$value);
-	    $node->appendChild( $next );
+	    $self->_insertNode( $axis, $node, $next );
 	    return $next;
 	  } else {
 	    die "[$PACKAGE] XPath steps follow after a processing-instruction(): $step/$rest\n";
 	  }
 	} else {
-	  die "[$PACKAGE] Can't auto-create PI as spcified, use processing-instruction('name')\n";
+	  die "[$PACKAGE] Can't auto-create PI as specified ($name), use processing-instruction('name')\n";
 	}
       } else {
-	my $name;
-	if ($step =~ /^($NAME)/) { $name = $1 };
+	my ($name,$axis);
+	if ($step =~ /^($AXIS)($NAME)(?!\()/) {
+	  $axis = $1;
+	  $name = $2;
+	};
 	if ($name eq "") {
 	  die "[$PACKAGE] Can't determine element name from step $step\n";
 	}
@@ -309,9 +326,9 @@ sub _createSteps {
 	  print "$xpath : auto-creating element $name for $step\n" if $self->{debug};
 	  if ($self->{maxAutoSiblings} && @auto>$self->{maxAutoSiblings}) {
 	    # unlink all added siblings
+	    # print STDERR $self->{doc}->toString(1),"\n @auto\n";
 	    $_->unlinkNode for @auto;
-	    print STDERR $self->{doc}->toString(1),"\n";
-	    die "[$PACKAGE] Max automatic creation of siblings overflow ($self->{maxAutoSiblings}) for '$xpath'!\n";
+	    die "[$PACKAGE] Max automatic creation of siblings overflow ($self->{maxAutoSiblings}) for '$xpath', step '$step'!\n";
 	  }
 	  my ($real_name,$uri) = $self->_lookup_namespace($node,$name);
 	  if ($uri ne "") {
@@ -324,7 +341,7 @@ sub _createSteps {
 	    # iterating won't help here
 	    last;
 	  } else {
-	    $node->appendChild( $next );
+	    $self->_insertNode( $axis, $node, $next );
 	  }
 	  push @auto,$next;
 
@@ -473,11 +490,9 @@ Returnes an XML::LibXML::Document or XML::LibXML::Element.
 
 Only a limited subset of XPath is currently supported. Namely, the
 XPath expression must be a location path consisting of a /-separated
-sequence of one or more location steps along the child or attribute
-axes.  Each location step should be expressed using the abbreviated
-syntax (i.e. without the full axis specification as C<element> or
-C</@attribute>). The node-test part of the expression cannot be
-neither a wildcard (C<*>, C<@*>, C<prefix:*>, ...), nor the <node()>
+sequence of one or more location steps along the child, sibling, or attribute
+axes.  The node-test part of the expression cannot be
+neither a wildcard (C<*>, C<@*>, C<prefix:*>, ...), nor the C<node()>
 function. If a namespace prefix is used, then either the namespace
 must already be declared in the document or registered with an
 XPathContext object. Location steps may contain arbitrary predicates
