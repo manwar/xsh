@@ -1,3 +1,15 @@
+Changes since 2.0.2:
+
+ - many bugfixes
+ - added new XSH command 'set' for easy creating and modifying nodes
+ - improved namespace handling
+ - function xsh:match added
+ - completion for default, xsh, and user-defined XPath functions
+ - echo --no-space
+ - xsh:filename() added
+ - save --output-encoding flag added
+ - rename syntax allows bare-words as names
+
 Release 2.0.2:
 Minor feature enhancements and bug fixes.
 
