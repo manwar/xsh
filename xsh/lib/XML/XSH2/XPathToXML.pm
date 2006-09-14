@@ -216,8 +216,11 @@ sub _lookup_namespace {
       return ($prefix.':'.$name,undef);
     } else {
       # find the best suitable prefix
-      $prefix = $node->lookupNamespacePrefix( $uri );
-      return (($prefix ne "") ? $prefix.':'.$name : $name , $uri);
+      my $real_prefix = $node->lookupNamespacePrefix( $uri );
+      if ($real_prefix eq "" and !defined($node->lookupNamespaceURI( $prefix ))) {
+	$real_prefix = $prefix;
+      }
+      return (($real_prefix ne "") ? $real_prefix.':'.$name : $name , $uri);
     }
   } else {
     return ($name,undef);
