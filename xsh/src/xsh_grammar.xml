@@ -3091,9 +3091,10 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
       </aliases>
       <command minargs="3" maxargs="3" func="copy" extraargs="1">
 	<param name="respective" short="r"/>
+	<param name="preserve-order" short="p"/>
       </command>
       <documentation sections="Manipulation">
-	<usage>xcopy [--respective|:r] <xref linkend="exp"/> <xref linkend="loc"/> <xref linkend="exp"/></usage>
+	<usage>xcopy [--respective|:r] [--preserve-order|:p] <xref linkend="exp"/> <xref linkend="loc"/> <xref linkend="exp"/></usage>
 	<shortdesc>copy nodes (in the all-to-every mode)</shortdesc>
 	<description>
 	  <para>
@@ -3111,7 +3112,17 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    is used, then the target node-list <xref linkend="exp"/>
 	    is evaluated in the context of the source node
 	    being copied.
-	  </para>	    
+	  </para>
+	  <para>
+	    The <literal>--preserve-order|:p</literal> option can be
+	    used to ensure that the copied nodes are in the same
+	    relative order as the corresponding source nodes.
+	    Otherwise, if <xref linkend="loc"/> is
+	    <literal>after</literal> or <literal>prepend</literal>,
+	    the relative order of the copied nodes will be reversed,
+	    because source nodes are placed to the target location one
+	    by one.
+	  </para>
 	  <example>
 	    <title>Copy all middle-earth creatures within the document $a
 	      into every world of the document $b.</title>
@@ -3174,20 +3185,28 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
     <rule id="wrap_command" type="command" name="wrap" inline="yes">
       <command minargs="2" maxargs="2" func="wrap">
 	<param name="namespace" short="n" type="exp" argument="exp"/>
+	<param name="while" short="W" type="xpath" argument="exp"/>
+	<param name="until" short="U" type="xpath" argument="exp"/>
+	<param name="skip-whitespace" short="w"/>
+	<param name="skip-comments" short="c"/>
+	<param name="skip-pi" short="p"/>
 	<param name="inner" short="i"/>
       </command>
       <documentation sections="Manipulation">
-	<usage>wrap [--namespace <xref linkend="exp"/>] [--inner] <xref linkend="exp"/> <xref linkend="xpath"/>
+	<usage>wrap [--namespace <xref linkend="exp"/>] 
+	  [ [--inner] | [--while|:W <xref linkend="exp"/>] [--until|:U <xref linkend="exp"/>]
+	    [--skip-whitespace|:w] [--skip-comments|:c] [--skip-pi|:p] ]
+	  <xref linkend="exp"/> <xref linkend="xpath"/>
 	</usage>
 	<shortdesc>wrap given nodes into elements</shortdesc>
 	<description>
 	  <para>
-	    For each node matching <xref linkend="xpath"/>,
+	    For each node matching the <xref linkend="xpath"/> argument,
 	    this command creates a new element node according to a
 	    given <xref linkend="exp"/> (in the same
 	    way as <xref linkend="xinsert_command"/> does)
-	    to replace the matching node and
-	    moves the matching node into the newly created element.
+	    which replaces the matching node, and
+	    moves the matching node into this newly created element.
 	    If namespace <xref linkend="exp"/> is given,
 	    the namespace is applied on the created element.
 	    The command returns a node-list consisting
@@ -3206,7 +3225,47 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    all previous children of the matching node
 	    are moved into the newly created node.
 	    In this mode, all non-element matching
-	    nodes are ignored.
+	    nodes are ignored. This flag cannot be used together
+	    with <literal>--while</literal>
+	    and <literal>--until</literal>, which we describe next.
+	  </para>
+	  <para>
+	    <literal>--while</literal> (<literal>:W</literal>)
+	    and/or <literal>--until</literal> (<literal>:U</literal>) 
+	    arguments can be provided in order to move a sequence
+	    of adjacent siblings following the matching node into
+	    the newly created element. In this way the newly created element wraps
+	    not just the matching node itself but a range of nodes starting
+	    at the matching node and ending either before a first following node matching
+	    the expression of <literal>--until</literal>, or
+	    before a first following node not matching the expression
+	    of <literal>--while</literal>, or at the last sibling if
+	    neither of the prior apply. Both these expressions are
+	    evaluated in the context of the currently tested sibling and prior to
+	    the creation of the wrapping element. The context
+	    position for these expressions is 1 at the first sibling
+	    following the matching node and increases with each tested
+	    siblingů the context size is the number of all
+	    siblings following the matching node.
+	    It is important to mention that siblings wrapped in this
+	    way are excluded from further processing by <xref
+	    linkend="wrap_command"/> even if included in the node-list
+	    produced by the <xref
+	    linkend="xpath"/> argument. This allows to easily wrap
+	    certain adjacent elements without worrying about some
+	    elements being wrapped multiple times
+	    (for example, <literal>wrap :W x y //x</literal> wraps
+	    each sequence of adjacent elements <literal>&lt;x></literal> in a <literal>&lt;y></literal>).
+	  </para>
+	  <para><literal>--skip-whitespace</literal> (<literal>:w</literal>),
+	    <literal>--skip-comments</literal> (<literal>:c</literal>), and 
+	    <literal>--skip-pi</literal> (<literal>:p</literal>) can be used
+	    in combination with <literal>--while</literal> (<literal>:W</literal>)
+	    and/or <literal>--until</literal> (<literal>:U</literal>)
+	    to skip testing the expressions on white-space text
+	    nodes, comments, and/or processing instruction, respectively.
+	    Such nodes are only included in the wrapped range if
+	    followed by a sibling that is to be wrapped.
 	  </para>
 	  <example>
 	    <code>$scratch/&gt; ls /;
@@ -3216,7 +3275,7 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 $scratch/&gt; wrap 'foo' *;
 $scratch/&gt; insert attribute 'bar=baz' into /foo;
 $scratch/&gt; insert text 'some text' into //scratch;
-$scratch/&gt; wrap 'a:A' namespace 'http://foo/bar' //@*;
+$scratch/&gt; wrap --namespace 'http://foo/bar' 'a:A' //@*;
 $scratch/&gt; $wrapper := wrap 'text aaa="bbb"' //text();
 $scratch/&gt; wrap '&lt;elem ccc=ddd&gt;' //*;
 $scratch/&gt; ls /;
@@ -3259,6 +3318,42 @@ $scratch/&gt; ls /;
 <tab count="1"/><tab count="1"/>&lt;/bar&gt;
 <tab count="1"/>&lt;/foo&gt;
 &lt;/elem&gt;
+ </code>
+	  </example>
+	  <example>
+	    <title>Wrapping a range of adjacent nodes</title>
+	    <code>
+# prepare the test document
+$scratch/> rm /scratch/node(); # cleanup the document
+$scratch/> set /scratch/li[5]; # create 5 elements "li"
+$scratch/> set /scratch/li[3]/following-sibling::li; # create a "br" after the 3rd "li"
+$scratch/> for //li set . position(); # number the elements "li"
+$scratch/> ls /
+&lt;?xml version="1.0" encoding="utf-8"?>
+&lt;scratch>
+<tab/>&lt;li>1&lt;/li>
+<tab/>&lt;li>2&lt;/li>
+<tab/>&lt;li>3&lt;/li>
+<tab/>&lt;br/>
+<tab/>&lt;li>4&lt;/li>
+<tab/>&lt;li>5&lt;/li>
+&lt;/scratch>
+# wrap adjacent elements "li" into an "ol"
+$scratch/> wrap --skip-whitespace --while self::li ol //li;
+$scratch/> ls /
+&lt;?xml version="1.0" encoding="utf-8"?>
+&lt;scratch>
+<tab/>&lt;ol>
+<tab count="2"/>&lt;li>1&lt;/li>
+<tab count="2"/>&lt;li>2&lt;/li>
+<tab count="2"/>&lt;li>3&lt;/li>
+<tab/>&lt;/ol>
+<tab/>&lt;br/>
+<tab/>&lt;ol>
+<tab count="2"/>&lt;li>4&lt;/li>
+<tab count="2"/>&lt;li>5&lt;/li>
+<tab/>&lt;/ol>
+&lt;/scratch>
  </code>
 	  </example>
 	</description>
@@ -3583,9 +3678,10 @@ xsh $foo/&gt; ls /;
       </aliases>
       <command minargs="3" maxargs="3" func="move" extraargs="1">
 	<param name="respective" short="r"/>
+	<param name="preserve-order" short="p"/>
       </command>
       <documentation sections="Manipulation">
-	<usage>xmove [--respective|:r] <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/></usage>
+	<usage>xmove [--respective|:r] [--preserve-order|:p] <xref linkend="xpath"/> <xref linkend="loc"/> <xref linkend="xpath"/></usage>
 	<shortdesc>move nodes (in the all-to-every mode)</shortdesc>
 	<description>
 	  <para>Like <xref linkend="xcopy_command" />, except that
@@ -3600,6 +3696,22 @@ xsh $foo/&gt; ls /;
 	  <para>
 	    This command returns a node-list consisiting of all nodes
 	    it created on the target locations.
+	  </para>
+	  <para>
+	    If <literal>--respective|:r</literal> option
+	    is used, then the target node-list <xref linkend="exp"/>
+	    is evaluated in the context of the source node
+	    being copied.
+	  </para>
+	  <para>
+	    The <literal>--preserve-order|:p</literal> option can be
+	    used to ensure that the copied nodes are in the same
+	    relative order as the corresponding source nodes.
+	    Otherwise, if <xref linkend="loc"/> is
+	    <literal>after</literal> or <literal>prepend</literal>,
+	    the relative order of the copied nodes will be reversed,
+	    because source nodes are placed to the target location one
+	    by one.
 	  </para>
 	  <para>
 	    See <xref linkend="xcopy_command"/> for more details on

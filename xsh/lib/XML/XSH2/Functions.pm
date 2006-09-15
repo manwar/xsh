@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.22 2006-08-20 21:43:04 pajas Exp $
+# $Id: Functions.pm,v 2.23 2006-09-15 13:37:31 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.4';
-  $REVISION=q($Revision: 2.22 $);
+  $REVISION=q($Revision: 2.23 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -3765,8 +3765,9 @@ sub copy {
       propagate_flagsigint();
     };
     die $err if $err; # propagate
-    foreach my $fp (@$fl) {
-      my $tl = shift @rtl;
+    my $reverse = $opts->{'preserve-order'} && $where=~/^(after|prepend)$/;
+    foreach my $fp ($reverse ? reverse @$fl : @$fl) {
+      my $tl = $reverse ? pop(@rtl) : shift(@rtl);
       foreach my $tp (@$tl) {
 	my $replace=0;
 	$replace = ((insert_node($fp,$tp,undef,$where,undef,$rl)
@@ -3784,9 +3785,15 @@ sub copy {
       return $rl;
     }
     if ($all_to_all) {
+      my $real_fl;
+      if ($opts->{'preserve-order'} && $where=~/^(after|prepend)$/) {
+	$real_fl = [ reverse @$fl ];
+      } else {
+	$real_fl = $fl;
+      }
       foreach my $tp (@$tl) {
 	my $replace=0;
-	foreach my $fp (@$fl) {
+	foreach my $fp (@$real_fl) {
 	  $replace = ((insert_node($fp,$tp,undef,$where,undef,$rl)
 		       eq 'remove') || $replace);
 	}
@@ -3860,10 +3867,15 @@ sub wrap {
 
   my $rl=_prepare_result_nl();
   my $ql=_ev_nodelist($exp);
+  my %moved;
   foreach my $node (@$ql) {
+    next if $moved{$$node};
     my ($el) = create_nodes('element',$str,
 			    $_xml_module->owner_document($node),$ns);
     if ($opts->{inner}) {
+      if ($opts->{while} or $opts->{until}) {
+	die "wrap: cannot use --while or --until together with --inner\n";
+      }
       if ($_xml_module->is_element($node)) {
 	my @children = $node->childNodes;
 	$node->appendChild($el);
@@ -3874,6 +3886,9 @@ sub wrap {
       }
     } else {
       if ($_xml_module->is_attribute($node)) {
+	if ($opts->{while} or $opts->{until}) {
+	  _warn("wrap: ignoring --while or --until on an attribute");
+	}
 	my $parent=$node->ownerElement();
 	$parent->insertBefore($el,$parent->firstChild());
 	set_attr_ns($el,$node->namespaceURI(),
@@ -3881,11 +3896,65 @@ sub wrap {
 	$node->unbindNode();
       } else {
 	my $parent = $node->parentNode();
-	if ($parent) {
-	  safe_insert($el,$node,'replace');
-	  $el->appendChild($node);
-	} else {
-	  die "Cannot wrap node: ".pwd($node)." (node has no parent)\n";
+	my $last = undef;
+	unless ($parent) {
+	  die "wrap: cannot wrap node: ".pwd($node)." (node has no parent)\n";
+	}
+	  # process --while and --until
+	if (defined $opts->{while} or defined $opts->{until}) {
+	  my $while = $opts->{while};
+	  my $until = $opts->{until};
+	  my $skip_comments = $opts->{'skip-comments'};
+	  my $skip_ws = $opts->{'skip-whitespace'};
+	  my $skip_pi = $opts->{'skip-pi'};
+	  my $next = $node->nextSibling;
+	  # evaluate $opts->{while} in the context of the following sibling
+	  if ($next) {
+	    my $old_context = _save_context();
+	    eval {
+	      # what should the size be? guess number of all following siblings
+	      my $pos=1;
+	      my $size = $node->findvalue('count(following-sibling::node())');
+	      while ($next) {
+		unless (($skip_ws and $_xml_module->is_text($next) and $next->getData =~ /^\s*$/) or
+			($skip_comments and  $_xml_module->is_comment($next)) or 
+			  ($skip_pi and $_xml_module->is_pi($next))) {
+		  _set_context([$next,$size,$pos]);
+		  if (defined $while) {
+		    last if !_ev_count($while);
+		  }
+		  if (defined $until) {
+		    my $res = _ev_count($until);
+		    last if $res;
+		  }
+		  $last = $next;
+ 		  $pos++;
+		}
+		$next = $next->nextSibling;
+	      }
+	    };
+	    my $err = $@;
+	    do {
+	      local $SIG{INT}=\&flagsigint;
+	      _set_context($old_context);
+	      propagate_flagsigint();
+	    };	    
+	  }
+	}
+	safe_insert($el,$node,'replace');
+	$el->appendChild($node);
+	if ($last) {
+	  my $next = $el->nextSibling;
+	  while ($next) {
+	    $next->unbindNode();
+	    $el->appendChild($next);
+	    $moved{$$next}=1;
+	    last if $next->isSameNode($last);
+	    $next = $el->nextSibling;
+	  }
+	  unless ($next) {
+	    _warn("wrap: something went wrong");
+	  }
 	}
       }
     }
