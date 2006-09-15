@@ -6043,17 +6043,31 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
       </documentation>
     </rule>
     <rule id="namespaces_command" type="command" name="namespaces" inline="yes">
-      <command maxargs="1" func="list_namespaces"/><documentation sections="Information">
-	<usage>namespaces [<xref linkend="exp"/>]</usage>
-	<shortdesc>List namespaces in current scope (or in scope of
-	  given nodes)</shortdesc>
+      <command maxargs="1" func="list_namespaces">
+	<param name="registered" short="r"/>
+      </command>
+      <documentation sections="Information">
+	<usage>namespaces [--registered|:r] [<xref linkend="exp"/>]</usage>
+	<shortdesc>List namespaces available in a context of
+	  a given nodes</shortdesc>
 	<description>
 	  <para>
 	    For each node in a given node-list lists
 	    all namespaces that are valid the scope of the node.
 	    Namespaces are listed in the form of
-	    <literal>xmlns:prefix="uri"</literal> declarations.
-	    If no <xref linkend="xpath"/> is given, lists namespaces
+	    <literal>xmlns:prefix="uri"</literal> declarations,
+	    preceded by a cannonical xpath of the corresponding node
+	    on a separate line.
+	  </para>
+	  <para>
+	    If <literal>--registered</literal> or <literal>:r</literal>
+	    flag is used, list also namespaces registered with the
+	    <xref linkend="registerns_command"/> command
+	    in XSH syntax.
+	  </para>
+	  <para>
+	    If called without the <literal>--registered</literal> flag and
+	    no <xref linkend="xpath"/> is given, lists namespaces
 	    in the scope of the current node.
 	  </para>
 	</description>

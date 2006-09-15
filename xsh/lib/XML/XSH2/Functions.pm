@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.23 2006-09-15 13:37:31 pajas Exp $
+# $Id: Functions.pm,v 2.24 2006-09-15 22:31:56 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -36,7 +36,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.4';
-  $REVISION=q($Revision: 2.23 $);
+  $REVISION=q($Revision: 2.24 $);
   @ISA=qw(Exporter);
   my @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -1353,20 +1353,38 @@ sub files {
   return 1;
 }
 
+sub close_undef_value {
+  my ($doc,$value)=@_;
+  if (ref($value)) {
+    if (UNIVERSAL::isa($value,'XML::LibXML::NodeList')) {
+      @$value = grep
+	{eval { $doc->isSameNode($_xml_module->owner_document($_)) ? 0 : 1}}
+	  @$value;
+    } elsif (UNIVERSAL::isa($value,'XML::LibXML::Node')
+	and $doc->isSameNode($_xml_module->owner_document($value))) {
+      undef $value;
+    }
+  }
+  return $value;
+}
+
 sub close_doc {
   my ($exp)=@_;
   my $doc = _ev_doc($exp);
   no strict 'refs';
   foreach my $var (keys %{"XML::XSH2::Map::"}) {
     my $value = ${"XML::XSH2::Map::".$var};
-    if (ref($value)) {
-      if (UNIVERSAL::isa($value,'XML::LibXML::NodeList')) {
-	@$value = grep
-	  {eval { $doc->isSameNode($_xml_module->owner_document($_)) ? 0 : 1}}
-	  @$value;
-      } elsif (UNIVERSAL::isa($value,'XML::LibXML::Node')
-	  and $doc->isSameNode($_xml_module->owner_document($value))) {
-	undef ${"XML::XSH2::Map::".$var};
+    next unless defined $value;
+    undef ${"XML::XSH2::Map::".$var} 
+      unless defined(close_undef_value($doc,$value));
+  }
+  foreach my $lex_context (@$lexical_variables) {
+    my ($name,$value);
+    while (($name,$value) = each %$lex_context) {
+      next unless defined $value;
+      $value = close_undef_value($doc,$value);
+      unless (defined($value)) {
+	$lex_context->{$name} = undef 
       }
     }
   }
@@ -2638,8 +2656,9 @@ sub list {
 
 # list namespaces in scope of the given nodes
 sub list_namespaces {
-  my ($exp) = @_;
-  my $ql=_ev_nodelist($exp);
+  my ($opts,$exp) = @_;
+  $opts = _ev_opts($opts);
+  my $ql= ($opts->{registered} and $exp eq "") ? [] : _ev_nodelist($exp);
   foreach my $node (@$ql) {
     my $n=$node;
     my %namespaces;
@@ -2652,11 +2671,16 @@ sub list_namespaces {
     }
     out(pwd($node),":\n");
     foreach (sort { $a cmp $b } keys %namespaces) {
-      out("xmlns", ($_ ne "" ? ":" : ""),
+      out("  xmlns", ($_ ne "" ? ":" : ""),
 	  $_,"=\"",
 	  $namespaces{$_},"\"\n");
     }
     out("\n");
+  }
+  if ($opts->{registered}) {
+    for (sort keys(%_ns)) {
+      out(qq(register-namespace $_ "$_ns{$_}";\n));
+    }
   }
   return 1;
 }
