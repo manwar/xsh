@@ -9,7 +9,8 @@ BEGIN {
 
   @xsh_test=split /\n\n/, <<'EOF';
 quiet;
-
+def xml_assert $node $xml
+{ perl { my $real=serialize($node); die "Assertion failed: expected\n".$xml."\ngot\n".$real."\n " unless ($real eq $xml) } }
 indent 1;
 
 $t := create 'test';
@@ -36,6 +37,34 @@ foreach (/test/x/@n|/test/x|/test/x/text()) {
   insert comment 'after_comment' after .;
   unless (. = ../@*) insert chunk '<after_chunk>a</after_chunk><after_chunk>b</after_chunk>' after .;
 }
+
+$scratch := create '<a/>';
+set /a/d[5];
+set /a/d[3]/following-sibling::b;
+for //d set . position();
+call xml_assert /a '<a><d>1</d><d>2</d><d>3</d><b/><d>4</d><d>5</d></a>';
+
+wrap --while self::d "x" //d;
+call xml_assert /a '<a><x><d>1</d><d>2</d><d>3</d></x><b/><x><d>4</d><d>5</d></x></a>';
+
+$str = xsh:serialize(a);
+
+xmove --respective --preserve-order //d after ..;
+call xml_assert /a '<a><x/><d>1</d><d>2</d><d>3</d><b/><x/><d>4</d><d>5</d></a>';
+
+$scratch := create $str;
+call xml_assert /a $str;
+
+xmove --respective //d after ..;
+call xml_assert /a '<a><x/><d>3</d><d>2</d><d>1</d><b/><x/><d>5</d><d>4</d></a>';
+
+$scratch := create $str;
+for //x xmove d after .;
+call xml_assert /a '<a><x/><d>3</d><d>2</d><d>1</d><b/><x/><d>5</d><d>4</d></a>';
+
+$scratch := create $str;
+for //x xmove :p d after .;
+call xml_assert /a '<a><x/><d>1</d><d>2</d><d>3</d><b/><x/><d>4</d><d>5</d></a>';
 
 ls --depth 2 /test | cat
 

@@ -12,7 +12,11 @@ quiet;
 def x_assert $cond
 { perl { xsh("unless ($cond) throw concat('Assertion failed ',\$cond)") } }
 
-call x_assert '/scratch';
+def xml_assert $node $xml
+{ perl { my $real=serialize($node); die "Assertion failed: expected\n".$xml."\ngot\n".$real."\n " unless ($real eq $xml) } }
+
+
+x_assert '/scratch';
 
 try {
   call x_assert '/xyz';
@@ -20,6 +24,16 @@ try {
 } catch local $err {
   unless { $err =~ /^Assertion failed \/xyz/ } throw $err;
 };
+
+xml_assert * '<scratch/>';
+
+try {
+  call xml_assert * 'foo';
+  throw "xml_assert failed";
+} catch local $err {
+  unless { $err =~ /^Assertion failed/ } throw $err;
+};
+
 
 call x_assert 'count(//node()) = 1 and name(*)="scratch"';
 
@@ -148,6 +162,27 @@ call x_assert '/a/*[name()="u:v" and namespace-uri()="nam" and c]';
 $scratch := create '<a><b/><c/></a>';
 wrap-span --namespace 'nam' 'u:v' //b //c;
 call x_assert '/a/*[name()="u:v" and namespace-uri()="nam" and b and c]';
+
+$scratch := create '<a><b/><b/> <b/><c/>  <b/><!-- comment --><b/>  </a>';
+wrap --while self::b "x" //b;
+call xml_assert /a '<a><x><b/><b/></x> <x><b/></x><c/>  <x><b/></x><!-- comment --><x><b/></x>  </a>';
+
+$scratch := create '<a><b/><b/> <b/><c/>  <b/><!-- comment --><b/>  </a>';
+wrap --skip-whitespace --while self::b "x" //b;
+call xml_assert /a '<a><x><b/><b/> <b/></x><c/>  <x><b/></x><!-- comment --><x><b/></x>  </a>';
+
+$scratch := create '<a><b/><b/> <b/><c/>  <b/><!-- comment --><b/>  </a>';
+wrap --skip-comments --skip-whitespace --while self::b "x" //b;
+call xml_assert /a '<a><x><b/><b/> <b/></x><c/>  <x><b/><!-- comment --><b/></x>  </a>';
+
+$scratch := create '<a><b/><?foo?><?bar?><b/><b/><c/><b/>  <b/><!-- comment --><b/>  </a>';
+wrap --skip-pi --while self::b "x" //b;
+call xml_assert /a '<a><x><b/><?foo?><?bar?><b/><b/></x><c/><x><b/></x>  <x><b/></x><!-- comment --><x><b/></x>  </a>';
+
+$scratch := create '<a><b/>foo<b/> <b/><c/>  <b/><!-- comment --><b/>  </a>';
+wrap --until self::*[not(self::b)] "x" //b;
+call xml_assert /a '<a><x><b/>foo<b/> <b/></x><c/>  <x><b/><!-- comment --><b/>  </x></a>';
+
 
 EOF
 

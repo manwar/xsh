@@ -18,6 +18,7 @@ package XML::XSH2::XPathToXML;
 
 use XML::LibXML;
 use strict;
+no warnings qw(uninitialized);
 
 use vars qw($VERSION);
 $VERSION = '0.05';
@@ -269,7 +270,7 @@ sub _createSteps {
 	if ($rest eq "") {
 	  print "$xpath : auto-creating attribute $name for $step\n" if $self->{debug};
 	  my ($real_name,$uri) = $self->_lookup_namespace($node,$name);
-	  if ($uri ne "") {
+	  if (defined($uri) and $uri ne "") {
 	    $node->setAttributeNS($uri,$name,$value);
 	    return $node->getAttributeNodeNS($uri,$name);
 	  } else {
@@ -334,7 +335,7 @@ sub _createSteps {
 	    die "[$PACKAGE] Max automatic creation of siblings overflow ($self->{maxAutoSiblings}) for '$xpath', step '$step'!\n";
 	  }
 	  my ($real_name,$uri) = $self->_lookup_namespace($node,$name);
-	  if ($uri ne "") {
+	  if (defined($uri) and $uri ne "") {
 	    $next = $self->{doc}->createElementNS($uri,$real_name);
 	  } else {
 	    $next = $self->{doc}->createElement($real_name);
