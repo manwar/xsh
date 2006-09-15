@@ -1,52 +1,49 @@
 TODO XSH2:
 
-- optimize XPath contstant expressions like "foo" or 1
-
-- reopen . command
-
-- setting attribute values is hard
-
-- rename doesn't work for namespaced nodes - can't unset namespace
-
-- support name-like and XPath expressions for rename
 - split [after|before] ...
 - split text on a given character???
 
+- more tests
+- support DTD modification (isn't that obsolete in the 21st century?)
 
-- loose parsing of xpath in assignment and count: allow $a - 1
-- swap nodes command (maybe reorder: reorder {(2,1,3,4)} //foo) ?
-  now doable with sort:
-    $neword = {my $i=0; { map { $i => $_ } (2,1,3,4)} };
-    xmove &{ sort :k {$neword{position()}} //foo } replace //foo;
+- 'locate' - allow use also nearest id()
+  (needs support in LibXML; 1.60 contains attribute->isId method)
 
-- MORE TESTS
+- add various examples of working with namespaces, e.g.
 
-* document the installation process for ActiveState perl
-* support DTD modification (isn't that obsolete in 21st century?)
-* 'locate' - allow use also nearest id() (needs support in LibXML)
+	if the ttt prefix is aready declared in the context of . or
+	registered, one may simply do
 
-- document different examples for using namespaces:
+		add element ttt:para into . 
 
-	if the ttt prefix is aready declared in the context of ., you may
-	simply do 
-
-	add element ttt:para into . 
 	and the new element ttt:para will be bound with that namespace so
 	doing
-	  ls //ttt:para;
-	  ls//*[local-name()='ttt' and namespace-uri()='http://myuri.com'];
+
+		ls //ttt:para;
+		ls//*[local-name()='ttt' and
+		      namespace-uri()='http://myuri.com'];
+
 	should both list it.
 
-	  add --namespace http://myuri.com element "ttt:para" into .
+	       add --namespace http://myuri.com element "ttt:para" into .
+
 	is intended for adding a new element together with a
 	xmlns declaration of its prefix and the given namespace.
 
 - namespace-rename-uri uri new-prefix [nodes]
 - namespace-rename-prefix old-prefix new-prefix [nodes]
 - namespace-change-uri old-uri new-uri [nodes]
+  (requires support in XML::LibXML)
 
 USER-LEVEL IMPLEMENTABLE
 
-- untag/split element                //(on user-level easy with def)
-- comment-out node (?? uncomment ??) //(on user-level easy with def)
-
+- reload document
+- untag/split element                
+- comment-out node (?? uncomment ??) 
+- swap nodes command or more generally, reorder {[2,1,3,4]} //foo
+  currently doable either with a sort:
+    $neword = {my $i=0; { map { $i => $_ } (2,1,3,4)} };
+    xmove &{ sort :k {$neword{position()}} //foo } replace //foo;
+  or, even simpler way, using variables:
+    $match = //foo;
+    move { @$match[1,0,2,3] } replace //foo;

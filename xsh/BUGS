@@ -1,35 +1,14 @@
 KNOWN BUGS
 
-- after open --format html the filename/url is unknown-xxx
+- it is not possible to perform XPath searches on namespace nodes
+  (it is a limitation of libxml2)
 
-- TODO: namespaces --registered (list registered namespace prefixes
-instead of those in scope of a current node)
-
-- TODO: close command doesn't remove document references neither from
-  lexical variables nor global variables whose content has been
-  temporarily replaced by localization
-
-- it is not possible to perform XPath searches on namespace
-  nodes (it's a limitation of libxml2)
-
-
-- possibly 
-
-  undefined namespace prefix `table' at /home/pajas/Documents/normalize_addresses.xsh line 41, column 97, offset 1160.
- at /home/pajas/Documents/normalize_addresses.xsh line 41, column 97, offset 1160
-
-- namespaces .
-utf-8/:
-
-- --skip-xmldecl doesn't work for toFile and toFH so we need a
-workaround. The problem here is compression.
+- --skip-xmldecl doesn't work for --file and --pipe (toFile and toFH)
+so we need a workaround. The problem here is compression.
 
 - command redirection fails (no output) if the script is passed to
 xsh2 as STDIN and encoding is applied (either via $ENCODING variable
-or the encoding command).
+or the encoding command). Seems to be due to a (reported) bug in Perl.
 
-- the following seems to be parsed incorectly (from www/cielbleu/make.xsh2):
-
- if (@lang) { $lang = @lang } else { $lang = $language_prefix }
-
-(adding semicolons to each of the blocks does help)
+- rename doesn't work 100% for namespaced nodes - can't unset
+namespace (needs support in XML::LibXML)
