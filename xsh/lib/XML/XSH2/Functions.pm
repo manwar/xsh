@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.26 2006-09-17 15:43:33 pajas Exp $
+# $Id: Functions.pm,v 2.27 2006-09-17 17:06:43 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -37,7 +37,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.4';
-  $REVISION=q($Revision: 2.26 $);
+  $REVISION=q($Revision: 2.27 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -1065,6 +1065,7 @@ EOS
     open my $f, ($DUMP_APPEND ? '>>' : '>'), $DUMP || die "Can't dump parse tree to '$DUMP': $!";
     print {$f} $dump;
     close $f;
+    chmod 0755, $DUMP unless $DUMP_APPEND;
   }
   $DUMP_APPEND = 1;
 }
