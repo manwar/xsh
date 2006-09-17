@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.31 2006-09-17 17:22:20 pajas Exp $
+# $Id: Functions.pm,v 2.32 2006-09-17 21:15:32 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -13,6 +13,7 @@ use XML::XSH2::Iterators;
 use IO::File;
 use Scalar::Util;
 use File::Temp qw(tempfile tempdir);
+use Carp;
 
 use Exporter;
 use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
@@ -36,8 +37,8 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 	  /;
 
 BEGIN {
-  $VERSION='2.0.4';
-  $REVISION=q($Revision: 2.31 $);
+  $VERSION='2.0.5';
+  $REVISION=q($Revision: 2.32 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -130,6 +131,21 @@ BEGIN {
   $Xinclude_prefix = 'http://www.w3.org/2001/XInclude';
   require XML::XSH2::Commands;
 }
+
+sub VERSION {
+  shift if $_[0] eq __PACKAGE__;
+  my $ver = shift;
+  if (defined($ver)) {
+    my @V = split /\./,$VERSION;
+    my @v = split /\./,$ver;
+    for $_ (@v) {
+      croak __PACKAGE__." version $ver required--this is only version $VERSION"
+	if $_> shift @V;
+    }
+  }
+  return $VERSION;
+}
+
 
 sub min { $_[0] > $_[1] ? $_[1] : $_[0] }
 
@@ -1022,8 +1038,13 @@ sub dump_parse_tree {
   my $dump = '';
 
   unless ($DUMP_APPEND) {
-    $dump .= <<'EOS';
+    $dump .= <<"EOS";
 require XML::XSH2;
+XML::XSH2::Functions->VERSION( '$VERSION' );
+
+EOS
+
+    $dump .= <<'EOS';
 {
 package XML::XSH2::Functions;
 
