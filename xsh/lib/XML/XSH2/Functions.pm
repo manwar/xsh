@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.28 2006-09-17 17:08:03 pajas Exp $
+# $Id: Functions.pm,v 2.29 2006-09-17 17:08:15 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -37,7 +37,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.4';
-  $REVISION=q($Revision: 2.28 $);
+  $REVISION=q($Revision: 2.29 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -1063,7 +1063,7 @@ EOS
   } else {    
     print STDERR "Saving compiled '$SCRIPT' to '$DUMP'\n" unless $QUIET;
     open my $f, ($DUMP_APPEND ? '>>' : '>'), $DUMP || die "Can't dump parse tree to '$DUMP': $!";
-    print "#!/usr/bin/env perl\n" unless $DUMP_APPEND;
+    print {$f} "#!/usr/bin/env perl\n" unless $DUMP_APPEND;
     print {$f} $dump;
     close $f;
     chmod 0755, $DUMP unless $DUMP_APPEND;
