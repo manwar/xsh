@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.25 2006-09-17 15:34:56 pajas Exp $
+# $Id: Functions.pm,v 2.26 2006-09-17 15:43:33 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -37,7 +37,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.4';
-  $REVISION=q($Revision: 2.25 $);
+  $REVISION=q($Revision: 2.26 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -4585,6 +4585,7 @@ sub run_commands {
 }
 
 sub run_string {
+  xsh_rd_parser_init() unless $_xsh;
   my $pt = $_xsh->startrule($_[0]);
   post_process_parse_tree($pt);
   return run_commands($pt,0);
