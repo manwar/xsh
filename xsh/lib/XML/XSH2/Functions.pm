@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.29 2006-09-17 17:08:15 pajas Exp $
+# $Id: Functions.pm,v 2.30 2006-09-17 17:09:14 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -37,7 +37,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.4';
-  $REVISION=q($Revision: 2.29 $);
+  $REVISION=q($Revision: 2.30 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -920,7 +920,7 @@ sub list_flags {
     out((($DEBUG ? "debug" : "nodebug"),";\n"));
     out((($TEST_MODE ? "run-mode" : "test-mode"),";\n"));
     out("switch_to_new_documents ".(get_cdonopen() or "0").";\n");
-    out("encoding '$ENCODING')\n");
+    out("encoding '$ENCODING';\n");
     out("query_encoding '$QUERY_ENCODING';\n");
     out("xpath_completion ".(get_xpath_completion() or "0").";\n");
     out("xpath_axis_completion \'".get_xpath_axis_completion()."';\n");
