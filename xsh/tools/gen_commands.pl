@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_commands.pl,v 2.1 2004-12-02 19:26:40 pajas Exp $
+# $Id: gen_commands.pl,v 2.2 2006-09-17 15:34:56 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -45,7 +45,8 @@ sub print_command {
   }
   my ($cmd) = $rule->findnodes(q{command});
   print "'$name' => [";
-  print "\\\&",$cmd->getAttribute('func');
+#  print "\\\&",$cmd->getAttribute('func');
+  print "'",$cmd->getAttribute('func'),"'";
   print ", ",($cmd->getAttribute('minargs') ne "" ? $cmd->getAttribute('minargs') : 0);
   print ", ",($cmd->getAttribute('maxargs') ne "" ? $cmd->getAttribute('maxargs') : "undef");
   my @params = $cmd->findnodes(q{param});

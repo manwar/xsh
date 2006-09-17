@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # -*- cperl -*-
 
-# $Id: xsh,v 2.3 2005-02-22 07:44:42 pajas Exp $
+# $Id: xsh,v 2.4 2006-09-17 15:34:56 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -19,7 +19,7 @@ use Pod::Usage;
 use vars qw($opt_q $opt_w $opt_i $help $opt_V $opt_E $opt_e $opt_d
             $opt_c $opt_s $opt_f $opt_g $opt_v $opt_t $opt_T $opt_a
             $opt_l $opt_n $opt_p $opt_P $usage $manpage $opt_HTML
-            $opt_XML $input $output $process $format $opt_C);
+            $opt_XML $input $output $process $format $opt_C $opt_D);
 use vars qw($VERSION $REVISION);
 
 use IO::Handle;
@@ -39,6 +39,7 @@ BEGIN {
 			 "format" => \$format,
 			 "no-validation|w" => \$opt_w,
 			 "debug|d" => \$opt_d,
+			 "dump|D=s" => \$opt_D,
 			 "no-init|f" => \$opt_f,
 			 "help|h" => \$help,
 			 "version|V" => \$opt_V,
@@ -61,7 +62,7 @@ BEGIN {
 			) or $usage=1;
 #  getopts('atscqvwdfhVinTE:e:l:pP');
   $VERSION='0.12';
-   $REVISION=q($Revision: 2.3 $);
+   $REVISION=q($Revision: 2.4 $);
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -142,6 +143,7 @@ XML::XSH2::Functions::set_encoding($opt_e) if $opt_e;
 XML::XSH2::Functions::set_qencoding($opt_E) if $opt_E;
 set_quiet($opt_q);
 set_debug($opt_d);
+$XML::XSH2::Functions::DUMP = $opt_D;
 set_compile_only_mode($opt_c);
 
 my $doc=XML::XSH2::Functions::create_doc('$scratch',"scratch",'xml');
@@ -369,6 +371,7 @@ xsh - XML Editing Shell
   xsh [options] -p commands < input.xml > output.xml
   xsh [options] -I input.xml -O output.xml commands
   xsh [options] -P file.xml commands
+  xsh [options] -cD compiled_script.pl ...
 
   xsh -u          for usage
   xsh -h          for help
@@ -422,6 +425,24 @@ XSH commands in the standard input.
 
 Compile the XSH source and report errors, only. No commands are
 actually executed.
+
+=item B<--Dump|-D> output_filename.pl
+
+Compiles XSH source(s) into a stand-alone Perl script which can 
+be executed simply with 
+
+  perl output_filename.pl [script-arguments ... ]
+
+The compiled Perl script still requires XML::XSH2 modules to
+be installed, but since it is already precompiled and also because
+loading of XSH grammar parser is not required, it starts almost
+instantly, compared to its XSH source.
+
+Note that the compiled script includes init file (unless C<-f> flag
+was used), and it also "remembers" run-time flag settings used during
+the compilation. 
+
+Use C<-c> to suppress execution of the compiled script.
 
 =item B<--quiet|-q>
 

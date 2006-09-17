@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.24 2006-09-15 22:31:56 pajas Exp $
+# $Id: Functions.pm,v 2.25 2006-09-17 15:34:56 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -16,6 +16,7 @@ use File::Temp qw(tempfile tempdir);
 
 use Exporter;
 use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
+	    @PARAM_VARS
             $_xml_module $_sigint
             $_xsh $_xpc $_parser @stored_variables
 	    $lexical_variables $_newdoc
@@ -31,14 +32,14 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 	    $XPATH_AXIS_COMPLETION $STRICT_PWD
 	    $XPATH_COMPLETION $DEFAULT_FORMAT $LINE_NUMBERS
             $RT_LINE $RT_COLUMN $RT_OFFSET $RT_SCRIPT $SCRIPT
-            $BENCHMARK $Xinclude_prefix $HISTFILE
+            $BENCHMARK $DUMP $DUMP_APPEND $Xinclude_prefix $HISTFILE
 	  /;
 
 BEGIN {
   $VERSION='2.0.4';
-  $REVISION=q($Revision: 2.24 $);
+  $REVISION=q($Revision: 2.25 $);
   @ISA=qw(Exporter);
-  my @PARAM_VARS=qw/$ENCODING
+  @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
 		    $INDENT
                     $EMPTY_TAGS
@@ -258,7 +259,7 @@ sub xsh_init {
   $_parser = $_xml_module->new_parser();
 
   xpc_init();
-  xsh_rd_parser_init();
+#  xsh_rd_parser_init();
 
   # create a first document so that we always have non-empty context
   create_doc('$scratch',"scratch",'xml');
@@ -266,15 +267,16 @@ sub xsh_init {
 }
 
 sub xsh_rd_parser_init {
-  if (eval { require XML::XSH2::Parser; }) {
-    $_xsh=XML::XSH2::Parser->new();
-  } else {
-    print STDERR "Parsing raw grammar...\n";
-    require XML::XSH2::Grammar;
-    $_xsh=XML::XSH2::Grammar->new();
-    print STDERR "... done.\n";
-    unless ($QUIET) {
-      print STDERR << 'EOF';
+  unless ($_xsh) {
+    if (eval { require XML::XSH2::Parser; }) {
+      $_xsh=XML::XSH2::Parser->new();
+    } else {
+      print STDERR "Parsing raw grammar...\n";
+      require XML::XSH2::Grammar;
+      $_xsh=XML::XSH2::Grammar->new();
+      print STDERR "... done.\n";
+      unless ($QUIET) {
+	print STDERR << 'EOF';
 NOTE: To avoid this, you should regenerate the XML::XSH2::Parser.pm
       module from XML::XSH2::Grammar.pm module by changing to XML/XSH/
       directory in your load-path and running the following command:
@@ -282,6 +284,7 @@ NOTE: To avoid this, you should regenerate the XML::XSH2::Parser.pm
          perl -MGrammar -e XML::XSH2::Grammar::compile
 
 EOF
+      }
     }
   }
   return $_xsh;
@@ -887,27 +890,41 @@ sub XPATH_lineno {
 
 # ===================== END OF XPATH EXT FUNC ================
 
+sub get_flags_as_vars {
+  no strict qw(refs);
+  use Data::Dumper;
+  return Data::Dumper->Dump([map eval, @PARAM_VARS],\@PARAM_VARS);
+}
+
 sub list_flags {
-  out("validation ".(get_validation() or "0").";\n");
-  out("recovering ".(get_recovering() or "0").";\n");
-  out("parser_expands_entities ".(get_expand_entities() or "0").";\n");
-  out("parser_expands_xinclude ".(get_expand_xinclude() or "0").";\n");
-  out("keep_blanks ".(get_keep_blanks() or "0").";\n");
-  out("pedantic_parser ".(get_pedantic_parser() or "0").";\n");
-  out("load_ext_dtd ".(get_load_ext_dtd() or "0").";\n");
-  out("complete_attributes ".(get_complete_attributes() or "0").";\n");
-  out("indent ".(get_indent() or "0").";\n");
-  out("empty_tags ".(get_empty_tags() or "0").";\n");
-  out("skip_dtd ".(get_skip_dtd() or "0").";\n");
-  out(((get_backups() ? "backups" : "nobackups"),";\n"));
-  out((($QUIET ? "quiet" : "verbose"),";\n"));
-  out((($DEBUG ? "debug" : "nodebug"),";\n"));
-  out((($TEST_MODE ? "run-mode" : "test-mode"),";\n"));
-  out("switch_to_new_documents ".(get_cdonopen() or "0").";\n");
-  out("encoding '$ENCODING')\n");
-  out("query_encoding '$QUERY_ENCODING';\n");
-  out("xpath_completion ".(get_xpath_completion() or "0").";\n");
-  out("xpath_axis_completion \'".get_xpath_axis_completion()."';\n");
+  my ($opts) = @_;
+  $opts = _ev_opts($opts);
+  if ($opts->{variables}) {
+    no strict qw(refs);
+    use Data::Dumper;
+    out(get_flags_as_vars());
+  } else {
+    out("validation ".(get_validation() or "0").";\n");
+    out("recovering ".(get_recovering() or "0").";\n");
+    out("parser_expands_entities ".(get_expand_entities() or "0").";\n");
+    out("parser_expands_xinclude ".(get_expand_xinclude() or "0").";\n");
+    out("keep_blanks ".(get_keep_blanks() or "0").";\n");
+    out("pedantic_parser ".(get_pedantic_parser() or "0").";\n");
+    out("load_ext_dtd ".(get_load_ext_dtd() or "0").";\n");
+    out("complete_attributes ".(get_complete_attributes() or "0").";\n");
+    out("indent ".(get_indent() or "0").";\n");
+    out("empty_tags ".(get_empty_tags() or "0").";\n");
+    out("skip_dtd ".(get_skip_dtd() or "0").";\n");
+    out(((get_backups() ? "backups" : "nobackups"),";\n"));
+    out((($QUIET ? "quiet" : "verbose"),";\n"));
+    out((($DEBUG ? "debug" : "nodebug"),";\n"));
+    out((($TEST_MODE ? "run-mode" : "test-mode"),";\n"));
+    out("switch_to_new_documents ".(get_cdonopen() or "0").";\n");
+    out("encoding '$ENCODING')\n");
+    out("query_encoding '$QUERY_ENCODING';\n");
+    out("xpath_completion ".(get_xpath_completion() or "0").";\n");
+    out("xpath_axis_completion \'".get_xpath_axis_completion()."';\n");
+  }
 }
 
 sub toUTF8 {
@@ -961,7 +978,10 @@ sub xsh {
   require Benchmark if $BENCHMARK;
   my ($t0,$t1);
   $t0 = Benchmark->new() if $BENCHMARK;
-  xsh_init() unless (ref($_xsh));
+  unless (ref($_xsh)) {
+    xsh_init();
+    xsh_rd_parser_init();
+  }
   $t1 = Benchmark->new() if $BENCHMARK;
   print STDERR "Benchmark: init xsh took:",benchtime($t1,$t0),"\n" if $BENCHMARK;
   if (ref($_xsh)) {
@@ -980,16 +1000,73 @@ sub run {
   my $pt = $_xsh->startrule($code);
   my $t1 = Benchmark->new() if $BENCHMARK;
   print STDERR "Benchmark: xsh parsing took:",benchtime($t1,$t0),"\n" if $BENCHMARK;
+
 #  __debug "Post processing parse tree";
   $t0 = Benchmark->new() if $BENCHMARK;
   post_process_parse_tree($pt);
   $t1 = Benchmark->new() if $BENCHMARK;
   print STDERR "Benchmark: compile took:",benchtime($t1,$t0),"\n" if $BENCHMARK;
+  dump_parse_tree($pt) if defined $DUMP;
   $t0 = Benchmark->new() if $BENCHMARK;
   my $result=run_commands($pt,1);
   $t1 = Benchmark->new() if $BENCHMARK;
   print STDERR "Benchmark: execution took:",benchtime($t1,$t0),"\n" if $BENCHMARK;
   return $result;
+}
+
+sub dump_parse_tree {
+  my ($pt) = shift;
+  use Data::Dumper;
+  my $dump = '';
+
+  unless ($DUMP_APPEND) {
+    $dump .= <<'EOS';
+require XML::XSH2;
+{
+package XML::XSH2::Functions;
+
+# initialize context
+xsh_init();
+
+# prepare ARGV
+@XML::XSH2::Map::ARGV=@ARGV; 
+for (@ARGV,@XML::XSH2::Map::ARGV) {
+  $_=toUTF8($QUERY_ENCODING,$_) 
+}
+# XPath variant of perlish {@ARGV} ($ARGV[1] is the first arg though)
+$XML::XSH2::Map::ARGV = XML::LibXML::NodeList->new(
+  map { cast_value_to_objects($_) } @XML::XSH2::Map::ARGV
+);
+
+EOS
+  {
+    local $TEST_MODE;
+    $dump.= get_flags_as_vars();
+  }
+  } else {
+    $dump.=<<'EOS'
+{
+package XML::XSH2::Functions;
+EOS
+  }
+  $dump.= "# script $SCRIPT\n\n";
+  local $Data::Dumper::Deparse=1;
+  $dump.= Data::Dumper->Dump([$pt],['parse_tree']);
+  $dump.= "\nXML::XSH2::Functions::run_commands(\$parse_tree);\n";
+  $dump.= "};\n\n";
+  if (ref($DUMP) eq 'SCALAR') {
+    if ($DUMP_APPEND) {
+      $$DUMP.=$dump;
+    } else {
+      $$DUMP=$dump;
+    }
+  } else {    
+    print STDERR "Saving compiled '$SCRIPT' to '$DUMP'\n" unless $QUIET;
+    open my $f, ($DUMP_APPEND ? '>>' : '>'), $DUMP || die "Can't dump parse tree to '$DUMP': $!";
+    print {$f} $dump;
+    close $f;
+  }
+  $DUMP_APPEND = 1;
 }
 
 sub post_process_parse_tree {
@@ -4476,6 +4553,7 @@ sub run_commands {
 
   store_variables(1);
   store_lex_variables(1);
+  no strict qw(refs);
   eval {
     local $SIG{INT}=\&sigint if $trapsignals;
     local $SIG{PIPE}=\&sigpipe if $trapsignals;
@@ -4485,7 +4563,7 @@ sub run_commands {
 	if ($cmd eq "test-mode") { $TEST_MODE=1; $result=1; next; }
 	if ($cmd eq "run-mode") { $TEST_MODE=0; $result=1; next; }
 	next if $TEST_MODE;
-	$result=&{$cmd}(@params) if defined($cmd);
+	$result=$cmd->(@params) if defined($cmd);
       } else {
 	$result=0;
       }

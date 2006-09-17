@@ -1244,9 +1244,9 @@ sub new {
 	<action>
 	  if (scalar(@{$item[4]})) {
 	    if ($item[4][0][0] eq 'pipe') {
-  	      $return=[<lineinfo/>,\&amp;XML::XSH2::Functions::pipe_command,[$item[2]],$item[4][0][1]]
+  	      $return=[<lineinfo/>,'pipe_command',[$item[2]],$item[4][0][1]]
 	    } else {
-   	      $return=[<lineinfo/>,\&amp;XML::XSH2::Functions::string_pipe_command,[$item[2]],$item[4][0][1]]
+   	      $return=[<lineinfo/>,'string_pipe_command',[$item[2]],$item[4][0][1]]
 	    }
           } else {
             $return=$item[2]
@@ -1261,9 +1261,9 @@ sub new {
 	<action>
 	  if (scalar(@{$item[3]})) {
 	    if ($item[3][0][0] eq 'pipe') {
-  	      $return=[<lineinfo/>,\&amp;XML::XSH2::Functions::pipe_command,[$item[1]],$item[3][0][1]]
+  	      $return=[<lineinfo/>,'pipe_command',[$item[1]],$item[3][0][1]]
 	    } else {
-   	      $return=[<lineinfo/>,\&amp;XML::XSH2::Functions::string_pipe_command,[$item[1]],$item[3][0][1]]
+   	      $return=[<lineinfo/>,'string_pipe_command',[$item[1]],$item[3][0][1]]
 	    }
           } else {
             $return=$item[1]
@@ -2066,7 +2066,7 @@ END
 	<regexp>!\s*</regexp>
 	<directive type="commit"/>
 	<regexp>.*</regexp>
-	<action>[[<lineinfo/>,\&amp;XML::XSH2::Functions::sh_noev,$item[3]]]</action>
+	<action>[[<lineinfo/>,'sh_noev',$item[3]]]</action>
       </production>
       <production>
 	<directive type="error-if-committed">Parse error near: "! }.substr($text,0,40).qq{ ..."</directive>
@@ -2128,7 +2128,7 @@ END
 	<string>catch</string>
 	<ruleref ref="local_var" rep="?" arguments=""/>
 	<ruleref ref="block" arguments=""/>
-	<action>[<lineinfo/>,\&amp;XML::XSH2::Functions::try_catch,$item[3],$item[6],@{$item[5]}]</action>
+	<action>[<lineinfo/>,'try_catch',$item[3],$item[6],@{$item[5]}]</action>
       </production>
       <documentation sections="Flow">
 	<usage>try <xref linkend="block"/> catch [[local|my] <xref linkend="varname"/>] <xref linkend="block"/></usage>
@@ -2187,7 +2187,7 @@ END
 	<ruleref ref="block" arguments=""/>
 	<ruleref ref="elsif_block" arguments=""/>
 	<ruleref ref="else_block" arguments=""/>
-	<action>[<lineinfo/>,\&amp;XML::XSH2::Functions::if_statement,[$item[3],$item[4]],@{$item[5]},@{$item[6]}]</action>
+	<action>[<lineinfo/>,'if_statement',[$item[3],$item[4]],@{$item[5]},@{$item[6]}]</action>
       </production>
       <documentation sections="Flow">
 	<usage>if <xref linkend="exp"/> <xref linkend="command"/>
@@ -2242,7 +2242,7 @@ END
 	<directive type="commit"/>
 	<ruleref ref="exp" arguments=""/>
 	<ruleref ref="command" arguments=""/>
-	<action>[<lineinfo/>,\&amp;XML::XSH2::Functions::if_statement,[$item[3],[$item[4]]]]</action>
+	<action>[<lineinfo/>,'if_statement',[$item[3],[$item[4]]]]</action>
       </production>
     </rule>
     <!-- unless -->
@@ -2253,7 +2253,7 @@ END
 	<ruleref ref="exp" arguments=""/>
 	<ruleref ref="block" arguments=""/>
 	<ruleref ref="else_block" rep="?" arguments=""/>
-	<action>[<lineinfo/>,\&amp;XML::XSH2::Functions::unless_statement,$item[3],$item[4],@{$item[5]}]</action>
+	<action>[<lineinfo/>,'unless_statement',$item[3],$item[4],@{$item[5]}]</action>
       </production>
       <documentation sections="Flow">
 	<usage>unless <xref linkend="exp"/>
@@ -2281,7 +2281,7 @@ END
 	<directive type="commit"/>
 	<ruleref ref="exp" arguments=""/>
 	<ruleref ref="command" arguments=""/>
-	<action>[<lineinfo/>,\&amp;XML::XSH2::Functions::unless_statement,$item[3],[$item[4]]]</action>
+	<action>[<lineinfo/>,'unless_statement',$item[3],[$item[4]]]</action>
       </production>
     </rule>
     <!-- while -->
@@ -2291,7 +2291,7 @@ END
 	<directive type="commit"/>
 	<ruleref ref="exp" arguments=""/>
 	<ruleref ref="command" arguments=""/>
-	<action>[<lineinfo/>,\&amp;XML::XSH2::Functions::while_statement,$item[3],[$item[4]]]</action>
+	<action>[<lineinfo/>,'while_statement',$item[3],[$item[4]]]</action>
       </production>
     </rule>
     <rule id="while" type="command" name="while" inline="yes">
@@ -2300,7 +2300,7 @@ END
 	<directive type="commit"/>
 	<ruleref ref="exp" arguments=""/>
 	<ruleref ref="block" arguments=""/>
-	<action>[<lineinfo/>,\&amp;XML::XSH2::Functions::while_statement,$item[3],$item[4]]</action>
+	<action>[<lineinfo/>,'while_statement',$item[3],$item[4]]</action>
       </production>
       <documentation sections="Flow">
 	<usage>while <xref linkend="exp"/> <xref linkend="block"/></usage>
@@ -2327,7 +2327,7 @@ END
 	<selfref sep="yes"/>
 	<directive type="commit"/>
 	<ruleref ref="block" arguments=""/>
-	<action>[<lineinfo/>,\&amp;XML::XSH2::Functions::run_commands,$item[3],0]</action>
+	<action>[<lineinfo/>,'run_commands',$item[3],0]</action>
       </production>
       <documentation sections="Flow">
 	<usage>do <xref linkend="block"/></usage>
@@ -2385,7 +2385,7 @@ END
 	<ruleref ref="local_var_in" rep="?" arguments=""/>
 	<ruleref ref="exp" arguments=""/>
 	<ruleref ref="command" arguments=""/>
-	<action>[<lineinfo/>,\&amp;XML::XSH2::Functions::foreach_statement,$item[4],[$item[5]],@{$item[3]}]</action>
+	<action>[<lineinfo/>,'foreach_statement',$item[4],[$item[5]],@{$item[3]}]</action>
       </production>
     </rule>
     <rule id="foreach" type="command" name="foreach" inline="yes">
@@ -2398,7 +2398,7 @@ END
 	<ruleref ref="local_var_in" rep="?" arguments=""/>
 	<ruleref ref="exp" arguments=""/>
 	<ruleref ref="block" arguments=""/>
-	<action>[<lineinfo/>,\&amp;XML::XSH2::Functions::foreach_statement,@item[4,5],@{$item[3]}]</action>
+	<action>[<lineinfo/>,'foreach_statement',@item[4,5],@{$item[3]}]</action>
       </production>
       <documentation sections="Flow">
 	<usage>foreach <xref linkend="exp"/> 
@@ -2452,7 +2452,7 @@ END
 	<directive type="commit"/>
 	<regexp>\$?[a-zA-Z_][a-zA-Z0-9_]*</regexp>
 	<action>
-	  [<lineinfo/>,\&amp;XML::XSH2::Functions::undefine,$item[3]];
+	  [<lineinfo/>,'undefine',$item[3]];
 	</action>
       </production>
       <documentation sections="Flow">
@@ -2482,7 +2482,7 @@ END
 	<ruleref ref="variable" rep="s?" arguments=""/>
 	<ruleref ref="block" arguments=""/>
 	<action>
-	  [<lineinfo/>,\&amp;XML::XSH2::Functions::def,$item[3],$item[6],$item[5]]
+	  [<lineinfo/>,'def',$item[3],$item[6],$item[5]]
 	</action>
       </production>
       <documentation sections="Flow">
@@ -2593,12 +2593,12 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    <regexp>(?:[\-\+\*\/%x.]|\|\||\&amp;\&amp;)?=</regexp>
 	    <directive type="commit"/>
 	    <ruleref ref="loose_exp" arguments=""/>
-	    <action>[\&amp;XML::XSH2::Functions::xpath_assign,$item[3],$item[1]]</action>
+	    <action>['xpath_assign',$item[3],$item[1]]</action>
 	  </production>
 	  <production>
 	    <regexp>\s*(?:[\-\+\*\/%x.]|\|\||\&amp;\&amp;)?:=</regexp>
 	    <ruleref ref="command"/>
-	    <action>[\&amp;XML::XSH2::Functions::command_assign,$item[2],$item[1]]</action>
+	    <action>['command_assign',$item[2],$item[1]]</action>
 	  </production>
 	</group>
 	<action>[<lineinfo/>,@{$item[4]},$item[1],$item[3]]</action>
@@ -2664,7 +2664,7 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
       <production>
 	<selfref sep="yes"/>
 	<ruleref ref="variable" rep="s" arguments=""/>
-	<action>[<lineinfo/>,\&amp;XML::XSH2::Functions::store_lex_variables,0,@{$item[2]}]</action>
+	<action>[<lineinfo/>,'store_lex_variables',0,@{$item[2]}]</action>
       </production>
       <documentation>
 	<usage>my <xref linkend="varname"/> [$var2 ...];</usage>
@@ -2685,7 +2685,7 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
       <production>
 	<selfref sep="yes"/>
 	<ruleref ref="variable" rep="s" arguments=""/>
-	<action>[<lineinfo/>,\&amp;XML::XSH2::Functions::make_local,@{$item[2]}]</action>
+	<action>[<lineinfo/>,'make_local',@{$item[2]}]</action>
       </production>
       <documentation sections="Variables">
 	<usage>local <xref linkend="varname"/> = <xref linkend="xpath"/></usage>
@@ -2724,13 +2724,19 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
       </documentation>
     </rule>
     <rule id="options_command" type="command" name="settings" inline="yes">
-      <command maxargs="0" func="list_flags"/>
+      <command maxargs="0" func="list_flags">
+	<param name="variables" short="v"/>
+      </command>
       <documentation sections="Information Configuration">
 	<usage>settings</usage>
 	<shortdesc>list current settings using &XSH; syntax</shortdesc>
 	<description>
 	  <para>List current values of all &XSH; settings (such as
 	    validation flag or query-encoding).</para>
+	  <para><literal>--variables</literal> or <literal>:v</literal>
+	    flag enforces syntax which makes use of variable assignments.
+	    Otherwise, settings are listed in the form of XSH commands.
+	  </para>
 	  <example>
 	    <title>Store current settings in your .xshrc</title>
 	    <code>xsh&gt; <userinput>settings | cat &gt; ~/.xshrc</userinput></code>
@@ -5742,7 +5748,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	<directive type="commit"/>
 	<ruleref ref="xpstep" arguments=""/>
 	<ruleref ref="block" arguments=""/>
-	<action>[<lineinfo/>,\&amp;XML::XSH2::Functions::iterate,$item[4],@{$item[3]}]</action>
+	<action>[<lineinfo/>,'iterate',$item[4],@{$item[3]}]</action>
       </production>
       <documentation sections="Flow">
 	<usage>iterate <xref linkend="xpath"/> <xref linkend="block"/></usage>
@@ -5944,7 +5950,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	  <param name="output-string" short="S"/>
 	</paramlist>
         <ruleref ref="stream_select" rep="s" arguments=""/>
-	<action>[<lineinfo/>,\&amp;XML::XSH2::Functions::stream_process,$item[3],$item[4]]</action>
+	<action>[<lineinfo/>,'stream_process',$item[3],$item[4]]</action>
       </production>
       <documentation sections="Flow Documents">
 	<usage>stream 
@@ -6215,7 +6221,7 @@ ls grep(//word,"^.*tion$");</code>
       <production>
 	<selfref sep="yes"/>
 	<directive type="commit"/>
-	<regexp>XML::XSH2::Inline</regexp>
+	<regexp>XML::XSH2::(?:Inline|Compile)</regexp>
 	<action>1</action>
       </production>
     </rule>
