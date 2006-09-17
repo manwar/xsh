@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # -*- cperl -*-
 
-# $Id: xsh,v 2.4 2006-09-17 15:34:56 pajas Exp $
+# $Id: xsh,v 2.5 2006-09-17 21:19:11 pajas Exp $
 
 use FindBin;
 use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
@@ -62,7 +62,7 @@ BEGIN {
 			) or $usage=1;
 #  getopts('atscqvwdfhVinTE:e:l:pP');
   $VERSION='0.12';
-   $REVISION=q($Revision: 2.4 $);
+   $REVISION=q($Revision: 2.5 $);
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -426,7 +426,7 @@ XSH commands in the standard input.
 Compile the XSH source and report errors, only. No commands are
 actually executed.
 
-=item B<--Dump|-D> output_filename.pl
+=item B<--dump|-D> output_filename.pl
 
 Compiles XSH source(s) into a stand-alone Perl script which can 
 be executed simply with 
