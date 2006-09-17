@@ -11,6 +11,7 @@ lib/XML/XSH2/Functions.pm
 lib/XML/XSH2/Grammar.pm
 lib/XML/XSH2/Help.pm
 lib/XML/XSH2/Inline.pm
+lib/XML/XSH2/Compile.pm
 lib/XML/XSH2/Iterators.pm
 lib/XML/XSH2/LibXMLCompat.pm
 lib/XML/XSH2/Parser.pm
