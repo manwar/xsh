@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 2.4 2005-08-30 09:07:26 pajas Exp $
+# $Id: Makefile.PL,v 2.5 2006-09-18 17:10:50 pajas Exp $
 
 use strict;
 
@@ -12,13 +12,13 @@ WriteMakefile(
     'EXE_FILES' => ['xsh'],
     'PREREQ_PM' => {
 		    'IO::Scalar' => 0,
-		    'XML::LibXML' => 1.56,
+		    'XML::LibXML' => "1.60",
 		    'XML::LibXML::Common' => 0.13,
-		    'XML::LibXSLT' => 1.53,
+		    'XML::LibXSLT' => "1.60",
 		    'XML::LibXML::Iterator' => 0,
-		    'Parse::RecDescent' => 1.94,
-		    'XML::XUpdate::LibXML' => "0.4.0",
-		    'XML::LibXML::XPathContext' => 0.06,
+		    'Parse::RecDescent' => "1.94",
+		    'XML::XUpdate::LibXML' => "0.6.0",
+		    'XML::LibXML::XPathContext' => "0.07",
 		   },
      AUTHOR       => 'Petr Pajas (pajas@matfyz.cz)',
      ABSTRACT     => 'XML Editing Shell',
