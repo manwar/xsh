@@ -41,6 +41,9 @@ def dbg $s {
 }
 
 def transform_section $s {
+  my $s_id = string($s/@id);
+  echo $s_id;
+
   map { s/^[ \t]+//; s/\n[ \t]+/\n/g; } $s//code/descendant::text();
 
   foreach ($s//code/descendant::tab) {
@@ -58,34 +61,43 @@ def transform_section $s {
     }
     rm .;
   }
+
   foreach $s//xref {
     my $l=string(@linkend);
-    my $obj = id2($X,$l);
-    for $obj $c = string(if(self::section,title,if(@name,@name,@id)));
-    unless ($obj/ancestor::section)
+    my $obj = id2($X,$l); # find linkend in the original document
+    for $obj $c = string(if(self::section,title,if(@name,@name,@id))); # get label
+    if ($obj/ancestor::section) { # we have a parent section
+      # is it the same section?
+      my $r_id = $obj/ancestor::section[last()]/@id;
+      if ($r_id != $s_id) {
+	# assume we are in a different section,
+	# convert to an ulink
+	add chunk "<ulink url='s_${r_id}.html#${l}'>${c}</ulink>" replace .;
+      }
+    } else {
       add chunk "<ulink url='s_${l}.html'>${c}</ulink>" replace .;
+    }
   };
   foreach $s//link {
     map { $_='ulink' } .;
     add attribute "url=${(@linkend)}" replace @linkend;
     map { $_="s_".$_.".html" } @url;
   }
-  echo "${($s/@id)}";
   undef $H;
+
+  echo "saving doc/frames/s_${s_id}.xml";
+  save --file "doc/frames/s_${s_id}.xml" $s;
+  echo "transforming to HTML";
   $H := xslt --precompiled $db_xslt $s html.stylesheet='${html_stylesheet}';
-#  $H := xslt $db_stylesheet $s html.stylesheet='${html_stylesheet}';
+  #  $H := xslt $db_stylesheet $s html.stylesheet='${html_stylesheet}';
   xadd attribute "target=_self" into $H//*[name()='a'];
   # move content of <a name="">..</a> out, so that it does not behave
   # as a link in browsers
   foreach $H//*[name()='a' and not(@href)] {
     xmove ./node() after .;
   }
-  foreach ($s/@id) {
-    echo "saving doc/frames/s_${(.)}.html";
-    save --format 'html' --file "doc/frames/s_${(.)}.html" $H;
-    echo "saving doc/frames/s_${(.)}.xml";
-    save --file "doc/frames/s_${(.)}.xml" $s;
-  }
+  echo "saving doc/frames/s_${s_id}.html";
+  save --format 'html' --file "doc/frames/s_${s_id}.html" $H;
   close $H;
 }
 
