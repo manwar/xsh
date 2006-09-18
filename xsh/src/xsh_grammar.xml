@@ -3955,12 +3955,16 @@ xsh $foo/&gt; ls /;
             or modify content of a document.
             It takes two XPath expressions. The first one
 	    should be a node location path which specifies the target node,
-	    the second is optional and provides a string value.
+	    the second is optional and provides new content for the target
+            node.
 	    If a node matches the first XPath expression, then its content
 	    is replaced with the given value. If no node matches, then XSH2 tries
 	    to magically extend the current document by adding nodes in order to
             add missing steps of the location path so as to make the expression
-	    match a node. This node is then populated with the value.
+	    match a node. This node is then populated with
+	    a copy of the content value (either text or, if the content <xref
+            linkend="xpath"/> results in a node-list and the target
+            node is an element, nodes).
 	  </para>
 	  <example>
 	    <title>Try the following on an empty scratch document</title>
@@ -3985,42 +3989,49 @@ $scratch/> ls /
 	    </code>
 	  </example>
 	  <para>
-Only a limited subset of XPath is currently supported by this command. Namely, the
-XPath expression must be a location path consisting of a /-separated
-sequence of one or more location steps along the child, sibling, or attribute
-axes.  The node-test part of the expression cannot be
-neither a wildcard (<literal>*</literal>, <literal>@*</literal>, <literal>prefix:*</literal>, ...),
-nor the <literal>node()</literal>
-function. If a namespace prefix is used, then either the namespace
-must already be declared in the document or registered with XSH.
-Location steps may contain arbitrary predicates
-(filters), however, only a limitted subset is supported for magically created nodes.
+	    Only a limited subset of XPath is currently supported by
+	    this command. Namely, the XPath expression must be a
+	    location path consisting of a /-separated sequence of one
+	    or more location steps along the child, sibling, or
+	    attribute axes.  The node-test part of the expression
+	    cannot be neither a wildcard (<literal>*</literal>,
+	    <literal>@*</literal>, <literal>prefix:*</literal>, ...),
+	    nor the <literal>node()</literal> function. If a namespace
+	    prefix is used, then either the namespace must already be
+	    declared in the document or registered with XSH.  Location
+	    steps may contain arbitrary predicates (filters), however,
+	    only a limitted subset is supported for magically created
+	    nodes.
 	  </para>
-<para>
-In particular, if a filter predicate of a location step specifies a position
-of a node (e.g. with <literal>[4]</literal>, or <literal>[position()&gt;3]</literal>, etc), then the parser
-tries to automatically create empty siblings nodes until it finally
-creates one with for which the predicate is true.
-</para>
-<para>
-Note, that this command only processes one location step at a
-time and always picks the first matching node. So, expressions like
-<literal>/root/a/b</literal> are treated as <literal>/root/a[1]/b[1]</literal>. 
-This means that an expression <literal>/root/a/b</literal> will magically create
-element <literal>&lt;b&gt;</literal> in a first matching <literal>&lt;a&gt;</literal>
-even if some following <literal>&lt;a&gt;</literal> already contains a <literal>&lt;b&gt;</literal>.
-</para>
-<para>
-To prevent this, either explicitly state that <literal>b</literal> must
-exist with e.g. <literal>/root/a[b]/b</literal> or make the corresponding
-element <literal>&lt;a&gt;</literal> the context
-node and use a relative location path:
-</para>
-<example>
-<code>
-for /root/a/b set b 'foo'
-</code>
-</example>
+	  <para>
+	    In particular, if a filter predicate of a location step
+	    specifies a position of a node (e.g. with
+	    <literal>[4]</literal>, or
+	    <literal>[position()&gt;3]</literal>, etc), then the
+	    parser tries to automatically create empty siblings nodes
+	    until it finally creates one with for which the predicate
+	    is true.
+	  </para>
+	  <para>
+	    Note, that this command only processes one location step
+	    at a time and always picks the first matching node. So,
+	    expressions like <literal>/root/a/b</literal> are treated
+	    as <literal>/root/a[1]/b[1]</literal>.  This means that an
+	    expression <literal>/root/a/b</literal> will magically
+	    create element <literal>&lt;b&gt;</literal> in a first
+	    matching <literal>&lt;a&gt;</literal> even if some
+	    following <literal>&lt;a&gt;</literal> already contains a
+	    <literal>&lt;b&gt;</literal>.
+	  </para>
+	  <para>
+	    To prevent this, either explicitly state that <literal>b</literal> must
+	    exist with e.g. <literal>/root/a[b]/b</literal> or make the corresponding
+	    element <literal>&lt;a&gt;</literal> the context
+	    node and use a relative location path:
+	  </para>
+	  <example>
+	    <code>for /root/a/b set b 'foo'</code>
+	  </example>
 	</description>
       </documentation>
     </rule>
