@@ -178,13 +178,16 @@ sub createNode {
   $xpath=~s{^\.\s+/}{};
 
   # roughly verify that we have an XPath in a supported form:
-  die "[$PACKAGE] Can't create nodes based on XPath $xpath\n" unless $xpath =~ m{^$STEP*$LAST_STEP$};
+  die "[$PACKAGE] Can't create nodes based on XPath $xpath\n" unless $xpath =~ m{^(?:\$${NAME}${FILTER}*)?$STEP*$LAST_STEP$};
 #  return;
 
   if ($xpath=~s{^/}{}) {
     # start from the document level
     $self->_createSteps($self->{doc},$xpath,$value);
   } else {
+    if ($xpath =~ s{^(\$${NAME}${FILTER}*)/}{./}) {
+      $context_node = $1;
+    }
     # start from the current node
     if ($context_node ne "" and !ref($context_node)) {
       if ($self->{XPathContext}) {
