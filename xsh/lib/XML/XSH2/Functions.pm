@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.32 2006-09-17 21:15:32 pajas Exp $
+# $Id: Functions.pm,v 2.33 2006-09-18 17:11:59 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -38,7 +38,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.5';
-  $REVISION=q($Revision: 2.32 $);
+  $REVISION=q($Revision: 2.33 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -4942,7 +4942,8 @@ sub xslt {
     } else {
       die "Pre-compiled XSLT stylesheet can't be given only as perl expression or a variable: $stylefile\n";
     }
-    unless (ref($st) and UNIVERSAL::isa($st,'XML::LibXSLT::Stylesheet')) {
+    unless (ref($st) and UNIVERSAL::isa($st,'XML::LibXSLT::Stylesheet') or
+	      UNIVERSAL::isa($st,'XML::LibXSLT::StylesheetWrapper')) {
       die "Pre-compiled XSLT stylesheet doesn't appear to be a XML::LibXSLT::Stylesheet object: $stylefile\n";
     }
   } else {
@@ -4980,7 +4981,14 @@ sub xslt {
   my $rl = $opts->{'string'} ? undef : _prepare_result_nl();
   if ($st) {
     $stylefile=~s/\..*$//;
-    my $result = $st->transform(_clone_xmldoc($doc),%params);
+    my $result = eval {
+      $st->transform(_clone_xmldoc($doc),%params);
+    };
+    if ($result) {
+      _warn $@ if $@;
+    } else {
+      die $@."\n" if $@;
+    }
     if ($opts->{'string'}) {
       return $st->output_string($result);
     } else {
