@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.34 2006-09-21 15:47:21 pajas Exp $
+# $Id: Functions.pm,v 2.35 2006-09-21 16:46:45 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -38,7 +38,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.5';
-  $REVISION=q($Revision: 2.34 $);
+  $REVISION=q($Revision: 2.35 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -1749,17 +1749,20 @@ sub cannon_name {
   my ($node)=@_;
   my $local_name =$node->localname();
   my $uri = $node->namespaceURI();
-  if ($node->namespaceURI() ne '') {
+  if ($uri ne '') {
     my $prefix=$node->prefix;
-    if ($prefix eq '') {
-      my %r = reverse %_ns;
-      $prefix = $r{ $uri };
-    }
+    #if ($prefix eq '') {
+    my %r = reverse %_ns;
+    $prefix = $r{ $uri };
     if ($prefix ne '') {
       return $prefix.':'.$local_name 
-    } else {
-      return '*[name()="'.$local_name.'"]';
-    }
+    } elsif(my $parent = $node->parentNode) {
+      $prefix = $parent->lookupNamespacePrefix($uri);
+      if ($prefix ne '') {
+	return $prefix.':'.$local_name 
+      }
+    }      
+    return '*[name()="'.$node->getName().'"]';
   }
   return $local_name;
 }
@@ -1786,8 +1789,8 @@ sub node_address {
 #    if ($_xml_module->is_element($node)) {
 #      @children=$_xpc->findnodes("./$name",$node->parentNode);
 #    } else {
-      my $context = $_xpc->getContextNode;
-      @children= eval { $_xpc->findnodes("./$name",$node->parentNode) };
+    my $context = $_xpc->getContextNode;
+    @children= eval { $_xpc->findnodes("./$name",$node->parentNode) };
 #    }
     if (@children == 1 and $_xml_module->xml_equal($node,$children[0])) {
       return "$name";
@@ -1796,7 +1799,7 @@ sub node_address {
       return "$name"."[".($pos+1)."]"
 	if ($_xml_module->xml_equal($node,$children[$pos]));
     }
-    return undef;
+    return "??$name??";
   } else {
     return ();
   }
@@ -3206,7 +3209,13 @@ sub change_namespace_uri {
   my $node = $_xpc->getContextNode;
   if ($node && $_xml_module->is_element($node)) {
     $prefix = $node->prefix unless defined $prefix;
-    return $node->setNamespaceDeclURI($prefix,$uri);
+    if ($uri eq "") {
+      if ($node->setNamespaceDeclURI($prefix,undef)) {
+	return $node->setNamespaceDeclPrefix($prefix,undef);
+      }
+    } else {
+      return $node->setNamespaceDeclURI($prefix,$uri);
+    }
   } else {
     _err("The context node is not an element");
   }
