@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.33 2006-09-18 17:11:59 pajas Exp $
+# $Id: Functions.pm,v 2.34 2006-09-21 15:47:21 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -38,7 +38,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.5';
-  $REVISION=q($Revision: 2.33 $);
+  $REVISION=q($Revision: 2.34 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -3184,6 +3184,32 @@ sub _is_attached {
     $node=$node->parentNode;
   }
   return $node && !$_xml_module->is_document_fragment($node);
+}
+
+sub change_namespace_prefix {
+  my ($new,$old)=@_;
+  $old = _ev_string($old) if $old;
+  $new = _ev_string($new);
+  my $node = $_xpc->getContextNode;
+  if ($node && $_xml_module->is_element($node)) {
+    $old = $node->prefix unless defined $old;
+    return $node->setNamespaceDeclPrefix($old,$new);
+  } else {
+    _err("The context node is not an element");
+  }
+}
+
+sub change_namespace_uri {
+  my ($uri,$prefix)=@_;
+  $prefix = _ev_string($prefix) if $prefix;
+  $uri = _ev_string($uri);
+  my $node = $_xpc->getContextNode;
+  if ($node && $_xml_module->is_element($node)) {
+    $prefix = $node->prefix unless defined $prefix;
+    return $node->setNamespaceDeclURI($prefix,$uri);
+  } else {
+    _err("The context node is not an element");
+  }
 }
 
 # use the XPathToXML module to build

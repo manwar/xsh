@@ -3945,9 +3945,59 @@ xsh $foo/&gt; ls /;
 	</see-also>
       </documentation>
     </rule>
+    <rule id="change_namespace_uri_command" type="command" name="change-ns-uri" inline="yes">
+      <command minargs="1" maxargs="2" func="change_namespace_uri"/>
+      <documentation sections="Manipulation">
+	<usage>change-ns-uri <xref linkend="exp"/> [<xref linkend="exp"/>]</usage>
+	<shortdesc>change namespace URI (EXPERIMENTAL)</shortdesc>
+	<description>
+	  <para>
+	    This command takes one or two arguments.  The first
+	    argument is a new namespace URI and the second, optional,
+	    argument is a namespace prefix. It changes the URI value
+	    of a namespace declaration of the context node to the new
+	    value. If no prefix is given, the change applies to a
+	    declaration on the context node whose prefix equals to the
+	    prefix of the context node, otherwise the change applies
+	    to a declaration with the given prefix.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="change_namespace_prefix_command"/>
+	  <ruleref ref="namespaces_command"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="change_namespace_prefix_command" type="command" name="change-ns-prefix" inline="yes">
+      <command minargs="1" maxargs="2" func="change_namespace_prefix"/>
+      <documentation sections="Manipulation">
+	<usage>change-ns-prefix <xref linkend="exp"/> [<xref linkend="exp"/>]</usage>
+	<shortdesc>change namespace prefix (EXPERIMENTAL)</shortdesc>
+	<description>
+	  <para>
+	    This command takes one or two arguments.  The first
+	    argument is a new prefix and the second, optional,
+	    argument is an old namespace prefix. It changes the prefix
+	    of a namespace declaration of the context node to the new
+	    value. If no old prefix is given, the change applies to a
+	    declaration on the context node whose prefix equals to the
+	    prefix of the context node, otherwise the command changes
+	    the declaration with the given old prefix.
+	  </para>
+	  <para>
+	    The command throws an exception if the new prefix is
+	    already taken by some other declaration in the scope.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="change_namespace_uri_command"/>
+	  <ruleref ref="namespaces_command"/>
+	</see-also>
+      </documentation>
+    </rule>
     <rule id="set_command" type="command" name="set" inline="yes">
       <command minargs="1" maxargs="2" func="xpath_set"/>
-      <documentation>
+      <documentation sections="Manipulation">
 	<usage>set <xref linkend="xpath"/> [<xref linkend="xpath"/>]</usage>
 	<shortdesc>create or modify document content (EXPERIMENTAL)</shortdesc>
 	<description>
