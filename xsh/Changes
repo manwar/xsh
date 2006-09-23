@@ -9,6 +9,7 @@ Changes since 2.0.2:
  - xsh:filename() added
  - save --output-encoding flag added
  - rename syntax allows bare-words as names
+ - change-ns-prefix, change-ns-uri added
 
 Release 2.0.2:
 Minor feature enhancements and bug fixes.
