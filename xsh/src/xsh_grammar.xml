@@ -4514,7 +4514,7 @@ $scratch/> ls /
                      /table/row[last()]/cell;</code>
 	  </example>
 	  <example>
-	    <title>The following commands do quite the same:</title>
+	    <title>The following commands do all about the same:</title>
 	    <code>
 	      wrap --inner Z //*;
 	      map --reverse xsh:parse(concat("&lt;Z>",xsh:serialize(node()),"&lt;/Z>")) //*;

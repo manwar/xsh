@@ -3,13 +3,12 @@ Changes since 2.0.2:
  - many bugfixes
  - added new XSH command 'set' for easy creating and modifying nodes
  - improved namespace handling
- - function xsh:match added
+ - functions xsh:match() and xsh:filename() added
  - completion for default, xsh, and user-defined XPath functions
- - echo --no-space
- - xsh:filename() added
+ - echo --no-space flag added
  - save --output-encoding flag added
- - change-ns-prefix, change-ns-uri added
- - rename and map syntax and semantics changed drastically:
+ - change-ns-prefix, change-ns-uri commands added
+ - rename and map command syntax and semantics changed ^W improved drastically:
 
    Translation guide:
 
