@@ -274,6 +274,98 @@
 	interpreter itself. These commands are listed bellow.
       </para>
     </section>
+    <section id="Namespaces">
+      <title>Namespaces in XML and XPath</title> <para>Namespaces provide a
+	simple method for qualifying element and attribute names in
+	XML documents.  Namespaces are represented by a namespace URI
+	but, since the URI can be very long, element and attribute
+	names are associated with a namespace using a namespace prefix
+	(see the <ulink url="http://www.w3.org/TR/REC-xml-names/">W3C
+	recommendation</ulink> for details). In an XML document, a
+	prefix can be associated with a namespace URI using a
+	declaration which takes form of special attribute of the form
+	<literal>xmlns:prefix="namespace uri"</literal> on an element.
+	The scope of the namespace declaration is then the subtree of the
+	element carrying the special <literal>xmlns:prefix</literal> attribute (and includes
+	attributes of the element). Moreover, a default namespace can
+	be declared using just <literal>xmlns="namespace
+	uri"</literal>.  In that case all unprefixed element names
+	in the scope of such a
+	declaration belong to the namespace. 
+	An unprefixed element which is not in scope of 
+	a default namespace declaration does not belong to any namespace.
+	It is recommended not to combine namespaced elements and
+	non-namespaced elements in a single document.
+	Note that regardless of default
+	namespace declarations, unprefixed attributes do not belong to any namespace
+	(because they are uniquely determined by their name
+	and the namespace and name of the the element which carries them).
+      </para>
+      <para>&XSH; tries to deal namespace declarations transparently
+	(creating them if necessary when nodes are copied between
+	different documents or scopes of namespace declarations). 
+	Most commands which create new elements or attributes provide
+	means to indicate a namespace. In addition, &XSH; provides commands <xref
+	linkend="declare_namespace_command"/>, <xref
+	linkend="set_namespace_command"/>, <xref
+	linkend="change_namespace_uri_command"/>, and <xref
+	linkend="change_namespace_prefix_command"/> to
+	directly manipulate XML namespace declarations on the current
+	node.
+      </para>
+      <para>
+	Since &XSH; is heavily XPath-based, it is important to
+	remember that XPath 1.0 maps prefixes to namespaces
+	independently of the declarations in the current document. The
+	mapping is instead provided via so called XPath context.
+	Namespaces can be tested in XPath either using the built-in
+	<literal>namespace-uri()</literal> function, but it is more
+	convenient to use namespace prefixes associated with namespace
+	URIs in the XPath context.  This association is independent of
+	the documents to which the XPath expression is applied and can
+	be establised using the command <xref
+	linkend="registerns_command"/>.  Additional, &XSH;
+	automatically propagates the namespace association in the
+	scope of the current node to the XPath context, so that
+	per-document prefixes in the current scope can also be used.
+      </para>
+      <para>
+	IMPORTANT: <ulink url="http://www.w3.org/TR/xpath">XPath 1.0</ulink> has no concept of a default namespace.
+	Unprefixed names in XPath only match names which have no
+	namespace. So, if the document uses a default namespace,
+	it is required to associate a
+	non-empty prefix with the default namespace
+        via  <xref linkend="registerns_command"/>
+	and add that prefix to names in XPath expressions intended to match 
+	nodes in the default namespace.
+      </para>
+      <example>
+	<title>Manipulating nodes in XHTML documents</title>
+	<code>open "index.xhtml";
+$xhtmlns = "http://www.w3.org/1999/xhtml";
+register-namespace x $xhtmlns;
+wrap --namespace $xhtmlns '&lt;font color="blue">' //x:a[@href];
+# or 
+wrap '&lt;x:font color="blue">' //x:a[@href];</code>
+      </example>
+      <para>In the preceding example we associate the (typically
+	default) namespace of XHTML documents with the prefix
+	<literal>x</literal>.  We than use this prefix to match all
+	links (<literal>a</literal> elements) in the document.  Note
+	that we do not write <literal>@x:href</literal> to match the
+	<literal>@href</literal> attribute because unprefixed
+	attributes do not belong to the default namespace.  The <xref
+	linkend="wrap_command"/> command is used to create new containing
+	elements for the nodes matched by the XPath expression. We may
+	either specify the namespace of the containing element
+	explicitly, using <literal>--namespace</literal> option, or
+	implicitly, by using a prefix associated with the namespace in
+	the XPath context.  In the latter case, &XSH; chooses a
+	suitable prefix declared for the namespace in the document
+	scope (in this case the default, i.e. no, prefix), adding a
+	new namespace declaration if necessary.
+      </para>
+    </section>
     <section id="Argtypes">
       <title>Argument Types</title>
       <para>
@@ -3251,7 +3343,7 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    the creation of the wrapping element. The context
 	    position for these expressions is 1 at the first sibling
 	    following the matching node and increases with each tested
-	    siblingů the context size is the number of all
+	    sibling; the context size is the number of all
 	    siblings following the matching node.
 	    It is important to mention that siblings wrapped in this
 	    way are excluded from further processing by <xref
@@ -3947,7 +4039,7 @@ xsh $foo/&gt; ls /;
     </rule>
     <rule id="change_namespace_uri_command" type="command" name="change-ns-uri" inline="yes">
       <command minargs="1" maxargs="2" func="change_namespace_uri"/>
-      <documentation sections="Manipulation">
+      <documentation sections="Namespaces Manipulation">
 	<usage>change-ns-uri <xref linkend="exp"/> [<xref linkend="exp"/>]</usage>
 	<shortdesc>change namespace URI (EXPERIMENTAL)</shortdesc>
 	<description>
@@ -3964,13 +4056,15 @@ xsh $foo/&gt; ls /;
 	</description>
 	<see-also>
 	  <ruleref ref="change_namespace_prefix_command"/>
+	  <ruleref ref="set_namespace_command"/>
+	  <ruleref ref="declare_namespace_command"/>
 	  <ruleref ref="namespaces_command"/>
 	</see-also>
       </documentation>
     </rule>
     <rule id="change_namespace_prefix_command" type="command" name="change-ns-prefix" inline="yes">
       <command minargs="1" maxargs="2" func="change_namespace_prefix"/>
-      <documentation sections="Manipulation">
+      <documentation sections="Namespaces Manipulation">
 	<usage>change-ns-prefix <xref linkend="exp"/> [<xref linkend="exp"/>]</usage>
 	<shortdesc>change namespace prefix (EXPERIMENTAL)</shortdesc>
 	<description>
@@ -3991,6 +4085,65 @@ xsh $foo/&gt; ls /;
 	</description>
 	<see-also>
 	  <ruleref ref="change_namespace_uri_command"/>
+	  <ruleref ref="set_namespace_command"/>
+	  <ruleref ref="declare_namespace_command"/>
+	  <ruleref ref="namespaces_command"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="set_namespace_command" type="command" name="set-ns" inline="yes">
+      <command minargs="1" maxargs="2" func="set_namespace">
+	<param name="prefix" short="p" type="string" argument="exp"/>
+      </command>
+      <documentation sections="Namespaces Manipulation">
+	<usage>set-ns [:p|--prefix <xref linkend="exp"/>] <xref linkend="exp"/></usage>
+	<shortdesc>set namespace of the current node (EXPERIMENTAL)</shortdesc>
+	<description>
+	  <para>
+	    This command takes one argument, the namespace URI,
+	    possibly accompanied by a prefix provided in
+	    the option <literal>--prefix</literal> <literal>:p</literal>;
+	    both these expressions are evaluated as names.
+	    The command changes the namespace of the current element to a given
+	    namespace URI. The current node must be in the scope
+	    of a namespace declaration associating the namespace URI
+	    with a prefix; if prefix option is given, then
+	    one of such declarations must associate the particular given prefix
+	    with the namespace URI. If this condition
+	    is not met or the current node is neither element nor
+	    attribute, an error is issued.
+	    The command also changes the prefix of the current element accordingly.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="declare_namespace_command"/>
+	  <ruleref ref="change_namespace_uri_command"/>
+	  <ruleref ref="change_namespace_prefix_command"/>
+	  <ruleref ref="namespaces_command"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="declare_namespace_command" type="command" name="declare-ns" inline="yes">
+      <command minargs="2" maxargs="2" func="declare_namespace"/>
+      <documentation sections="Namespaces Manipulation">
+	<usage>declare-ns <xref linkend="exp"/> <xref linkend="exp"/></usage>
+	<shortdesc>create a special attribute declaring an XML namespace (EXPERIMENTAL)</shortdesc>
+	<description>
+	  <para>
+	    This command takes one or two arguments: prefix and URI,
+	    both evaluated as names.
+	    It creates a namespace declaration
+	    of the form <literal>xmlns:prefix="URI"</literal>
+	    on the current node.
+	    The command produces an error if
+	    the prefix is already declared in the scope of the current node
+	    with a different namespace URI.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="set_namespace_command"/>
+	  <ruleref ref="change_namespace_uri_command"/>
+	  <ruleref ref="change_namespace_prefix_command"/>
 	  <ruleref ref="namespaces_command"/>
 	</see-also>
       </documentation>
@@ -4090,7 +4243,7 @@ $scratch/> ls /
 	<alias name="exp"/>
 	<alias name="expr"/>
       </aliases>
-      <command minargs="1" maxargs="1" func="_ev"/>
+      <command minargs="1" maxargs="1" func="expr"/>
       <documentation sections="Information">
 	<usage>get <xref linkend="exp"/></usage>
 	<shortdesc>calculate a given expression and return the result.</shortdesc>
@@ -4129,7 +4282,7 @@ $scratch/> ls /
       </documentation>
     </rule>
     <rule id="perl_command" type="command" name="perl" inline="yes">
-      <command minargs="1" maxargs="1" func="perl_eval"/>
+      <command minargs="1" maxargs="1" func="perl_eval_command"/>
       <documentation sections="Perl_shell">
 	<usage>perl <xref linkend="perl_code"/></usage>
 	<shortdesc>evaluate in-line Perl code</shortdesc>
@@ -4293,76 +4446,155 @@ $scratch/> ls /
       </documentation>
     </rule>
     <rule id="map_command" type="command" name="map" inline="yes">
-      <aliases>
-	<alias name="sed"/>
-      </aliases>
-      <command minargs="2" maxargs="2" func="perlmap"/>
+      <command minargs="2" maxargs="2" func="perlmap">
+	<param name="in-place" short="i"/>
+	<param name="reverse" short="r"/>
+      </command>
       <documentation sections="Perl_shell Manipulation">
-	<usage>map <xref linkend="perl_code"/> <xref linkend="exp"/></usage>
-	<shortdesc>quickly modify node value/data using Perl code</shortdesc>
+	<usage>map <xref linkend="exp"/> <xref linkend="exp"/></usage>
+	<shortdesc>transform node value/data using Perl or XPath expression</shortdesc>
 	<description>
 	  <para>
-	    This command provides an easy way to modify node's data
-	    (content) using arbitrary Perl code.
+	    NOTE: THE SEMANTICS OF COMMAND HAS CHANGED IN 2.0.5
 	  </para>
 	  <para>
-	    The <xref linkend="exp"/> in the second argument
-	    is evaluated to a node-list whose
-	    each node
-	    passes its data to the <xref linkend="perl_code"/> via
-	    the <literal>$_</literal> variable and loads back the (possibly modified)
-	    data from the same variable.
+	    This command provides an easy way to transform node's data
+	    (content) using arbitrary expression.
+	    It takes two arguments: a mapping expression
+	    and a node-list.
 	  </para>
-	  <para>Since element nodes do not actually bear any data
-	    (they are just containers for other nodes), their
-	    names (tag) is used instead. Note, however,
-	    that there is a dedicated command
-	    <xref linkend="rename_command"/> with a very similar
-	    syntax to <literal>map</literal>, that should be used for
-	    renaming nodes like elements, attributes, and processing instructions.
+	  <para>
+	    First the second argument is evaluated to a node-list.
+	    For each of the nodes,
+	    the mapping expression is evaluated 
+	    and the result is used to replace the original content
+	    of the node. 
+	    The node is made the context node for the time
+	    of evaluation of the mapping expression.
+	    Moreover, if the expression is a Perl code,
+	    it gets the original text content in 
+	    the variable <literal>$_</literal>.
+	  </para>
+	  <para>
+	    Note that if the processed node is an element
+	    than the mapping expression may even produce nodes
+	    which are then copied into the element discarding
+	    any previous content of the element.
+	  </para>
+	  <para>
+	    If the mapping expression returns an undefined value
+	    for a node, then its content is kept untouched.
+	  </para>
+	  <para>
+	    <literal>--in-place</literal> (<literal>:i</literal>) flag:
+	    if the expression is a Perl code, then
+	    it is sometimes convenient to change the value
+	    in place. In that case use this flag to indicate that the result
+	    should to be taken from the <literal>$_</literal> variable
+	    rather than from the value of the expression itself.
+	    Without this flag, <literal>$_</literal> is read-only.
+	  </para>
+	  <para>
+	    <literal>--reverse</literal> (<literal>:r</literal>) flag
+	    instruct the map to process the nodelist
+	    in reversed order.
 	  </para>
 	  <example>
 	    <title>Capitalises all hobbit names</title>
-	    <code>xsh&gt; <userinput>map { $_=ucfirst($_) } //hobbit/@name</userinput></code>	  
+	    <code>map { ucfirst($_) } //hobbit/@name;</code>	  
 	  </example>
 	  <example>
 	    <title>Changes goblins to orcs in all hobbit tales (\b matches word boundary).</title>
-	    <code>xsh&gt; <userinput>map { s/\bgoblin\b/orc/gi } //hobbit/tale/text()</userinput></code>
+	    <code>map :i { s/\bgoblin\b/orc/gi } //hobbit/tale/text();</code>
 	  </example>
+	  <example>
+	    <title>Recompute column sums in the last row of row-oriented table</title>
+	    <code>map sum(/table/row[position()&lt;last()]/
+                            cell[count(xsh:current()/preceding-sibling::cell)+1])
+                     /table/row[last()]/cell;</code>
+	  </example>
+	  <example>
+	    <title>The following commands do quite the same:</title>
+	    <code>
+	      wrap --inner Z //*;
+	      map --reverse xsh:parse(concat("&lt;Z>",xsh:serialize(node()),"&lt;/Z>")) //*;
+	      map xsh:parse(concat("&lt;Z>",xsh:serialize(node()),"&lt;/Z>")) { reverse xpath('//*') };
+	    </code>
+	  </example>
+	  <para>Note that in the last example we use
+	    <literal>:r</literal> (or Perl <literal>reverse</literal>
+	    function) to reverse the node list order so that child
+	    nodes get processed before their parents. Otherwise, the child
+	    nodes would be replaced by parent's new content before the
+	    processing could reach them.
+	  </para>
 	</description>
+	<see-also>
+	  <ruleref ref="rename_command"/>
+	</see-also>
       </documentation>
     </rule>
     <rule id="rename_command" type="command" name="rename" inline="yes">
       <command minargs="2" maxargs="2" func="perlrename">
       	<param name="namespace" short="n" type="exp" argument="exp"/>
+	<param name="in-place" short="i"/>
+	<param name="reverse" short="r"/>
       </command>
       <documentation sections="Perl_shell Manipulation">
-	<usage>rename <xref linkend="exp"/> <xref linkend="exp"/></usage>
+	<usage>rename <xref linkend="nodename"/> <xref linkend="exp"/></usage>
 	<shortdesc>quickly rename nodes with in-line Perl code</shortdesc>
 	<description>
 	  <para>
+	    NOTE: THE SEMANTICS OF COMMAND HAS CHANGED IN 2.0.5
+	  </para>
+	  <para>
 	    This command is very similar to the <xref linkend="map_command"/>
 	    command, except that it operates on nodes' names rather
-	    than their data/values. It changes
+	    than their content. It changes
 	    name of every element, attribute or
 	    processing-instruction contained
 	    in the node-list specified in the second argument <xref
-	      linkend="exp"/>, according to the first argument
-	    <xref linkend="exp"/>. If the first argument is
-	    a name, it is set as name of the node.
-	    In all other cases, the second argument is considered
-	    to be a perl code and the following procedure is
-	    used: 1) the name of the node is stored into Perl's
-	    <literal>$_</literal> variable, 2) the <xref linkend="perl_code"/> is evaluated, and 3) the (posibly modified) content of the <literal>$_</literal> variable is
-	    used as a new name for the node.
+	      linkend="exp"/>, according to the value of the 
+	    <xref linkend="nodename"/> expression,
+	    which is evaluated in the context of each node in turn.
+	  </para>
+	  <para>If the <xref linkend="nodename"/> is a Perl
+	    expression, then the name of the node is also stored into Perl's
+	    <literal>$_</literal> variable prior to evaluation.
+	  </para>
+	  <para>The flag <literal>--in-place</literal> (<literal>:i</literal>)
+	    can be used to indicate that
+	    the new name should be collected from the <literal>$_</literal>
+	    variable rather than from the result of the expression itself.
+	  </para>
+	  <para>
+	    The <literal>--namespace</literal> (<literal>:n</literal>) argument
+	    may be used to provide namespace for the renamed nodes.
+	  </para>
+	  <para>
+	    <literal>--reverse</literal> (<literal>:r</literal>) flag
+	    instruct the map to process the nodelist
+	    in reversed order.
+	  </para>
+	  <para>Note: if the expression <xref linkend="nodename"/>
+	    returns an undefined value for a particular node, the
+	    node's original name and namespace are preserved.
 	  </para>
 	  <example>
 	    <title>Renames all hobbits to halflings</title>
-	    <code>xsh&gt; <userinput>map $_='halfling' //hobbit</userinput></code>
+	    <code>xsh&gt; <userinput>rename halfling //hobbit</userinput></code>
 	  </example>
 	  <example>
 	    <title>Make all elements and attributes uppercase (yack!)</title>
-	    <code>xsh&gt; <userinput>map { $_=uc($_) } (//*|//@*)</userinput></code>	  
+	    <code>xsh&gt; <userinput>rename { uc } (//*|//@*)</userinput></code>	  
+	  </example>
+	  <example>
+	    <title>Substitute dashes with underscores in all node names</title>
+	    <code>xsh&gt; <userinput>rename :i { s/-/_/g } (//*|//@*)</userinput></code>	  
+	  </example>
+	  <example>
+	    <title>Make all elements start with the name of their parents</title>
+	    <code>xsh&gt; <userinput>rename concat(local-name(parent::*),'.',local-name(.)) //*[parent::*]</userinput></code>	  
 	  </example>
 	</description>
 	<see-also>
@@ -5881,7 +6113,8 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
       <aliases>
 	<alias name="regns"/>
       </aliases>
-      <command minargs="2" maxargs="2" func="register_ns"/><documentation sections="Navigation Configuration">
+      <command minargs="2" maxargs="2" func="register_ns"/>
+      <documentation sections="Namespaces Configuration">
 	<usage>register-namespace <xref linkend="exp"/> <xref linkend="exp"/></usage>
 	<shortdesc>register namespace prefix to use XPath expressions</shortdesc>
 	<description>
@@ -5897,7 +6130,8 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
       <aliases>
 	<alias name="unregns"/>
       </aliases>
-      <command minargs="1" maxargs="1" func="unregister_ns"/><documentation sections="Navigation Configuration">
+      <command minargs="1" maxargs="1" func="unregister_ns"/>
+      <documentation sections="Namespaces Configuration">
 	<usage>unregister-namespace <xref linkend="exp"/></usage>
 	<shortdesc>unregister namespace prefix</shortdesc>
 	<description>
@@ -5914,7 +6148,8 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
       <aliases>
 	<alias name="regns-xhtml"/>
       </aliases>
-      <command minargs="1" maxargs="1" func="register_xhtml_ns"/><documentation sections="Navigation Configuration">
+      <command minargs="1" maxargs="1" func="register_xhtml_ns"/>
+      <documentation sections="Namespaces Configuration">
 	<usage>register-xhtml-namespace <xref linkend="exp"/></usage>
 	<shortdesc>register a prefix for the XHTML namespace</shortdesc>
 	<description>
@@ -5930,7 +6165,8 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
       <aliases>
 	<alias name="regns-xsh"/>
       </aliases>
-      <command minargs="1" maxargs="1" func="register_xsh_ns"/><documentation sections="Navigation Configuration">
+      <command minargs="1" maxargs="1" func="register_xsh_ns"/>
+      <documentation sections="Namespaces Configuration">
 	<usage>register-xsh-namespace <xref linkend="exp"/></usage>
 	<shortdesc>register a prefix for the &XSH; namespace</shortdesc>
 	<description>
@@ -6113,7 +6349,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
       <command maxargs="1" func="list_namespaces">
 	<param name="registered" short="r"/>
       </command>
-      <documentation sections="Information">
+      <documentation sections="Namespaces Information">
 	<usage>namespaces [--registered|:r] [<xref linkend="exp"/>]</usage>
 	<shortdesc>List namespaces available in a context of
 	  a given nodes</shortdesc>

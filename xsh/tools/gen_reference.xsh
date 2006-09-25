@@ -44,13 +44,13 @@ def transform_section $s {
   my $s_id = string($s/@id);
   echo $s_id;
 
-  map { s/^[ \t]+//; s/\n[ \t]+/\n/g; } $s//code/descendant::text();
+  map :i { s/^[ \t]+//; s/\n[ \t]+/\n/g; } $s//code/descendant::text();
 
   foreach ($s//code/descendant::tab) {
     insert text "${(times(@count,'  '))}" replace .;
   }
-  rename { $_='programlisting' } $s//code;
-  rename { $_='orderedlist' } $s//enumerate;
+  rename 'programlisting' $s//code;
+  rename 'orderedlist' $s//enumerate;
   foreach $s/descendant::typeref {
     my $sl := insert element "simplelist type='inline'" before .;
     foreach split("\\s",@types) {
@@ -79,16 +79,17 @@ def transform_section $s {
     }
   };
   foreach $s//link {
-    map { $_='ulink' } .;
+    rename 'ulink' .;
     add attribute "url=${(@linkend)}" replace @linkend;
-    map { $_="s_".$_.".html" } @url;
+    map { "s_".$_.".html" } @url;
   }
   undef $H;
 
   echo "saving doc/frames/s_${s_id}.xml";
   save --file "doc/frames/s_${s_id}.xml" $s;
   echo "transforming to HTML";
-  $H := xslt --precompiled $db_xslt $s html.stylesheet='${html_stylesheet}';
+  $H := xslt --precompiled {$db_xslt} {$s} html.stylesheet='${html_stylesheet}';
+  echo "done.";
   #  $H := xslt $db_stylesheet $s html.stylesheet='${html_stylesheet}';
   xadd attribute "target=_self" into $H//*[name()='a'];
   # move content of <a name="">..</a> out, so that it does not behave
@@ -220,7 +221,7 @@ foreach $part in { qw(command type function list) } {
     } else {
       add chunk "<title>${(@name)}</title>" into $section;
     }
-    map { s/\s+argument\s+type//i; $_=lcfirst if lc(lcfirst($_)) eq lcfirst} $section/title/text();
+    map :i { s/\s+argument\s+type//i; $_=lcfirst if lc(lcfirst($_)) eq lcfirst} $section/title/text();
     for $section/title {
       add chunk "<a href='s_${ref}.html' target='mainWindow'>${(.)}</a><br/>"
 	into $T/html/body/small;
@@ -234,7 +235,7 @@ foreach $part in { qw(command type function list) } {
 	add element para into $section/simplesect[last()];
       }
       copy ./documentation/usage into $section/simplesect[last()]/para;
-      map { $_='literal' } $section/simplesect[last()]/para/usage;
+      rename literal $section/simplesect[last()]/para/usage;
     }
 
     #ALIASES

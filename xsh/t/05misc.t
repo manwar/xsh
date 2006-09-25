@@ -31,15 +31,15 @@ insert chunk '<foo bar="baz"><?hippi value?></foo>' into /scratch
 
 call x_assert '/scratch/foo'
 
-rename { s/foo/xyz/ } //*
+rename :i { s/foo/xyz/ } //*
 
 call x_assert '/scratch/xyz'
 
-rename { $_=uc($_) } /scratch/xyz/@bar
+rename { uc($_) } /scratch/xyz/@bar
 
 call x_assert '/scratch/xyz/@BAR'
 
-rename { $_='abc' } /scratch/xyz/node()
+rename { 'abc' } /scratch/xyz/node()
 
 call x_assert '/scratch/xyz/node()[name()="abc"]'
 

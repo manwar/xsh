@@ -8,8 +8,17 @@ Changes since 2.0.2:
  - echo --no-space
  - xsh:filename() added
  - save --output-encoding flag added
- - rename syntax allows bare-words as names
  - change-ns-prefix, change-ns-uri added
+ - rename and map syntax and semantics changed drastically:
+
+   Translation guide:
+
+     OLD                          | NEW
+     -----------------------------+-----------------------------------
+     map { $_=uc } //text();      | map { uc } //text();
+     map { s/foo/bar/ } //text(); | map :i { s/foo/bar/ } //text();
+     map { $_='link' } //ref;     | rename link //ref;
+
 
 Release 2.0.2:
 Minor feature enhancements and bug fixes.

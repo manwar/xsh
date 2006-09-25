@@ -38,7 +38,7 @@ insert attribute "bar=8" into //foo[3]
 
 count count(//foo[@bar="8"])=2;
 
-map { $_=1 } //foo[3]/@bar
+map :i { $_=1 } //foo[3]/@bar
 
 count count(//foo[@count and @bar=string(@count)-1])>0;
 
@@ -75,11 +75,11 @@ ls //foo/text()[starts-with(.,'no. 8')] | cat;
 
 if count(//foo/text()[starts-with(.,'no. 8')])!=1 { perl die };
 
-map $_=uc //foo/text();
+map {uc} //foo/text();
 
 unless count(//foo/text()[starts-with(.,'NO. 8')])=1 { perl die };
 
-map { $_=join "",reverse split "",$_; } //foo;
+rename { join "",reverse split "",$_; } //foo;
 
 count count(//oof)=10
 

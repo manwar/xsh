@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.35 2006-09-21 16:46:45 pajas Exp $
+# $Id: Functions.pm,v 2.36 2006-09-25 08:23:24 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -38,7 +38,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.5';
-  $REVISION=q($Revision: 2.35 $);
+  $REVISION=q($Revision: 2.36 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		    $QUERY_ENCODING
@@ -249,7 +249,7 @@ sub xsh_init {
   } else {
     $OUT=\*STDOUT;
   }
-  set_encoding($ENCODING);
+  set_encoding({},$ENCODING);
   $_xml_module=$module if $module;
   eval "require $_xml_module;";
   if ($@) {
@@ -279,7 +279,7 @@ sub xsh_init {
 
   # create a first document so that we always have non-empty context
   create_doc('$scratch',"scratch",'xml');
-  set_local_xpath('/');
+  set_local_xpath({},'/');
 }
 
 sub xsh_rd_parser_init {
@@ -306,26 +306,26 @@ EOF
   return $_xsh;
 }
 
-sub set_validation	     { $VALIDATION=$_[0]; 1; }
-sub set_recovering	     { $RECOVERING=$_[0]; 1; }
-sub set_expand_entities	     { $PARSER_EXPANDS_ENTITIES=$_[0]; 1; }
-sub set_keep_blanks	     { $KEEP_BLANKS=$_[0]; 1; }
-sub set_pedantic_parser	     { $PEDANTIC_PARSER=$_[0]; 1; }
-sub set_load_ext_dtd	     { $LOAD_EXT_DTD=$_[0]; 1; }
-sub set_complete_attributes  { $PARSER_COMPLETES_ATTRIBUTES=$_[0]; 1; }
-sub set_expand_xinclude	     { $PARSER_EXPANDS_XINCLUDE=$_[0]; 1; }
-sub set_indent		     { $INDENT=$_[0]; 1; }
-sub set_empty_tags           { $EMPTY_TAGS=$_[0]; 1; }
-sub set_skip_dtd             { $SKIP_DTD=$_[0]; 1; }
-sub set_backups		     { $BACKUPS=$_[0]; 1; }
-sub set_cdonopen	     { $SWITCH_TO_NEW_DOCUMENTS=$_[0]; 1; }
-sub set_xpath_completion     { $XPATH_COMPLETION=$_[0]; 1; }
-sub set_xpath_axis_completion { $XPATH_AXIS_COMPLETION=$_[0];
+sub set_validation	     { shift if @_>1; $VALIDATION=$_[0]; 1; }
+sub set_recovering	     { shift if @_>1; $RECOVERING=$_[0]; 1; }
+sub set_expand_entities	     { shift if @_>1; $PARSER_EXPANDS_ENTITIES=$_[0]; 1; }
+sub set_keep_blanks	     { shift if @_>1; $KEEP_BLANKS=$_[0]; 1; }
+sub set_pedantic_parser	     { shift if @_>1; $PEDANTIC_PARSER=$_[0]; 1; }
+sub set_load_ext_dtd	     { shift if @_>1; $LOAD_EXT_DTD=$_[0]; 1; }
+sub set_complete_attributes  { shift if @_>1; $PARSER_COMPLETES_ATTRIBUTES=$_[0]; 1; }
+sub set_expand_xinclude	     { shift if @_>1; $PARSER_EXPANDS_XINCLUDE=$_[0]; 1; }
+sub set_indent		     { shift if @_>1; $INDENT=$_[0]; 1; }
+sub set_empty_tags           { shift if @_>1; $EMPTY_TAGS=$_[0]; 1; }
+sub set_skip_dtd             { shift if @_>1; $SKIP_DTD=$_[0]; 1; }
+sub set_backups		     { shift if @_>1; $BACKUPS=$_[0]; 1; }
+sub set_cdonopen	     { shift if @_>1; $SWITCH_TO_NEW_DOCUMENTS=$_[0]; 1; }
+sub set_xpath_completion     { shift if @_>1; $XPATH_COMPLETION=$_[0]; 1; }
+sub set_xpath_axis_completion { shift if @_>1; $XPATH_AXIS_COMPLETION=$_[0];
 				if ($XPATH_AXIS_COMPLETION!~/^always|when-empty|never$/) {
 				  $XPATH_AXIS_COMPLETION='never';
 				}
 				1; }
-sub set_line_numbers         { $LINE_NUMBERS=$_[0]; 1; }
+sub set_line_numbers         { shift if @_>1; $LINE_NUMBERS=$_[0]; 1; }
 
 sub get_validation	     { $VALIDATION }
 sub get_recovering	     { $RECOVERING }
@@ -393,6 +393,7 @@ sub clone_xpc {
 }
 
 sub xpath_extensions {
+  my $opts = shift;
   init_XPATH_funcs($_xpc,shift);
   return 1;
 }
@@ -1135,10 +1136,10 @@ sub post_process_parse_tree {
 	    post_process_parse_tree($_);
 	  }
 	}
-	@$pt=($line,$column,$offset,$script,$func,$optspec ? (\@opts,@args,@extraargs) : (@args,@extraargs));
+	@$pt=($line,$column,$offset,$script,$func,\@opts,@args,@extraargs);
       } else {
 #	print STDERR ("$cmd is a sub call?\n");
-	@$pt=($line,$column,$offset,$script,\&call,1,$cmd,@args);
+	@$pt=($line,$column,$offset,$script,'call',{},1,$cmd,@args);
       }
     }
   } elsif (ref($pt) eq 'ARRAY') {
@@ -1225,9 +1226,14 @@ sub cast_value_to_objects {
   return $wrap ? $el : $res;
 }
 
+sub expr {
+  my $opts = shift;
+  &_ev;
+}
+
 # evaluate given XPath or Perl expression
 sub _ev {
-  my $exp = $_[0];
+  my ($exp,$map,$in_place)=@_;
   return undef unless defined $exp;
   utf8::upgrade($exp) unless ref($exp);
   if (ref($exp) eq 'ARRAY') {
@@ -1235,7 +1241,7 @@ sub _ev {
   } elsif ($exp =~ /^<<(.)/) {
     # inline document
     if ($1 eq "{") {
-      return perl_eval($');
+      return perl_eval($',$map,$in_place);
     } elsif ($1 eq "(") {
       my $ret = $_xpc->find(_expand($'));
       if (ref($ret) and UNIVERSAL::isa($ret,'XML::LibXML::Literal')) {
@@ -1251,7 +1257,7 @@ sub _ev {
   } elsif ($exp =~ /^\d$/) {
     return $exp;
   } elsif ($exp =~ /^{/) {
-    return perl_eval($exp);
+    return perl_eval($exp,$map,$in_place);
   } elsif ($exp eq "") {
     return "";
   } else {
@@ -1309,9 +1315,10 @@ sub _ev_list {
 # evaluate given XPath or Perl expression and return the text content
 # of the result
 sub _ev_literal {
-  my ($exp)=@_;
+  my ($exp,$map,$in_place)=@_;
   return "" if $exp eq "";
-  return to_literal(_ev($exp));
+  my $val = _ev($exp,$map,$in_place);
+  return to_literal($val);
 }
 
 sub to_literal {
@@ -1390,9 +1397,9 @@ sub _doc {
 }
 
 sub _ev_string {
-  my ($exp)=@_;
+  my ($exp,$map,$in_place)=@_;
   if ($exp=~/^\s*(?:&|<<|{)|[\'\"\[\]\(\)\@]|::|\$/) {
-    return _ev_literal($exp);
+    return _ev_literal($exp,$map,$in_place);
   } else {
     return _expand($exp);
   }
@@ -1424,6 +1431,7 @@ sub xsh_set_parser {
 
 # print version info
 sub print_version {
+  my $opts = shift;
   out("Main program:              $::VERSION $::REVISION\n");
   out("XML::XSH2::Functions:       $VERSION $REVISION\n");
   out("XML::LibXML:               $XML::LibXML::VERSION\n");
@@ -1437,6 +1445,7 @@ sub print_version {
 
 # print a list of all open files
 sub files {
+  my $opts = shift;
 #  out(map { "$_ = $_files{$_}\n" } sort keys %_files);
 
   no strict 'refs';
@@ -1471,7 +1480,7 @@ sub close_undef_value {
 }
 
 sub close_doc {
-  my ($exp)=@_;
+  my ($opts,$exp)=@_;
   my $doc = _ev_doc($exp);
   no strict 'refs';
   foreach my $var (keys %{"XML::XSH2::Map::"}) {
@@ -1559,6 +1568,7 @@ sub string_vars {
 #
 
 sub variables {
+  my $opts = shift;
   no strict 'refs';
   foreach (string_vars()) {
     my $value = var_value(q($).$_);
@@ -1582,9 +1592,9 @@ sub echo {
   $opts->{stderr} ? (print STDERR $val) : out($val);
   return 1;
 }
-sub set_quiet { $QUIET=$_[0]; return 1; }
-sub set_debug { $DEBUG=$_[0]; return 1; }
-sub set_compile_only_mode { $TEST_MODE=$_[0]; return 1; }
+sub set_quiet { shift if @_>1; $QUIET=$_[0]; return 1; }
+sub set_debug { shift if @_>1; $DEBUG=$_[0]; return 1; }
+sub set_compile_only_mode { shift if @_>1; $TEST_MODE=$_[0]; return 1; }
 
 sub test_enc {
   my ($enc)=@_;
@@ -1601,6 +1611,7 @@ sub test_enc {
 }
 
 sub set_encoding {
+  shift if @_>1; # opts
 # print STDERR "ENCOD: @_\n";
  my $enc=_ev_string($_[0]);
  my $ok=test_enc($enc);
@@ -1622,7 +1633,8 @@ sub set_encoding {
 }
 
 sub set_qencoding { 
-  my $enc=_ev_string($_[0]);
+  my ($opts,$exp)=@_;
+  my $enc=_ev_string($exp);
   my $ok=test_enc($enc);
   $QUERY_ENCODING=$enc if $ok;
   return $ok;
@@ -1739,7 +1751,7 @@ sub xsh_context_var {
 
 # set current node to given XPath
 sub set_local_xpath {
-  my ($exp)=@_;
+  my ($opts,$exp)=@_;
   $exp = "/" if ($exp eq "");
   _set_context([_ev_nodelist($exp)->shift()]);
   return 1;
@@ -1836,6 +1848,7 @@ sub xsh_pwd {
 
 # print current node's xpath
 sub print_pwd {
+  my $opts = shift;
   my $pwd=pwd();
   if ($pwd) {
     out("$pwd\n");
@@ -2212,7 +2225,7 @@ sub set_doc {
 }
 
 sub set_filename {
-  my ($file, $doc)=@_;
+  my ($opts,$file, $doc)=@_;
   $file = _tilde_expand(_ev_string($file));
   $doc = _ev_doc(defined($doc) ? $doc : '.');
   set_doc_URI($doc,$file);
@@ -2246,7 +2259,7 @@ sub xsh_search_docvar {
 }
 
 sub index_doc {
-  my ($exp)=@_;
+  my ($opts,$exp)=@_;
   $exp = '.' if $exp eq "";
   my $doc = _ev_doc($exp);
   my $result;
@@ -2810,7 +2823,7 @@ sub mark_fold {
 }
 
 sub mark_unfold {
-  my ($exp)=@_;
+  my ($opts,$exp)=@_;
   foreach my $node (_ev_nodelist($exp)) {
     if ($_xml_module->is_element($node) and $node->hasAttributeNS($XML::XSH2::xshNS,'fold')) {
       remove_node($node->getAttributeNodeNS($XML::XSH2::xshNS,'fold'));
@@ -2835,7 +2848,7 @@ sub c14n {
 
 # print canonical xpaths identifying nodes matching given XPath
 sub locate {
-  my ($exp)=@_;
+  my ($opts,$exp)=@_;
   my $ql= _ev_nodelist($exp);
   foreach (@$ql) {
     out(pwd($_),"\n");
@@ -2846,7 +2859,7 @@ sub locate {
 
 # print line numbers of matching nodes
 sub print_lineno {
-  my ($exp)=@_;
+  my ($opts,$exp)=@_;
   my $ql=_ev_nodelist($exp);
   foreach (@$ql) {
     out($_->line_number,"\n");
@@ -2857,7 +2870,7 @@ sub print_lineno {
 # remove nodes matching given XPath from a document and
 # remove all their descendants from all nodelists
 sub prune {
-  my ($exp)=@_;
+  my ($opts,$exp)=@_;
   my $i=0;
   my $ql=_ev_nodelist($exp);
   foreach my $node (@$ql) {
@@ -2946,68 +2959,129 @@ sub perlsort {
   return $rl;
 }
 
-# Evaluate given perl expression over every element matching given XPath.
+# Evaluate given expression over every node matching given XPath
+# and substitute content with the result.
 # The element is passed to the expression by its name or value in the $_
 # variable.
 sub perlmap {
-  my ($perl, $exp)=@_;
+  my ($opts, $mapexp, $exp)=@_;
+  $opts = _ev_opts($opts);
   my $ql=_ev_nodelist($exp);
-  foreach my $node (@$ql) {
-    if ($_xml_module->is_attribute($node)) {
-      my $val=$node->getValue();
-      $node->setValue(eval_substitution("$val",$perl));
-    } elsif ($_xml_module->is_element($node)) {
-      my $val=$node->getName();
-      if ($node->can('setName')) {
-	$node->setName(eval_substitution("$val",$perl));
-      } else {
-	_err "Node renaming not supported by ",ref($node);
+  my $old_context = _save_context();
+  my $pos=1;
+  my $size = @$ql;
+  my $in_place = $opts->{'in-place'};
+  @$ql = reverse @$ql if $opts->{reverse};
+  eval {
+    foreach my $node (@$ql) {
+      _set_context([$node,$size,$pos++]);
+      if ($_xml_module->is_attribute($node)) {
+	my $val = _ev_literal($mapexp, $node->getValue(),$in_place);
+	$node->setValue($val) if defined $val;
+      } elsif ($_xml_module->is_element($node)) {
+	my $value = _ev($mapexp, $node->textContent(),$in_place);
+	if (defined($value)) {
+	  # prune content
+	  for my $child ($node->childNodes()) {
+	    $child->unbindNode();
+	  }
+	  if (ref($value)) {
+	    if (UNIVERSAL::isa($value,'XML::LibXML::NodeList')) {
+	      foreach my $n (@$value) {
+		if ($_xml_module->is_document_fragment($n) or
+		      $n->parentNode and 
+			$_xml_module->is_document_fragment($n->parentNode)) {
+		  # it's a fragment
+		  $node->appendChild($n);
+		} else {
+		  # safely insert a copy
+		  insert_node($n,$node,undef,'into',undef,undef);
+		}
+	      }
+	    } elsif (UNIVERSAL::isa($value,'XML::LibXML::Node')) {
+	      insert_node($value,$node,undef,'into',undef,undef);
+	    } else {
+	      $node->appendTextNode(to_literal($value));
+	    }
+	  } else {
+	    $node->appendTextNode($value);
+	  }
+	}
+      } elsif ($node->can('setData') and $node->can('getData')) {
+	my $val = _ev_literal($mapexp, $node->getData(),$in_place);
+	$node->setData($val) if defined $val;
       }
-    } elsif ($node->can('setData') and $node->can('getData')) {
-      my $val=$node->getData();
-      my $data = eval_substitution("$val",$perl);
-      $data = "" unless defined($data);
-      $node->setData($data);
     }
+  };
+  my $err = $@;
+  {
+    local $SIG{INT}=\&flagsigint;
+    _set_context($old_context);
+    propagate_flagsigint();
   }
+  die $err if $err; # propagate
+
   return 1;
 }
 
-sub perlrename {
-  my ($opts,$perl, $exp)=@_;
-  $opts = _ev_opts($opts);
-  my $ns = $opts->{namespace};
-  my $ql=_ev_nodelist($exp);
-  foreach my $node (@$ql) {
-    if ($_xml_module->is_attribute($node) ||
-	$_xml_module->is_element($node) ||
-	$_xml_module->is_pi($node)) {
-      if ($node->can('setName')) {
-	my $val=$node->getName();
-	if (defined($ns)) {
-	  my $name;
-	  if ($perl=~/^[-\w:]+$/) {
-	    $name = $perl;
-	  } else {
-	    $name = eval_substitution("$val",$perl);
-	  }
-	  $node->setName($name);
-	  if ($node->nodeName=~/^([^:]+):(.*)$/) {
-	    $node->setNamespace($ns,$1,1);
-	  }
+# 
+sub _ev_namespace {
+  my ($val)=@_;
+  if (UNIVERSAL::isa($val,'XML::LibXML::NodeList')) {
+    die "Namespace cannot be specified as a node-set!";
+  } elsif (ref($val)) {
+    return to_literal($val);
+  } else {
+    return $val;
+  }
+}
 
-	} else {
-	  if ($perl=~/^[-\w:]+$/) {
-	    $node->setName($perl)
+sub perlrename {
+  my ($opts, $nameexp, $exp)=@_;
+  $opts = _ev_opts($opts);
+  my $ns = _ev_namespace($opts->{namespace});
+  my $ql=_ev_nodelist($exp);
+  my $old_context = _save_context();
+  my $pos=1;
+  my $size = @$ql;
+  @$ql = reverse @$ql if $opts->{reverse};
+  my $in_place = $opts->{'in-place'};
+  eval {
+    foreach my $node (@$ql) {
+      _set_context([$node,$size,$pos++]);
+      if ($_xml_module->is_attribute($node) ||
+	    $_xml_module->is_element($node) ||
+	      $_xml_module->is_pi($node)) {
+	if ($node->can('setName')) {
+	  my $name=$node->getName();
+	  if (defined($ns)) {
+	    $name = _ev_string($nameexp,$name,$in_place);
+	    if (defined $name) {
+	      $node->setName($name);
+	      if ($node->nodeName=~/^([^:]+):(.*)$/) {
+		$node->setNamespace($ns,$1,1);
+	      }
+	    }
 	  } else {
-	    $node->setName(eval_substitution("$val",$perl));
+	    $name = _ev_string($nameexp,$name,$in_place);
+	    if (defined $name) {
+	      $node->setName($name);
+	    }
 	  }
+	} else {
+	  _err "Node renaming not supported by ",ref($node);
 	}
-      } else {
-	_err "Node renaming not supported by ",ref($node);
       }
     }
+  };
+  my $err = $@;
+  {
+    local $SIG{INT}=\&flagsigint;
+    _set_context($old_context);
+    propagate_flagsigint();
   }
+  die $err if $err; # propagate
+
   return 1;
 }
 
@@ -3189,8 +3263,49 @@ sub _is_attached {
   return $node && !$_xml_module->is_document_fragment($node);
 }
 
+sub set_namespace {
+  my ($opts,$uri)=@_;
+  $opts = _ev_opts($opts);
+  $uri = _ev_string($uri);
+  my $node = $_xpc->getContextNode;
+  my $prefix = $opts->{prefix};
+  unless ($_xml_module->is_element($node) ||
+	    $_xml_module->is_attribute($node)) {
+    die "declare-ns: namespaces can only be set for element and attribute nodes\n";
+  }
+  if ($prefix) {
+    my $declaredURI = $node->lookupNamespaceURI($prefix);
+    if (defined $declaredURI and $declaredURI eq $uri) {
+      return $node->setNamespace($uri,$prefix);
+    } else {
+      die "Namespace error: prefix '$prefix' already used for the namespace '$declaredURI'\n";
+    }
+  } else {
+    if ($prefix = $node->lookupNamespacePrefix($uri)) {
+      return $node->setNamespace($uri,$prefix);
+    } else {
+      die "Namespace error: use declare-ns command to declare a prefix for '$uri' first\n";
+    }
+  }
+}
+
+sub declare_namespace {
+  my ($opts,$prefix,$uri)=@_;
+  $prefix = _ev_string($prefix);
+  $uri = _ev_string($uri);
+  my $node = $_xpc->getContextNode;
+  unless ($_xml_module->is_element($node)) {
+    die "declare-ns: namespaces can only be declared on element nodes\n";
+  }
+  my $declaredURI = $node->lookupNamespaceURI($prefix);
+  if (defined $declaredURI and $declaredURI ne $uri) {
+    die "Namespace error: prefix '$prefix' already used for the namespace '$declaredURI'\n";
+  }
+  $node->setNamespace($uri,$prefix,0);
+}
+
 sub change_namespace_prefix {
-  my ($new,$old)=@_;
+  my ($opts,$new,$old)=@_;
   $old = _ev_string($old) if $old;
   $new = _ev_string($new);
   my $node = $_xpc->getContextNode;
@@ -3203,19 +3318,13 @@ sub change_namespace_prefix {
 }
 
 sub change_namespace_uri {
-  my ($uri,$prefix)=@_;
+  my ($opts,$uri,$prefix)=@_;
   $prefix = _ev_string($prefix) if $prefix;
   $uri = _ev_string($uri);
   my $node = $_xpc->getContextNode;
   if ($node && $_xml_module->is_element($node)) {
     $prefix = $node->prefix unless defined $prefix;
-    if ($uri eq "") {
-      if ($node->setNamespaceDeclURI($prefix,undef)) {
-	return $node->setNamespaceDeclPrefix($prefix,undef);
-      }
-    } else {
-      return $node->setNamespaceDeclURI($prefix,$uri);
-    }
+    return $node->setNamespaceDeclURI($prefix,$uri);
   } else {
     _err("The context node is not an element");
   }
@@ -3224,7 +3333,7 @@ sub change_namespace_uri {
 # use the XPathToXML module to build
 # up a XML structure
 sub xpath_set {
-  my ($exp,$value)=@_;
+  my ($opts,$exp,$value)=@_;
   require XML::XSH2::XPathToXML;
   my $xtx = XML::XSH2::XPathToXML->new(namespaces => \%_ns,
 				 XPathContext => $_xpc,
@@ -3984,7 +4093,7 @@ sub insert {
   my ($opts,$type,$str,$where,$exp,$to_all)=@_;
   $opts = _ev_opts($opts);
   $str = _ev_string($str);
-  my $ns  = _ev_string($opts->{namespace});
+  my $ns  = _ev_namespace($opts->{namespace});
   my $tl=_ev_nodelist($exp);
   unless (@$tl) {
     _warn("Expression '$exp' returns empty node-list");
@@ -4023,7 +4132,7 @@ sub insert {
 sub wrap {
   my ($opts,$str,$exp)=@_;
   $opts = _ev_opts($opts);
-  my $ns = $opts->{namespace};
+  my $ns = _ev_namespace($opts->{namespace});
   $str = _ev_string($str);
 
   my $rl=_prepare_result_nl();
@@ -4129,7 +4238,7 @@ sub wrap_span {
   my ($opts,$str,$xp_start,$xp_end)=@_;
   $opts = _ev_opts($opts);
   $str = _ev_string($str);
-  my $ns = $opts->{namespace};
+  my $ns = _ev_namespace($opts->{namespace});
   my $rl=_prepare_result_nl();
   my $ql_start=_ev_nodelist($xp_start);
   my $ql_end=_ev_nodelist($xp_end);
@@ -4198,7 +4307,7 @@ sub wrap_span {
 
 # normalize nodes
 sub normalize_nodes {
-  my ($exp)=@_;
+  my ($opts,$exp)=@_;
   my $ql=_ev_nodelist($exp);
   foreach (@$ql) {
     $_->normalize();
@@ -4215,7 +4324,7 @@ sub _trim_ws {
 
 # strip whitespace from given nodes
 sub strip_ws {
-  my ($exp)=@_;
+  my ($opts,$exp)=@_;
   my $ql=_ev_nodelist($exp);
   foreach my $node (@$ql) {
     if ($_xml_module->is_text($node)
@@ -4397,7 +4506,8 @@ sub validate_doc {
 
 # process XInclude elements in a document
 sub process_xinclude {
-  my $doc = _ev_doc($_[0]);
+  my ($opts, $exp)=@_;
+  my $doc = _ev_doc($exp);
   if ($doc) {
     $_xml_module->doc_process_xinclude($_parser,$doc);
   }
@@ -4406,6 +4516,7 @@ sub process_xinclude {
 
 # print document's DTD
 sub list_dtd {
+  my $opts = shift;
   my $doc = _ev_doc($_[0]);
   if ($doc) {
     my $dtd=get_dtd($doc);
@@ -4452,7 +4563,8 @@ sub set_dtd {
 
 # print document's encoding
 sub print_enc {
-  my $doc = _ev_doc($_[0]);
+  my ($opts,$doc)=@_;
+  my $doc = _ev_doc($doc);
   if ($doc) {
     out($_xml_module->doc_encoding($doc),"\n");
   }
@@ -4460,6 +4572,7 @@ sub print_enc {
 }
 
 sub set_doc_enc {
+  my $opts = shift;
   my ($encoding,$doc)=(_ev_literal($_[0]),_ev_doc($_[1]));
   if ($doc) {
     $_xml_module->set_encoding($doc,$encoding);
@@ -4468,6 +4581,7 @@ sub set_doc_enc {
 }
 
 sub set_doc_standalone {
+  my $opts = shift;
   my ($standalone,$doc)=(_ev_literal($_[0]),_ev_doc($_[1]));
   $standalone=1 if $standalone=~/yes/i;
   $standalone=0 if $standalone=~/no/i;
@@ -4476,6 +4590,7 @@ sub set_doc_standalone {
 }
 
 sub doc_info {
+  my $opts = shift;
   my $doc = _ev_doc($_[0]);
   if ($doc) {
 #    out("type=",$doc->nodeType,"\n");
@@ -4489,7 +4604,7 @@ sub doc_info {
 
 # create an identical copy of a document
 sub clone {
-  my ($exp)=@_;
+  my ($opts,$exp)=@_;
   my $doc = _ev_doc($exp);
   if ($doc) {
     return _clone_xmldoc($doc);
@@ -4551,6 +4666,7 @@ sub sh_noev {
 }
 
 sub sh {
+  my $opts = shift;
   my $cmd=join " ",map { _ev_string($_) } @_;
   return system(fromUTF8($ENCODING, $cmd));
 }
@@ -4563,15 +4679,34 @@ sub print_count {
   return $count;
 }
 
+sub perl_eval_command {
+  shift; # opts
+  &perl_eval;
+}
+
 sub perl_eval {
+  my ($exp,$map,$in_place)=@_;
   select $OUT;
   use utf8;
   if (wantarray) {
-    my @result=eval(lexicalize($_[0]));
+    my @result=eval(lexicalize($exp));
     die $@ if $@;
     return @result;
+  } elsif (defined $map) {
+    if ($in_place) {
+      local $_ = $map;
+      eval(lexicalize($exp));
+      die $@ if $@;
+      return $_;
+    } else {
+      # abraka dabra: some magic to make $_ read only
+      local *_ = eval "\\'$map'";
+      my $result=eval(lexicalize($exp));
+      die $@ if $@;
+      return $result;
+    }
   } else {
-    my $result=eval(lexicalize($_[0]));
+    my $result=eval(lexicalize($exp));
     die $@ if $@;
     return $result;
   }
@@ -4652,7 +4787,7 @@ sub run_string {
 }
 
 sub run_exp {
-  my ($exp)=@_;
+  my ($opts,$exp)=@_;
   local $SCRIPT="<eval() called from $RT_SCRIPT line $RT_COLUMN>";
   run_string(_ev_literal($exp));
 }
@@ -4766,6 +4901,7 @@ sub while_statement {
 }
 
 sub throw_exception {
+  my $opts = shift;
   die _ev_literal($_[0])."\n";
 }
 
@@ -4810,15 +4946,19 @@ sub try_catch {
 }
 
 sub loop_next {
+  my $opts = shift;
   die XML::XSH2::Internal::LoopTerminatingException->new('next',_ev_literal(@_));
 }
 sub loop_prev {
+  my $opts = shift;
   die XML::XSH2::Internal::LoopTerminatingException->new('prev',_ev_literal(@_));
 }
 sub loop_redo {
+  my $opts = shift;
   die XML::XSH2::Internal::LoopTerminatingException->new('redo',_ev_literal(@_));
 }
 sub loop_last {
+  my $opts = shift;
   die XML::XSH2::Internal::LoopTerminatingException->new('last',_ev_literal(@_));
 }
 
@@ -4925,6 +5065,7 @@ sub _clone_xmldoc {
     # emulated clone
     return $_xml_module->new_parser->parse_string($doc->toString());
   } else {
+
     # native clone (if my patch ever gets into LibXML)
     return $doc->cloneNode(1);
   }
@@ -4982,6 +5123,7 @@ sub xslt {
       die "Pre-compiled XSLT stylesheet doesn't appear to be a XML::LibXSLT::Stylesheet object: $stylefile\n";
     }
   } else {
+    print STDERR "compiling\n";
     ($st,my $styledoc) = xslt_compile($opts->{doc},$stylefile,1);
     die "No XSLT document: $stylefile\n" unless $st;
     $stylefile = $styledoc->URI;
@@ -5041,7 +5183,7 @@ sub xslt {
 
 # perform xupdate processing over a document
 sub xupdate {
-  my ($xupdate_doc,$doc)=map { _ev_doc($_) } @_;
+  my ($opts,$xupdate_doc,$doc)=map { _ev_doc($_) } @_;
   if ($xupdate_doc and $doc) {
     require XML::XUpdate::LibXML;
     require XML::Normalize::LibXML;
@@ -5058,17 +5200,20 @@ sub xupdate {
   }
 }
 
-sub call_return { die XML::XSH2::Internal::SubTerminatingException->new('return',_ev($_[0])); }
+sub call_return { 
+  my $opts = shift;
+  die XML::XSH2::Internal::SubTerminatingException->new('return',_ev($_[0])); 
+}
 
 sub call_command {
-  my ($exp,@args)=@_;
+  my ($opts,$exp,@args)=@_;
   my $name = _ev_string($exp);
-  call(1,$name, @args);
+  call($opts,1,$name, @args);
 }
 
 # call a named set of commands
 sub call {
-  my ($eval_args, $name, @args)=@_;
+  my ($opts,$eval_args, $name, @args)=@_;
   my $def = $_defs{$name};
   if (defined $def) {
     my @vars = @$def[2..$#$def];
@@ -5141,6 +5286,7 @@ sub defs {
 
 # list all defined subroutines
 sub list_defs {
+  my $opts = shift;
   foreach (sort keys (%_defs)) {
     out(join(" ",$_,@{ $_defs{$_} }[2..$#{ $_defs{$_} }] ),"\n" );
   }
@@ -5202,6 +5348,7 @@ sub apropos {
 }
 
 sub help {
+  my $opts = shift;
   my ($command)=expand @_;
   if ($command) {
     if (exists($XML::XSH2::Help::HELP{$command})) {
@@ -5230,6 +5377,7 @@ sub help {
 
 # load catalog file to the parser
 sub load_catalog {
+  my $opts = shift;
   $_xml_module->load_catalog($_parser,_tilde_expand(_ev_string($_[0])));
   return 1;
 }
@@ -5449,6 +5597,7 @@ sub iterate {
 
 # quit
 sub quit {
+  my $opts = shift;
   if (ref($_on_exit)) {
     &{$_on_exit->[0]}($_[0],@{$_on_exit}[1..$#$_on_exit]); # run on exit hook
   }
@@ -5456,23 +5605,31 @@ sub quit {
 }
 
 sub register_ns {
+  my $opts = shift;
   my $prefix = _ev_string($_[0]);
   my $ns = _ev_string($_[1]);
+
+  unless ($prefix=~m{^[-_.[:alpha:]][-_.[:alnum:]]*$}) {
+    die "Invalid namespace prefix '$prefix'\n";
+  }
   $_ns{$prefix}=$ns;
   $_xpc->registerNs($prefix,$ns);
   return 1;
 }
 
 sub register_xsh_ns {
-  register_ns(_ev_string($_[0]),$XML::XSH2::xshNS);
+  my $opts = shift;
+  register_ns($opts,_ev_string($_[0]),$XML::XSH2::xshNS);
 }
 
 sub register_xhtml_ns {
-  register_ns(_ev_string($_[0]),'http://www.w3.org/1999/xhtml');
+  my $opts = shift;
+  register_ns($opts,_ev_string($_[0]),'http://www.w3.org/1999/xhtml');
 }
 
 sub unregister_ns {
-  my $prefix = _ev_string($_[0]);
+  my ($opts,$exp)=@_;
+  my $prefix = _ev_string($exp);
   delete $_ns{$prefix};
   $_xpc->unregisterNs($prefix);
   return 1;
@@ -5488,7 +5645,7 @@ sub get_registered_prefix {
 }
 
 sub register_func {
-  my ($name,$code)=@_;
+  my ($opts,$name,$code)=@_;
   $name=_ev_string($name);
   my $sub;
   if ($code =~ /^\s*{/) {
@@ -5519,7 +5676,7 @@ sub register_func {
 }
 
 sub unregister_func {
-  my ($name)=@_;
+  my ($opts,$name)=@_;
 
   if ($name =~ /^([^:]+):(.*)$/) {
     if (exists($_ns{$1})) {
@@ -5574,7 +5731,7 @@ import XML::XSH2::Functions ':param_vars';
 *toUTF8 = *XML::XSH2::Functions::toUTF8;
 
 sub call {
-  XML::XSH2::Functions::call(0,@_);
+  XML::XSH2::Functions::call({},0,@_);
 }
 
 sub serialize {

@@ -25,13 +25,13 @@ $VERSION = '0.05';
 
 my $PACKAGE = __PACKAGE__;
 
-our ($QUOT,$NAMECHAR,$NNAMECHAR,$NAME,$STEP,$LAST_STEP,$FILTER,$PREDICATE,$AXIS);
+our ($QUOT,$NAMECHAR,$FIRSTNAMECHAR,$NAME,$STEP,$LAST_STEP,$FILTER,$PREDICATE,$AXIS);
 
 # regexps to parse XPath steps
 
 $NAMECHAR = '[-_.[:alnum:]]';
-$NNAMECHAR = '[-:_.[:alnum:]]';
-$NAME = "(?:${NAMECHAR}*(?::${NNAMECHAR}+)*[_.[:alpha:]])";
+$FIRSTNAMECHAR = '[-_.[:alpha:]]';
+$NAME = "(?:${FIRSTNAMECHAR}${NAMECHAR}*(?::${FIRSTNAMECHAR}${NAMECHAR}+)*)";
 
 $QUOT = q{(?:'[^']*'|"[^"]*")};
 $PREDICATE = qr/
@@ -52,9 +52,9 @@ $PREDICATE = qr/
 
 $FILTER = qr/(?:\[$PREDICATE\])/;
 
-$STEP = qr{(?:(?:^|/)${NAME}${FILTER}*)};
-$LAST_STEP = qr{(?:(?:^|/)(?:\@?${NAME}|comment[(][)]|text[(][)]|processing-instruction[(](?:\s*"${NAME}"\s*|\s*'${NAME}'\s*)[)])${FILTER}*)};
 $AXIS=qr{(?:(?:following-sibling|following|preceding|preceding-sibling|parent|ancestor|ancestor-or-self|descendant|self|descendant-or-self|child|namespace)::)?};
+$STEP = qr{(?:(?:^|/)${AXIS}${NAME}${FILTER}*)};
+$LAST_STEP = qr{(?:(?:^|/)(?:\@${NAME}|${AXIS}(?:${NAME}|comment[(][)]|text[(][)]|processing-instruction[(](?:\s*"${NAME}"\s*|\s*'${NAME}'\s*)[)]))${FILTER}*)};
 
 ### NEW
 #
