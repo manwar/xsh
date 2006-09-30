@@ -912,6 +912,74 @@ drwxrwxr-x    3 pajas    users         496 Sep  1 20:18 tools
 	</example>
       </section>
     </section>
+    <section id="Prompt">
+      <title>Prompt in the interactive shell</title>
+      <para>
+	Like many other shells, &XSH; provides means for customizing
+	the format of its interactive shell prompt.  The prompt is
+	displayed according to the content of the variable
+	<literal>$PROMPT</literal> on which the following
+	substitutions and interpolations are performed
+	(in this order):
+      </para>
+<para>1. Prompt-string replacements</para>
+<code>
+    %% - percent sign
+    %p - XPath location of the current node
+    %P - like %p but without an initial document variable
+    %l - XPath location of the current node with ID-shortucts
+    %L - like %l but without an initial document variable
+    %n - name of the current node
+    %N - local name of the current node
+    %c - cannonical XPath name of the current node
+    %y - type of the current node (element,attribute,...)
+    %i - ID of the current node
+    %d - current document variable
+    %h - the hostname up to the first '.'
+    %H - the hostname
+    %s - XSH shell name (basename of $0)
+    %t - the current time in 24-hour HH:MM:SS format
+    %T - the current time in 12-hour HH:MM:SS format
+    %@ - the current time in 12-hour am/pm format
+    %A - the current time in 24-hour HH:MM format
+    %u - the username of the current user
+    %v - the version of XSH2 (e.g., 2.0.5)
+    %V - the revision number of XML::XSH2::Functions (e.g. 2.36)
+    %w - current working directory (on the local filesystem)
+    %W - basename of %w
+</code>
+<para>2. Variable, XPath and Perl interpolations</para>
+<para>
+Substrings of the forms <literal>${variable}</literal>,
+<literal>${{...perl...}}</literal> and
+<literal>${(...xpath...)}</literal> are interpolated as in &XSH;
+<link linkend="exp">expressions</link>.
+</para>
+      <para>3. Special character substitution</para>
+<code>
+    \n - newline character
+    \r - line-feed character
+    \t - tab character
+    \a - bell character
+    \b - backspace character
+    \f - form feed character
+    \e - escape character (\033)
+    \\ - backslash character
+    \nnn - the character corresponding to the octal number nnn
+           (useful for non-printable terminal control characters)
+</code>
+<para>The default value of <literal>$PROMPT</literal> is <literal>"%p>"</literal>.</para>
+      <para>Note that you must escape <literal>${...}</literal>
+	interpolators like <literal>\${...}</literal> if you
+	want them to be evaluated at each prompt
+	rather than at the time of the assignment to <literal>$PROMPT</literal>.
+	For example:
+      </para>
+      <example>
+	<title>Let `uname` be computed once, `date` at every prompt</title>
+	<code>$PROMPT="[${{ chomp($u=`uname`);$u }} \${{ chomp($d=`date`);$d }}] %p>"</code>
+      </example>
+    </section>
     <section id="xsh2delta">
       <title>Changes since XSH 1.x</title>
       <para>
@@ -2012,6 +2080,12 @@ sub new {
 	    <literal>${(</literal> and <literal>)}</literal>
 	    evaluate their contents as an XPath expression and interpolates to
 	    a string value of the result.
+	  </para>
+	  <para>
+	    Substrings of the form <literal>\${</literal>
+	    interpolate to <literal>${</literal>
+	    (as a means for escaping <literal>${...}</literal>
+	    in an expression).
 	  </para>
 	  <para>
 	    Expressions are evaluated by &XSH; commands themselves, so
@@ -5293,12 +5367,25 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
       </documentation>
     </rule>
     <rule id="pwd_command" type="command" name="pwd" inline="yes">
-      <command maxargs="0" func="print_pwd"/><documentation sections="Navigation Information">
-	<usage>pwd</usage>
+      <command maxargs="0" func="print_pwd">
+	<param name="id" short="i"/>
+      </command>
+      <documentation sections="Navigation Information">
+	<usage>pwd [--id|:i]</usage>
 	<shortdesc>show current context node location (as a cannonical XPath)</shortdesc>
 	<description>
 	  <para>Print XPath leading to the current context node 
 	    (equivalent to <literal>locate .</literal>).
+	  </para>
+	  <para>
+	    If flag <literal>--id</literal> (<literal>:i</literal>) is
+	    used then ID-based shortuct is allowed in the resulting
+	    location path. That means that if the current node or some of its
+	    ancestors has an ID attribute (either
+	    <literal>xml:id</literal> or one specified in a DTD) then
+	    the corresponding segment of the cannonical location path
+	    is replaced by the <literal>id()</literal> function
+	    which jumps directly to an element based on its ID.
 	  </para>
 	</description>
 	<see-also>
@@ -5308,13 +5395,25 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
       </documentation>
     </rule>    
     <rule id="locate_command" type="command" name="locate" inline="yes">
-      <command maxargs="1" func="locate"/>
+      <command maxargs="1" func="locate">
+	<param name="id" short="i"/>
+      </command>
       <documentation sections="Navigation Information">
-	<usage>locate <xref linkend="xpath"/></usage>
+	<usage>locate [--id|:i] <xref linkend="xpath"/></usage>
 	<shortdesc>show a given node location (as a cannonical XPath)</shortdesc>
 	<description>
 	  <para>Print canonical XPaths leading to nodes matched by
 	    a given <xref linkend="xpath"/>.</para>
+	  <para>
+	    If flag <literal>--id</literal> (<literal>:i</literal>) is
+	    used then ID-based shortucts are allowed in the resulting
+	    location paths. That means that if the node or some of its
+	    ancestors has an ID attribute (either
+	    <literal>xml:id</literal> or one specified in a DTD) then
+	    the corresponding segment of the cannonical location path
+	    is replaced by the <literal>id()</literal> function
+	    which jumps directly to an element based on its ID.
+	  </para>
 	</description>
 	<see-also>
 	  <ruleref ref="pwd_command" arguments=""/>

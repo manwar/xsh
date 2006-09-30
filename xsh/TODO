@@ -6,9 +6,6 @@ TODO XSH2:
 - more tests
 - support DTD modification (isn't that obsolete in the 21st century?)
 
-- 'locate' - allow use also nearest id()
-  (needs support in LibXML; 1.60 contains attribute->isId method)
-
 - add various examples of working with namespaces, e.g.
 
 	if the ttt prefix is aready declared in the context of . or
@@ -16,7 +13,7 @@ TODO XSH2:
 
 		add element ttt:para into . 
 
-	and the new element ttt:para will be bound with that namespace so
+	and the new element ttt:para will be bound to that namespace so
 	doing
 
 		ls //ttt:para;
@@ -29,11 +26,6 @@ TODO XSH2:
 
 	is intended for adding a new element together with a
 	xmlns declaration of its prefix and the given namespace.
-
-- namespace-rename-uri uri new-prefix [nodes]
-- namespace-rename-prefix old-prefix new-prefix [nodes]
-- namespace-change-uri old-uri new-uri [nodes]
-  (requires support in XML::LibXML)
 
 USER-LEVEL IMPLEMENTABLE
 

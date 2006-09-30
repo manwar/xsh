@@ -18,6 +18,8 @@ Changes since 2.0.2:
      map { s/foo/bar/ } //text(); | map :i { s/foo/bar/ } //text();
      map { $_='link' } //ref;     | rename link //ref;
 
+  - customizable shell prompt
+  - pwd and locate can return paths based on nearest ID (ancestor-or-self)
 
 Release 2.0.2:
 Minor feature enhancements and bug fixes.

@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.36 2006-09-25 08:23:24 pajas Exp $
+# $Id: Functions.pm,v 2.37 2006-09-30 12:47:49 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -23,7 +23,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 	    $lexical_variables $_newdoc
             $TRAP_SIGINT $TRAP_SIGPIPE $_die_on_err $_on_exit
 	    $_want_returns
-	    %_files %_defs %_includes %_chr %_ns %_func %COMMANDS
+	    %_files %_defs %_includes %_ns %_func %COMMANDS
 	    $ENCODING $QUERY_ENCODING
 	    $INDENT $BACKUPS $SWITCH_TO_NEW_DOCUMENTS $EMPTY_TAGS $SKIP_DTD
 	    $QUIET $DEBUG $TEST_MODE $WARNINGS
@@ -34,39 +34,41 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 	    $XPATH_COMPLETION $DEFAULT_FORMAT $LINE_NUMBERS
             $RT_LINE $RT_COLUMN $RT_OFFSET $RT_SCRIPT $SCRIPT
             $BENCHMARK $DUMP $DUMP_APPEND $Xinclude_prefix $HISTFILE
+	    $PROMPT
 	  /;
 
 BEGIN {
   $VERSION='2.0.5';
-  $REVISION=q($Revision: 2.36 $);
+  $REVISION=q($Revision: 2.37 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
-		    $QUERY_ENCODING
-		    $INDENT
-                    $EMPTY_TAGS
-                    $SKIP_DTD
-		    $BACKUPS
-		    $SWITCH_TO_NEW_DOCUMENTS
-		    $QUIET
-		    $DEBUG
-		    $TEST_MODE
-		    $VALIDATION
-		    $RECOVERING
-		    $PARSER_EXPANDS_ENTITIES
-		    $XPATH_AXIS_COMPLETION
-		    $XPATH_COMPLETION
-		    $KEEP_BLANKS
-		    $PEDANTIC_PARSER
-		    $LOAD_EXT_DTD
-		    $PARSER_COMPLETES_ATTRIBUTES
-		    $PARSER_EXPANDS_XINCLUDE
-		    $DEFAULT_FORMAT
-		    $LINE_NUMBERS
-		    $WARNINGS
-		    $MAXPRINTLENGTH
-		    $HISTFILE
-		    $STRICT_PWD
-		    /;
+		 $QUERY_ENCODING
+		 $INDENT
+		 $EMPTY_TAGS
+		 $SKIP_DTD
+		 $BACKUPS
+		 $SWITCH_TO_NEW_DOCUMENTS
+		 $QUIET
+		 $DEBUG
+		 $TEST_MODE
+		 $VALIDATION
+		 $RECOVERING
+		 $PARSER_EXPANDS_ENTITIES
+		 $XPATH_AXIS_COMPLETION
+		 $XPATH_COMPLETION
+		 $KEEP_BLANKS
+		 $PEDANTIC_PARSER
+		 $LOAD_EXT_DTD
+		 $PARSER_COMPLETES_ATTRIBUTES
+		 $PARSER_EXPANDS_XINCLUDE
+		 $DEFAULT_FORMAT
+		 $LINE_NUMBERS
+		 $WARNINGS
+		 $MAXPRINTLENGTH
+		 $HISTFILE
+		 $STRICT_PWD
+		 $PROMPT
+		 /;
   *XSH_NS=*XML::XSH2::xshNS;
   *XML::XSH2::Map::XSH_NS=*XML::XSH2::xshNS;
   *XML::XSH2::Map::OUT=\$OUT;
@@ -116,15 +118,13 @@ BEGIN {
   $MAXPRINTLENGTH=256;
   $HISTFILE="$ENV{HOME}/.xsh2_history";
   $STRICT_PWD=1;
+  $PROMPT='%p>';
   *XML::XSH2::Map::CURRENT_SCRIPT=\$RT_SCRIPT;
 
   $_newdoc=1;
   $_die_on_err=1;
   $_want_returns=0;
 
-  %_chr = ( n => "\n", t => "\t", r => "\r",
-	    f => "\f", b => "\b", a => "\a",
-	    e => "\e" );
   autoflush STDOUT;
   autoflush STDERR;
   $lexical_variables = [];
@@ -1693,8 +1693,11 @@ sub _warn {
 
 # if the argument is non-void then print it and return 0; return 1 otherwise
 sub _check_err {
-  my ($err,$survive_int)=@_;
+  my ($err,$survive_int,$remove_at)=@_;
   if ($err) {
+    if ($remove_at and !ref($err)) {
+      $err=~s/ at (?:.|\n)*$//;
+    }
     if ($err=~/^SIGINT/) {
       if ($survive_int) {
 	$err=~s/ at (?:.|\n)*$//;
@@ -1781,7 +1784,8 @@ sub cannon_name {
 
 # return XPath identifying a node within its parent's subtree
 sub node_address {
-  my ($node)=@_;
+  my $node = shift || $_xpc->getContextNode();
+  my $no_parent = shift;
   my $name;
   if ($_xml_module->is_element($node)) {
     $name=cannon_name($node);
@@ -1796,7 +1800,7 @@ sub node_address {
     return "@".cannon_name($node);
   }
   
-  if ($node->parentNode) {
+  if (!$no_parent and $node->parentNode) {
     my @children;
 #    if ($_xml_module->is_element($node)) {
 #      @children=$_xpc->findnodes("./$name",$node->parentNode);
@@ -1827,13 +1831,34 @@ sub tree_parent_node {
   }
 }
 
+# get node's ID
+sub node_id {
+  my ($node)=@_;
+  if ($node) {
+    for my $attr ($node->attributes) {
+      if ($attr->can('isId') and $attr->isId) {
+	my $value = $attr->value;
+	return $value if defined $value;
+      }
+    }
+  }
+  return undef;
+}
+
 # return canonical xpath for the given or current node
 sub pwd {
-  my $node=$_[0] || $_xpc->getContextNode();
+  my $node=shift || $_xpc->getContextNode();
+  my $use_id = shift;
   return undef unless ref($node);
   return $node->nodePath() if !$STRICT_PWD and UNIVERSAL::can($node,'nodePath');
   my @pwd=();
   do {
+    if ($use_id) {
+      my $id = node_id($node);
+      if (defined $id) {
+	return join "/","id('$id')",@pwd;
+      }
+    }
     unshift @pwd,node_address($node);
     $node=tree_parent_node($node);
   } while ($node);
@@ -1843,13 +1868,15 @@ sub pwd {
 
 # return canonical xpath for current node (encoded)
 sub xsh_pwd {
-  return pwd();
+  shift if $_[0] && !ref($_[0]); # package name
+  &pwd;
 }
 
 # print current node's xpath
 sub print_pwd {
-  my $opts = shift;
-  my $pwd=pwd();
+  my $opts = _ev_opts(shift);
+  
+  my $pwd=pwd(undef, $opts->{id});
   if ($pwd) {
     out("$pwd\n");
     return $pwd;
@@ -1872,14 +1899,8 @@ sub _expand {
   no strict;
   $l=~/^/o;
   while ($l !~ /\G$/gsco) {
-    if ($l=~/\G\\(.|\n|\$\{)/gsco) {
-      if (exists($_chr{$1})) {
-	$k.=$_chr{$1};
-      } elsif ($1 eq '${') {
-	$k.='${';
-      }else {
-	$k.="\\".$1;
-      }
+    if ($l=~/\G\\\$\{/gsco) {
+      $k.='${';
     } elsif ($l=~/\G\$\{(\$?[a-zA-Z_][a-zA-Z0-9_]*)\}/gsco) {
       $k.=var_value(q($).$1);
     } elsif ($vars and $l=~/\G(\$\$?[a-zA-Z_][a-zA-Z0-9_]*)/gsco) {
@@ -1888,7 +1909,8 @@ sub _expand {
       $k.=perl_eval($1);
     } elsif ($l=~/\G\$\{\((.+?)\)\}/gsco) {
       $k.=_ev_literal($1);
-    } elsif ($l=~/\G(\$(?!\{)|[^\$]+)/gsco) {
+    } elsif ($l=~/\G(\$(?!\{)|\\(?!\${)|[^\\\$]+)/gsco) {
+      # skip to the next \ or $
       $k.=$1;
     }
   }
@@ -2333,29 +2355,38 @@ sub open_doc {
     if ($source eq 'pipe') {
       open my $F,"$file|" || die "Can't open pipe: $!\n";
       $F || die "Cannot open pipe to $file: $!\n";
-      if ($format eq 'xml') {
-	$doc=$_xml_module->parse_fh($_parser,$F);
-      } elsif ($format eq 'html') {
-	$doc=$_xml_module->parse_html_fh($_parser,$F);
-      } elsif ($format eq 'docbook') {
-	$doc=$_xml_module->parse_sgml_fh($_parser,$F,$QUERY_ENCODING);
-      }
+      eval {
+	if ($format eq 'xml') {
+	  $doc=$_xml_module->parse_fh($_parser,$F);
+	} elsif ($format eq 'html') {
+	  $doc=$_xml_module->parse_html_fh($_parser,$F);
+	} elsif ($format eq 'docbook') {
+	  $doc=$_xml_module->parse_sgml_fh($_parser,$F,$QUERY_ENCODING);
+	}
+      };
       close $F;
+      _check_err($@,1,1);
     } elsif ($source eq 'string') {
       my $root_element=$file;
       $root_element="<$root_element/>" unless ($root_element=~/^\s*</);
       $root_element=~s/^\s+//;
-      $doc=xsh_parse_string($root_element,$format);
+      eval {
+	$doc=xsh_parse_string($root_element,$format);
+      };
+      _check_err($@,1,1);
       die "Failed to parse string\n" unless (ref($doc));
       $_newdoc++;
     } else  {
-      if ($format eq 'xml') {
-	$doc=$_xml_module->parse_file($_parser,$file);
-      } elsif ($format eq 'html') {
-	$doc=$_xml_module->parse_html_file($_parser,$file);
-      } elsif ($format eq 'docbook') {
-	$doc=$_xml_module->parse_sgml_file($_parser,$file,$QUERY_ENCODING);
-      }
+      eval {
+	if ($format eq 'xml') {
+	  $doc=$_xml_module->parse_file($_parser,$file);
+	} elsif ($format eq 'html') {
+	  $doc=$_xml_module->parse_html_file($_parser,$file);
+	} elsif ($format eq 'docbook') {
+	  $doc=$_xml_module->parse_sgml_file($_parser,$file,$QUERY_ENCODING);
+	}
+      };
+      _check_err($@,1,1);
       die "Failed to parse $file as $format\n" unless (ref($doc));
     }
     print STDERR "done.\n" unless "$QUIET";
@@ -2851,7 +2882,7 @@ sub locate {
   my ($opts,$exp)=@_;
   my $ql= _ev_nodelist($exp);
   foreach (@$ql) {
-    out(pwd($_),"\n");
+    out(pwd($_,$opts->{id}),"\n");
   }
   print STDERR "\nFound ",scalar(@$ql)," node(s).\n" unless "$QUIET";
   return 1;
@@ -4527,7 +4558,7 @@ sub list_dtd {
   return 1;
 }
 
-# print document's DTD
+# set document's DTD
 sub set_dtd {
   my $opts = _ev_opts($_[0]);
   my $doc = _ev_doc($_[1]);
@@ -5694,6 +5725,7 @@ sub unregister_func {
 
 sub node_type {
   my ($node)=@_;
+  return undef unless $node;
   if ($_xml_module->is_element($node)) {
     return 'element';
   } elsif ($_xml_module->is_attribute($node)) {
