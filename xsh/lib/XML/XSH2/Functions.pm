@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.37 2006-09-30 12:47:49 pajas Exp $
+# $Id: Functions.pm,v 2.38 2006-10-06 17:45:44 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -39,7 +39,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.5';
-  $REVISION=q($Revision: 2.37 $);
+  $REVISION=q($Revision: 2.38 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		 $QUERY_ENCODING
@@ -1407,6 +1407,7 @@ sub _ev_string {
 
 sub xsh_parse_string {
   my $format=$_[1] || $DEFAULT_FORMAT;
+  local $VALIDATION=0;
   if ($format eq 'xml') {
     my $xmldecl;
     $xmldecl="<?xml version='1.0' encoding='utf-8'?>" unless $_[0]=~/^\s*\<\?xml /;
@@ -2880,6 +2881,7 @@ sub c14n {
 # print canonical xpaths identifying nodes matching given XPath
 sub locate {
   my ($opts,$exp)=@_;
+  $opts = _ev_opts($opts);
   my $ql= _ev_nodelist($exp);
   foreach (@$ql) {
     out(pwd($_,$opts->{id}),"\n");
@@ -2891,6 +2893,7 @@ sub locate {
 # print line numbers of matching nodes
 sub print_lineno {
   my ($opts,$exp)=@_;
+  $opts = _ev_opts($opts);
   my $ql=_ev_nodelist($exp);
   foreach (@$ql) {
     out($_->line_number,"\n");
