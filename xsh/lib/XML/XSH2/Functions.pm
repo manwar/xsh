@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.38 2006-10-06 17:45:44 pajas Exp $
+# $Id: Functions.pm,v 2.39 2006-10-19 18:20:42 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -39,7 +39,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.5';
-  $REVISION=q($Revision: 2.38 $);
+  $REVISION=q($Revision: 2.39 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		 $QUERY_ENCODING
@@ -138,9 +138,9 @@ sub VERSION {
   if (defined($ver)) {
     my @V = split /\./,$VERSION;
     my @v = split /\./,$ver;
-    for $_ (@v) {
+    for my $component (@v) {
       croak __PACKAGE__." version $ver required--this is only version $VERSION"
-	if $_> shift @V;
+	if $component > shift @V;
     }
   }
   return $VERSION;
@@ -251,7 +251,7 @@ sub xsh_init {
   }
   set_encoding({},$ENCODING);
   $_xml_module=$module if $module;
-  eval "require $_xml_module;";
+  eval("require $_xml_module;");
   if ($@) {
     _err(
       "\n------------------------------------------------------------\n",
@@ -2040,7 +2040,7 @@ sub command_assign {
 
 sub make_local {
   foreach (@_) {
-    xpath_assign('local',undef,$_);
+    xpath_assign(undef,'=','local',$_);
   }
 }
 
