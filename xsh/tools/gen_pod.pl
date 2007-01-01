@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_pod.pl,v 2.1 2004-12-02 19:26:41 pajas Exp $
+# $Id: gen_pod.pl,v 2.2 2007-01-01 15:43:59 pajas Exp $
 
 use strict;
 use vars qw(%enc);
@@ -210,23 +210,25 @@ sub get_text {
 
 sub max { ($_[0] > $_[1]) ? $_[0] : $_[1] }
 
-sub  print_description {
-  my ($desc,$indent,$bigindent)=@_;
+sub print_description {
+  my ($desc)=@_;
   foreach my $c ($desc->childNodes()) {
     if ($c->nodeType == XML::LibXML::XML_ELEMENT_NODE) {
-      if ($c->nodeName eq 'para') {
+      my $name = $c->nodeName;
+      if ($name eq 'title') {
+	# handled per-case
+      } elsif ($name eq 'para') {
 	my $t=get_text($c);
 	$t=~s/\s+/ /g;
 	print $t,"\n\n";
-	$indent=$bigindent;
-      } elsif ($c->nodeName eq 'section') {
+      } elsif ($name eq 'section') {
 	my ($title)=$c->findnodes('./title');
 	if ($title) {
 	  my $t=get_text($title);
 	  print "\n\n=head2 $t\n\n";
 	}
-	print_description($c,$indent,$bigindent);
-      } elsif ($c->nodeName eq 'example') {
+	print_description($c);
+      } elsif ($name eq 'example') {
 	foreach (map { get_text($_) } $c->findnodes('./title')) {
 	  s/\s+/ /g;
 	  print "Example: $_\n";
@@ -234,14 +236,25 @@ sub  print_description {
 	unless ($c->findnodes('./title')) {
 	  print "Example:\n";
 	}
-	print "\n";
-	foreach (map { get_text($_,1,1) } $c->findnodes('./code')) {
+	print_description($c);
+      } elsif ($name eq 'code') {
+      	print "\n";
+	for (get_text($c,1,1)) {
  	  s/\n[ ]*/\n  /mg;
  	  s/\\\n/\\\n    /g;
  	  s/\t/  /g;
 	  print "  $_\n";
 	}
 	print "\n";
+      } elsif ($name eq 'enumerate') {
+      	print "\n\n=over 4\n\n";
+	foreach my $item ($c->findnodes('./listitem')) {
+	  print "\n\n=item\n\n";
+	  print_description($item);
+	}
+	print "\n\n=back\n\n";
+      } else {
+	warn $0." no rule for tag ".$name."\n";
       }
     }
   }

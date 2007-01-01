@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 2.5 2006-09-18 17:10:50 pajas Exp $
+# $Id: Makefile.PL,v 2.6 2007-01-01 15:43:59 pajas Exp $
 
 use strict;
 
@@ -22,7 +22,13 @@ WriteMakefile(
 		   },
      AUTHOR       => 'Petr Pajas (pajas@matfyz.cz)',
      ABSTRACT     => 'XML Editing Shell',
-     MAN3PODS     => { 'XSH2.pod' => 'blib/man3/XSH2.3' },
+     MAN3PODS     => {
+		      'XSH2.pod' => 'blib/man3/XSH2.3',
+		       'lib/XML/XSH2.pm' => 'blib/XML::XSH2.3',
+                       'lib/XML/XSH2/XPathToXML.pm' => 'blib/XML::XSH2::XPathToXML.3',
+                       'lib/XML/XSH2/Inline.pm' => 'blib/XML::XSH2::Inline.3',
+                       'lib/XML/XSH2/Compile.pm' => 'blib/XML::XSH2::Compile.3'
+		     },
     'dist' => {
          COMPRESS  => 'gzip',
          SUFFIX    => 'gz',

@@ -1,17 +1,14 @@
 #!/usr/bin/env perl
 # -*- cperl -*-
 
-# $Id: xsh,v 2.6 2006-09-30 12:47:49 pajas Exp $
-
-use FindBin;
-use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib",
-         "$FindBin::Bin","$FindBin::Bin/../lib",
-	 "$FindBin::Bin/lib", "$FindBin::RealBin/lib"
-	);
+# $Id: xsh,v 2.7 2007-01-01 15:43:59 pajas Exp $
 
 package main;
-
 use strict;
+
+use FindBin;
+use lib ("$FindBin::RealBin", "$FindBin::RealBin/../lib", "$FindBin::Bin","$FindBin::Bin/../lib", "$FindBin::Bin/lib", "$FindBin::RealBin/lib" );
+
 
 #use Getopt::Std;
 use Getopt::Long;
@@ -62,7 +59,7 @@ BEGIN {
 			) or $usage=1;
 #  getopts('atscqvwdfhVinTE:e:l:pP');
   $VERSION='0.12';
-   $REVISION=q($Revision: 2.6 $);
+   $REVISION=q($Revision: 2.7 $);
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -146,7 +143,7 @@ set_debug($opt_d);
 $XML::XSH2::Functions::DUMP = $opt_D;
 set_compile_only_mode($opt_c);
 
-my $doc=XML::XSH2::Functions::create_doc('$scratch',"scratch",'xml');
+my $doc=XML::XSH2::Functions::create_doc('$scratch',"scratch",'xml','scratch.xml');
 XML::XSH2::Functions::set_local_xpath('/');
 
 # recode arguments using query encoding
@@ -345,7 +342,7 @@ sub get_line {
       return $retonint;
     } else {
       print STDERR $@,"\n";
-      return undef;
+      return;
     }
   }
   return $line;

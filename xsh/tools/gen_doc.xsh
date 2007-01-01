@@ -151,18 +151,24 @@ foreach $d/descendant::typeref {
 
 foreach $d//xref {
   rename 'link' .;
-  insert text xsh:if(xsh:id2($x,@linkend)/@name,
-		     xsh:id2($x,@linkend)/@name,
-		     xsh:id2($x,@linkend)/@id) into .;
+  my $target = xsh:id2($x,@linkend);
+  if ($target/@name or $target/@id) {
+    insert text xsh:if($target/@name,
+		       $target/@name,
+		       $target/@id) into .;
+  } else {
+    if ($target) {
+      die "Cannot find target ${(@linkend)}";
+    } else {
+      die "Cannot create label for  target ${(serialize($target))}";
+    }
+  }
 };
 
 foreach $d//variablelist {
-  my $termlength=1;
-  foreach varlistentry/term {
-    my $length=0;
-    map { $length+=length($_); undef } descendant::text();
-    perl { $termlength = $termlength < $length ? $length : $termlength };
-  }
+  my $termlength= xsh:max(
+    xsh:map(varlistentry/term,'string-length(normalize-space(.))')
+  );
   copy xsh:new-attribute('termlength',$termlength) into .;
 }
 

@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.39 2006-10-19 18:20:42 pajas Exp $
+# $Id: Functions.pm,v 2.40 2007-01-01 15:43:59 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -11,6 +11,7 @@ no warnings;
 use XML::XSH2::Help;
 use XML::XSH2::Iterators;
 use IO::File;
+use File::Spec;
 use Scalar::Util;
 use File::Temp qw(tempfile tempdir);
 use Carp;
@@ -39,7 +40,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.0.5';
-  $REVISION=q($Revision: 2.39 $);
+  $REVISION=q($Revision: 2.40 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		 $QUERY_ENCODING
@@ -175,13 +176,15 @@ sub __bug {
 
 sub _tilde_expand {
   my ($filename)=@_;
-  $filename =~ s{ ^ ~ ( [^/]* ) }
-    { $1
-	? (getpwnam($1))[7]
-	  : ( $ENV{HOME} || $ENV{LOGDIR}
-		|| (getpwuid($>))[7]
-	       )
-	}ex;
+  $filename=~s{^(\~[^\/]*)}{(glob($1))[0]}eg;
+
+#   $filename =~ s{ ^ ~ ( [^/]* ) }
+#     { $1
+# 	? (getpwnam($1))[7]
+# 	  : ( $ENV{HOME} || $ENV{LOGDIR}
+# 		|| (getpwuid($>))[7]
+# 	       )
+# 	}ex;
   return $filename;
 }
 
@@ -278,7 +281,7 @@ sub xsh_init {
 #  xsh_rd_parser_init();
 
   # create a first document so that we always have non-empty context
-  create_doc('$scratch',"scratch",'xml');
+  create_doc('$scratch',"scratch",'xml','scratch.xml');
   set_local_xpath({},'/');
 }
 
@@ -405,7 +408,7 @@ sub get_XPATH_extensions {
   lineno evaluate map matches match max min new-attribute
   new-cdata new-chunk new-comment new-element new-element-ns new-pi
   new-text node-type parse path reverse same serialize split sprintf
-  strmax strmin subst substr sum times var )
+  strmax strmin subst substr sum times var document documents lookup)
 }
 
 sub XPATH_doc {
@@ -904,6 +907,75 @@ sub XPATH_lineno {
   return XML::LibXML::Number->new($res);
 }
 
+sub XPATH_document {
+  die "Wrong number of arguments for function xsh:document(string)!\n"
+    if (@_!=1);
+  my $URI = shift;
+  my $abs;
+  my @files = _files(); 
+  for my $f (@files) {
+    return XML::LibXML::NodeList->new($f->[0])
+      if ($f->[0]->URI eq $URI);
+  }
+  unless (_is_absolute($URI)) {
+    $URI = File::Spec->rel2abs(_tilde_expand($URI));
+    for my $f (@files) {
+      return XML::LibXML::NodeList->new($f->[0])
+	if ($f->[0]->URI eq $URI);
+    }
+  }
+  my $is_URL = _is_url($URI);
+  for my $f (@files) {
+    my $f_URI = $f->[0]->URI;
+    return XML::LibXML::NodeList->new($f->[0])
+      if (_is_url($f_URI) and !$is_URL and $f_URI eq 'file://'.$URI
+	    or
+	  !_is_url($f_URI) and $is_URL and $URI eq 'file://'.$f_URI);
+  }
+
+  return XML::LibXML::NodeList->new();
+}
+
+sub XPATH_documents {
+  die "Wrong number of arguments for function xsh:documents()!\n"
+    if (@_!=0);
+  my $res = XML::LibXML::NodeList->new();
+  for my $f (_files()) {
+    $res->push($f->[0]);
+  }
+  return $res;
+}
+
+sub XPATH_lookup {
+  die "Wrong number of arguments for function xsh:lookup(string,string)!\n"
+    if (@_!=2);
+  my $name = shift;
+  my $key = shift;
+  my $res;
+  $name=~s/^\$//;
+  no strict 'refs';
+  my $lex = lex_var($name);
+  if ($lex) {
+    $res = $$lex
+  } elsif (defined(${"XML::XSH2::Map::$name"})) {
+    $res = ${"XML::XSH2::Map::$name"};
+  } else {
+    die "xsh:lookup(): variable '\$$name' not defined\n";
+  }
+  
+  if (ref($res) eq 'HASH') {
+    my $val = $res->{to_literal($key)};
+    if (defined($val)) {
+      return $val;
+    } else {
+      return XML::LibXML::NodeList->new();
+    }
+  } else {
+    return XML::LibXML::NodeList->new();
+  }
+}
+
+
 
 # ===================== END OF XPATH EXT FUNC ================
 
@@ -1243,7 +1315,8 @@ sub _ev {
     if ($1 eq "{") {
       return perl_eval($',$map,$in_place);
     } elsif ($1 eq "(") {
-      my $ret = $_xpc->find(_expand($'));
+      my $ret = eval { $_xpc->find(_expand($')); };
+      _check_err($@,1,1);
       if (ref($ret) and UNIVERSAL::isa($ret,'XML::LibXML::Literal')) {
 	return $ret->value;
       } else {
@@ -1261,7 +1334,8 @@ sub _ev {
   } elsif ($exp eq "") {
     return "";
   } else {
-    my $ret = $_xpc->find(_expand($exp));
+    my $ret = eval { $_xpc->find(_expand($exp)); };
+    _check_err($@,1,1);
     if (ref($ret) and UNIVERSAL::isa($ret,'XML::LibXML::Literal')) {
       return $ret->value;
     } else {
@@ -1301,7 +1375,8 @@ sub _ev_list {
   } else {
     $exp = _expand($exp);
   }
-  my $val = $_xpc->find($exp);
+  my $val = eval { $_xpc->find($exp); };
+  _check_err($@,1,1);
   if (UNIVERSAL::isa($val,"XML::LibXML::NodeList")) {
     return @$val;
   } elsif (UNIVERSAL::isa($val,"XML::LibXML::Node")) {
@@ -1445,25 +1520,42 @@ sub print_version {
 }
 
 # print a list of all open files
-sub files {
-  my $opts = shift;
+sub _files {
 #  out(map { "$_ = $_files{$_}\n" } sort keys %_files);
-
+  my @ret;
   no strict 'refs';
+  my %seen;
   foreach my $var (keys %{"XML::XSH2::Map::"}) {
     my $value = ${"XML::XSH2::Map::".$var};
     if (ref($value)) {
       $value = $value->[0] if (UNIVERSAL::isa($value,'XML::LibXML::NodeList')
 			       and $value->size()==1);
-      if (UNIVERSAL::isa($value,'XML::LibXML::Document')) {
-	out("\$".$var . " := open '".$value->URI()."'\n");
+      if (UNIVERSAL::isa($value,'XML::LibXML::Node') and
+	  $_xml_module->is_document($value) and !exists($seen{$$value})) {
+	push @ret, [$value, $var];
+	$seen{$$value}=undef;
       }
     }
   }
-
-
-  return 1;
+  my $cur_doc = $_xml_module->owner_document(xsh_context_node());
+  if (!exists($seen{$$cur_doc})) {
+    push @ret, [$cur_doc, undef];
+  }
+  return @ret;
 }
+
+
+sub files {
+  my $opts = shift;
+  for my $f (_files) {
+    out((defined($f->[1]) ? "\$".$f->[1] . " := " : ()),
+	'open ',
+	($_xml_module->document_type($f->[0]) eq 'html' ?
+	   '--format html ' : ()),
+	"'".$f->[0]->URI()."';\n");
+  }
+}
+
 
 sub close_undef_value {
   my ($doc,$value)=@_;
@@ -1696,9 +1788,12 @@ sub _warn {
 sub _check_err {
   my ($err,$survive_int,$remove_at)=@_;
   if ($err) {
+    # cleanup the error message
+    $err =~ s/^XPathContext: error coming back from perl-dispatcher in pm file\.\s*//;
     if ($remove_at and !ref($err)) {
       $err=~s/ at (?:.|\n)*$//;
     }
+
     if ($err=~/^SIGINT/) {
       if ($survive_int) {
 	$err=~s/ at (?:.|\n)*$//;
@@ -2134,31 +2229,6 @@ sub restore_variables {
   return 1;
 }
 
-sub _xpc_find_nodes {
-  my ($query,$node,$pos,$size)=@_;
-  my $proximity_support = $_xpc->can('setContextSize');
-  my ($oldsize,$oldpos);
-  my $restore=0;
-  if ($proximity_support and (defined($size) or
-			      defined($pos))) {
-    $restore=1;
-    $oldsize=$_xpc->getContextSize();
-    $oldpos=$_xpc->getContextPosition();
-    $_xpc->setContextSize($size) if defined($size);
-    $_xpc->setContextPosition($pos) if defined($pos);
-  }
-  my @res = $_xpc->findnodes($query,$node);
-  if ($restore) {
-    $_xpc->setContextSize($oldsize);
-    $_xpc->setContextPosition($oldpos);
-  }
-  if (wantarray) {
-    return @res;
-  } else {
-    return XML::LibXML::NodeList->new(@res);
-  }
-}
-
 sub _prepare_result_nl {
 #   my ($opts)=@_;
 #   return undef unless ref($opts);
@@ -2191,11 +2261,6 @@ sub _prepare_result_nl {
   }
 }
 
-# findnodes wrapper which handles both xpaths and nodelist variables
-sub _find_nodes {
-  my ($context,$q)=@_;
-  return scalar(_xpc_find_nodes($q,$context));
-}
 
 sub count_xpath {
   my ($exp)=@_;
@@ -2224,13 +2289,13 @@ sub new_doc {
 
 # create new document
 sub create_doc {
-  my ($id, $root_element, $format)=@_;
+  my ($id, $root_element, $format, $filename)=@_;
   # TODO: $format argument is not used by the grammar
   my $doc;
   $root_element="<$root_element/>" unless ($root_element=~/^\s*</);
   $root_element=~s/^\s+//;
   $doc=xsh_parse_string($root_element,$format);
-  set_doc($id,$doc) if defined($id);
+  set_doc($id,$doc,$filename) if defined($id);
   $_newdoc++;
 
   _set_context([$doc]) if $SWITCH_TO_NEW_DOCUMENTS;
@@ -2295,12 +2360,19 @@ sub index_doc {
   return $result;
 }
 
+sub _is_url {
+  return ($_[0] =~ m(^\s*[[:alnum:]]+://)) ? 1 : 0;
+}
+sub _is_absolute {
+  my ($path) = @_;
+  return (_is_url($path) or File::Spec->file_name_is_absolute($path));
+}
+
 # create a new document by parsing a file
 sub open_doc {
   my ($opts,$file)=@_;
   $opts = _ev_opts($opts);
 
-  $opts->{file} = _tilde_expand($opts->{file}) if exists($opts->{file});
   if (exists($opts->{file})+exists($opts->{pipe})+
       exists($opts->{string})>1) {
     die "'save' may have only one output flag: --file | ".
@@ -2337,7 +2409,11 @@ sub open_doc {
 
   my ($source) = grep exists($opts->{$_}),qw(file pipe string);
   my $file = _tilde_expand(_ev_string($file));
-  $file=~s{^(\~[^\/]*)}{(glob($1))[0]}eg;
+#  $file=~s{^(\~[^\/]*)}{(glob($1))[0]}eg;
+  unless (_is_absolute($file)) {
+    $file = File::Spec->rel2abs($file);
+  }
+
   print STDERR "open [$file]\n" if "$DEBUG";
   if ($file eq "") {
     die "filename is empty (hint: \$variable := open file-name)\n";
@@ -3058,6 +3134,37 @@ sub perlmap {
   return 1;
 }
 
+sub hash {
+  my ($opts, $mapexp, $exp)=@_;
+  $opts = _ev_opts($opts);
+  my $ql=_ev_nodelist($exp);
+  my $old_context = _save_context();
+  my $pos=1;
+  my $size = @$ql;
+  my $hash = {};
+  eval {
+    foreach my $node (@$ql) {
+      _set_context([$node,$size,$pos++]);
+      my $key = _ev($mapexp, $node);
+      if (exists($hash->{$key})) {
+	$hash->{$key}->push($node);
+      } else {
+	$hash->{$key} = XML::LibXML::NodeList->new($node);
+      }
+    }
+  };
+  my $err = $@;
+  {
+    local $SIG{INT}=\&flagsigint;
+    _set_context($old_context);
+    propagate_flagsigint();
+  }
+  die $err if $err; # propagate
+
+  return $hash;
+}
+
+
 # 
 sub _ev_namespace {
   my ($val)=@_;
@@ -3688,10 +3795,10 @@ sub create_attributes {
 	push @ret,[$name,$value];
 	last;
       } else {
-	die "Invalid attribute specification near '".substr($str,pos($str))."'";
+	die "Invalid attribute specification near '".substr($str,pos($str))."'\n";
       }
     } elsif ($str =~ /\G(.*)/gsco) {
-      die "Invalid attribute specification near '$1'"
+      die "Invalid attribute specification near '$1'\n"
     } else {
       last;
     }
@@ -4727,6 +4834,9 @@ sub perl_eval {
     die $@ if $@;
     return @result;
   } elsif (defined $map) {
+    if (ref($map)) {
+      $map = to_literal($map);
+    }
     if ($in_place) {
       local $_ = $map;
       eval(lexicalize($exp));

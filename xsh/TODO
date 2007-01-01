@@ -27,6 +27,19 @@ TODO XSH2:
 	is intended for adding a new element together with a
 	xmlns declaration of its prefix and the given namespace.
 
+INFO COMMANDS AS XML:
+
+xsh$ ls &{doc-info --xml}
+<doc-info>
+  <version>1.0</version>
+  <encoding>utf-8</encoding>
+  <standalone>-1</standalone>
+  <compression>-1</compression>
+  <URI>sample/sample5.a.gz</URI>
+</doc-info>
+
+and the same for more info commands
+
 USER-LEVEL IMPLEMENTABLE
 
 - reload document

@@ -51,11 +51,11 @@
 	<link linkend="Navigation">navigated</link> and <link
 	  linkend="Manipulation">manipulated</link> with &XSH; commands and XPath
 	language, whose names and syntax make working with
-	the DOM tree a flavour of working in a UNIX filesystem.
+	the DOM tree a flavor of working in a UNIX filesystem.
       </para>
       <para>
 	A parsed document is usually stored in a variable. 
-	&XSH; shares varibles
+	&XSH; shares variables
 	with the XPath engine, so if e.g. <literal>$doc</literal> is a &XSH;
 	variable holding a document (or, more generally any node-set), then
 	<literal>$doc//section/title</literal> is an
@@ -86,8 +86,8 @@
       <para>
 	With &XSH;, it is possible to browse a <link
 	linkend="Documents">document tree</link> 
-	(XML data represented as a DOM-tree) as if it was a local f
-	ilesystem, except that <link
+	(XML data represented as a DOM-tree) as if it was a local
+        filesystem, except that <link
 	linkend="xpath">XPath</link> 
 	expressions are used instead of ordinary directory paths.
       </para> 
@@ -199,7 +199,7 @@
 	are many combinations here, so try yourself and see the
 	results.
       </para>
-      <para>You may even use some more sofisticated way to convert
+      <para>You may even use some more sophisticated way to convert
 	between node types, as shown in the following example, where
 	an element is first commented out and than again uncommented.
 	Note, that the particular approach used for resurrecting the
@@ -369,7 +369,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
     <section id="Argtypes">
       <title>Argument Types</title>
       <para>
-	&XSH; commands accept argumtens of various types,
+	&XSH; commands accept arguments of various types,
 	usually expressed as Perl or XPath
 	<xref linkend="exp"/>s. Unlike in most languages,
 	individual &XSH; commands may evaluate the same expression differently, 
@@ -497,7 +497,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	</code>
       </example>
       <para>
-	&XSH; variables are either globaly or lexically scoped.
+	&XSH; variables are either globally or lexically scoped.
 	Global variables need not to be declared (they can be directly
 	assigned to), whereas lexical variables must be declared
 	using the command <xref linkend="my_command"/>. Global variable
@@ -533,7 +533,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	scope with the same).
       </para>
       <para>Localizing a variable using the <literal>local</literal>
-	keyword makes all assignments to it ocurring in the enclosing block
+	keyword makes all assignments to it occurring in the enclosing block
 	temporary. The variable itself remains global, only its
 	original value is restored at the end of the block that localized it.
       </para>
@@ -627,7 +627,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
       working as a flip-flop have their own explicit counterparts
       (e.g.  <xref linkend="verbose"/> and <xref linkend="quiet"/> or
       <xref linkend="debug"/> and <xref linkend="nodebug"/>).  This
-      misconsistency is due to historical reasons.
+      inconsistency is due to historical reasons.
       </para>
       <para>
 	The <xref linkend="encoding"/> and <xref linkend="query_encoding"/>
@@ -655,8 +655,8 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	Perl is a language optimized for scanning arbitrary text
 	files, extracting information from those text files, and
 	printing reports based on that information. It has built-in
-	regular expressions and powerfull yet easy to learn 
-	data structures (salars, arrays, hash tables). It's also a
+	regular expressions and powerful yet easy to learn 
+	data structures (scalars, arrays, hash tables). It's also a
 	good language for many system management tasks.
 	&XSH; itself is written in Perl (except for the XML engine,
 	which uses libxml2 library written in C by Daniel Veillard).
@@ -671,7 +671,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	  which simply evaluates the given Perl block.
 	  Other commands, such as <xref linkend="map_command"/>,
 	  even require Perl expression argument and allow
-	  quicky change DOM node content.
+	  quickly change DOM node content.
 	  Perl expressions may also provide lists of strings to iterate over
 	  with a <xref linkend="foreach"/> loop, or serve as
 	  conditions for <xref linkend="if"/>, <xref linkend="unless"/>, and 
@@ -679,7 +679,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	</para>
 	<para>
 	  To prevent conflict between &XSH; internals and the evaluated
-	  Oerl code, &XSH; runs such code in the context of a special
+	  Perl code, &XSH; runs such code in the context of a special
 	  namespace <literal>XML::XSH2::Map</literal>. As described in
 	  the section <xref linkend="Variables"/>, &XSH; string
 	  variables may be accessed and possibly assigned from Perl
@@ -747,7 +747,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	</para>
 	<para>
 	  <literal>nodelist(string|object,...)</literal> - 
-	  coverts it's arguments to objects if necessary
+	  converts its arguments to objects if necessary
 	  and returns a node-list consisting of the objects.
 	</para>
 	<para>
@@ -1699,12 +1699,12 @@ sub new {
 	  </para>
 	  <code>/foo/bar[ @baz = "bar" ]</code> 
 	  <para>
-	    avoiding any white-space outside the squere brackets,
+	    avoiding any white-space outside the square brackets,
 	    or completely enclosed in brackets as in
 	  </para>
 	  <code>( / foo / bar [ @baz = "bar" ] ).</code>
 	  <para>
-	    &XSH; provides a number of powerfull XPath extension
+	    &XSH; provides a number of powerful XPath extension
 	    functions, listed below and described in separate
 	    sections, see <typeref types="function"/>. XPath extension
 	    functions by default belong to &XSH; namespace
@@ -1964,7 +1964,7 @@ sub new {
 		expression must be written as <literal>/foo/bar</literal> or
 		<literal>(/ foo / bar)</literal> or
 		<literal>(/foo/bar)</literal> etc.
-		The reason for this resttriction is simple: 
+		The reason for this restriction is simple: 
                 &XSH;, like most shell
 		languages, uses whitespace as argument delimiter so it must
 		be able to determine expression boundaries
@@ -2071,7 +2071,7 @@ sub new {
 	    Interpolators of the form
 	    <literal>${{</literal> and <literal>}}</literal>
 	    evaluate their contents
-	    as a Perl expresson (in very much the same way as the
+	    as a Perl expression (in very much the same way as the
 	    <xref linkend="perl_command"/> command) and interpolate
 	    to the resulting value.
 	  </para>
@@ -2874,7 +2874,7 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    subroutine called subsequently from the same block.
 	    Unlike <xref linkend="my_command"/>
 	    declaration, it does not <emphasis>create</emphasis> a
-	    new lexicaly scoped variable.
+	    new lexically scoped variable.
 	  </para>
 	  <para>
 	    Hint for Perl programmers: <literal>local</literal>
@@ -3066,7 +3066,7 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    above).</para>
 	  <para>
 	    If <literal>--compile</literal> or <literal>:c</literal>
-	    is used, compile a given XSLT stylesshet and return a
+	    is used, compile a given XSLT stylesheet and return a
 	    compiled XSLT stylesheet object. This object can be later
 	    passed as a XSLT stylesheet to <literal>xslt
 	    --precompiled</literal>.
@@ -3119,7 +3119,7 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
       </aliases>
       <command maxargs="0" func="files"/>
       <documentation sections="Information Documents">
-	<usage>files</usage>
+	<usage>documents</usage>
 	<shortdesc>display a list of open documents</shortdesc>
 	<description>
 	  <para>Try to identify open documents and list their URIs
@@ -3235,10 +3235,10 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  </para>
 	  <para>Note that &XSH; refuses to create multiple top-level
 	    elements using <literal>copy</literal>, 
-	    <xref linkend="move_command"/> and smilar commands.</para>
+	    <xref linkend="move_command"/> and similar commands.</para>
 	  <example>
 	    <title>Replace living-thing elements in the document b with copies
-	      of the coresponding creature elements from the document $a.</title>
+	      of the corresponding creature elements from the document $a.</title>
 	    <code>xsh&gt; <userinput>copy $a//creature replace $b//living-thing</userinput></code>             
 	  </example>
 	  <example>
@@ -3334,7 +3334,7 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	<alias name="add"/>
       </aliases>
       <command minargs="4" maxargs="4" func="insert" extraargs="0">
-	  <param name="namespace" short="n" type="exp" argument="exp"/>
+	<param name="namespace" short="n" type="exp" argument="exp"/>
       </command>
       <documentation sections="Manipulation">
 	<usage>insert [--namespace|:n <xref linkend="exp"/>] <xref linkend="nodetype"/> <xref linkend="exp"/> <xref linkend="loc"/> <xref linkend="xpath"/>
@@ -3653,7 +3653,7 @@ xsh $foo/&gt; ls /;
 	    <emphasis>must have a prefix</emphasis>.
 	  </para>
 	  <para>
-	    The command returns a node-list consiting of nodes it created.
+	    The command returns a node-list consisting of nodes it created.
 	  </para>
 	  <para>
 	    Note, that instead of <literal>xinsert</literal>, you can alternatively use 
@@ -4578,7 +4578,7 @@ $scratch/> ls /
 	    <code>map { ucfirst($_) } //hobbit/@name;</code>	  
 	  </example>
 	  <example>
-	    <title>Changes goblins to orcs in all hobbit tales (\b matches word boundary).</title>
+	    <title>Changes Goblins to Orcs in all hobbit tales (\b matches word boundary).</title>
 	    <code>map :i { s/\bgoblin\b/orc/gi } //hobbit/tale/text();</code>
 	  </example>
 	  <example>
@@ -4655,7 +4655,7 @@ $scratch/> ls /
 	    node's original name and namespace are preserved.
 	  </para>
 	  <example>
-	    <title>Renames all hobbits to halflings</title>
+	    <title>Renames all Hobbits to Halflings</title>
 	    <code>xsh&gt; <userinput>rename halfling //hobbit</userinput></code>
 	  </example>
 	  <example>
@@ -4673,6 +4673,43 @@ $scratch/> ls /
 	</description>
 	<see-also>
 	  <ruleref ref="map_command" arguments="" />
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="hash_command" type="command" name="hash" inline="yes">
+      <command minargs="2" maxargs="2" func="hash"/>
+      <documentation sections="Perl_shell Manipulation">
+	<usage>$hash := hash <xref linkend="exp"/> <xref linkend="exp"/></usage>
+	<shortdesc>index selected nodes by some key value</shortdesc>
+	<description>
+	  <para>
+	    This command takes two arguments: an expression computing
+	    a key from a given node (1st argument) and a node-set (2nd
+	    argument). For each node in the node-set, the key value is
+	    computed and the node is stored under the given key in
+	    the resulting hash. For a given key, the value stored
+	    in the hash table is a node-list consisting of all nodes
+	    for which the 1st expression evaluated to an object
+	    string-wise equal to the key. It is therefore possible to
+	    index more than one node under the same key.
+	  </para>
+	  <para>
+	    The XPath function
+	    <literal>xsh:lookup(varname,key)</literal> can
+            be used to retrieve values from hashes in XPath expressions.
+	  </para>
+	  <example>
+	    <title>Index books by author</title>
+	    <code>my $books_by_author := hash concat(author/firstname," ",author/surname) //book;</code>
+	  </example>
+	  <example>
+	    <title>Lookup books by Jack London.</title>
+	    <code>ls { $books_by_author->{'Jack London'} };
+ls xsh:lookup('books_by_author','Jack London');</code>
+	  </example>
+	</description>
+	<see-also>
+	  <ruleref ref="lookup_function"/>
 	</see-also>
       </documentation>
     </rule>
@@ -5007,8 +5044,8 @@ $scratch/> ls /
 	    evaluating to one of these. If not specified,
 	    XML output is assumed.
 	    Note, that a document should be saved as HTML only if it
-	    actually is a HTML document, the result would be 
-	    an unparsable instance. Note also, that the optional
+	    actually is a HTML document, otherwise the result would be 
+	    an invalid XML instance. Note also, that the optional
 	    encoding parameter only forces character conversion; it is
 	    up to the user to declare the document encoding in the
 	    appropriate HTML &lt;META&gt; tag, if needed.
@@ -5257,8 +5294,8 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	  validation. Only XML RelaxNG grammars are supported.</para>
 	  <para><literal>--schema</literal> or <literal>:S</literal> forces W3C XML Schema 
 	    validation (XSD). Support for schema validation may still
-	    be inclomplete (see <ulink
-	      url="http://xmlsoft.org">libxml2 homepage</ulink>
+	    be incomplete (see <ulink
+	      url="http://xmlsoft.org">libxml2 home page</ulink>
 	    for more details).</para>
 	  <para>
 	    A DTD subset can be specified by its PUBLIC identifier (with
@@ -5279,7 +5316,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	  <example>
 	    <code>$mydoc := open "test.xml"</code>
 	    <code># in all examples below, mydoc can be ommited</code>
-	    <code>validate --yesno $mydoc; # validate against the documet's DOCTYPE</code>
+	    <code>validate --yesno $mydoc; # validate against the document's DOCTYPE</code>
 	    <code>validate --public "-//OASIS//DTD DocBook XML V4.1.2//EN" $mydoc</code>
 	    <code>validate --file "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" $mydoc</code>
 	  </example>
@@ -5379,7 +5416,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	  </para>
 	  <para>
 	    If flag <literal>--id</literal> (<literal>:i</literal>) is
-	    used then ID-based shortuct is allowed in the resulting
+	    used then ID-based shortcut is allowed in the resulting
 	    location path. That means that if the current node or some of its
 	    ancestors has an ID attribute (either
 	    <literal>xml:id</literal> or one specified in a DTD) then
@@ -5433,7 +5470,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	    be a language for updating XML documents.
 	  </para>
 	  <para>
-	    XUpdate langauge is described in XUpdate Working Draft at
+	    XUpdate language is described in XUpdate Working Draft at
             <ulink url="http://xmldb-org.sourceforge.net/xupdate/xupdate-wd.html">http://xmldb-org.sourceforge.net/xupdate/xupdate-wd.html</ulink>.	    	    
 	  </para>
 	  <para>XUpdate output can be generated for example by
@@ -5734,7 +5771,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	<description>
 	  <para>
 	    If the <xref linkend="exp"/> is non-zero, the parser is
-	    allowed to expand XIinclude tags imidiatly while parsing the
+	    allowed to expand XInclude tags immediately while parsing the
 	    document.
 	  </para>
 	  <para>This command is equivalent to setting the
@@ -6103,7 +6140,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	  <para>
 	    Make use of a given XML file as a catalog during all parsing
 	    processes. Using a catalog may significantly speed up
-	    parsing processes if many external ressources are loaded
+	    parsing processes if many external resources are loaded
 	    into the parsed documents (such as DTDs or XIncludes).
 	  </para>
 	</description>
@@ -6317,7 +6354,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	<shortdesc>undefine extension function (EXPERIMENTAL)</shortdesc>
 	<description>
 	  <para>
-	    EXPERIMENTAL!  Unregiseter XPath extension function of a
+	    EXPERIMENTAL!  Unregister XPath extension function of a
 	    given name previously registered using <xref linkend="registerfunc_command"/>.
 	  </para>
 	</description>
@@ -6369,7 +6406,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	    will be refered to as A and B below. The initial state of
 	    the parser is A.</para> <para>In the state A, only a
 	    limited vertical portion of the DOM tree is built. All XML
-	    data comming from the input stream other than start-tags
+	    data coming from the input stream other than start-tags
 	    are immediatelly copied to the output stream.  If a new
 	    start-tag of an element arrives, a new node is created in
 	    the tree. All siblings of the newly created node are
@@ -7401,11 +7438,11 @@ ls grep(//word,"^.*tion$");</code>
 	<usage>node-set xsh:split(string PATTERN, string STRING)</usage>
 	<description>
 	  <para>
-	    This function provides direct access to the very powerfull
+	    This function provides direct access to the very powerful
 	    Perl function <literal>split</literal>. It splits
 	    <literal>STRING</literal> to a list of
 	    fields. <literal>PATTERN</literal> is a regular expression
-	    specifing strings delimiting individual fields of
+	    specifying strings delimiting individual fields of
 	    <literal>STRING</literal>. If <literal>PATTERN</literal>
 	    is empty, <literal>STRING</literal> is split to individual
 	    characters. If the regular expression in
@@ -7450,6 +7487,59 @@ ls grep(//word,"^.*tion$");</code>
 	</description>
       </documentation>
     </rule>
+    <rule id="lookup_function" type="function" name="xsh:lookup" inline="no">
+      <documentation>
+	<usage>node-set xsh:lookup(string VARNAME, string KEY)</usage>
+	<description>
+	  <para>
+	    This function is similar to XSLT <literal>key()</literal>
+	    function. It returns a node-set
+	    stored in a hash VARNAME under the key KEY.
+	    The VARNAME must be a name of a lexical or global
+	    XSH variable containing a Perl hash reference.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="hash_command"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="document_function" type="function" name="xsh:document" inline="no">
+      <documentation>
+	<usage>node-set xsh:document(string URL)</usage>
+	<description>
+	  <para>
+	    Looks up among the currently open document the one whose
+	    filename is same as the given URL and returns the
+	    corresponding document node.  If no document's filename
+	    matches exactly the given URL, then several heuristic
+	    matches are tried: if the URI is a relative filename, it
+	    is tilde-expanded and resolved (using the current working
+	    directory as a base) and the lookup is restarted with the
+	    absolute filename; finally, a lookup identifying filenames
+	    with URLs of the file:// protocol is attempted.  If the
+	    lookup fails completely, an empty node set is returned.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="hash_command"/>
+	</see-also>
+      </documentation>
+    </rule>
+    <rule id="documents_function" type="function" name="xsh:documents" inline="no">
+      <documentation>
+	<usage>node-set xsh:documents()</usage>
+	<description>
+	  <para>
+	    Returns a node-set consisting of the document
+	    nodes of all currently open documents.
+	  </para>
+	</description>
+	<see-also>
+	  <ruleref ref="hash_command"/>
+	</see-also>
+      </documentation>
+    </rule>
 
     <!-- CALL COMMAND SHOULD BE LAST ! -->
     <rule id="call_command" type="command" name="call" inline="no">
@@ -7459,7 +7549,7 @@ ls grep(//word,"^.*tion$");</code>
 	<shortdesc>indirect call to a user-defined routine (macro)</shortdesc>
 	<description>
 	  <para>
-	    Call a subroutine whose name is computed by evauluating
+	    Call a subroutine whose name is computed by evaluating
 	    the first argument <xref linkend="exp"/>. All other
 	    expressions are evaluated too and the results are passed
 	    to the subroutine as arguments.
