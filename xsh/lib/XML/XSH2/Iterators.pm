@@ -1,6 +1,8 @@
-# $Id: Iterators.pm,v 2.1 2004-12-02 19:26:37 pajas Exp $
+# $Id: Iterators.pm,v 2.2 2007-01-02 22:03:22 pajas Exp $
 
 package XML::XSH2::Iterators;
+
+  $VERSION='2.1.0'; # VERSION TEMPLATE
 
 #namespace ???
 #attribute ??

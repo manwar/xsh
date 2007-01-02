@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: LibXMLCompat.pm,v 2.3 2005-06-29 14:10:53 pajas Exp $
+# $Id: LibXMLCompat.pm,v 2.4 2007-01-02 22:03:22 pajas Exp $
 
 package XML::XSH2::LibXMLCompat;
 
@@ -7,6 +7,9 @@ use strict;
 use XML::LibXML;
 use XML::LibXML::Iterator;
 use XML::LibXML::NodeList;
+use vars qw($VERSION);
+
+  $VERSION='2.1.0'; # VERSION TEMPLATE
 
 sub module {
   return "XML::LibXML";

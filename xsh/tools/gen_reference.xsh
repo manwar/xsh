@@ -17,7 +17,7 @@ if { $db_stylesheet eq "" } {
 }
 if { $html_stylesheet eq "" } $html_stylesheet="style.css";
 
-#quiet;
+quiet;
 load-ext-dtd 1;
 parser-completes-attributes 1;
 parser_expands_xinclude 1;
@@ -42,7 +42,7 @@ def dbg $s {
 
 def transform_section $s {
   my $s_id = string($s/@id);
-  echo $s_id;
+  #  echo $s_id;
 
   map :i { s/^[ \t]+//; s/\n[ \t]+/\n/g; } $s//code/descendant::text();
 
@@ -85,11 +85,16 @@ def transform_section $s {
   }
   undef $H;
 
-  echo "saving doc/frames/s_${s_id}.xml";
+  my $i=0;
+  foreach ($s//simplesect[not(@id)] | $s//example[not(@id)]) {
+    add attribute { "id=gen-".sprintf("%03d",$i++) } into .;
+  }
+
+  #echo "saving doc/frames/s_${s_id}.xml";
   save --file "doc/frames/s_${s_id}.xml" $s;
-  echo "transforming to HTML";
+  #echo "transforming to HTML";
   $H := xslt --precompiled {$db_xslt} {$s} html.stylesheet='${html_stylesheet}';
-  echo "done.";
+  #echo "done.";
   #  $H := xslt $db_stylesheet $s html.stylesheet='${html_stylesheet}';
   xadd attribute "target=_self" into $H//*[name()='a'];
   # move content of <a name="">..</a> out, so that it does not behave
@@ -97,7 +102,7 @@ def transform_section $s {
   foreach $H//*[name()='a' and not(@href)] {
     xmove ./node() after .;
   }
-  echo "saving doc/frames/s_${s_id}.html";
+  #echo "saving doc/frames/s_${s_id}.html";
   save --format 'html' --file "doc/frames/s_${s_id}.html" $H;
   close $H;
 }

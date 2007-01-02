@@ -10,5 +10,3 @@ so we need a workaround. The problem here is compression.
 xsh2 as STDIN and encoding is applied (either via $ENCODING variable
 or the encoding command). Seems to be due to a (reported) bug in Perl.
 
-- rename doesn't work 100% for namespaced nodes - can't unset
-namespace (needs support in XML::LibXML)

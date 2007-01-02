@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # -*- cperl -*-
 
-# $Id: xsh,v 2.7 2007-01-01 15:43:59 pajas Exp $
+# $Id: xsh,v 2.8 2007-01-02 22:03:23 pajas Exp $
 
 package main;
 use strict;
@@ -16,8 +16,7 @@ use Pod::Usage;
 use vars qw($opt_q $opt_w $opt_i $help $opt_V $opt_E $opt_e $opt_d
             $opt_c $opt_s $opt_f $opt_g $opt_v $opt_t $opt_T $opt_a
             $opt_l $opt_n $opt_p $opt_P $usage $manpage $opt_HTML
-            $opt_XML $input $output $process $format $opt_C $opt_D);
-use vars qw($VERSION $REVISION);
+            $opt_XML $input $output $process $format $opt_C $opt_D $REVISION);
 
 use IO::Handle;
 
@@ -58,8 +57,7 @@ BEGIN {
 			 "man"        => \$manpage,
 			) or $usage=1;
 #  getopts('atscqvwdfhVinTE:e:l:pP');
-  $VERSION='0.12';
-   $REVISION=q($Revision: 2.7 $);
+  $REVISION=q($Revision: 2.8 $);
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -116,11 +114,12 @@ require Term::ReadLine if $opt_i;
 
 if ($opt_V) {
   my $rev=$REVISION;
-  $rev=~s/\s*\$//g;
+  $rev=~s/Revision:\s*|\s*\$//g;
   my $funcrev=$XML::XSH2::Functions::REVISION;
-  $funcrev=~s/\s*\$//g;
-  print "xsh $VERSION ($rev)\n";
-  print "XML::XSH2::Functions $XML::XSH2::Functions::VERSION ($funcrev)\n";
+  $funcrev=~s/Revision:\s*|\s*\$//g;
+  print "XSH2 $XML::XSH2::Functions::VERSION\n".
+    " - XML::XSH2::Functions revision $funcrev\n".
+    " - Interactive XSH Shell revision $rev\n";
   exit 1;
 }
 
@@ -196,7 +195,7 @@ if ($opt_i) {
   unless ($opt_q) {
     my $rev=$REVISION;
     $rev=~s/\s*\$//g;
-    $rev=" xsh - XML Editing Shell version $XML::XSH2::Functions::VERSION/$VERSION ($rev)\n";
+    $rev=" xsh - XML Editing Shell version $XML::XSH2::Functions::VERSION\n";
     print STDERR "-"x length($rev),"\n";
     print STDERR $rev;
     print STDERR "-"x length($rev),"\n\n";
@@ -366,7 +365,7 @@ sub get_line {
 # %A     the current time in 24-hour HH:MM format
 
 # %u     the username of the current user
-# %v     the version of XSH (e.g., 2.00)
+# %v     the version of XSH (e.g., 2.1.0)
 # %V     the revision number of XSH
 
 # %w    working directory (in the filesystem)
@@ -553,8 +552,9 @@ interpreter for batch processing of XML files.
 
 =head1 XSH COMMANDS
 
-Please see L<http://xsh.sourceforge.net/doc/frames/index.html> or
-L<XSH> for a complete XSH language reference.
+See L<XSH2 manual page|XSH2> or
+L<http://xsh.sourceforge.net/documentation.html> for a complete
+XSH language reference.
 
 For a quick help, type C<xsh help> (just C<help> on xsh prompt).
 
@@ -610,8 +610,8 @@ loading of XSH grammar parser is not required, it starts almost
 instantly, compared to its XSH source.
 
 Note that the compiled script includes init file (unless C<-f> flag
-was used), and it also "remembers" run-time flag settings used during
-the compilation. 
+was used), and it also preserves run-time flag settings used during
+the compilation.
 
 Use C<-c> to suppress execution of the compiled script.
 
@@ -720,3 +720,8 @@ Petr Pajas <pajas@matfyz.cz>
 
 Copyright 2000-2003 Petr Pajas, All rights reserved.
 
+=head1 SEE ALSO
+
+L<XSH2>, L<XML::XSH2>, L<XML::XSH2::Compile>, L<XML::LibXML>, L<XML::XUpdate>, L<http://xsh.sourceforge.net/doc>
+
+=cut

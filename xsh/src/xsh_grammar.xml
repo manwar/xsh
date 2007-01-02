@@ -209,8 +209,7 @@
       <example>
 	<title>Using string variables to convert between different
 	  types of nodes</title>
-	<code>
-	  <userinput>$doc := create &lt;&lt;EOF;
+	<code><userinput>$doc := create &lt;&lt;EOF;
 	  &lt;?xml version='1.0'?&gt;
 	    &lt;book&gt;
 	    <tab count="1"/>&lt;chapter&gt;
@@ -323,7 +322,7 @@
 	convenient to use namespace prefixes associated with namespace
 	URIs in the XPath context.  This association is independent of
 	the documents to which the XPath expression is applied and can
-	be establised using the command <xref
+	be established using the command <xref
 	linkend="registerns_command"/>.  Additional, &XSH;
 	automatically propagates the namespace association in the
 	scope of the current node to the XPath context, so that
@@ -478,8 +477,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	rather than XPath), see an example below.
       </para>
       <example>
-	<code>
-	  xsh&gt; <userinput>$creatures = //creature[@status='alive']</userinput>
+	<code>xsh&gt; <userinput>$creatures = //creature[@status='alive']</userinput>
           # process creatures in the document order: 
 	  xsh&gt; <userinput>foreach $creature print @name;</userinput>
           # process creatures in the reverse document order: 
@@ -505,10 +503,9 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	using <xref linkend="local_command"/>.
       </para>
       <example>
-	<code>
-	  $var1 = "foo";           # a global variable requires no declaration
+	<code>$var1 = "foo";           # a global variable requires no declaration
 	  local $var1 $var2 $var3; # localizes global variables
-          $var1 = "bar";           # asignment to a localized variable is temporary
+          $var1 = "bar";           # assignment to a localized variable is temporary
 	  local $var4 = "foo";     # localized assignment
           my $var1 $var $var3;     # declares lexical variables
 	  my $var1 = "foo";        # lexical variable declaration with assignment
@@ -519,7 +516,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	block or subroutine. There is no way to refer to a lexical
 	variable form outside of the block it was declared in, nor
 	from within a nested subroutine call. Of course, lexical
-	variables can be refered to from nested blocks or Perl
+	variables can be referred to from nested blocks or Perl
 	expressions (where they behave just like Perl's lexical
 	variables).
       </para>
@@ -542,8 +539,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	intermix &XSH; and Perl assignments:
       </para>
       <example>
-	  <code>
-	  xsh&gt; <userinput>ls //chapter[1]/title</userinput>
+	  <code>xsh&gt; <userinput>ls //chapter[1]/title</userinput>
 	  &lt;title&gt;Introduction&lt;/title&gt;
 	  xsh&gt; <userinput>$a=string(//chapter[1]/title)</userinput>
 	  xsh&gt; <userinput>perl { $b="CHAPTER 1: ".uc($a); }</userinput>
@@ -559,14 +555,13 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	statistics about the population of Middle-Earth:
       </para>
       <example>
-	<code>
-	  my $races;
+	<code>my $races;
 	  foreach a:/middle-earth/creature { 
 	  <tab count="1"/>my $race=string(@race);
 	  <tab count="1"/>perl { $races->{$race}++ };
 	  }
 	  print "Middle-Earth Population (race/number of creatures)"
-	  print { map "$_/$races->{$_}\n" sort ($a cmp $b), keys(%$races); };
+	  print { map "$_/$races->{$_}\n" keys(%$races); };
 	  </code>
       </example>
     </section>
@@ -574,7 +569,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
       <title>Command output redirection</title>
       <para>WARNING: XSH2 redirection syntax is not
 	yet finished. It is currently the same as in XSH1
-	but this may be drastically changed in the future releases.
+	but this may be changed in the future releases.
       </para>
       <para>
 	Output redirection can be used to pipe output of some XSH <xref
@@ -585,7 +580,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
       <section id="Redirection_pipe">
 	<title>Redirect output to an external program</title>
 	<para>The syntax for redirecting the output of a XSH command to
-	  an external program, is<literal>xsh-command | shell-command
+	  an external program, is <literal>xsh-command | shell-command
 	    ;</literal>, where <literal>xsh-command</literal> is any &XSH;
 	  command and <literal>shell-command</literal> is any command
 	  (or code) recognized by the default shell interpreter of the
@@ -594,7 +589,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	  Windows systems by <literal>cmd</literal>).  The shell command
 	  may contain further redirections (as supported by the system
 	  shell interpreter), but should not contain semicolons, except when
-	  the whole shell command is encosed in brackets.
+	  the whole shell command is enclosed in brackets.
 	</para>
 	<example>
 	  <title>Use well-known UNIX commands to filter XPath-based XML
@@ -620,7 +615,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
     </section>
     <section id="Configuration">
       <title>Global settings</title> <para>The commands listed below
-      can be used to modify the default behaviour of the XML parser or
+      can be used to modify the default behavior of the XML parser or
       &XSH; itself.  Some of the commands switch between two different
       modes according to a given expression (which is expected to
       result either in zero or non-zero value). Other commands also
@@ -731,7 +726,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	  the string as &XSH; expression to obtain a node-list object.
 	  It returns a list of strings representing
 	  the types of nodes in the node-list
-	  (ordered in the cannonical document order).
+	  (ordered in the canonical document order).
 	  The returned type strings are: 
 	  <literal>element</literal>,
 	  <literal>attribute</literal>,
@@ -777,8 +772,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	</para>
 	<example>
 	  <title>Use Perl to read text files</title>
-	  <code>
-	    unless (//creature[@race='hobbit']) {
+	  <code>unless (//creature[@race='hobbit']) {
 	    <tab count="1"/>perl {
 	    <tab count="2"/>open my $fh, "hobbits.txt" };
 	    <tab count="2"/>@hobbits=&lt;$file&gt;;
@@ -827,7 +821,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	  <literal>XML::LibXML</literal>
 	  methods to process the arguments and return the result.
 	  Documentation for the <literal>XML::LibXML</literal> Perl module
-	  can be found for example at <ulink url="http://search.cpan.org/author/PHISH/XML-LibXML-1.54/LibXML.pm">http://search.cpan.org/author/PHISH/XML-LibXML-1.54/LibXML.pm</ulink>.
+	  can be found for example at <ulink url="http://search.cpan.org/~pajas/XML-LibXML/">http://search.cpan.org/~pajas/XML-LibXML/</ulink>.
 	</para>
 	<para>
 	  Extension functions SHOULD NOT MODIFY the document DOM tree.
@@ -844,7 +838,7 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	  reference (result is a boolean value),
 	  <literal>XML::LibXML::Literal</literal> object reference
 	  (result is a string), <literal>XML::LibXML::Number</literal>
-	  object reference (resulat is a float),
+	  object reference (result is a float),
 	  <literal>XML::LibXML::Node</literal> (or derived) object
 	  reference (result is a node-set consisting of a single node),
 	  or <literal>XML::LibXML::NodeList</literal> (result is a
@@ -927,11 +921,11 @@ drwxrwxr-x    3 pajas    users         496 Sep  1 20:18 tools
     %% - percent sign
     %p - XPath location of the current node
     %P - like %p but without an initial document variable
-    %l - XPath location of the current node with ID-shortucts
+    %l - XPath location of the current node with ID-shortcuts
     %L - like %l but without an initial document variable
     %n - name of the current node
     %N - local name of the current node
-    %c - cannonical XPath name of the current node
+    %c - canonical XPath name of the current node
     %y - type of the current node (element,attribute,...)
     %i - ID of the current node
     %d - current document variable
@@ -943,8 +937,8 @@ drwxrwxr-x    3 pajas    users         496 Sep  1 20:18 tools
     %@ - the current time in 12-hour am/pm format
     %A - the current time in 24-hour HH:MM format
     %u - the username of the current user
-    %v - the version of XSH2 (e.g., 2.0.5)
-    %V - the revision number of XML::XSH2::Functions (e.g. 2.36)
+    %v - the version of XSH2 (e.g., 2.1.0)
+    %V - the revision number of XML::XSH2::Functions (e.g. 2.40)
     %w - current working directory (on the local filesystem)
     %W - basename of %w
 </code>
@@ -1005,8 +999,7 @@ Substrings of the forms <literal>${variable}</literal>,
 	  in indirect calls, where subroutine's name is computed
 	  from an expression.
 	</para>
-	<code>
-	  def foo $param1 $param2 { 
+	<code>def foo $param1 $param2 { 
 	  <tab/># param1 and $param2 are lexical (a.k.a. my)
 	  <tab/>ls $param1; 
 	  <tab/>echo $param2 
@@ -1024,8 +1017,7 @@ Substrings of the forms <literal>${variable}</literal>,
 	  (which, if evaluated as Perl expressions, preserve node order).
 	  Node-list variables of XSH 1.x have been deprecated.
 	</para>
-	<code>
-	  $var = //foo/bar;                 # node set
+	<code>$var = //foo/bar;                 # node set
 	  $var = "hallo world";             # string
 	  $var = xsh:new-element("foo");    # node object
 	  $var = { ['a','b','c'] };         # Perl array reference
@@ -1036,8 +1028,7 @@ Substrings of the forms <literal>${variable}</literal>,
 	    <para>
 	  XSH2 allows variables to be used in XPath just as they are used in XSLT:
 	</para>
-	<code>
-	  $var = //foo/bar;
+	<code>$var = //foo/bar;
 	  ls //baz[ . = $var[@test=1]/any ]
 	</code>
 	    <para>
@@ -1047,8 +1038,7 @@ Substrings of the forms <literal>${variable}</literal>,
 	  variables directly. Interpolation can still be used for
 	  things like "XPath-macros":
 	</para>
-	<code>
-	  $filter = "[ . = $var[@test=1]/any ]";
+	<code>$filter = "[ . = $var[@test=1]/any ]";
 	  ls //baz${filter};
 	</code>
 	  </listitem>
@@ -1057,19 +1047,17 @@ Substrings of the forms <literal>${variable}</literal>,
 	  XSH2 equally supports XPath and
 	  Perl <link linkend="exp">expressions</link> 
 	  (written in braces { ... }).
-	  Unfortunatelly, Perl expressions can't be embeded in XPath 
+	  Unfortunately, Perl expressions can't be embedded in XPath 
 	  <link linkend="exp">expressions</link>,
 	  but one can still use variables as an agent:
 	</para>
-	<code>
-	  perl { use MIME::Base64 };
+	<code>perl { use MIME::Base64 };
 	  my $encoded = { encode_base64('open sesame') }
 	  ls //secret-cave[string(password) = $encoded]
 	</code>
 	<para>We can, however, use Perl-only expressions complemented with auto-conversion
 	      to do things like:</para>
-	<code>
-	  copy { encode_base64('Pe do mellon a minno!') } replace //secret-cave/password/text();
+	<code>copy { encode_base64('Pe do mellon a minno!') } replace //secret-cave/password/text();
 	</code>
 	  </listitem>
 	  <listitem>
@@ -1078,8 +1066,7 @@ Substrings of the forms <literal>${variable}</literal>,
 	  (see <link linkend="assign_command">:= assignment</link>, 
 	  or <link linkend="exp">&amp;{ } expressions</link>).
 	</para>
-	<code>
-	  $moved_paras := xmove //para replace .;
+	<code>$moved_paras := xmove //para replace .;
 	  $chapter := wrap chapter $moved_paras;
 	  ls $chapter;
 
@@ -1096,24 +1083,22 @@ Substrings of the forms <literal>${variable}</literal>,
 	  (mostly commands that expect file-name or node-name
 	  arguments):
 	</para>
-	<code>
-	  insert element my_document into .;
+	<code>insert element my_document into .;
 	  insert text "foo" into my_document;
 	  
-	  $doc := open my_docment;         # opens file named "my_document"
-	  $doc := open "my_docment";       # same
-	  $doc := open (my_docment);       # opens file named "foo"
-	  $doc := open string(my_docment); # same
+	  $doc := open my_document;         # opens file named "my_document"
+	  $doc := open "my_document";       # same
+	  $doc := open (my_document);       # opens file named "foo"
+	  $doc := open string(my_document); # same
 	</code>
 	  </listitem>
 	  <listitem>
 	<para>
 	  In XSH2, XML documents
 	  have no ID. 
-	  They are refered to using variables (which fits in well with the unified variable concept):
+	  They are referred to using variables (which fits in well with the unified variable concept):
 	</para>
-	<code>
-	  $doc1 := open "foo1.xml";
+	<code>$doc1 := open "foo1.xml";
 	  $doc2 := open "foo2.xml";
 	  ls ($doc1//para|$doc2//para);
 	  cd $doc1;
@@ -1125,10 +1110,9 @@ Substrings of the forms <literal>${variable}</literal>,
 	    <para>
 	      XSH2 commands have options and flags instead of many optional (positional) arguments.
 	      Options/flags usually have both long forms (like --flag) and equivalent
-	      short forms (like :f) (colon is borowed from Scheme, because dash is reserved for XPath minus).
+	      short forms (like :f) (colon is borrowed from Scheme, because dash is reserved for XPath minus).
 	    </para>
-	<code>
-	  $doc := open --format html "version1.html";
+	<code>$doc := open --format html "version1.html";
 	  save --file "version2.xml" $doc;
 
 	  ls --fold /;
@@ -1167,8 +1151,7 @@ Substrings of the forms <literal>${variable}</literal>,
 	    or
 	    foo = "file.xml";
 	  </code>
-	  <code>
-	    XSH2:
+	  <code>XSH2:
 	    $foo := open file.xml;        # file.xml is a bareword in file-name context
 	    or
 	    $foo := open "file.xml";      # "file.xml" is a XPath string
@@ -1180,8 +1163,7 @@ Substrings of the forms <literal>${variable}</literal>,
 	</example>
 	<example>
 	  <title>XSH2 commands have options</title>
-	  <code>
-	    XSH1:
+	  <code>XSH1:
 	    open HTML FILE foo2 = "file.html";
 	  </code>
 	  <code>XSH2:
@@ -1192,8 +1174,7 @@ Substrings of the forms <literal>${variable}</literal>,
 
 	<example>
 	  <title>documents</title>
-	  <code>
-	    XSH1:
+	  <code>XSH1:
 	    foo = file.xml;
 	    ls foo:(//bar|//baz);
 	  </code>
@@ -1206,8 +1187,7 @@ Substrings of the forms <literal>${variable}</literal>,
 
 	<example>
 	  <title>variable interpretation</title>
-	  <code>
-	    XSH1:
+	  <code>XSH1:
 	    $family = "Arial";
 	    ls //font[@family="$family"];   # interpolation
 	    or
@@ -1225,8 +1205,7 @@ Substrings of the forms <literal>${variable}</literal>,
 
 	<example>
 	  <title>adding new nodes</title>
-	  <code>
-	    XSH1:
+	  <code>XSH1:
 	    insert attribute "foo=bar" into /scratch;
 	  </code>
 	  <code>XSH2:
@@ -1239,8 +1218,7 @@ Substrings of the forms <literal>${variable}</literal>,
 
 	<example>
 	  <title>foreach with perl expression</title>
-	  <code>
-	    XSH1:
+	  <code>XSH1:
 	    foreach { glob('*.xml') } {
 	    <tab/>open doc = $__;
 	    <tab/>...
@@ -1264,8 +1242,7 @@ Substrings of the forms <literal>${variable}</literal>,
 	</example>
 	<example>
 	  <title>sorting nodes</title>
-	  <code>
-	    XSH1:
+	  <code>XSH1:
 	    %list = //player;
 	    sort @best_score { $a &lt;=> $b } %list;
 	    copy %list into .;
@@ -1351,7 +1328,7 @@ sub new {
 	    and possibly command parameters separated
 	    by whitespace. Individual <link linkend="command">&XSH; commands</link> are
 	    separated with a semicolon. 
-	    A command may optinally be followed
+	    A command may optionally be followed
 	    by an output redirection directive
 	    (see <xref linkend="binding_shell"/> for output
 	    redirection to a command
@@ -1452,8 +1429,7 @@ sub new {
 	  </para>
 	  <example>
 	    <title>Count paragraphs in each chapter</title>
-	    <code>
-	      $i=0;
+	    <code>$i=0;
 	      foreach //chapter {
 	      <tab count="1"/>$c=count(./para);
 	      <tab count="1"/>$i=$i+1;
@@ -1619,7 +1595,7 @@ sub new {
 	<title>Filename argument type</title>
 	<shortdesc>specifying filenames</shortdesc>
 	<description>
-	  <para>An <xref linkend="exp"/> which evaulates to a valid
+	  <para>An <xref linkend="exp"/> which evaluates to a valid
 	    filename or URL. As long as the expression contains no
 	    whitespace, no brackets of any type, quotes,
 	    double-quotes, <literal>$</literal> character nor
@@ -1637,7 +1613,7 @@ sub new {
 	<title>Node-name argument type</title>
 	<shortdesc>specifying names of DOM nodes</shortdesc>
 	<description>
-	  <para>An <xref linkend="exp"/> which evaulates to a valid
+	  <para>An <xref linkend="exp"/> which evaluates to a valid
 	    name of an element, attribute or processing-instruction
 	    node. As long as the expression contains no
 	    whitespace, no brackets of any type, quotes,
@@ -1706,7 +1682,7 @@ sub new {
 	  <para>
 	    &XSH; provides a number of powerful XPath extension
 	    functions, listed below and described in separate
-	    sections, see <typeref types="function"/>. XPath extension
+	    sections. XPath extension
 	    functions by default belong to &XSH; namespace
 	    <literal>http://xsh.sourceforge.net/xsh/</literal> with
 	    a namespace prefix set to <literal>xsh</literal>. A
@@ -1715,12 +1691,15 @@ sub new {
 	    XPath extension functions into the default namespace, so
 	    that they may be used directly without any prefix.
 	  </para>
+	  <para>
+	    XPath extension functions defined in &XSH;:
+	    <typeref types="function"/>
+	  </para>
 	  <example>
 	    <title>Open a document and count all sections containing a
 	      subsection
 	    </title>
-	    <code>
-	      xsh $scratch/&gt; <userinput>$v := open mydocument1.xml;</userinput>
+	    <code>xsh $scratch/&gt; <userinput>$v := open mydocument1.xml;</userinput>
 	      xsh $v/&gt; <userinput>$k := open mydocument2.xml;</userinput>
 	      xsh $k/&gt; <userinput>count //section[subsection];</userinput> # searches k
 	      xsh $k/&gt; <userinput>count $v//section[subsection];</userinput> # searches v
@@ -1997,7 +1976,7 @@ sub new {
 		(literally) whereas <literal>open (file)</literal> or
 		<literal>open @file</literal> compute the file name
 		by evaluating <literal>(file)</literal> or
-		<literal>@file</literal> respectivelly, as XPath
+		<literal>@file</literal> respectively, as XPath
 		expressions.
 	      </para>
 	    </listitem>
@@ -2031,14 +2010,14 @@ sub new {
 	    <listitem>
 	      <para>
 		Large blocks of literal data can be passed to commands
-		via "inplace document" expressions
+		via "here document" expressions
 		<literal>&lt;&lt;EOF</literal>,
 		<literal>&lt;&lt;'EOF'</literal>,
 		&lt;&lt;"EOF"<literal></literal>, where
 		<literal>EOF</literal> is an arbitrary
 		<literal>ID</literal> string.
 		<literal>&lt;&lt;EOF</literal> and
-		<literal>&lt;&lt;"EOF"</literal> are equivallent, and
+		<literal>&lt;&lt;"EOF"</literal> are equivalent, and
 		are subject to interpolation of
 		<literal>${...}</literal> constructs, where as
 		<literal>&lt;&lt;'EOF'</literal> does not. The result
@@ -2117,8 +2096,8 @@ sub new {
             <code>echo count($b);          # the same</code>
             <code>$c = string($b[1]/@name) # $c contains string value of //creature[1]/@name (e.g. Bilbo)</code>
             <code>echo //creature          # prints: //creature</code>
-            <code>echo (//creature)        # evaluates (//creature) as XPath and prints the</code>
-	    <code>                         # text content of the resulting node-set</code>
+            <code>echo (//creature)        # evaluates (//creature) as XPath and prints the
+                                           # text content of the resulting node-set</code>
 	    <code></code>
 	    <code>echo { join(",",split(//,$a)) }              # prints: b,a,r</code>
 	    <code>echo ${{ join(",",split(//,$a)) }}           # the same</code>
@@ -2303,7 +2282,7 @@ END
 	  <para>
 	    Execute the <xref linkend="block"/> following the
 	    <literal>try</literal> keyword.  If an error or exception
-	    occures during the evaluation, execute the
+	    occurs during the evaluation, execute the
 	    <literal>catch</literal> <xref linkend="block"/>.  If the
 	    <literal>catch</literal> keyword is followed by a 
 	    variable (possibly localized for the following block using
@@ -2479,8 +2458,7 @@ END
 	  </para>
 	  <example>
 	    <title>The commands in this example do the same thing</title>
-	    <code>
-	      xsh&gt; <userinput>while /table/row remove /table/row[1];</userinput>
+	    <code>xsh&gt; <userinput>while /table/row remove /table/row[1];</userinput>
 	      xsh&gt; <userinput>remove /table/row;</userinput>
 	    </code>
 	  </example>
@@ -2516,8 +2494,8 @@ END
 	<usage>eval <xref linkend="exp"/></usage>
 	<shortdesc>evaluate given expression as XSH commands</shortdesc>
 	<description>
-	  <para>NOTE: This command has very different behavior from XSH1 eval
-	    alias for <xref linkend="perl_command"/>.
+	  <para>NOTE: This command has very different behavior from XSH1,
+	    where it used to be an alias for <xref linkend="perl_command"/>.
 	  </para>
 	  <para>This command first evaluates a given <xref linkend="exp"/> to obtain a string,
 	    then evaluates this string as &XSH; code in the current context, returning
@@ -2598,8 +2576,7 @@ END
 	  </example>
 	  <example>
 	    <title>List content of all XML files in current directory</title>
-	    <code>
-	      xsh&gt; <userinput>foreach my $filename in { glob('*.xml') } {
+	    <code>xsh&gt; <userinput>foreach my $filename in { glob('*.xml') } {
 		<tab/>$f := open $filename;
 		<tab/>do_something $f; 
               }</userinput>
@@ -2703,8 +2680,7 @@ call $subref //chapter; # in-direct call
 	  </example>
 	  <example>
 	    <title>Commenting and un-commenting pieces of document</title>
-	    <code>
-def comment
+	    <code>def comment
 <tab count="1"/><tab count="1"/>$n      # nodes to move to comments
 <tab count="1"/><tab count="1"/>$mark   # maybe some handy mark to recognize such comments
 {
@@ -2774,8 +2750,7 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    linkend="exp"/></usage>
 	<usage>[assign] <xref linkend="varname"/> := <xref linkend="command"/></usage>
 	<usage>[assign]
-	  <xref linkend="varname"/> [-= | += | *= | /= | %= | x= | .= | ||= |
- &amp;&amp;= ] <xref linkend="exp"/></usage>
+	  <xref linkend="varname"/> [-= | += | *= | /= | %= | x= | .= | ||= | &amp;&amp;= ] <xref linkend="exp"/></usage>
 	<usage>[assign]
 	  <xref linkend="varname"/> [-:= | +:= | *:= | /:= | %:= | x:= | .:= | ||:= | &amp;&amp;:= ] <xref linkend="command"/></usage>
 	<shortdesc>variable assignment</shortdesc>
@@ -2817,7 +2792,7 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    <title>Command result assignment</title>
 	    <code>xsh&gt; <userinput>$doc := open "file.xml" </userinput> # open a document
 	      xsh&gt; <userinput>$copies := xcopy //foo into //bar </userinput> # copy elements and store the copies
-	      xsh&gt; <userinput>$wrappers := wrap "warapper" $copies </userinput> # wrap each node from $copies to a new element "wrapper" and store the wrapping elements
+	      xsh&gt; <userinput>$wrappers := wrap "wrapper" $copies </userinput> # wrap each node from $copies to a new element "wrapper" and store the wrapping elements
 	    </code>
 	  </example>
 	</description>
@@ -3025,8 +3000,7 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  <example>
 	    <title>Count words in "hallo wold" string, then print name
 	      of your machine's operating system.</title>
-	    <code>
-	      exec echo hallo world;             # prints hallo world
+	    <code>exec echo hallo world;             # prints hallo world
 	      exec "echo hallo word" | wc;       # counts words in hallo world
 	      exec uname;                        # prints operating system name
 	    </code>
@@ -3093,8 +3067,7 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	  </example>
 	  <example>
 	    <title>Same for several documents, reusing the XSLT stylesheet</title>
-	    <code>
-               $xslt := xslt --compile stylesheet.xsl;
+	    <code>$xslt := xslt --compile stylesheet.xsl;
                foreach my $file in {qw(f1.xml f2.xml f3.xml)} {
                <tab/>save --file {"out_$file"} &amp;{xslt --precompiled $xslt &amp;{ open $file } font='14pt' color='red'};
                }
@@ -3494,12 +3467,11 @@ $scratch/&gt; ls /;
 	  </example>
 	  <example>
 	    <title>Wrapping a range of adjacent nodes</title>
-	    <code>
-# prepare the test document
+	    <code># prepare the test document
 $scratch/> rm /scratch/node(); # cleanup the document
-$scratch/> set /scratch/li[5]; # create 5 elements "li"
-$scratch/> set /scratch/li[3]/following-sibling::li; # create a "br" after the 3rd "li"
-$scratch/> for //li set . position(); # number the elements "li"
+$scratch/> set /scratch/li[5]; # create 5 &lt;li> elements
+$scratch/> set /scratch/li[3]/following-sibling::li; # add &lt;br/> after the 3rd &lt;li>
+$scratch/> for //li set . position(); # number the &lt;li> elements 
 $scratch/> ls /
 &lt;?xml version="1.0" encoding="utf-8"?>
 &lt;scratch>
@@ -3510,7 +3482,7 @@ $scratch/> ls /
 <tab/>&lt;li>4&lt;/li>
 <tab/>&lt;li>5&lt;/li>
 &lt;/scratch>
-# wrap adjacent elements "li" into an "ol"
+# wrap adjacent elements &lt;li> into an &lt;ol>
 $scratch/> wrap --skip-whitespace --while self::li ol //li;
 $scratch/> ls /
 &lt;?xml version="1.0" encoding="utf-8"?>
@@ -3669,19 +3641,15 @@ xsh $foo/&gt; ls /;
 	  </para>
 	  <example>
 	    <title>Give each chapter a provisional title element.</title>
-	    <code>
-	      xsh&gt; <userinput>my $new_titles := xinsert element "&lt;title font-size=large underline=yes&gt;" \
+	    <code>xsh&gt; <userinput>my $new_titles := xinsert element "&lt;title font-size=large underline=yes&gt;" \
 		<tab count="1"/>into /book/chapter</userinput>
-	      xsh&gt; <userinput>xinsert text "Change me!" into $new_titles;</userinput>
-	    </code>
+	      xsh&gt; <userinput>xinsert text "Change me!" into $new_titles;</userinput></code>
 	  </example>
 	  <example>
 	    <title>Same as above, using xcopy and xsh:new-... instead of xinsert</title>
-	    <code>
-	      xsh&gt; <userinput>my $new_titles := xcopy xsh:new-element("title","font-size","large","underline","yes") \
+	    <code>xsh&gt; <userinput>my $new_titles := xcopy xsh:new-element("title","font-size","large","underline","yes") \
 		<tab count="1"/>into /book/chapter</userinput>
-	      xsh&gt; <userinput>xcopy xsh:new-text("Change me!") into $new_titles;</userinput>
-	    </code>
+	      xsh&gt; <userinput>xcopy xsh:new-text("Change me!") into $new_titles;</userinput></code>
 	  </example>
 
 	</description>
@@ -3707,8 +3675,7 @@ xsh $foo/&gt; ls /;
 	    piece of XML.
 	  </para>
 	  <example>
-	    <code>
-	      add element hobbit into //middle-earth/creatures;
+	    <code>add element hobbit into //middle-earth/creatures;
 	      add attribute 'name="Bilbo"' into //middle-earth/creatures/hobbit[last()];
 	      add chunk '&lt;hobbit name="Frodo"&gt;A small guy from &lt;place&gt;Shire&lt;/place&gt;.&lt;/hobbit&gt;' 
 	      <tab count="1"/>into //middle-earth/creatures;
@@ -3817,7 +3784,7 @@ xsh $foo/&gt; ls /;
 	  <para><literal>move</literal> command acts exactly like
 	      <xref linkend="copy_command"/>, except that it
 	      <emphasis>removes</emphasis> the source nodes after a
-	      succesfull copy. Remember that the moved nodes are
+	      successful copy. Remember that the moved nodes are
 	      actually <emphasis>different nodes</emphasis> from the
 	      original ones (which may not be obvious when moving
 	      nodes within a single document into locations that do
@@ -3827,7 +3794,7 @@ xsh $foo/&gt; ls /;
 	      variable still contains to them.
 	  </para>
 	  <para>
-	    This command returns a node-list consisiting of nodes
+	    This command returns a node-list consisting of nodes
 	    it created on the target locations.
 	  </para>
 	  <para>
@@ -3858,7 +3825,7 @@ xsh $foo/&gt; ls /;
 	<description>
 	  <para>Like <xref linkend="xcopy_command" />, except that
 	    <literal>xmove</literal> <emphasis>removes</emphasis> the source
-	    nodes after a succesfull copy.  Remember that the moved nodes are
+	    nodes after a successful copy.  Remember that the moved nodes are
 	    actually <emphasis>different nodes</emphasis> from the original
 	    ones (which may not be obvious when moving nodes within a single
 	    document into locations that do not require type conversion). So,
@@ -3866,7 +3833,7 @@ xsh $foo/&gt; ls /;
 	    are automatically destroyed unless still contained in some variable.
 	  </para>
 	  <para>
-	    This command returns a node-list consisiting of all nodes
+	    This command returns a node-list consisting of all nodes
 	    it created on the target locations.
 	  </para>
 	  <para>
@@ -3899,8 +3866,7 @@ xsh $foo/&gt; ls /;
 	  </para>
 	  <example>
 	    <title>Get rid of all &lt;font&gt; tags</title>
-	    <code>
-	      while //font {
+	    <code>while //font {
 	      <tab count="1"/>foreach //font {
 	      <tab count="1"/><tab count="1"/>xmove node() replace .;
 	      <tab count="1"/>}
@@ -3976,7 +3942,7 @@ xsh $foo/&gt; ls /;
 	<alias name="strip_whitespace"/>
       </aliases>
       <command minargs="1" maxargs="1" func="strip_ws"/><documentation sections="Manipulation">
-	<usage>strip <xref linkend="exp"/></usage>
+	<usage>strip-whitespace <xref linkend="exp"/></usage>
 	<shortdesc>strip leading and trailing whitespace</shortdesc>
 	<description>
 	  <para><literal>strip-whitespace</literal> removes all leading and
@@ -4245,8 +4211,7 @@ xsh $foo/&gt; ls /;
 	  </para>
 	  <example>
 	    <title>Try the following on an empty scratch document</title>
-	    <code>
-$scratch/> ls /
+	    <code>$scratch/> ls /
 &lt;scratch/>
 $scratch/> set scratch/@say "hallo world"
 &lt;scratch say="hello world"/>
@@ -4254,7 +4219,7 @@ $scratch/> set scratch/@say "hallo world"
 $scratch/> set scratch/foo[2]/../foo[1]/following-sibling::bar/baz[3] "HALLO"
 $scratch/> ls /
 &lt;?xml version="1.0" encoding="utf-8"?>
-&lt;scratch>
+&lt;scratch say="hello world">
 <tab/>&lt;foo/>
 <tab/><tab/>&lt;bar>
 <tab/><tab/><tab/>&lt;baz/>
@@ -4269,18 +4234,20 @@ $scratch/> ls /
 	    Only a limited subset of XPath is currently supported by
 	    this command. Namely, the XPath expression must be a
 	    location path consisting of a /-separated sequence of one
-	    or more location steps along the child, sibling, or
-	    attribute axes.  The node-test part of the expression
-	    cannot be neither a wildcard (<literal>*</literal>,
+	    or more location steps and new nodes
+	    can only be magically created along the child, sibling, or
+	    attribute axes.
+	    The node-test part of the expression
+	    can neither be a wildcard (<literal>*</literal>,
 	    <literal>@*</literal>, <literal>prefix:*</literal>, ...),
 	    nor the <literal>node()</literal> function. If a namespace
 	    prefix is used, then either the namespace must already be
-	    declared in the document or registered with XSH.  Location
-	    steps may contain arbitrary predicates (filters), however,
-	    only a limitted subset is supported for magically created
-	    nodes.
+	    declared in the document or registered with XSH. 
 	  </para>
 	  <para>
+	    Location steps may contain arbitrary predicates (filters), however,
+	    only a limited subset is supported for magically created
+	    nodes.
 	    In particular, if a filter predicate of a location step
 	    specifies a position of a node (e.g. with
 	    <literal>[4]</literal>, or
@@ -4346,8 +4313,7 @@ $scratch/> ls /
 	    functions etc., see <xref linkend="Perl_shell"/>.
 	  </para>
 	  <example>
-	    <code>
-	      xsh&gt; <userinput>$i={ "foo" };</userinput>
+	    <code>xsh&gt; <userinput>$i={ "foo" };</userinput>
 	      xsh&gt; <userinput>perl { echo "$i-bar\n"; }</userinput> # prints foo-bar
 	      xsh&gt; <userinput>echo { "$i-bar" }</userinput>         # very much the same as above
 	    </code>
@@ -4461,7 +4427,7 @@ $scratch/> ls /
 	  </para>
 	  <para>
 	    <literal>--numeric|:n</literal> specifies, that
-	    keys should be compared by their numerial values
+	    keys should be compared by their numerical values
 	    (the default is string comparison).
 	  </para>
 	  <para>
@@ -4499,8 +4465,7 @@ $scratch/> ls /
 	    <title>Reorder creature elements by name attribute
 	      in ascending order using Czech locale settings
 	    </title>
-	    <code>
-	      perl {
+	    <code>perl {
                 # setup locale collating function
 	        # Note, that the collating function must be UTF8 aware.
                 use POSIX qw(locale_h);
@@ -4512,8 +4477,7 @@ $scratch/> ls /
 	  </example>
 	  <example>
 	    <title>Sort a node-list by a pre-computed score (Perl-based sort)</title>
-	    <code>
-	      $results := sort --numeric --descending --key { $scores{literal('@name')} } $players;
+	    <code>$results := sort --numeric --descending --key { $scores{literal('@name')} } $players;
 	    </code>
 	  </example>
 	</description>
@@ -4529,7 +4493,7 @@ $scratch/> ls /
 	<shortdesc>transform node value/data using Perl or XPath expression</shortdesc>
 	<description>
 	  <para>
-	    NOTE: THE SEMANTICS OF COMMAND HAS CHANGED IN 2.0.5
+	    NOTE: THE SEMANTICS OF COMMAND HAS CHANGED IN 2.1.0
 	  </para>
 	  <para>
 	    This command provides an easy way to transform node's data
@@ -4574,7 +4538,7 @@ $scratch/> ls /
 	    in reversed order.
 	  </para>
 	  <example>
-	    <title>Capitalises all hobbit names</title>
+	    <title>Capitalizes all hobbit names</title>
 	    <code>map { ucfirst($_) } //hobbit/@name;</code>	  
 	  </example>
 	  <example>
@@ -4589,8 +4553,7 @@ $scratch/> ls /
 	  </example>
 	  <example>
 	    <title>The following commands do all about the same:</title>
-	    <code>
-	      wrap --inner Z //*;
+	    <code>wrap --inner Z //*;
 	      map --reverse xsh:parse(concat("&lt;Z>",xsh:serialize(node()),"&lt;/Z>")) //*;
 	      map xsh:parse(concat("&lt;Z>",xsh:serialize(node()),"&lt;/Z>")) { reverse xpath('//*') };
 	    </code>
@@ -4619,7 +4582,7 @@ $scratch/> ls /
 	<shortdesc>quickly rename nodes with in-line Perl code</shortdesc>
 	<description>
 	  <para>
-	    NOTE: THE SEMANTICS OF COMMAND HAS CHANGED IN 2.0.5
+	    NOTE: THE SEMANTICS OF COMMAND HAS CHANGED IN 2.1.0
 	  </para>
 	  <para>
 	    This command is very similar to the <xref linkend="map_command"/>
@@ -4747,7 +4710,7 @@ ls xsh:lookup('books_by_author','Jack London');</code>
 	    considerably faster on large documents (with thousands of nodes).
 	    The command should only be used on documents which don't change;
 	    modifying an indexed document might possibly lead to non-conformant
-	    behaviour of later XPath queries on the document.
+	    behavior of later XPath queries on the document.
 	  </para>
 	</description>
       </documentation>
@@ -4891,8 +4854,7 @@ ls xsh:lookup('books_by_author','Jack London');</code>
 	    current global setting of <xref linkend="complete_attributes"/>.	    
 	  </para>
 	  <example>
-	    <code>
-	      $scratch/&gt; <userinput>$x := open mydoc.xml # open an XML document</userinput>
+	    <code>$scratch/&gt; <userinput>$x := open mydoc.xml # open an XML document</userinput>
 
               # open a HTML document from the Internet
 	      <userinput>$h:=open --format html "http://www.google.com/?q=xsh"</userinput>
@@ -4938,8 +4900,7 @@ ls xsh:lookup('books_by_author','Jack London');</code>
 	    to the new document.
 	  </para>
 	  <example>
-	    <code>
-	      $scratch/&gt; <userinput>$t1 := create root</userinput>
+	    <code>$scratch/&gt; <userinput>$t1 := create root</userinput>
 	      $t1&gt; <userinput>ls $t1</userinput>
 	      &lt;?xml version="1.0" encoding="utf-8"?&gt;
 	      &lt;root/&gt;
@@ -5315,7 +5276,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	  </para>
 	  <example>
 	    <code>$mydoc := open "test.xml"</code>
-	    <code># in all examples below, mydoc can be ommited</code>
+	    <code># in all examples below, mydoc can be omitted</code>
 	    <code>validate --yesno $mydoc; # validate against the document's DOCTYPE</code>
 	    <code>validate --public "-//OASIS//DTD DocBook XML V4.1.2//EN" $mydoc</code>
 	    <code>validate --file "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" $mydoc</code>
@@ -5369,7 +5330,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	<alias name="load-xinclude"/>
       </aliases>
       <command maxargs="1" func="process_xinclude"/><documentation sections="Manipulation Documents">
-	<usage>process_xinclude [<xref linkend="document"/>]</usage>
+	<usage>process-xinclude [<xref linkend="document"/>]</usage>
 	<shortdesc>load and insert XInclude sections</shortdesc>
 	<description>
 	  <para>
@@ -5409,7 +5370,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
       </command>
       <documentation sections="Navigation Information">
 	<usage>pwd [--id|:i]</usage>
-	<shortdesc>show current context node location (as a cannonical XPath)</shortdesc>
+	<shortdesc>show current context node location (as a canonical XPath)</shortdesc>
 	<description>
 	  <para>Print XPath leading to the current context node 
 	    (equivalent to <literal>locate .</literal>).
@@ -5420,7 +5381,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	    location path. That means that if the current node or some of its
 	    ancestors has an ID attribute (either
 	    <literal>xml:id</literal> or one specified in a DTD) then
-	    the corresponding segment of the cannonical location path
+	    the corresponding segment of the canonical location path
 	    is replaced by the <literal>id()</literal> function
 	    which jumps directly to an element based on its ID.
 	  </para>
@@ -5437,17 +5398,17 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
       </command>
       <documentation sections="Navigation Information">
 	<usage>locate [--id|:i] <xref linkend="xpath"/></usage>
-	<shortdesc>show a given node location (as a cannonical XPath)</shortdesc>
+	<shortdesc>show a given node location (as a canonical XPath)</shortdesc>
 	<description>
 	  <para>Print canonical XPaths leading to nodes matched by
 	    a given <xref linkend="xpath"/>.</para>
 	  <para>
 	    If flag <literal>--id</literal> (<literal>:i</literal>) is
-	    used then ID-based shortucts are allowed in the resulting
+	    used then ID-based shortcuts are allowed in the resulting
 	    location paths. That means that if the node or some of its
 	    ancestors has an ID attribute (either
 	    <literal>xml:id</literal> or one specified in a DTD) then
-	    the corresponding segment of the cannonical location path
+	    the corresponding segment of the canonical location path
 	    is replaced by the <literal>id()</literal> function
 	    which jumps directly to an element based on its ID.
 	  </para>
@@ -5624,7 +5585,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	<alias name="parser_expands_entities"/>
       </aliases>
       <command minargs="1" maxargs="1" func="set_expand_entities"/><documentation sections="Configuration">
-	<usage>parser_expands_entities <xref linkend="exp"/></usage>
+	<usage>parser-expands-entities <xref linkend="exp"/></usage>
 	<shortdesc>turn on/off parser's tendency to expand entities</shortdesc>
 	<description>
 	  <para>
@@ -5645,7 +5606,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	<alias name="keep_blanks"/>
       </aliases>
       <command minargs="1" maxargs="1" func="set_keep_blanks"/><documentation sections="Configuration">
-	<usage>keep_blanks <xref linkend="exp"/></usage>
+	<usage>keep-blanks <xref linkend="exp"/></usage>
 	<shortdesc>turn on/off ignorable whitespace preservation</shortdesc>
 	<description>
 	  <para>
@@ -5665,7 +5626,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	<alias name="pedantic_parser"/>
       </aliases>
       <command minargs="1" maxargs="1" func="set_pedantic_parser"/><documentation sections="Configuration">
-	<usage>pedantic_parser <xref linkend="exp"/></usage>
+	<usage>pedantic-parser <xref linkend="exp"/></usage>
 	<shortdesc>make the parser more pedantic</shortdesc>
 	<description>
 	  <para>
@@ -5710,7 +5671,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	    leading and a trailing linebreak to each text node.
 	  </para>
 	  <para>Note, that since the underlying C library
-	    (libxml2) uses a hardcoded indentation of 2 space
+	    (libxml2) uses a hard-coded indentation of 2 space
 	    characters per indentation level, the amount of
 	    whitespace used for indentation can not be
 	    altered at runtime.
@@ -5766,7 +5727,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	<alias name="parser_expands_xinclude"/>
       </aliases>
       <command minargs="1" maxargs="1" func="set_expand_xinclude"/><documentation sections="Configuration">
-	<usage>parser_expands_xinclude <xref linkend="exp"/></usage>
+	<usage>parser-expands-xinclude <xref linkend="exp"/></usage>
 	<shortdesc>turn on/off transparent XInclude insertion by parser</shortdesc>
 	<description>
 	  <para>
@@ -5787,7 +5748,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	<alias name="load_ext_dtd"/>
       </aliases>
       <command minargs="1" maxargs="1" func="set_load_ext_dtd"/><documentation sections="Configuration">
-	<usage>load_ext_dtd <xref linkend="exp"/></usage>
+	<usage>load-ext-dtd <xref linkend="exp"/></usage>
 	<shortdesc>turn on/off external DTD fetching</shortdesc>
 	<description>
 	  <para>
@@ -6095,7 +6056,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	<shortdesc>return from a subroutine</shortdesc>
 	<description>
 	  <para>
-	    This command immediatelly stops the execution of a
+	    This command immediately stops the execution of a
 	    procedure it occurs in and returns the execution to the
 	    place of the script from which the subroutine was called.
 	    Optional argument may be used as a return value for the
@@ -6122,7 +6083,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	    given by the obligatory <xref linkend="exp"/>
 	    argument. If the exception is not handled 
 	    by some surrounding <xref linkend="try_catch"/> block,
-	    the execution is stopped immediatelly and the error
+	    the execution is stopped immediately and the error
 	    message is printed.
 	  </para>
 	</description>
@@ -6216,7 +6177,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	    node-lists (&gt;=1500 nodes, but your milage may vary) while
 	    <xref linkend="foreach"/> wins on smaller node-lists.
 	  </para>
-	  <para>The following two examples give equivallent results.
+	  <para>The following two examples give equivalent results.
 	    However, the one using <literal>iterate</literal> 
 	    may be faster if the number of nodes being counted 
 	    is huge and document order isn't indexed.</para>
@@ -6403,11 +6364,11 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	    (though slower) way to process selected parts of an XML
 	    document with &XSH;. A streaming XML parser (SAX parser) is
 	    used to parse the input. The parser has two states which
-	    will be refered to as A and B below. The initial state of
+	    will be referred to as A and B below. The initial state of
 	    the parser is A.</para> <para>In the state A, only a
 	    limited vertical portion of the DOM tree is built. All XML
 	    data coming from the input stream other than start-tags
-	    are immediatelly copied to the output stream.  If a new
+	    are immediately copied to the output stream.  If a new
 	    start-tag of an element arrives, a new node is created in
 	    the tree. All siblings of the newly created node are
 	    removed. Thus, in the state A, there is exactly one node
@@ -6495,7 +6456,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	    all namespaces that are valid the scope of the node.
 	    Namespaces are listed in the form of
 	    <literal>xmlns:prefix="uri"</literal> declarations,
-	    preceded by a cannonical xpath of the corresponding node
+	    preceded by a canonical xpath of the corresponding node
 	    on a separate line.
 	  </para>
 	  <para>
@@ -6517,7 +6478,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	<alias name="xpath_completion"/>
       </aliases>
       <command minargs="1" maxargs="1" func="set_xpath_completion"/><documentation sections="Configuration">
-	<usage>xpath_completion <xref linkend="exp"/></usage>
+	<usage>xpath-completion <xref linkend="exp"/></usage>
 	<shortdesc>turn on/off TAB completion for xpath expressions in
 	the interactive mode</shortdesc>
 	<description>
@@ -6565,7 +6526,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	    XPath expressions never includes axis names.
 	  </para>
 	  <para>
-	    The default value for this optio is
+	    The default value for this option is
 	    <literal>always</literal>.
 	  </para>
 	  <para>This command is equivalent to setting the
@@ -6680,7 +6641,7 @@ ls grep(//word,"^.*tion$");</code>
 	    to provide an editor command, whereas
 	    <literal>--encoding</literal> (<literal>:e</literal>)
 	    can be used to specify character encoding used for
-	    communicatoin with the editor. If the result
+	    communication with the editor. If the result
 	    is empty, the interactive &XSH; shell asks user for
 	    confirmation before returning the result in order
 	    to prevent data loss due to some unexpected error.
@@ -6710,7 +6671,7 @@ ls grep(//word,"^.*tion$");</code>
 	<shortdesc>Edit parts of a XML document in a text editor.</shortdesc>
 	<description>
 	  <para>This command may be used to interactively edit parts of a XML
-	    document directly in your favourite editor.
+	    document directly in your favorite editor.
 	  </para>
 	  <para>
 	    A given <xref linkend="exp" /> is evaluated to a node-list and the
@@ -6720,7 +6681,7 @@ ls grep(//word,"^.*tion$");</code>
 	    is parsed and returned to the original document. Unless
 	    <literal>--no-comment</literal> (<literal>:q</literal>) flag is
 	    used, the XML fragment is preceded with a XML comment specifying
-	    cannonical XPath of the node being edited.
+	    canonical XPath of the node being edited.
 	  </para>
 	  <para>
 	    The command returns a node-list consisting of nodes
@@ -6752,7 +6713,7 @@ ls grep(//word,"^.*tion$");</code>
 	  <para>If the result saved
 	    by the editor is empty, the interactive
 	    &XSH; shell asks user to confirm this was correct.
-	    This confirmation can be supressed using
+	    This confirmation can be suppressed using
 	    <literal>--allow-empty</literal> or
 	    <literal>:0</literal> (zero) options.
 	  </para>
@@ -7123,7 +7084,7 @@ ls grep(//word,"^.*tion$");</code>
 	<description>
 	  <para>
 	    This function returns a string containing
-	    cannonical XPath leading
+	    canonical XPath leading
 	    to <literal>NODE</literal>.
 	  </para>
 	</description>

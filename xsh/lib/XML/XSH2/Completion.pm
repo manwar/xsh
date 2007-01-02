@@ -1,10 +1,13 @@
-# $Id: Completion.pm,v 2.4 2005-06-23 13:52:06 pajas Exp $
+# $Id: Completion.pm,v 2.5 2007-01-02 22:03:22 pajas Exp $
 
 package XML::XSH2::Completion;
 
 use XML::XSH2::CompletionList;
 use XML::XSH2::Functions qw();
+use vars qw($VERSION);
 use strict;
+
+  $VERSION='2.1.0'; # VERSION TEMPLATE
 
 our @PATH_HASH;
 our $O=qr/:[[:alnum:]]|--[-_[:alnum:]]+/; # option

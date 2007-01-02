@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_pod.pl,v 2.2 2007-01-01 15:43:59 pajas Exp $
+# $Id: gen_pod.pl,v 2.3 2007-01-02 22:03:21 pajas Exp $
 
 use strict;
 use vars qw(%enc);
@@ -33,9 +33,11 @@ my @seealso;
 my @usage;
 my $desc;
 
+my $output;
+sub pprint (@) { $output .= join '',@_ };
 
-print "=for comment\n  This file was automatically generated from $ARGV[0]\n  on ",scalar(localtime),"\n";
-print <<'PREAMB';
+pprint "=for comment\n  This file was automatically generated from $ARGV[0]\n  on ",scalar(localtime),"\n";
+pprint <<'PREAMB';
 
 =head1 NAME
 
@@ -47,66 +49,83 @@ foreach my $sec ($dom->findnodes('/recdescent-xml/doc/section')) {
   my $name=$sec->getAttribute('id');
 
   ($title)=$sec->findnodes('./title');
-  my $t= $title ? get_text($title,0,1) : $name;
-  print "\n=head1 ",uc($t),"\n\n";
+  my $t= $title ? get_text($title,0,2) : $name;
+  pprint "\n=head1 ",uc($t),"\n\n";
   print_description($sec,"","");
 
   my @commands=$dom->findnodes("//rules/rule[\@type='command' and ".
 			       "documentation[contains(\@sections,'$name')]]");
   if (@commands) {
-    print "\n\n=head2 RELATED COMMANDS\n\n";
-    print join ", ", sort map { get_name($_) }
+    pprint "\n\n=head2 RELATED COMMANDS\n\n";
+    pprint join ", ", sort map { get_name($_) }
 	       @commands;
-    print "\n\n";
+    pprint "\n\n";
   }
 
 }
 
-#print "\n=head1 COMMAND REFERENCE\n\n=over 5\n\n";
+#pprint "\n=head1 COMMAND REFERENCE\n\n=over 5\n\n";
 #foreach ($dom->findnodes("//rules/rule[\@type='command' and documentation]")) {
-#  print "\n\n=item B<".get_name($_).">\n\n";
-#  print get_text($_->findnodes('documentation/shortdesc'));
+#  pprint "\n\n=item B<".get_name($_).">\n\n";
+#  pprint get_text($_->findnodes('documentation/shortdesc'));
 #}
-#print "\n=back\n\n";
+#pprint "\n=back\n\n";
 
-#print "\n=head1 ARGUMENT TYPES\n\n";
-#print wrap("    ","    ",
+#pprint "\n=head1 ARGUMENT TYPES\n\n";
+#pprint wrap("    ","    ",
 #	   join ", ", sort map { get_name($_) } 
 #	   grep {defined($_)} 
 #	   $dom->findnodes("//rules/rule[\@type='argtype']")),
 #  "\n\n";
 
 
-print "\n=head1 COMMAND REFERENCE\n\n";
+pprint "\n=head1 COMMAND REFERENCE\n\n";
 
 foreach my $r (sort {get_name($a) cmp get_name($b)} 
 	       $rules->findnodes('./rule[@type="command"]')) {
   print_rule_desc($r);
 }
 
-print "\n=head1 ARGUMENT TYPE REFERENCE\n\n";
-print "=over 4\n\n";
+pprint "\n=head1 ARGUMENT TYPE REFERENCE\n\n";
+pprint "=over 4\n\n";
 
 foreach my $r (sort {get_name($a) cmp get_name($b)} 
 	       $rules->findnodes('./rule[@type="argtype"]')) {
   ($desc)=$r->findnodes('./documentation/description');
   if ($desc) {
-    print "\n\n=item B<".get_name($r).">\n\n";
+    pprint "\n\n=item B<".get_name($r).">\n\n";
     print_description($desc,'','');
   }
 }
+pprint "\n\n=back\n\n";
 
-print "\n=head1 XPATH EXTENSION FUNCTION REFERENCE\n\n";
-print "=over 4\n\n";
+pprint "\n=head1 XPATH EXTENSION FUNCTION REFERENCE\n\n";
 foreach my $r (sort {get_name($a) cmp get_name($b)}
 	       $rules->findnodes('./rule[@type="function"]')) {
   print_rule_desc($r);
 }
 
-print "\n\n=back\n\n";
+pprint "\n";
 
-print "\n";
+pprint <<'POSTAMB';
 
+=head1 AUTHOR
+
+Petr Pajas, pajas@matfyz.cz
+
+=head1 SEE ALSO
+
+L<xsh>, L<XML::XSH2>, L<XML::XSH2::Compile>, L<XML::LibXML>, L<XML::XUpdate>, L<http://xsh.sourceforge.net/doc>
+
+=cut
+
+POSTAMB
+
+# normalize lines
+$output=~s/(\n[ \t]*){1,}\n/\n\n/sg;
+# lazily fix nested B<...>
+1 while $output=~s/(B<[^>]*)B<([^>]*)>([^>]*>)/$1$2$3/sg;
+print($output);
 
 exit;
 
@@ -120,38 +139,38 @@ sub print_rule_desc {
   my $name=get_name($r);
 #  ($title)=$ruledoc->findnodes('./title');
 #  my $t=$title ? get_text($title) : $name;
-  print "\n\n=head2 ",$name,"\n\n";
-  print "\n\n=over 4\n\n";
+  pprint "\n\n=head2 ",$name,"\n\n";
+  pprint "\n\n=over 4\n\n";
 
   @usage=$ruledoc->findnodes('./usage');
   if (@usage) {
-    print "\n\n=item Usage:\n\n";
+    pprint "\n\n=item Usage:\n\n";
     foreach (@usage) {
       my $usage=get_text($_);
       $usage=~s/\s+/ /;
-      print $usage,"\n             ";
+      pprint $usage,"\n             ";
     }
-    print "\n";
+    pprint "\n";
   }
   @aliases=grep {defined($_)} $r->findnodes('./aliases/alias');
   if (@aliases) {
-    print "\n\n=item Aliases:\n\n";
-    print join " ",map { get_name($_) } @aliases;
-    print "\n\n";
+    pprint "\n\n=item Aliases:\n\n";
+    pprint join " ",map { get_name($_) } @aliases;
+    pprint "\n\n";
   }
   ($desc)=$ruledoc->findnodes('./description');
   if ($desc) {
-    print "\n\n=item Description:\n\n";
+    pprint "\n\n=item Description:\n\n";
     print_description($desc,'','');
   }
   @seealso=grep {defined($_)} $ruledoc->findnodes('./see-also/ruleref');
   if (@seealso) {
-    print "\n\n=item See also:\n\n";
-    print join " ", grep {defined($_)}
+    pprint "\n\n=item See also:\n\n";
+    pprint join " ", grep {defined($_)}
       map { $_->getAttribute('ref') } @seealso;
-    print "\n\n";
+    pprint "\n\n";
   }
-  print "\n\n=back\n\n";
+  pprint "\n\n=back\n\n";
 }
 
 sub strip_space {
@@ -176,7 +195,7 @@ sub get_text {
 	$n->nodeType() == XML::LibXML::XML_CDATA_SECTION_NODE) {
       my $data=$n->getData();
       $data=~s/\t/  /g;
-      $data=~s/([\/\|><])/"E<$enc{$1}>"/eg unless $noformat;
+      $data=~s/([\/\|><])/"E<$enc{$1}>"/eg unless $noformat>1;
       $text.=$data;
     } elsif ($n->nodeType() == XML::LibXML::XML_ELEMENT_NODE) {
       if (!$noformat and $n->nodeName() eq 'link') {
@@ -187,7 +206,7 @@ sub get_text {
 	if ($ref) {
 	  $text.=get_name($ref);
 	} else {
-	  print STDERR "Reference to undefined identifier: ",$n->getAttribute('linkend'),"\n";
+	  pprint STDERR "Reference to undefined identifier: ",$n->getAttribute('linkend'),"\n";
 	}
 	$text.=">";
       } elsif (!$noformat and  $n->nodeName() eq 'typeref') {
@@ -220,39 +239,40 @@ sub print_description {
       } elsif ($name eq 'para') {
 	my $t=get_text($c);
 	$t=~s/\s+/ /g;
-	print $t,"\n\n";
+	pprint $t,"\n\n";
       } elsif ($name eq 'section') {
 	my ($title)=$c->findnodes('./title');
 	if ($title) {
 	  my $t=get_text($title);
-	  print "\n\n=head2 $t\n\n";
+	  pprint "\n\n=head2 $t\n\n";
 	}
 	print_description($c);
       } elsif ($name eq 'example') {
 	foreach (map { get_text($_) } $c->findnodes('./title')) {
 	  s/\s+/ /g;
-	  print "Example: $_\n";
+	  pprint "Example: $_\n";
 	}
 	unless ($c->findnodes('./title')) {
-	  print "Example:\n";
+	  pprint "Example:\n";
 	}
 	print_description($c);
       } elsif ($name eq 'code') {
-      	print "\n";
-	for (get_text($c,1,1)) {
+      	pprint "\n";
+	for (get_text($c,1,2)) {
  	  s/\n[ ]*/\n  /mg;
  	  s/\\\n/\\\n    /g;
  	  s/\t/  /g;
-	  print "  $_\n";
+	  pprint "  $_\n";
 	}
-	print "\n";
+	pprint "\n";
       } elsif ($name eq 'enumerate') {
-      	print "\n\n=over 4\n\n";
+      	pprint "\n\n=over 4";
+	my $i=1;
 	foreach my $item ($c->findnodes('./listitem')) {
-	  print "\n\n=item\n\n";
+	  pprint "\n\n=item ",$i++,"\n\n";
 	  print_description($item);
 	}
-	print "\n\n=back\n\n";
+	pprint "\n\n=back\n\n";
       } else {
 	warn $0." no rule for tag ".$name."\n";
       }
@@ -260,16 +280,4 @@ sub print_description {
   }
 }
 
-print <<'POSTAMB';
 
-=head1 AUTHOR
-
-Petr Pajas, pajas@matfyz.cz
-
-=head1 SEE ALSO
-
-L<xsh>, L<XML::XSH2>, L<XML::LibXML>, L<XML::XUpdate>, L<http://xsh.sourceforge.net/doc>
-
-=cut
-
-POSTAMB

@@ -1,4 +1,4 @@
-# $Id: Compile.pm,v 1.1 2006-09-17 15:29:26 pajas Exp $
+# $Id: Compile.pm,v 1.2 2007-01-02 22:03:22 pajas Exp $
 
 package XML::XSH2::Compile;
 use Module::Compile -base;
@@ -6,7 +6,7 @@ use Module::Compile -base;
 use vars qw($VERSION);
 
 use strict;
-$VERSION = '0.1';
+  $VERSION='2.1.0'; # VERSION TEMPLATE
 
 sub pmc_compile {
   my ($class, $source) = @_;

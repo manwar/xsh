@@ -1,94 +1,65 @@
 xsh - an XML Editing Shell
 --------------------------
-Copyright (c) 2002,2003,2004 Petr Pajas
+Copyright (c) 2002-2006 Petr Pajas
 
-To install xsh, first install all required modules as described below.
-Then install xsh either 
+Installing on UNIX/BSD/Linux
+=============================
 
-automatically (highly recommended):
------------------------------------
+Installing from CPAN:
+---------------------
 
-From CPAN:
+$ cpan XML::XSH2
 
-$ perl -MCPAN -e shell
-cpan> install XML::XSH2
+as root or 
 
-From tar-ball:
+$ sudo cpan XML::XSH2
 
-$ unzip XML-XSH-XXXXX.tar.gz
-$ cd XML-XSH-XXXXX
-$ perl Makefile.PL  
-$ make
-$ make install
+as normal user.
 
-you may use `perl Makefile.PL PREFIX=<prefix>' to install to a
-directory tree different from /usr
+Installing from the distribution tar-ball or CVS
+------------------------------------------------
 
-From CVS:
-$ cvs -d:pserver:anonymous@cvs.xsh.sourceforge.net -z3 co -P xsh
-$ cd xsh
-$ perl Makefile.PL
-$ make cvs
-$ perl Makefile.PL
-$ make
-$ make install
-
-or 
-
-manually (doesn't work for CVS checkouts):
-------------------------------------------
-
-1) copy xsh to some location in your PATH 
-2) copy lib/XSH subdirectory and its content into one of the following
-locations:
-
-- a directory in Perl's @INC search path
-- the directory where you placed xsh
-- a lib/ directory in the parent directory of the directory
-  where xsh is located 
-- a lib/ sub-directory in the directory where xsh is located
-
-For example:
-  cp xsh /usr/local/bin
-  cp -R XSH/ /usr/local/lib
-  chmod 775 /usr/local/bin/xsh  # if your tar did not preserve this
-
+Follow the instructions on http://xsh.sourceforge.net/download.html
 
 Requirements:
 -------------
 
-o Unix/BSD/Linux or similar operating system
-o Perl version 5.6 (may work with earlier Perl5, but wasn't tested)
-o The following modules, available at CPAN http://www.cpan.org:
+o Perl version >= 5.8.0
+o libxml2 and libxslt libraries (http://xmlsoft.org)
+  (available on majority of recent Linux distributions)
 
+The following CPAN modules are required (these requirements are
+automatically resolved by the cpan installer and are also bundled with
+the tar-ball distribution).
+
+  IO::Scalar
+  Term::ReadLine::Perl
   Parse::RecDescent          (>=1.80)
   XML::LibXML::Common        (>=0.13)
-  XML::LibXML                (>=1.57)
-  XML::LibXSLT               (>=1.53)
-  XML::LibXML::XPathContext  (>=0.06)
-  
-  Term::ReadLine::Perl
+  XML::LibXML                (>=1.62)
+  XML::LibXSLT               (>=1.62)
+  XML::LibXML::Iterator  
+  XML::XUpdate::LibXML       (>=0.6.0)
+  XML::SAX::Writer           (>=0.44)
+  XML::Filter::DOMFilter::LibXML
 
-A bundle of all this modules and below mentioned libraries may be
-downloaded from http://xsh.sourceforge.net/download.html
+For the full list of dependences, see
+http://xsh.sourceforge.net/requirements.html
 
-Other Dependencies:
--------------------
+Installing on Windows
+=====================
 
-For the full list of dependences, see http://xsh.sourceforge.net/requirements.html
+XSH2 runs also on Microsoft Windows with Active Perl 5.8
+(http://www.activestate.com) with some limitations:
 
+  o the TAB-completion does not work in windows console
+  o output redirection feature does not work and is disabled
 
-Installing modules from CPAN
-----------------------------
+A bundle of packages for installation using the ActivePerl "Perl
+Package Manager" can be obtained from
+http://xsh.sourceforge.net/download.html.
 
-If you have a direct internet connection, you may install Perl modules
-from CPAN by typing
-
-  $ perl -MCPAN -e shell
-
-answering few initial questions and installing the modules one by one with
-
-  cpan> install <module-name>
-
-where <module-name> is one of the modules mentioned above.
-
+Another possibility for running XSH2 on Win32 is to use some POSIX
+environment such as Cygwin (http://www.cygwin.com/). In that case,
+installation instructions for Unix/Linux apply and all features should
+work as on UNIX.

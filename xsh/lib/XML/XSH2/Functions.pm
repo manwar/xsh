@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.41 2007-01-02 19:02:09 pajas Exp $
+# $Id: Functions.pm,v 2.42 2007-01-02 22:03:22 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -39,8 +39,8 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 	  /;
 
 BEGIN {
-  $VERSION='2.0.5';
-  $REVISION=q($Revision: 2.41 $);
+  $VERSION='2.1.0'; # VERSION TEMPLATE
+  $REVISION=q($Revision: 2.42 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		 $QUERY_ENCODING
@@ -4074,7 +4074,7 @@ sub edit {
       }
       return $replacement;
     } elsif ($_xml_module->is_attribute($node)) {
-      $node->setValue($replacement);
+      $node->setValue($replacement) if defined $replacement;
       push @$rl, $node if defined $rl;
     } else {
       local $RECOVERING=$opts->{recover} ? 1 : $RECOVERING;
@@ -4947,8 +4947,7 @@ sub pipe_command {
 
   if ($^O eq 'MSWin32') {
     _warn("Output redirection not supported on Win32 - ignoring pipe!");
-    run_commands($cmd);
-    return 1;
+    return run_commands($cmd);
   }
 
   if ($pipe eq '') {

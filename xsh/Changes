@@ -1,28 +1,41 @@
+Release 2.1.0:
+Feature enhancements.
+
 Changes since 2.0.2:
+--------------------
+Incompatible Changes:
+  - commands 'rename' and 'map' have new syntax and semantics:
 
- - many bugfixes
- - added new XSH command 'set' for easy creating and modifying nodes
- - improved namespace handling
- - added functions xsh:match() and xsh:filename()
- - completion for default, xsh, and user-defined XPath functions
- - echo --no-space flag added
- - added save --output-encoding flag
- - added change-ns-prefix, change-ns-uri commands
- - rename and map command syntax and semantics changed ^W improved drammatically:
-
-   Translation guide:
-
-     OLD                          | NEW
+     OLD (XSH 2.0.2)              | NEW (XSH 2.1.0)
      -----------------------------+-----------------------------------
      map { $_=uc } //text();      | map { uc } //text();
      map { s/foo/bar/ } //text(); | map :i { s/foo/bar/ } //text();
      map { $_='link' } //ref;     | rename link //ref;
 
-  - customizable shell prompt
+New Features:
+  - XSH scripts can be "compiled" (xsh -D) into Perl scripts
+    which start faster (see xsh --help for details)
+  - XML::XSH2::Compile module allows efficient embedding of
+    XSH2 scripts into Perl modules (see the module's manpage)
+  - new command 'set' simplifies creating and modifying nodes
+  - new command 'hash' simplifies hashing/grouping nodes by arbitrary keys
+  - new commands 'change-ns-prefix' and 'change-ns-uri' add full control
+    over namespace declarations
+  - XPath functions xsh:match() (regexp matching),
+    xsh:filename() (introspection), and xsh:lookup() (hash retrieval),
+    xsh:document() (get open document by filename), and xsh:documents()
+    (get all open documents)
+  - the interactive shell has a customizable prompt
+
+Enhancements:
+  - the mapping expression of 'rename' and 'map' can be XPath
+  - added save --output-encoding flag
+  - added echo --no-space (:n) flag
   - pwd and locate can return paths based on a nearest (ancestor-or-self) ID 
-  - added xsh:document() and xsh:documents()
+  - completion for default, xsh, and user-defined XPath functions
+  - improved namespace handling
   - filenames of documents parsed from a file are absolute
-  - added hash command and xsh:lookup()
+  - many bugfixes
 
 Release 2.0.2:
 Minor feature enhancements and bug fixes.
