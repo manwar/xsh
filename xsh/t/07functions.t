@@ -253,9 +253,10 @@ count (xsh:sprintf("%03.4d",13.123)) |cat 2>&1;
 
 call x_assert 'xsh:sprintf("%09.4f",13.123)="0013.1230"';
 
-call x_assert 'xsh:sprintf("%e",13.123)="1.312300e+01"';
+$sp={sprintf("%e",13.123)};
+call x_assert 'xsh:sprintf("%e",13.123)=$sp';
 
-call x_assert 'xsh:sprintf("%s-%e-%s-%s","foo",13.123,"bar",/a)="foo-1.312300e+01-bar-abcb"';
+call x_assert 'xsh:sprintf("%s-%e-%s-%s","foo",13.123,"bar",/a)="foo-${sp}-bar-abcb"';
 
 $doc4 := create '<a><b>abc</b><c>efg</c></a>';
 
