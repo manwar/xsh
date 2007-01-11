@@ -29,7 +29,7 @@ New Features:
 
 Enhancements:
   - the mapping expression of 'rename' and 'map' can be XPath
-  - added save --output-encoding flag
+  - added save --encoding flag
   - added echo --no-space (:n) flag
   - pwd and locate can return paths based on a nearest (ancestor-or-self) ID 
   - completion for default, xsh, and user-defined XPath functions

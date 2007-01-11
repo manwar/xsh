@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.42 2007-01-02 22:03:22 pajas Exp $
+# $Id: Functions.pm,v 2.43 2007-01-11 17:01:37 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -40,7 +40,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.1.0'; # VERSION TEMPLATE
-  $REVISION=q($Revision: 2.42 $);
+  $REVISION=q($Revision: 2.43 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		 $QUERY_ENCODING
@@ -2365,7 +2365,9 @@ sub _is_url {
 }
 sub _is_absolute {
   my ($path) = @_;
-  return (_is_url($path) or File::Spec->file_name_is_absolute($path));
+  return ($path eq '-' or 
+	  _is_url($path) or 
+	  File::Spec->file_name_is_absolute($path)) ? 1 : 0;
 }
 
 # create a new document by parsing a file
