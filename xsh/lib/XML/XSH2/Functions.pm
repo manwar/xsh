@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.43 2007-01-11 17:01:37 pajas Exp $
+# $Id: Functions.pm,v 2.44 2007-02-28 10:16:23 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -27,7 +27,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 	    %_files %_defs %_includes %_ns %_func %COMMANDS
 	    $ENCODING $QUERY_ENCODING
 	    $INDENT $BACKUPS $SWITCH_TO_NEW_DOCUMENTS $EMPTY_TAGS $SKIP_DTD
-	    $QUIET $DEBUG $TEST_MODE $WARNINGS
+	    $QUIET $DEBUG $TEST_MODE $WARNINGS $ERRORS
 	    $VALIDATION $RECOVERING $PARSER_EXPANDS_ENTITIES $KEEP_BLANKS
 	    $PEDANTIC_PARSER $LOAD_EXT_DTD $PARSER_COMPLETES_ATTRIBUTES
 	    $PARSER_EXPANDS_XINCLUDE $MAXPRINTLENGTH
@@ -40,7 +40,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.1.0'; # VERSION TEMPLATE
-  $REVISION=q($Revision: 2.43 $);
+  $REVISION=q($Revision: 2.44 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		 $QUERY_ENCODING
@@ -115,6 +115,7 @@ BEGIN {
   $DEFAULT_FORMAT='xml';
   $LINE_NUMBERS=1;
   $WARNINGS=1;
+  $ERRORS=1;
   $BENCHMARK=0;
   $MAXPRINTLENGTH=256;
   $HISTFILE="$ENV{HOME}/.xsh2_history";
@@ -1776,7 +1777,7 @@ sub _rt_position {
 }
 
 sub _err {
-  print STDERR @_," at ",_rt_position(),"\n";
+  print STDERR @_," at ",_rt_position(),"\n" if $ERRORS;
 }
 
 sub _warn {

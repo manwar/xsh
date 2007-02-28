@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 2.5 2007-01-02 22:03:22 pajas Exp $
+# $Id: Completion.pm,v 2.6 2007-02-28 10:16:23 pajas Exp $
 
 package XML::XSH2::Completion;
 
@@ -306,7 +306,9 @@ sub xpath_complete {
   my ($xp,$local) = xpath_complete_str($str,0);
 #  XML::XSH2::Functions::__debug("COMPLETING $_[0] local $local as $xp\n");
   return () if $xp eq "";
-  my $ql= eval { XML::XSH2::Functions::_ev_nodelist($xp) };
+  local $XML::XSH2::Functions::ERRORS;
+  local $XML::XSH2::Functions::WARNINGS;
+  my $ql= XML::XSH2::Functions::_ev_nodelist($xp);
   return () if $@;
   my %names;
   my $prefix = ($local=~/^(${NAMECHAR}+:)/) ? $1 : '';
