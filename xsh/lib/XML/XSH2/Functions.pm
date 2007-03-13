@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.44 2007-02-28 10:16:23 pajas Exp $
+# $Id: Functions.pm,v 2.45 2007-03-13 10:12:43 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -40,7 +40,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.1.0'; # VERSION TEMPLATE
-  $REVISION=q($Revision: 2.44 $);
+  $REVISION=q($Revision: 2.45 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		 $QUERY_ENCODING
@@ -2373,7 +2373,7 @@ sub _is_absolute {
 
 # create a new document by parsing a file
 sub open_doc {
-  my ($opts,$file)=@_;
+  my ($opts,$src)=@_;
   $opts = _ev_opts($opts);
 
   if (exists($opts->{file})+exists($opts->{pipe})+
@@ -2411,16 +2411,25 @@ sub open_doc {
   local $PARSER_EXPANDS_XINCLUDE = 0 if $opts->{'no-xinclude'};
 
   my ($source) = grep exists($opts->{$_}),qw(file pipe string);
-  my $file = _tilde_expand(_ev_string($file));
-#  $file=~s{^(\~[^\/]*)}{(glob($1))[0]}eg;
-  unless (_is_absolute($file)) {
-    $file = File::Spec->rel2abs($file);
+  my $file;
+  unless ($source eq 'string') {
+    $file = _tilde_expand(_ev_string($src));
+    #  $file=~s{^(\~[^\/]*)}{(glob($1))[0]}eg;
+    unless (_is_absolute($file)) {
+      $file = File::Spec->rel2abs($file);
+    }
+    print STDERR "open [$file]\n" if "$DEBUG";
+    if ($file eq "") {
+      die "filename is empty (hint: \$variable := open file-name)\n";
+    }
+  } else {
+    $file = _ev_string($src);
+    print STDERR "open [<STRING>]\n" if "$DEBUG";
+    if ($file eq "") {
+      die "string is empty\n";
+    }
   }
 
-  print STDERR "open [$file]\n" if "$DEBUG";
-  if ($file eq "") {
-    die "filename is empty (hint: \$variable := open file-name)\n";
-  }
   if (($source ne 'file') or
       (-f $file) or $file eq "-" or
       ($file=~/^[a-z]+:/)) {
