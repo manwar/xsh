@@ -1,3 +1,8 @@
+Changes since 2.1.0:
+  - added xsh:span and xsh:context
+  - minor bug fixes
+
+
 Release 2.1.0:
 Feature enhancements.
 

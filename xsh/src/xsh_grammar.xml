@@ -6778,7 +6778,7 @@ ls grep(//word,"^.*tion$");</code>
     </rule>
     <rule id="match_function" type="function" name="xsh:match" inline="no">
       <documentation>
-	<usage>boolean xsh:match(string STR,string PATTERN,options STR)</usage>
+	<usage>node-set xsh:match(string STR,string PATTERN,string OPTIONS)</usage>
 	<description>
 	  <para>
 	    Searches a given string for a pattern match
@@ -6787,6 +6787,16 @@ ls grep(//word,"^.*tion$");</code>
 	    <literal>&lt;xsh:string&gt;</literal>
 	    elements containing portions of the string matched
 	    by the pattern subexpressions enclosed in parentheses.
+	    The OPTIONS string may contain the following flags:
+	    <literal>c</literal> - do not reset search position on a failed match when /g is in effect;
+	    <literal>g</literal> - match globally, i.e. find all occurrences;
+	    <literal>i</literal> - do case insensitive search;
+	    <literal>m</literal> - treat string as multiple lines 
+	    (change "^" and "$" from matching the start or end of the string to matching the start or end
+	    of any line anywhere within the string)
+	    <literal>o</literal> - compile pattern only once;
+	    <literal>s</literal> - treat string as single line (change "." to match any character whatsoever, even a newline, which normally it would not match);
+	    <literal>x</literal> - extend your pattern's legibility by permitting whitespace and comments.
 	  </para>
 	</description>
       </documentation>
@@ -7499,6 +7509,33 @@ ls grep(//word,"^.*tion$");</code>
 	<see-also>
 	  <ruleref ref="hash_command"/>
 	</see-also>
+      </documentation>
+    </rule>
+    <rule id="span_function" type="function" name="xsh:span" inline="no">
+      <documentation>
+	<usage>node-set xsh:span(node-set START,node-set END)</usage>
+	<description>
+	  <para>
+	    Returns a node-set which forms a span of sibling nodes
+	    starting at START node and ending at END node (only the first node
+	    of each of the nodesets is used). It is an error if the START
+	    node and END node are not siblings.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="context_function" type="function" name="xsh:context" inline="no">
+      <documentation>
+	<usage>node-set xsh:context(node-set NODE, float BEFORE, float AFTER)</usage>
+	<description>
+	  <para>
+	    Returns a node-set of sibling nodes surrounding NODE. The
+	    span consists of (up to) BEFORE-many nodes immediately
+	    preceding NODE, the NODE itself, and (up to) AFTER-many
+	    nodes immediately following NODE.  If the AFTER is not
+	    given, AFTER is set equal to BEFORE.
+	  </para>
+	</description>
       </documentation>
     </rule>
 

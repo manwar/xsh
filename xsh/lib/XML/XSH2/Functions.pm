@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.45 2007-03-13 10:12:43 pajas Exp $
+# $Id: Functions.pm,v 2.46 2007-04-02 13:19:55 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -40,7 +40,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.1.0'; # VERSION TEMPLATE
-  $REVISION=q($Revision: 2.45 $);
+  $REVISION=q($Revision: 2.46 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		 $QUERY_ENCODING
@@ -409,7 +409,7 @@ sub get_XPATH_extensions {
   lineno evaluate map matches match max min new-attribute
   new-cdata new-chunk new-comment new-element new-element-ns new-pi
   new-text node-type parse path reverse same serialize split sprintf
-  strmax strmin subst substr sum times var document documents lookup)
+  strmax strmin subst substr sum times var document documents lookup span context)
 }
 
 sub XPATH_doc {
@@ -976,7 +976,56 @@ sub XPATH_lookup {
   }
 }
 
+sub XPATH_span {
+  die "Wrong number of arguments for function xsh:span(node-set,node-set)!\n"
+    if (@_!=2);
+  # the first argument is a start node and
+  # the second is an end node;
+  # only the first argument is taken from each node-set!
+  #
+  # returns span of sibling nodes "between" them (inclusively).
+  # it is an error if the start and end nodes are not siblings.
 
+  my ($start,$end)=@_;
+  for my $nl ($start,$end) {
+    die "Wrong type of argument in function xsh:span(node-set,node-set)!\n"
+      if (!ref($nl) or not UNIVERSAL::isa($nl,"XML::LibXML::NodeList"));
+  }
+  ($start,$end) = map { $_->[0] } ($start,$end);
+  if ($start and $end) {
+    if ($start->parentNode->isSameNode($end->parentNode)) {
+      my @nodes = ();
+      do {{
+	push @nodes, $start;
+	if ($start->isSameNode($end)) {
+	  return XML::LibXML::NodeList->new_from_ref(\@nodes,1);
+	}
+	$start = $start->nextSibling();
+      }} while ($start);
+      return XML::LibXML::NodeList->new();
+    } else {
+      die "Start node and end node are not siblings at xsh:span(node-set,node-set)!\n"
+    }
+  } else {
+    return XML::LibXML::NodeList->new();
+  }
+}
+
+sub XPATH_context {
+  die "Wrong number of arguments for function xsh:context(node-set,float,float)!\n"
+    if (@_<2 or @_>3);
+  # returns a span of nodes consisting of a given number of nodes
+  # before the given context node, the context node itself and a given number of nodes
+  # following the context node
+
+  # $context ... preceding-sibling::node()[position()<$before] | . | following-sibling::node()[position<$after]
+  my ($context,$before,$after)=@_;
+  die "Wrong type of argument in function xsh:context(node-set,float,float)!\n"
+      if (!ref($context) or not UNIVERSAL::isa($context,"XML::LibXML::NodeList"));
+  $before = int($before);
+  $after = defined ($after) ? $before : int($after);
+  return scalar($_xpc->findnodes("preceding-sibling::node()[position()<$before] | . | following-sibling::node()[position()<$after]",$context->[0]));
+}
 
 # ===================== END OF XPATH EXT FUNC ================
 

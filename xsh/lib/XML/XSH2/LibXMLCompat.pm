@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: LibXMLCompat.pm,v 2.4 2007-01-02 22:03:22 pajas Exp $
+# $Id: LibXMLCompat.pm,v 2.5 2007-04-02 13:19:55 pajas Exp $
 
 package XML::XSH2::LibXMLCompat;
 
@@ -267,7 +267,7 @@ sub get_dtd {
     if ($node->nodeType == XML::LibXML::XML_DTD_NODE()) {
       if ($node->hasChildNodes()) {
 	$dtd=$node;
-      } elsif (get_load_ext_dtd()) {
+      } else {
 	my $str=$node->toString();
 	my $name=$node->getName();
 	my $public_id;
