@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 # -*- cperl -*-
 
-# $Id: xsh,v 2.8 2007-01-02 22:03:23 pajas Exp $
+# $Id: xsh,v 2.9 2007-04-24 15:02:20 pajas Exp $
 
 package main;
 use strict;
@@ -57,7 +57,7 @@ BEGIN {
 			 "man"        => \$manpage,
 			) or $usage=1;
 #  getopts('atscqvwdfhVinTE:e:l:pP');
-  $REVISION=q($Revision: 2.8 $);
+  $REVISION=q($Revision: 2.9 $);
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
@@ -78,13 +78,16 @@ if ($manpage) {
   pod2usage(-exitstatus => 0, -verbose => 2);
 }
 
-die "Incompatible options: -a, -C\n" if $opt_a+$opt_C > 1;
+#die "Incompatible options: -a, -C\n" if $opt_a+$opt_C > 1;
 
 my $string;
 if (!$opt_C and !$opt_a and $opt_l eq "" and -f $ARGV[0]) {
   # suppose the 1st argument is a script,
   # and the rest is its parameters
   $opt_l = shift @ARGV;
+  @XML::XSH2::Map::ARGV=@ARGV;
+} elsif ($opt_C and $opt_a) {
+  $string  = shift @ARGV;
   @XML::XSH2::Map::ARGV=@ARGV;
 } elsif ($opt_a) {
   @XML::XSH2::Map::ARGV=@ARGV;
@@ -533,6 +536,7 @@ xsh - XML Editing Shell
 
   xsh [options] script_or_command
   xsh [options] -al script [arguments ...]
+  xsh [options] -aC command [arguments ...]
   xsh [options] -p commands < input.xml > output.xml
   xsh [options] -I input.xml -O output.xml commands
   xsh [options] -P file.xml commands
@@ -583,9 +587,10 @@ Indicate, that the command-line arguments are XSH commands.
 
 =item B<--arguments|-a>
 
-Indicate, that the command-line arguments are should be
-passed to the script via C<@XML::XSH2::Map::ARGV>. This
-option is incompatible with C<--commands>.
+Indicate, that the command-line arguments are should be passed to the
+script via C<@ARGV> (in C<XML::XSH2::Map> namespace). If used with
+C<--commands>, the first argument should contains XSH comands and the
+rest are the passed to via C<@ARGV>.
 
 =item B<--stdin|-t>
 

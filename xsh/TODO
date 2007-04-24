@@ -1,5 +1,7 @@
 TODO XSH2:
 
+- ls --no-out  ... return the serialization rather than printing it
+
 - split [after|before] ...
 - split text on a given character???
 

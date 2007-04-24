@@ -1,5 +1,7 @@
 KNOWN BUGS
 
+- open :B does not seem to override keep_blanks 1
+
 - it is not possible to perform XPath searches on namespace nodes
   (it is a limitation of libxml2)
 
