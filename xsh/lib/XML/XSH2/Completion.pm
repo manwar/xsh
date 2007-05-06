@@ -1,4 +1,4 @@
-# $Id: Completion.pm,v 2.6 2007-02-28 10:16:23 pajas Exp $
+# $Id: Completion.pm,v 2.7 2007-05-06 19:32:12 pajas Exp $
 
 package XML::XSH2::Completion;
 
@@ -310,6 +310,7 @@ sub xpath_complete {
   local $XML::XSH2::Functions::WARNINGS;
   my $ql= XML::XSH2::Functions::_ev_nodelist($xp);
   return () if $@;
+
   my %names;
   my $prefix = ($local=~/^(${NAMECHAR}+:)/) ? $1 : '';
   @names{ map { 
@@ -318,7 +319,7 @@ sub xpath_complete {
 						length($str)
 						-length($local)).
 					 $prefix.$_->nodeName(),$pos))
-  } @$ql}=();
+  } grep defined, @$ql}=();
 
   my @completions = sort { $a cmp $b } keys %names;
 #  print "completions so far: @completions\n";

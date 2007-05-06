@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.46 2007-04-02 13:19:55 pajas Exp $
+# $Id: Functions.pm,v 2.47 2007-05-06 19:32:38 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -40,7 +40,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.1.0'; # VERSION TEMPLATE
-  $REVISION=q($Revision: 2.46 $);
+  $REVISION=q($Revision: 2.47 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		 $QUERY_ENCODING
@@ -2464,7 +2464,7 @@ sub open_doc {
   unless ($source eq 'string') {
     $file = _tilde_expand(_ev_string($src));
     #  $file=~s{^(\~[^\/]*)}{(glob($1))[0]}eg;
-    unless (_is_absolute($file)) {
+    if ($source eq 'file' and !_is_absolute($file)) {
       $file = File::Spec->rel2abs($file);
     }
     print STDERR "open [$file]\n" if "$DEBUG";
