@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: gen_commands.pl,v 2.2 2006-09-17 15:34:56 pajas Exp $
+# $Id: gen_commands.pl,v 2.3 2007-11-13 21:54:18 pajas Exp $
 
 use strict;
 use XML::LibXML;
@@ -63,6 +63,8 @@ sub print_command {
       }
     }
     print "}"
+  } else {
+    print ",undef";
   }
   if ($cmd->getAttribute('extraargs') ne "") {
     print ", ".$cmd->getAttribute('extraargs');
