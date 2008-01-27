@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.48 2008-01-27 10:41:09 pajas Exp $
+# $Id: Functions.pm,v 2.49 2008-01-27 10:48:39 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -40,7 +40,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.1.0'; # VERSION TEMPLATE
-  $REVISION=q($Revision: 2.48 $);
+  $REVISION=q($Revision: 2.49 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		 $QUERY_ENCODING
@@ -1688,11 +1688,11 @@ sub var_value {
       if ($name !~ /((?:::)?[a-zA-Z_][a-zA-Z0-9_]*)*/);
     return var_value(q($).$name);
   } elsif ($var=~/^\$?(.*)/) {
+    no strict qw(refs);
     my $lex = lex_var($1);
     if ($lex) {
       return $$lex
     } elsif (defined(${"XML::XSH2::Map::$1"})) {
-      no strict qw(refs);
       return ${"XML::XSH2::Map::$1"};
     }
   } else {
@@ -1701,7 +1701,7 @@ sub var_value {
 }
 
 sub string_vars {
-  no strict;
+  no strict qw(refs);
   return sort grep { defined(${"XML::XSH2::Map::$_"}) } keys %{"XML::XSH2::Map::"};
 }
 
