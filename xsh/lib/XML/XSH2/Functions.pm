@@ -1,5 +1,5 @@
 # -*- cperl -*-
-# $Id: Functions.pm,v 2.47 2007-05-06 19:32:38 pajas Exp $
+# $Id: Functions.pm,v 2.48 2008-01-27 10:41:09 pajas Exp $
 
 package XML::XSH2::Functions;
 
@@ -40,7 +40,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 
 BEGIN {
   $VERSION='2.1.0'; # VERSION TEMPLATE
-  $REVISION=q($Revision: 2.47 $);
+  $REVISION=q($Revision: 2.48 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
 		 $QUERY_ENCODING
@@ -1830,7 +1830,7 @@ sub _err {
 }
 
 sub _warn {
-  print STDERR "Warining: ",@_," at ",_rt_position(),"\n" if $WARNINGS;
+  print STDERR "Warning: ",@_," at ",_rt_position(),"\n" if $WARNINGS;
 }
 
 
@@ -2945,14 +2945,14 @@ sub list {
 sub list_namespaces {
   my ($opts,$exp) = @_;
   $opts = _ev_opts($opts);
-  my $ql= ($opts->{registered} and $exp eq "") ? [] : _ev_nodelist($exp);
+  my $ql= ($opts->{registered} and $exp eq "") ? [] : _ev_nodelist(defined $exp ? $exp : '.');
   foreach my $node (@$ql) {
     my $n=$node;
     my %namespaces;
     while ($n) {
       foreach my $ns ($n->getNamespaces) {
-	$namespaces{$ns->getName()}=$ns->getData()
-	  unless (exists($namespaces{$ns->getName()}));
+	$namespaces{$ns->localname()}=$ns->value()
+	  unless (exists($namespaces{$ns->localname()}));
       }
       $n=$n->parentNode();
     }
@@ -3473,9 +3473,9 @@ sub set_namespace {
   my $prefix = $opts->{prefix};
   unless ($_xml_module->is_element($node) ||
 	    $_xml_module->is_attribute($node)) {
-    die "declare-ns: namespaces can only be set for element and attribute nodes\n";
+    die "set_namespace: namespaces can only be set for element and attribute nodes\n";
   }
-  if ($prefix) {
+  if (defined $prefix) {
     my $declaredURI = $node->lookupNamespaceURI($prefix);
     if (defined $declaredURI and $declaredURI eq $uri) {
       return $node->setNamespace($uri,$prefix);
@@ -3483,7 +3483,7 @@ sub set_namespace {
       die "Namespace error: prefix '$prefix' already used for the namespace '$declaredURI'\n";
     }
   } else {
-    if ($prefix = $node->lookupNamespacePrefix($uri)) {
+    if (defined($prefix = $node->lookupNamespacePrefix($uri))) {
       return $node->setNamespace($uri,$prefix);
     } else {
       die "Namespace error: use declare-ns command to declare a prefix for '$uri' first\n";
@@ -4738,7 +4738,7 @@ sub set_dtd {
     my $root = $opts->{name};
     my $public = $opts->{public};
     my $system = $opts->{system};
-    if (!defined($root)) {
+    if ((defined ($public) or defined ($system)) and !defined($root)) {
       if ($doc->getDocumentElement) {
 	$root = $doc->getDocumentElement->nodeName();
       } else {
@@ -4751,6 +4751,7 @@ sub set_dtd {
     if ($doc->externalSubset) {
       $doc->removeExternalSubset();
     }
+    return 1 unless (defined $root or defined $public or defined $system);
     if ($opts->{internal}) {
       $doc->setInternalSubset($doc->createInternalSubset($root, $public,
 							 $system));
