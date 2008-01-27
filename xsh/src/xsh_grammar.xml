@@ -6753,6 +6753,17 @@ ls grep(//word,"^.*tion$");</code>
 	</description>
       </documentation>
     </rule>
+    <rule id="lineno_function" type="function" name="xsh:lineno" inline="no">
+      <documentation>
+	<usage>node-set xsh:lineno(node-set)</usage>
+	<description>
+	  <para>Returns line number of the occurrence of
+	    the first node in the given node-set in its original XML
+	    document (if available).
+	  </para>
+	</description>
+      </documentation>
+    </rule>
     <rule id="var_function" type="function" name="xsh:var" inline="no">
       <documentation>
 	<usage>node-set xsh:var(string NAME)</usage>
