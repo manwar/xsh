@@ -221,7 +221,7 @@ sub _lookup_namespace {
     } else {
       # find the best suitable prefix
       my $real_prefix = $node->lookupNamespacePrefix( $uri );
-      if ($real_prefix eq "" and !defined($node->lookupNamespaceURI( $prefix ))) {
+      if ($real_prefix eq "" and !defined($node->lookupNamespaceURI( undef ))) {
 	$real_prefix = $prefix;
       }
       return (($real_prefix ne "") ? $real_prefix.':'.$name : $name , $uri);
