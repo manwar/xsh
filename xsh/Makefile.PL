@@ -12,8 +12,8 @@ WriteMakefile(
     'EXE_FILES' => ['xsh'],
     'PREREQ_PM' => {
 		    'IO::Scalar' => 0,
-		    'XML::LibXML' => "1.60",
 		    'XML::LibXML::Common' => "0.13",
+		    'XML::LibXML' => "1.60",
 		    'XML::LibXSLT' => "1.60",
 		    'XML::LibXML::Iterator' => 0,
 		    'Parse::RecDescent' => "1.94",
@@ -21,6 +21,8 @@ WriteMakefile(
 		    'XML::LibXML::XPathContext' => "0.07",
 		    'XML::SAX::Writer' => "0.44",
 		    'XML::Filter::DOMFilter::LibXML' => "0.02",
+		    'Term::ReadLine' => 0,
+		    'Term::ReadLine::Perl' => 0,
 		   },
      AUTHOR       => 'Petr Pajas (pajas@matfyz.cz)',
      ABSTRACT     => 'XML Editing Shell',
@@ -42,6 +44,8 @@ WriteMakefile(
 sub MY::postamble {
 
 return <<'EOF';
+svn:    cvs
+
 cvs:    xml
 	rm -f Makefile
 	@echo
@@ -62,7 +66,9 @@ grammar:
 	$(PERL) -c lib/XML/XSH2/Parser.pm
 
 docs: all
-	pod2html --noindex --title "xsh - XML Editing Shell" < xsh > doc/xsh.html
+	podselect xsh > xsh.pod
+	pod2html --noindex --title "XSH2" --podroot=. --podpath=. --libpods=xsh < XSH2.pod > doc/XSH2.html
+	pod2html --noindex --title "xsh - XML Editing Shell" --podroot=.  --podpath=. --libpods=XSH2 < xsh > doc/xsh.html
 	$(PERL) ./xsh -l tools/gen_reference.xsh
 	$(PERL) ./xsh -l tools/gen_doc.xsh
 

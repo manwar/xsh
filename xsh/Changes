@@ -1,7 +1,26 @@
-Changes since 2.1.0:
-  - added xsh:span and xsh:context
-  - minor bug fixes
+Release 2.1.1:
+Bug fixes and minor enhancements.
 
+Changes since 2.1.0:
+The project repository was migrated from CVS to SVN.
+
+Several important bug and compatibility fixes and a three new XPath
+functions:
+
+ - xsh:lineno()
+   returns the line-number of the current node (the function was present
+   before but was not documented)
+ - xsh:span($start-node,$end-node)
+   returns a node-set which forms a span of sibling nodes
+   starting at $start-node and ending at $end-node
+   (these two must be siblings).
+
+ - xsh:context($node,$before,$after?)
+   returns a node-set of sibling nodes surrounding $node. The span
+   consists of (up to) $before-many nodes immediately preceding
+   $node, the $node itself, and (up to) $after-many nodes
+   immediately following $node. If the $after is not given, 
+   the value of $before is assumed.
 
 Release 2.1.0:
 Feature enhancements.

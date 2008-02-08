@@ -31,6 +31,9 @@ echo "Parsing ${$xsh_grammar_file}";
 $X := open $xsh_grammar_file;
 echo "Done.";
 
+echo "creating directory doc/frames";
+system mkdir -p doc/frames;
+
 validation 0;
 indent 1;
 

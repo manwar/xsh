@@ -47,4 +47,4 @@ tools/update_version.pl
 tools/html.xsl
 xsh
 XSH2.pod
-META.yml                                 Module meta-data (added by MakeMaker)
+

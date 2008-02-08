@@ -9,7 +9,7 @@ use XML::LibXML::Iterator;
 use XML::LibXML::NodeList;
 use vars qw($VERSION);
 
-  $VERSION='2.1.0'; # VERSION TEMPLATE
+  $VERSION='2.1.1'; # VERSION TEMPLATE
 
 sub module {
   return "XML::LibXML";
@@ -313,11 +313,8 @@ sub iterator {
   return $iter;
 }
 
-  package XML::LibXML::Namespace;
 
-sub parentNode {}
-
-  package XML::LibXML::SubTreeIterator;
+package XML::LibXML::SubTreeIterator;
 use strict;
 use base qw(XML::LibXML::Iterator);
 # (inheritance is not a real necessity here)
@@ -366,6 +363,9 @@ sub subtree_iterator {
 {
   local $^W=0;
   eval <<'EOF';
+  package XML::LibXML::Namespace;
+  sub parentNode {}
+
   package XML::LibXML::NodeList;
 
   use overload
