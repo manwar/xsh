@@ -15,7 +15,7 @@ use Getopt::Long;
 use Pod::Usage;
 use vars qw($opt_q $opt_w $opt_i $help $opt_V $opt_E $opt_e $opt_d
             $opt_c $opt_s $opt_f $opt_g $opt_v $opt_t $opt_T $opt_a
-            $opt_l $opt_n $opt_p $opt_P $usage $manpage $opt_HTML
+            $opt_l $opt_n $opt_p $opt_P $usage $manpage $opt_HTML $opt_F
             $opt_XML $input $output $process $format $opt_C $opt_D $REVISION);
 
 use IO::Handle;
@@ -28,6 +28,7 @@ BEGIN {
   my $optparser=new Getopt::Long::Parser(config => ["bundling"]);
   $optparser->getoptions(
 			 "arguments|a" => \$opt_a,
+			 "files|F" => \$opt_F,
 			 "stdin|t" => \$opt_t,
 			 "compile|c" => \$opt_c,
 			 "quiet|q" => \$opt_q,
@@ -61,10 +62,15 @@ BEGIN {
   $ENV{PERL_READLINE_NOWARN}=1;
 }
 
-if ($opt_P and ($input or $output)) {
+if ($process and ($input or $output)) {
   print STDERR "Options -P is incompatible with -I and -O!\n";
   $usage=1;
 }
+if ($opt_F and ($process or $input or $output)) {
+  print STDERR "Options -F is incompatible with -I, -O, and -P!\n";
+  $usage=1;
+}
+
 
 # Help and usage
 if ($usage) {
@@ -81,12 +87,16 @@ if ($manpage) {
 #die "Incompatible options: -a, -C\n" if $opt_a+$opt_C > 1;
 
 my $string;
+$opt_a=1 if $opt_F;
 if (!$opt_C and !$opt_a and $opt_l eq "" and -f $ARGV[0]) {
   # suppose the 1st argument is a script,
   # and the rest is its parameters
   $opt_l = shift @ARGV;
   @XML::XSH2::Map::ARGV=@ARGV;
 } elsif ($opt_C and $opt_a) {
+  $string  = shift @ARGV;
+  @XML::XSH2::Map::ARGV=@ARGV;
+} elsif ($opt_F and !$opt_l) {
   $string  = shift @ARGV;
   @XML::XSH2::Map::ARGV=@ARGV;
 } elsif ($opt_a) {
@@ -225,7 +235,7 @@ foreach ($input, $output) {
   s(')(\\')g;
 }
 
-print STDERR "\$INPUT open := '$input'\n" if $opt_d;
+print STDERR "\$INPUT := open '$input'\n" if $opt_d;
 xsh_set_script('<CMD-LINE>');
 xsh("\$INPUT := open '$input'") if ($input);
 
@@ -234,13 +244,28 @@ if ($opt_l) {
   xsh_set_script($opt_l);
   my $s = join "",<$load>;
   close $load;
-  xsh($s);
+  if ($opt_F) {
+    $string= '' unless defined($string);
+    xsh("for \$INPUT_FILENAME in {\@ARGV} { \$INPUT := open \$INPUT_FILENAME; do { $s\n};\n$string\n}");
+    undef $string;
+    exit unless $opt_i;
+  } else {
+    xsh($s);
+  }
 }
 
 if ($string) {
-  print "xsh> $string\n" if ($opt_i and not $opt_q);
   xsh_set_script('<CMD-LINE>');
-  xsh($string);
+  print "xsh> $string\n" if ($opt_i and not $opt_q);
+  if ($opt_F) {
+    $string = "for \$INPUT_FILENAME in {\@ARGV} { \$INPUT := open \$INPUT_FILENAME; $string }";
+    print "xsh> $string\n" if ($opt_i and not $opt_q);
+    xsh($string);
+    exit unless $opt_i;
+  } else {
+    print "xsh> $string\n" if ($opt_i and not $opt_q);
+    xsh($string);
+  }
   print "\n" if ($opt_i and not $opt_q);
 }
 
@@ -589,8 +614,29 @@ Indicate, that the command-line arguments are XSH commands.
 
 Indicate, that the command-line arguments are should be passed to the
 script via C<@ARGV> (in C<XML::XSH2::Map> namespace). If used with
-C<--commands>, the first argument should contains XSH comands and the
+C<--commands> or without C<--load>, the first argument should contain XSH comands and the
 rest are the passed to via C<@ARGV>.
+
+=item B<--files|-F>
+
+Indicate, that the command-line arguments should be treated as input
+filenames. If used with C<--commands> or without C<--load>, the first
+argument should contain XSH comands. A XSH script specified with
+C<--load> or XSH commands specified with C<--commands> (or both in
+this order) are evaluated repeatedly on each input file. For example,
+running
+
+  $ xsh -l script.xsh -F command file1.xml file2.xml ...
+
+is equivalent to
+
+  $ xsh --stdin -aC command file1.xml file2.xml ...
+   for $INPUT_FILENAME in { @ARGV } {
+     $INPUT := open $INPUT_FILENAME;
+     . "script.xsh";
+     command
+   }
+   ^D
 
 =item B<--stdin|-t>
 
