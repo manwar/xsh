@@ -5011,7 +5011,7 @@ sub pipe_command {
     _warn("Output redirection not supported on Win32 - ignoring pipe!");
     return run_commands($cmd);
   }
-
+  $pipe = expand($pipe);
   if ($pipe eq '') {
     die "Error: empty redirection\n";
   }
