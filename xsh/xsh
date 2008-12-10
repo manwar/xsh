@@ -88,12 +88,12 @@ if ($manpage) {
 
 my $string;
 $opt_a=1 if $opt_F;
-if (!$opt_C and !$opt_a and $opt_l eq "" and -f $ARGV[0]) {
+if (!$opt_C and !$opt_F and !$opt_a and $opt_l eq "" and -f $ARGV[0]) {
   # suppose the 1st argument is a script,
   # and the rest is its parameters
   $opt_l = shift @ARGV;
   @XML::XSH2::Map::ARGV=@ARGV;
-} elsif ($opt_C and $opt_a) {
+} elsif ($opt_C and ($opt_F or $opt_a)) {
   $string  = shift @ARGV;
   @XML::XSH2::Map::ARGV=@ARGV;
 } elsif ($opt_F and !$opt_l) {
@@ -235,9 +235,16 @@ foreach ($input, $output) {
   s(')(\\')g;
 }
 
-print STDERR "\$INPUT := open '$input'\n" if $opt_d;
+print STDERR "\$INPUT_FILENAME := '$input'\n" if $opt_d;
+print STDERR "\$INPUT := open \$INPUT_FILENAME\n" if $opt_d;
 xsh_set_script('<CMD-LINE>');
-xsh("\$INPUT := open '$input'") if ($input);
+if ($input) {
+  $XML::XSH2::Map::INPUT_FILENAME=$input;
+  xsh("\$INPUT := open \$INPUT_FILENAME;");
+}
+if ($output) {
+  $XML::XSH2::Map::OUTPUT_FILENAME=$output;
+}
 
 if ($opt_l) {
   open(my $load,'<:bytes',"$opt_l") || do { print STDERR "Error loading $opt_l: $!\n"; exit 1 };
@@ -349,8 +356,7 @@ if ($opt_i) {
 
 xsh_set_script('<CMD-LINE>');
 if ($output) {
-  local $XML::XSH2::Map::OUTFILE=$output;
-  xsh('save --file $OUTFILE $INPUT');
+  xsh('save --file $OUTPUT_FILENAME $INPUT');
 }
 
 # get a line of input from ReadLine
@@ -626,7 +632,7 @@ C<--load> or XSH commands specified with C<--commands> (or both in
 this order) are evaluated repeatedly on each input file. For example,
 running
 
-  $ xsh -l script.xsh -F command file1.xml file2.xml ...
+  $ xsh -l script.xsh -FC command file1.xml file2.xml ...
 
 is equivalent to
 

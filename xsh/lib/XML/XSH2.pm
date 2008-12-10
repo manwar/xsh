@@ -60,7 +60,7 @@ xsh()
 
 This module implements XSH sripting language. XSH stands for XML
 (editing) SHell. XSH language is documented in L<XSH>
-and on L<http://xsh.sourceforge.net/doc>.
+and on L<http://xsh.sourceforge.net/documentation.html>.
 
 The distribution package of XML::XSH2 module includes XSH shell
 interpreter called C<xsh> (see L<xsh>). To use it interactively, run

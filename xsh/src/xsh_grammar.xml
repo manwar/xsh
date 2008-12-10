@@ -2964,7 +2964,7 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    <literal>--fulltext</literal> flag forces
 	    the search to be performed over the full text
 	    of help. 
-	    <literal>--fulltext</literal> indicates,
+	    <literal>--regexp</literal> indicates,
 	    that the given <xref linkend="exp"/>
 	    is a regular expression instead of a literal string.
 	  </para>

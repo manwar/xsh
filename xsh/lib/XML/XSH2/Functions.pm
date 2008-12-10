@@ -5937,10 +5937,13 @@ sub node_type {
 
   package XML::XSH2::Map;
 
-import XML::XSH2::Functions ':param_vars';
+BEGIN {
+  import XML::XSH2::Functions ':param_vars';
+  
 
-*fromUTF8 = *XML::XSH2::Functions::fromUTF8;
-*toUTF8 = *XML::XSH2::Functions::toUTF8;
+  *fromUTF8 = *XML::XSH2::Functions::fromUTF8;
+  *toUTF8 = *XML::XSH2::Functions::toUTF8;
+}
 
 sub call {
   XML::XSH2::Functions::call({},0,@_);
