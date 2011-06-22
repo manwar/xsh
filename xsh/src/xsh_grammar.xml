@@ -636,10 +636,10 @@ wrap '&lt;x:font color="blue">' //x:a[@href];</code>
 	The <xref linkend="options_command"/> command
 	displays current settings by means of &XSH; commands.
 	Thus it can not only be used to review current values, but
-	also to store them for future use, e.g. in ~/.xshrc file.
+	also to store them for future use, e.g. in ~/.xsh2rc file.
       </para>
       <example>
-	<code>xsh&gt; <userinput>settings | cat &gt; ~/.xshrc</userinput></code>
+	<code>xsh&gt; <userinput>settings | cat &gt; ~/.xsh2rc</userinput></code>
       </example>
     </section>
     <section id="Perl_shell">
@@ -1411,7 +1411,7 @@ sub new {
 	<directive type="error">Parse error near: "}.substr($text,0,40).qq{ ..."</directive>
       </production>
     </rule>
-    <rule id="block" type="argtype" name="command-or-block" inline="no">
+    <rule id="block" type="argtype" name="block" inline="no">
       <production>
 	<string>{</string>
 	<directive type="commit"/>
@@ -1420,12 +1420,12 @@ sub new {
 	<action>[grep ref,@{$item[3]}]</action>
       </production>
       <documentation sections="Argtypes Flow">
-	<title>command-or-block argument type</title>
-	<shortdesc>single &XSH; command or a block of &XSH; commands</shortdesc>
+	<title>block argument type</title>
+	<shortdesc>a block of &XSH; commands</shortdesc>
 	<description>
 	  <para>
-	    &XSH; <xref linkend="command"/> or a block of semicolon-separated
-	    commands enclosed within braces.
+	    a block of semicolon-separated
+	     &XSH; commands enclosed within braces.
 	  </para>
 	  <example>
 	    <title>Count paragraphs in each chapter</title>
@@ -2344,7 +2344,7 @@ END
 	<shortdesc>if statement</shortdesc>
 	<description>
 	  <para>
-	    Executes <xref linkend="block"/> if a given <xref linkend="exp"/>
+	    Executes <xref linkend="command"/> or <xref linkend="block"/> if a given <xref linkend="exp"/>
 	    expression evaluates to a non-emtpty node-list, true
 	    boolean-value, non-zero number or non-empty literal. If
 	    the first expression fails, then 
@@ -2451,7 +2451,7 @@ END
 	<usage>while <xref linkend="exp"/> <xref linkend="block"/></usage>
 	<shortdesc>simple while loop</shortdesc>
 	<description>
-	  <para> Execute the <xref linkend="block"/> as long as
+	  <para> Execute the <xref linkend="command"/> or <xref linkend="block"/> as long as
 	    the given <xref linkend="exp"/> evaluates to a non-emtpty
 	    node-list, true boolean-value, non-zero number or
 	    non-empty literal.
@@ -2879,8 +2879,8 @@ uncomment //comment()[starts-with(.,"$mark")] $mark;
 	    Otherwise, settings are listed in the form of XSH commands.
 	  </para>
 	  <example>
-	    <title>Store current settings in your .xshrc</title>
-	    <code>xsh&gt; <userinput>settings | cat &gt; ~/.xshrc</userinput></code>
+	    <title>Store current settings in your .xsh2rc</title>
+	    <code>xsh&gt; <userinput>settings | cat &gt; ~/.xsh2rc</userinput></code>
 	  </example>
 	</description>
       </documentation>
@@ -3965,7 +3965,7 @@ xsh $foo/&gt; ls /;
 	<param name="depth" short="d" type="exp" argument="exp"/>
       </command>
       <documentation sections="Navigation Information">
-	<usage>ls [--fold|:f] [--fold-attrs|:A] [--indent|:i | --no-indent|:n]
+	<usage>ls [--fold|:f] [--fold-attrs|:A] [--indent|:i | --no-indent|:I]
 	  [--depth|:d <xref linkend="exp"/>] [<xref linkend="exp"/>]</usage>
 	<shortdesc>list a given part of a document as XML</shortdesc>
 	<description>
@@ -4002,7 +4002,7 @@ xsh $foo/&gt; ls /;
 	  <para>
 	    <literal>--indent</literal> (<literal>:i</literal>)
 	    and 
-	    <literal>--no-indent</literal> (<literal>:n</literal>)
+	    <literal>--no-indent</literal> (<literal>:I</literal>)
 	    may be used to enforce/suppress
 	    indentation, overriding current setting
 	    (see command <xref linkend="indent"/>).
@@ -5035,7 +5035,7 @@ ls xsh:lookup('books_by_author','Jack London');</code>
 	  <para>
 	    <literal>--indent</literal> (<literal>:i</literal>)
 	    and 
-	    <literal>--no-indent</literal> (<literal>:n</literal>)
+	    <literal>--no-indent</literal> (<literal>:I</literal>)
 	    may be used to enforce/suppress
 	    indentation, overriding current global setting
 	    of <xref linkend="indent"/>.
@@ -6741,11 +6741,11 @@ ls grep(//word,"^.*tion$");</code>
 	</description>
       </documentation>
     </rule>
-    <rule id="filename_function" type="function" name="xsh:filename" inline="no">
+    <rule id="document_uri_function" type="function" name="xsh:document-uri" inline="no">
       <documentation>
-	<usage>node-set xsh:filename(node-set?)</usage>
+	<usage>string xsh:document-uri(node-set?)</usage>
 	<description>
-	  <para>Returns filename (URL) of the document containing
+	  <para>Returns URI of the document containing
 	    the first node in the given node-set.
 	    If called without arguments, or if the node-set is 
 	    empty, returns filename of the document containing the current node.
@@ -6753,6 +6753,55 @@ ls grep(//word,"^.*tion$");</code>
 	</description>
       </documentation>
     </rule>
+    <rule id="filename_function" type="function" name="xsh:filename" inline="no">
+      <documentation>
+	<usage>string xsh:filename(node-set?)</usage>
+	<description>
+	  <para>Same as xsh:document-uri();</para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="base_uri_function" type="function" name="xsh:base-uri" inline="no">
+      <documentation>
+	<usage>string xsh:base-uri(node-set?)</usage>
+	<description>
+	  <para>Returns base URI of the first node in the node-set (or
+	  the current node).  The function should work on both XML and
+	  HTML documents even if base mechanisms for these are
+	  completely different. It returns the base as defined in RFC
+	  2396 sections "5.1.1. Base URI within Document Content" and
+	  "5.1.2. Base URI from the Encapsulating Entity". However it
+	  does not return the document base (5.1.3), use
+	  document-uri() for this.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+    <rule id="resolve_uri_function" type="function" name="xsh:resolve-uri" inline="no">
+      <documentation>
+	<usage>string xsh:resolve-uri(string, string?)</usage>
+	<description>
+	  <para>
+	    This function takes one or two arguments: a relative URI and an optional base URI.
+	    If the first argument is a relative URI reference, 
+	    this function resolves it against either the 
+	    given base URI, if given (which is assumed to be an absolute URI)
+	    or, if base URI not given, against the URI of the current working directory.
+	    If the first argument is an absolute URI reference, it is returned unchanged. 
+	  </para>
+	  <para>
+	    If the first argument is the zero-length string, returns 
+	    the base URI if given and the URI of the current working directory otherwise.
+	  </para>
+	  <para>
+	    Note: Resolving a URI does not dereference it (download
+	    the referenced content); it is merely a syntactic
+	    operation on two character strings.
+	  </para>
+	</description>
+      </documentation>
+    </rule>
+
     <rule id="lineno_function" type="function" name="xsh:lineno" inline="no">
       <documentation>
 	<usage>node-set xsh:lineno(node-set)</usage>

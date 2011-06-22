@@ -620,14 +620,14 @@ Indicate, that the command-line arguments are XSH commands.
 
 Indicate, that the command-line arguments are should be passed to the
 script via C<@ARGV> (in C<XML::XSH2::Map> namespace). If used with
-C<--commands> or without C<--load>, the first argument should contain XSH comands and the
+C<--commands> or without C<--load>, the first argument should contain XSH commands and the
 rest are the passed to via C<@ARGV>.
 
 =item B<--files|-F>
 
 Indicate, that the command-line arguments should be treated as input
 filenames. If used with C<--commands> or without C<--load>, the first
-argument should contain XSH comands. A XSH script specified with
+argument should contain XSH commands. A XSH script specified with
 C<--load> or XSH commands specified with C<--commands> (or both in
 this order) are evaluated repeatedly on each input file. For example,
 running

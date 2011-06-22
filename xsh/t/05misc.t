@@ -91,9 +91,25 @@ $nodes := sort :k substring(name(),2) :c { $a <=> $b } $nodes;
 
 xmove {@$nodes} into .;
 
-ls {$nodes}
+ls {$nodes};
 
-call p_assert 'xml_list(".") eq "<scratch><c1/><d3/><b8/><a10/></scratch>"'
+call p_assert 'xml_list(".") eq "<scratch><c1/><d3/><b8/><a10/></scratch>"';
+
+set /scratch/a[5] 'yes';
+
+# Test that number literals are parsed as such.
+$index = 5;
+
+x_assert 'count(/scratch/a[$index]) = 1';
+
+x_assert '/scratch/a[$index] = "yes"';
+
+$index = 005.0;
+
+x_assert 'count(/scratch/a[$index]) = 1';
+
+x_assert '/scratch/a[$index] = "yes"';
+
 EOF
 
   plan tests => 4+@xsh_test;

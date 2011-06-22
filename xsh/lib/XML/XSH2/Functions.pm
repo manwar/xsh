@@ -15,6 +15,8 @@ use File::Spec;
 use Scalar::Util;
 use File::Temp qw(tempfile tempdir);
 use Carp;
+use URI;
+use URI::file;
 
 use Exporter;
 use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
@@ -39,7 +41,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 	  /;
 
 BEGIN {
-  $VERSION='2.1.1'; # VERSION TEMPLATE
+  $VERSION='2.1.2'; # VERSION TEMPLATE
   $REVISION=q($Revision: 2.49 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
@@ -120,7 +122,7 @@ BEGIN {
   $MAXPRINTLENGTH=256;
   $HISTFILE="$ENV{HOME}/.xsh2_history";
   $STRICT_PWD=1;
-  $PROMPT='%p>';
+  $PROMPT='%p> ';
   *XML::XSH2::Map::CURRENT_SCRIPT=\$RT_SCRIPT;
 
   $_newdoc=1;
@@ -409,7 +411,9 @@ sub get_XPATH_extensions {
   lineno evaluate map matches match max min new-attribute
   new-cdata new-chunk new-comment new-element new-element-ns new-pi
   new-text node-type parse path reverse same serialize split sprintf
-  strmax strmin subst substr sum times var document documents lookup span context)
+  strmax strmin subst substr sum times var document documents lookup span context
+  resolve-uri base-uri document-uri
+  )
 }
 
 sub XPATH_doc {
@@ -422,21 +426,49 @@ sub XPATH_doc {
 }
 
 sub XPATH_filename {
-  die "Wrong number of arguments for function xsh:doc(nodeset?)!\n" if (@_>1);
+  die "Wrong number of arguments for function xsh:filename(nodeset?) or xsh:document-uri(nodeset?)!\n" if (@_>1);
   my $doc;
   if (@_) {
-    die "1st argument must be a node in xsh:filename(nodeset?)!\n"
+    die "1st argument must be a node in xsh:filename(nodeset?) or xsh:document-uri(nodeset?)!\n"
       unless (ref($_[0]) and UNIVERSAL::isa($_[0],'XML::LibXML::NodeList'));
   }
   if ($_[0]) {
     return XML::LibXML::Literal->new('') unless $_[0][0];
     $doc = $_[0][0]->ownerDocument;
   } else {
-    $doc = $XML::XSH2::Functions::_xpc->getContextNode();
+    $doc = $XML::XSH2::Functions::_xpc->getContextNode()->ownerDocument;
   }
   use utf8;
   return XML::LibXML::Literal->new($doc->URI());
 }
+
+sub XPATH_resolve_uri {
+  die "Wrong number of arguments for function xsh:resolve-uri(relative-URI,base-URI?)!\n" if (@_>2 or @_==0);
+  my ($rel,$base)=map literal_value($_), @_;
+  return XML::LibXML::Literal->new(XML::XSH2::Map::resolve_uri($rel,$base)->as_string);
+}
+
+sub XPATH_document_uri {
+  &XPATH_filename;
+}
+
+sub XPATH_base_uri {
+  die "Wrong number of arguments for function xsh:base_uri(node?)!\n" if (@_>1);
+  my $node;
+  if (@_) {
+    die "1st argument must be a node in xsh:base_uri(node?)!\n"
+      unless (ref($_[0]) and UNIVERSAL::isa($_[0],'XML::LibXML::NodeList'));
+  }
+  if ($_[0]) {
+    return XML::LibXML::Literal->new('') unless $_[0][0];
+    $node = $_[0][0];
+  } else {
+    $node = $XML::XSH2::Functions::_xpc->getContextNode();
+  }
+  use utf8;
+  return XML::LibXML::Literal->new($node->baseURI() || '');
+}
+
 
 sub XPATH_var {
   die "Wrong number of arguments for function xsh:var(id)!\n" if (@_!=1);
@@ -1377,13 +1409,13 @@ sub _ev {
     } else {
       return _expand($');
     }
-  } elsif ($exp =~ /^\d$/) {
-    return $exp;
-  } elsif ($exp =~ /^{/) {
+  } elsif ($exp =~ /^(?:\d*\.\d+|\d+)$/) {  # a number/float literal
+    return 0+$exp;
+  } elsif ($exp =~ /^{/) {  # a perl expression
     return perl_eval($exp,$map,$in_place);
-  } elsif ($exp eq "") {
+  } elsif ($exp eq "") {  # empty
     return "";
-  } else {
+  } else {  # an xpath expression
     my $ret = eval { $_xpc->find(_expand($exp)); };
     _check_err($@,1,1);
     if (ref($ret) and UNIVERSAL::isa($ret,'XML::LibXML::Literal')) {
@@ -2788,7 +2820,8 @@ sub save_doc {
 	} else {
 	  $doc->setCompression(-1);
 	}
-	$doc->toFile($file,$INDENT); # should be document-encoding encoded
+	$doc->toFile($file,$INDENT)
+	  or _err("Saving $file failed!"); # should be document-encoding encoded
 	# TODO: we should set the URL here
       } elsif ($target eq 'pipe') {
 	$file=~s/^\s*\|?//g;
@@ -6035,6 +6068,15 @@ sub position {
 
 *count = *XML::XSH2::Functions::count_xpath;
 *xml_list = *serialize;
+
+sub resolve_uri {
+  my ($rel,$base)=@_;
+  if (defined $base) {
+    return URI->new_abs($rel,URI->new($base)->abs(URI::file->cwd));
+  } else {
+    return URI->new_abs($rel,URI::file->cwd);
+  }
+}
 
 #######################################################################
 #######################################################################
