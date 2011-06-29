@@ -8,9 +8,10 @@ $| = 1;
 
 WriteMakefile(
     'NAME'      => 'XML::XSH2',
-    'VERSION_FROM' => 'lib/XML/XSH2/Functions.pm',
+    'VERSION_FROM' => 'lib/XML/XSH2.pm',
     'EXE_FILES' => ['xsh'],
     'PREREQ_PM' => {
+                    'URI' => 0,
 		    'IO::Scalar' => 0,
 		    'XML::LibXML::Common' => "0.13",
 		    'XML::LibXML' => "1.60",

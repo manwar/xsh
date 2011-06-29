@@ -253,7 +253,12 @@ sub xsh_init {
   if (ref($_[0])) {
     $OUT=$_[0];
   } else {
-    $OUT=\*STDOUT;
+    if (open $OUT, '>&', \*STDOUT) {
+      binmode $OUT;
+      binmode $OUT, ':bytes';
+    } else {
+      $OUT = \*STDOUT;
+    }
   }
   set_encoding({},$ENCODING);
   $_xml_module=$module if $module;
