@@ -41,7 +41,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 	  /;
 
 BEGIN {
-  $VERSION='2.1.4'; # VERSION TEMPLATE
+  $VERSION='2.1.5'; # VERSION TEMPLATE
   $REVISION=q($Revision: 2.49 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
@@ -5566,6 +5566,9 @@ sub load {
 sub include {
   my ($opts,$f,$conditionally)=@_;
   $f=_tilde_expand(_ev_string($f));
+  # File should be relative to the current script URI.
+  $f = XML::XSH2::Map::resolve_uri(URI::file->new($f),
+                                   URI::file->new($SCRIPT))->file;
   $opts=_ev_opts($opts);
   if (!$conditionally || !$_includes{$f}) {
     $_includes{$f}=1;

@@ -1,3 +1,6 @@
+Release 2.1.5:
+Bug fix release (make includes relative to the current script file).
+
 Release 2.1.4:
 Bug fix release (prevent renaming attribute if similarly named attribute already exists).
 
