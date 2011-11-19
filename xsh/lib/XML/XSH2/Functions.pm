@@ -41,7 +41,7 @@ use vars qw/@ISA @EXPORT_OK %EXPORT_TAGS $VERSION $REVISION $OUT
 	  /;
 
 BEGIN {
-  $VERSION='2.1.2'; # VERSION TEMPLATE
+  $VERSION='2.1.4'; # VERSION TEMPLATE
   $REVISION=q($Revision: 2.49 $);
   @ISA=qw(Exporter);
   @PARAM_VARS=qw/$ENCODING
@@ -3294,19 +3294,23 @@ sub perlrename {
 	      $_xml_module->is_pi($node)) {
 	if ($node->can('setName')) {
 	  my $name=$node->getName();
-	  if (defined($ns)) {
-	    $name = _ev_string($nameexp,$name,$in_place);
-	    if (defined $name) {
-	      $node->setName($name);
-	      if ($node->nodeName=~/^([^:]+):(.*)$/) {
-		$node->setNamespace($ns,$1,1);
-	      }
-	    }
-	  } else {
-	    $name = _ev_string($nameexp,$name,$in_place);
-	    if (defined $name) {
-	      $node->setName($name);
-	    }
+          my $old_name = $name;
+          $name = _ev_string($nameexp,$name,$in_place);
+          if (defined $name) {
+            # If it is an attribute, check there is no attribute
+            # with the same name already.
+            if ($_xml_module->is_attribute($node) and
+                $old_name ne $name and
+                $node->getOwnerElement()
+                ->hasAttributeNS($ns || $node->namespaceURI(), $name)) {
+              _err "Cannot rename attribute '$old_name' to '$name': ",
+                "An attribute with same name already exists!";
+            } else {
+              $node->setName($name);
+              if (defined($ns) && $node->nodeName=~/^([^:]+):(.*)$/) {
+                $node->setNamespace($ns,$1,1);
+              }
+            }
 	  }
 	} else {
 	  _err "Node renaming not supported by ",ref($node);
