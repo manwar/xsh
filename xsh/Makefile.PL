@@ -34,6 +34,7 @@ WriteMakefile(
                        'lib/XML/XSH2/Inline.pm' => 'blib/man3/XML::XSH2::Inline.3',
                        'lib/XML/XSH2/Compile.pm' => 'blib/man3/XML::XSH2::Compile.3'
 		     },
+    depend => { 'lib/XML/XSH2/Grammar.pm' => 'xml'},
     'dist' => {
          COMPRESS  => 'gzip',
          SUFFIX    => 'gz',

@@ -1,3 +1,7 @@
+Release 2.1.6:
+Re-generate parser from RecDescent grammer during build; this fixes problem
+with backward incompatible RecDescent releases (thx2 choroba@cpan.org).
+
 Release 2.1.5:
 Bug fix release (make includes relative to the current script file).
 

@@ -9,7 +9,7 @@ use XML::LibXML::Iterator;
 use XML::LibXML::NodeList;
 use vars qw($VERSION);
 
-  $VERSION='2.1.5'; # VERSION TEMPLATE
+  $VERSION='2.1.6'; # VERSION TEMPLATE
 
 sub module {
   return "XML::LibXML";
