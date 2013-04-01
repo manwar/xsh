@@ -123,7 +123,7 @@ sub complete_system_command {
   if (index($word,$pdelim)>=0) {
     return grep -x,complete_filename($type,$word);
   }
-  unless (defined @PATH_HASH) {
+  unless (@PATH_HASH) {
     rehash_path_hash();
   }
   return grep {index($_,$word)==0} @PATH_HASH;
