@@ -1,3 +1,6 @@
+Release 2.1.7:
+Fix compatibility with Perl 5.16.0 (patch by choroba@cpan.org)
+
 Release 2.1.6:
 Re-generate parser from RecDescent grammer during build; this fixes problem
 with backward incompatible RecDescent releases (thx2 choroba@cpan.org).
