@@ -1277,7 +1277,13 @@ $grammar=<<'_EO_GRAMMAR_';
 _EO_GRAMMAR_
 
 sub compile {
-  Parse::RecDescent->Precompile($grammar,"XML::XSH2::Parser");
+  my @opts = ( { -standalone => 1 },
+               $grammar,
+               "XML::XSH2::Parser",
+             );
+  shift @opts
+      if $Parse::RecDescent::VERSION < 1.967_005; # Standalone not supported.
+  Parse::RecDescent->Precompile(@opts);
 }
 
 sub new {
