@@ -1246,7 +1246,8 @@ EOS
   } else {    
     print STDERR "Saving compiled '$SCRIPT' to '$DUMP'\n" unless $QUIET;
     open my $f, ($DUMP_APPEND ? '>>' : '>'), $DUMP || die "Can't dump parse tree to '$DUMP': $!";
-    print {$f} "#!/usr/bin/env perl\n" unless $DUMP_APPEND;
+    require Config;
+    print {$f} "$Config::Config{startperl}\n" unless $DUMP_APPEND;
     print {$f} $dump;
     close $f;
     chmod 0755, $DUMP unless $DUMP_APPEND;
