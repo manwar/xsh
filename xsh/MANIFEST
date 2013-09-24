@@ -44,6 +44,7 @@ tools/gen_help.pl
 tools/gen_pod.pl
 tools/gen_quickref.pl
 tools/gen_reference.xsh
+tools/hide_packages.pl
 tools/html.xsl
 tools/update_version.pl
 tools/xpcomp.pl
