@@ -448,7 +448,7 @@ __END__
 
 =head1 NAME
 
-XML::XPathToXML - Generates XML document from XPath expressions
+XML::XSH2::XPathToXML - Generates XML document from XPath expressions
 
 =head1 SYNOPSIS
 
