@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 # -*- cperl -*-
 
 # $Id: xsh,v 2.9 2007-04-24 15:02:20 pajas Exp $
