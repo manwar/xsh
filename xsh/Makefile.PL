@@ -61,6 +61,7 @@ xml:
 	$(PERL) tools/gen_pod.pl src/xsh_grammar.xml > XSH2.pod
 	$(PERL) tools/gen_completions.pl src/xsh_grammar.xml > lib/XML/XSH2/CompletionList.pm
 	cd lib/XML/XSH2; env LC_ALL=C LANG=C $(PERL) -MGrammar -e XML::XSH2::Grammar::compile
+	$(PERL) tools/hide_packages.pl lib/XML/XSH2/Parser.pm XML::XSH2::
 	$(PERL) -c lib/XML/XSH2/Parser.pm
 
 grammar:

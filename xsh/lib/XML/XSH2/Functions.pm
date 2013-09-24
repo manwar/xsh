@@ -6137,7 +6137,8 @@ use vars qw(@ISA);
 #######################################################################
 #######################################################################
 
-  package XML::SAX::Writer::XMLEnc;
+  package # hide from PAUSE
+      XML::SAX::Writer::XMLEnc;
 use vars qw(@ISA);
 @ISA=qw(XML::SAX::Writer::XML);
 

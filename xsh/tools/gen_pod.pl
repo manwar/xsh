@@ -37,13 +37,7 @@ my $output;
 sub pprint (@) { $output .= join '',@_ };
 
 pprint "=for comment\n  This file was automatically generated from $ARGV[0]\n  on ",scalar(localtime),"\n";
-pprint <<'PREAMB';
-
-=head1 NAME
-
-XSH - scripting language for XPath-based editing of XML
-
-PREAMB
+pprint "\n=head1 NAME\n\nXSH - scripting language for XPath-based editing of XML\n\n";
 
 foreach my $sec ($dom->findnodes('/recdescent-xml/doc/section')) {
   my $name=$sec->getAttribute('id');

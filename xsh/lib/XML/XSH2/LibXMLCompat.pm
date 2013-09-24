@@ -314,7 +314,8 @@ sub iterator {
 }
 
 
-package XML::LibXML::SubTreeIterator;
+package # hide from PAUSE
+    XML::LibXML::SubTreeIterator;
 use strict;
 use base qw(XML::LibXML::Iterator);
 # (inheritance is not a real necessity here)
@@ -363,10 +364,12 @@ sub subtree_iterator {
 {
   local $^W=0;
   eval <<'EOF';
-  package XML::LibXML::Namespace;
+  package # hide from PAUSE
+      XML::LibXML::Namespace;
   sub parentNode {}
 
-  package XML::LibXML::NodeList;
+  package # hide from PAUSE
+      XML::LibXML::NodeList;
 
   use overload
                '""' => \&value,
@@ -407,7 +410,8 @@ sub subtree_iterator {
     return $result;
   }
 
-  package XML::LibXML::Literal;
+  package # hide from PAUSE
+      XML::LibXML::Literal;
   use overload
         '""' => \&value,
         '0+' => \&value,
@@ -423,7 +427,8 @@ sub subtree_iterator {
         'fallback' => undef;
 
 
-  package XML::LibXML::Number;
+  package # hide form PAUSE
+      XML::LibXML::Number;
 
   use overload
         '""' => \&value,
