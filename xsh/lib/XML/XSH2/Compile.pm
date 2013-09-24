@@ -6,7 +6,7 @@ use Module::Compile -base;
 use vars qw($VERSION);
 
 use strict;
-  $VERSION='2.1.8'; # VERSION TEMPLATE
+  $VERSION='2.1.9'; # VERSION TEMPLATE
 
 sub pmc_compile {
   my ($class, $source) = @_;
