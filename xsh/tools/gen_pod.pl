@@ -111,7 +111,7 @@ Petr Pajas, pajas@matfyz.cz
 
 L<xsh>, L<XML::XSH2>, L<XML::XSH2::Compile>, L<XML::LibXML>, L<XML::XUpdate>, L<http://xsh.sourceforge.net/doc>
 
-=cut
+:=cut
 
 POSTAMB
 
