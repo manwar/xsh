@@ -34,7 +34,9 @@ WriteMakefile(
                        'lib/XML/XSH2/Inline.pm' => 'blib/man3/XML::XSH2::Inline.3',
                        'lib/XML/XSH2/Compile.pm' => 'blib/man3/XML::XSH2::Compile.3'
 		     },
-    depend => { 'lib/XML/XSH2/Grammar.pm' => 'xml'},
+    depend => {
+                distdir => 'hide',
+              },
     'dist' => {
          COMPRESS  => 'gzip',
          SUFFIX    => 'gz',
@@ -54,6 +56,11 @@ cvs:    xml
 	@echo "Please, re-run 'perl Makefile.PL' and 'make'"
 	@echo
 
+hide:
+	$(PERL) tools/hide_packages.pl lib/XML/XSH2/Parser.pm XML::XSH2::
+
+XSH2.pod: xml
+
 xml:
 	$(PERL) tools/gen_grammar.pl src/xsh_grammar.xml > lib/XML/XSH2/Grammar.pm
 	$(PERL) tools/gen_commands.pl src/xsh_grammar.xml > lib/XML/XSH2/Commands.pm
@@ -61,12 +68,11 @@ xml:
 	$(PERL) tools/gen_pod.pl src/xsh_grammar.xml > XSH2.pod
 	$(PERL) tools/gen_completions.pl src/xsh_grammar.xml > lib/XML/XSH2/CompletionList.pm
 	cd lib/XML/XSH2; env LC_ALL=C LANG=C $(PERL) -MGrammar -e XML::XSH2::Grammar::compile
-	$(PERL) tools/hide_packages.pl lib/XML/XSH2/Parser.pm XML::XSH2::
+	make hide
 	$(PERL) -c lib/XML/XSH2/Parser.pm
 
 grammar:
 	cd lib/XML/XSH2; env LC_ALL=C LANG=C $(PERL) -MGrammar -e XML::XSH2::Grammar::compile
-	$(PERL) tools/hide_packages.pl lib/XML/XSH2/Parser.pm XML::XSH2::
 	$(PERL) -c lib/XML/XSH2/Parser.pm
 
 docs: all
