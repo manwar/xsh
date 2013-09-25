@@ -66,6 +66,7 @@ xml:
 
 grammar:
 	cd lib/XML/XSH2; env LC_ALL=C LANG=C $(PERL) -MGrammar -e XML::XSH2::Grammar::compile
+	$(PERL) tools/hide_packages.pl lib/XML/XSH2/Parser.pm XML::XSH2::
 	$(PERL) -c lib/XML/XSH2/Parser.pm
 
 docs: all

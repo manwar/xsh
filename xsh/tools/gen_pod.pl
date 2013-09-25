@@ -101,13 +101,13 @@ foreach my $r (sort {get_name($a) cmp get_name($b)}
 
 pprint "\n";
 
-pprint <<'POSTAMB';
+pprint join "\n", map { /^:?(.*)/mg }  << 'POSTAMB'; # Hide pod from PAUSE indexer.
 
-=head1 AUTHOR
+:=head1 AUTHOR
 
 Petr Pajas, pajas@matfyz.cz
 
-=head1 SEE ALSO
+:=head1 SEE ALSO
 
 L<xsh>, L<XML::XSH2>, L<XML::XSH2::Compile>, L<XML::LibXML>, L<XML::XUpdate>, L<http://xsh.sourceforge.net/doc>
 
