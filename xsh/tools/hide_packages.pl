@@ -21,9 +21,9 @@ open my $IN,  '<', $file          or die $!;
 open my $OUT, '>', $file . '.new' or die $!;
 
 while (<$IN>) {
-    if (my ($package) = /^\s*package\s+(.*?)\s*;/) {
-        s/package/package # Hide from PAUSE\n    /
-            if $package !~ /^$prefix/;
+    if (my ($pkg_or_ver, $name) = /^ \s* ( package | our \s* \$VERSION \s* = ) \s+ (.*?) \s* ; /x) {
+        s/\Q$pkg_or_ver/$pkg_or_ver # Hide from PAUSE\n    /
+            unless 'package' eq $pkg_or_ver and $name =~ /^$prefix/;
     }
     print {$OUT} $_;
 }
