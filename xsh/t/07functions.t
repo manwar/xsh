@@ -17,16 +17,15 @@ def assert2 $exp1 $exp2 {
              throw concat('Assertion failed: ', \$r, ' != $exp2')
             ")}
 }
-def x_assert $cond
-{ perl { xsh("unless ($cond) throw concat('Assertion failed ',\$cond)") } }
+def assert1 $cond { assert2 $cond 'true()' }
 try {
-  call x_assert '/xyz';
-  throw "x_assert failed";
+  assert1 '/xyz';
+  throw "assert1 failed";
 } catch local $err {
-  unless { $err =~ /Assertion failed \/xyz/ } throw $err;
+  unless { $err =~ m{Assertion failed:  != true()} } throw $err;
 };
 
-assert2 '/scratch' $t;
+assert1 '/scratch';
 
 assert2 '/xyz' 'false()';
 
@@ -40,22 +39,22 @@ assert2 'count(xsh:var("var"))' 2;
 
 assert2 'name(xsh:var("var")[1])' '"foo"';
 
-assert2 'xsh:var("var")[2]/self::text()' $t;
+assert1 'xsh:var("var")[2]/self::text()';
 
 assert2 'xsh:var("var")[2]' '"scratch"';
 
 #function xsh:matches
-assert2 'xsh:matches("foo","^fo{2}$")' $t;
+assert1 'xsh:matches("foo","^fo{2}$")';
 
-assert2 'not(xsh:matches("foo","O{2}"))' $t;
+assert1 'not(xsh:matches("foo","O{2}"))';
 
-assert2 'not(xsh:matches("foo","O{2}",0))' $t;
+assert1 'not(xsh:matches("foo","O{2}",0))';
 
-assert2 'xsh:matches("foo","O{2}",1)' $t;
+assert1 'xsh:matches("foo","O{2}",1)';
 
-assert2 'xsh:matches(/foo,"^sCR.tch$",1)' $t;
+assert1 'xsh:matches(/foo,"^sCR.tch$",1)';
 
-assert2 'not(xsh:matches(/foo,"foo",1))' $t;
+assert1 'not(xsh:matches(/foo,"foo",1))';
 
 #function xsh:substr
 assert2 'xsh:substr("foobar",3)' '"bar"';
@@ -90,29 +89,29 @@ assert2 'xsh:grep(//node(),".")=xsh:grep(//node(),"^Scr")' 'false()';
 
 assert2 'xsh:grep(//node(),".")' 'xsh:grep(//node(),"(?i)Scr")';
 
-assert2 'xsh:grep(//node(),".")/self::foo' $t;
+assert1 'xsh:grep(//node(),".")/self::foo';
 
-assert2 'xsh:grep(//node(),".")/self::text()' $t;
+assert1 'xsh:grep(//node(),".")/self::text()';
 
-assert2 'not(xsh:grep(//node(),"foo"))' $t;
+assert1 'not(xsh:grep(//node(),"foo"))';
 
-assert2 'xsh:grep(//node(),".")[.="scratch"]' $t;
+assert1 'xsh:grep(//node(),".")[.="scratch"]';
 
 
-assert2 'xsh:grep(//node(),"scratch")[.="scratch"]' $t;
+assert1 'xsh:grep(//node(),"scratch")[.="scratch"]';
 
 #function xsh:same
-assert2 'xsh:same(//node(),/foo)' $t;
+assert1 'xsh:same(//node(),/foo)';
 
-assert2 'xsh:same(/foo,/foo)' $t;
+assert1 'xsh:same(/foo,/foo)';
 
-assert2 'not(xsh:same(/foo,/foo/text()))' $t;
+assert1 'not(xsh:same(/foo,/foo/text()))';
 
-assert2 'not(xsh:same(/bar,/baz))' $t;
+assert1 'not(xsh:same(/bar,/baz))';
 
-assert2 'not(xsh:same(/foo,/bar))' $t;
+assert1 'not(xsh:same(/foo,/bar))';
 
-assert2 'xsh:same(/*,$doc2/*)' $t;
+assert1 'xsh:same(/*,$doc2/*)';
 
 #function xsh:max
 $doc3 := create '<a><b>4</b><b>-3</b><b>2</b></a>';
@@ -272,26 +271,26 @@ assert2 'xsh:sprintf("%s-%e-%s-%s","foo",13.123,"bar",/a)' '"foo-${sp}-bar-abcb"
 
 $doc4 := create '<a><b>abc</b><c>efg</c></a>';
 
-assert2 '(xsh:map(/a/*,"string(text())")/self::xsh:string[1] = "abc")' $t;
+assert1 '(xsh:map(/a/*,"string(text())")/self::xsh:string[1] = "abc")';
 
 assert2 '(xsh:map(/a/*,"string(text())")/self::xsh:string)[2]' '"efg"';
 
-assert2 '(xsh:map(/a,"count(*)")/self::xsh:number[1] = 2)' $t;
+assert1 '(xsh:map(/a,"count(*)")/self::xsh:number[1] = 2)';
 
-assert2 '(xsh:map(/a,"*")/self::b)' $t;
+assert1 '(xsh:map(/a,"*")/self::b)';
 
-assert2 '(xsh:map(/a,"*")/self::c)' $t;
+assert1 '(xsh:map(/a,"*")/self::c)';
 
-assert2 '(xsh:same(xsh:map(/a,"*")/self::b,/a/b))' $t;
+assert1 '(xsh:same(xsh:map(/a,"*")/self::b,/a/b))';
 
-assert2 '(xsh:same(xsh:map(/a,"*")/self::c,/a/c))' $t;
+assert1 '(xsh:same(xsh:map(/a,"*")/self::c,/a/c))';
 
 foreach //node() {
-  assert2 '(xsh:same(xsh:current(),.))' $t;
+  assert1 '(xsh:same(xsh:current(),.))';
 }
 
 foreach //b {
-  assert2 '//c[xsh:current()="abc"]' $t;
+  assert1 '//c[xsh:current()="abc"]';
 }
 
 local $pwd;
