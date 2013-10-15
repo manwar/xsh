@@ -7,11 +7,18 @@ BEGIN {
   autoflush STDOUT 1;
   autoflush STDERR 1;
 
+  $XML::XSH2::Map::t = 'true()';
   @xsh_test=split /\n\n/, <<'EOF';
 quiet;
+def assert2 $exp1 $exp2 {
+    perl {
+        xsh("\$r = $exp1;
+             unless \$r=$exp2
+             throw concat('Assertion failed: ', \$r, ' != $exp2')
+            ")}
+}
 def x_assert $cond
 { perl { xsh("unless ($cond) throw concat('Assertion failed ',\$cond)") } }
-call x_assert '/scratch';
 try {
   call x_assert '/xyz';
   throw "x_assert failed";
@@ -19,117 +26,121 @@ try {
   unless { $err =~ /Assertion failed \/xyz/ } throw $err;
 };
 
+assert2 '/scratch' $t;
+
+assert2 '/xyz' 'false()';
+
 $doc2 := create 'foo';
 insert text 'scratch' into ($doc2/foo);
 
 #function xsh:var
 $var=//node();
 
-call x_assert 'count(xsh:var("var"))=2';
+assert2 'count(xsh:var("var"))' 2;
 
-call x_assert 'name(xsh:var("var")[1])="foo"';
+assert2 'name(xsh:var("var")[1])' '"foo"';
 
-call x_assert 'xsh:var("var")[2]/self::text()';
+assert2 'xsh:var("var")[2]/self::text()' $t;
 
-call x_assert 'xsh:var("var")[2]="scratch"';
+assert2 'xsh:var("var")[2]' '"scratch"';
 
 #function xsh:matches
-call x_assert 'xsh:matches("foo","^fo{2}$")';
+assert2 'xsh:matches("foo","^fo{2}$")' $t;
 
-call x_assert 'not(xsh:matches("foo","O{2}"))';
+assert2 'not(xsh:matches("foo","O{2}"))' $t;
 
-call x_assert 'not(xsh:matches("foo","O{2}",0))';
+assert2 'not(xsh:matches("foo","O{2}",0))' $t;
 
-call x_assert 'xsh:matches("foo","O{2}",1)';
+assert2 'xsh:matches("foo","O{2}",1)' $t;
 
-call x_assert 'xsh:matches(/foo,"^sCR.tch$",1)';
+assert2 'xsh:matches(/foo,"^sCR.tch$",1)' $t;
 
-call x_assert 'not(xsh:matches(/foo,"foo",1))';
+assert2 'not(xsh:matches(/foo,"foo",1))' $t;
 
 #function xsh:substr
-call x_assert 'xsh:substr("foobar",3)="bar"';
+assert2 'xsh:substr("foobar",3)' '"bar"';
 
-call x_assert 'not(xsh:substr("foobar",3)="baz")';
+assert2 'xsh:substr("foobar",3)="baz"' 'false()';
 
-call x_assert 'xsh:substr("foobar",0,3)="foo"';
+assert2 'xsh:substr("foobar",0,3)' '"foo"';
 
-call x_assert 'xsh:substr("foobar",-2)="ar"';
+assert2 'xsh:substr("foobar",-2)' '"ar"';
 
-call x_assert 'xsh:substr("foobar",-4,3)="oba"';
+assert2 'xsh:substr("foobar",-4,3)' '"oba"';
 
-call x_assert 'xsh:substr(/,1)="cratch"';
+assert2 'xsh:substr(/,1)' '"cratch"';
 
-call x_assert 'xsh:substr(/foo,1)="cratch"';
+assert2 'xsh:substr(/foo,1)' '"cratch"';
 
 #function xsh:reverse
-call x_assert 'xsh:reverse("foobar")="raboof"';
+assert2 'xsh:reverse("foobar")' '"raboof"';
 
-call x_assert 'xsh:reverse(/foo)="hctarcs"';
+assert2 'xsh:reverse(/foo)' '"hctarcs"';
 
-call x_assert 'xsh:reverse(/foo/text())="hctarcs"';
+assert2 'xsh:reverse(/foo/text())' '"hctarcs"';
 
 #function xsh:grep
-call x_assert 'count(xsh:grep(//node(),"."))=2';
+assert2 'count(xsh:grep(//node(),"."))' '2';
 
-call x_assert 'count(xsh:grep(//node(),"^scr"))=2';
+assert2 'count(xsh:grep(//node(),"^scr"))' '2';
 
-call x_assert 'xsh:grep(//node(),".")=xsh:grep(//node(),"^scr")';
+assert2 'xsh:grep(//node(),".")' 'xsh:grep(//node(),"^scr")';
 
-call x_assert 'not(xsh:grep(//node(),".")=xsh:grep(//node(),"^Scr"))';
+assert2 'xsh:grep(//node(),".")=xsh:grep(//node(),"^Scr")' 'false()';
 
-call x_assert 'xsh:grep(//node(),".")=xsh:grep(//node(),"(?i)Scr")';
+assert2 'xsh:grep(//node(),".")' 'xsh:grep(//node(),"(?i)Scr")';
 
-call x_assert 'xsh:grep(//node(),".")/self::foo';
+assert2 'xsh:grep(//node(),".")/self::foo' $t;
 
-call x_assert 'xsh:grep(//node(),".")/self::text()';
+assert2 'xsh:grep(//node(),".")/self::text()' $t;
 
-call x_assert 'not(xsh:grep(//node(),"foo"))';
+assert2 'not(xsh:grep(//node(),"foo"))' $t;
 
-call x_assert 'xsh:grep(//node(),".")[.="scratch"]';
+assert2 'xsh:grep(//node(),".")[.="scratch"]' $t;
 
 
-call x_assert 'xsh:grep(//node(),"scratch")[.="scratch"]';
+assert2 'xsh:grep(//node(),"scratch")[.="scratch"]' $t;
 
 #function xsh:same
-call x_assert 'xsh:same(//node(),/foo)';
+assert2 'xsh:same(//node(),/foo)' $t;
 
-call x_assert 'xsh:same(/foo,/foo)';
+assert2 'xsh:same(/foo,/foo)' $t;
 
-call x_assert 'not(xsh:same(/foo,/foo/text()))';
+assert2 'not(xsh:same(/foo,/foo/text()))' $t;
 
-call x_assert 'not(xsh:same(/bar,/baz))';
+assert2 'not(xsh:same(/bar,/baz))' $t;
 
-call x_assert 'not(xsh:same(/foo,/bar))';
+assert2 'not(xsh:same(/foo,/bar))' $t;
 
-call x_assert 'xsh:same(/*,$doc2/*)';
+assert2 'xsh:same(/*,$doc2/*)' $t;
 
 #function xsh:max
 $doc3 := create '<a><b>4</b><b>-3</b><b>2</b></a>';
 
-call x_assert 'xsh:max(//b)=4';
+assert2 'xsh:max(//b)' '4';
 
-call x_assert 'xsh:max(//b/text())=4';
+assert2 'xsh:max(//b/text())' '4';
 
-call x_assert 'xsh:max(//a/text())=0';
+assert2 'xsh:max(//a/text())' '0';
 
-call x_assert 'xsh:max(//b[1],//b[3])=4';
+assert2 'xsh:max(//b[1],//b[3])' '4';
 
-call x_assert 'xsh:max(-4,2,7)=7';
+assert2 'xsh:max(-4,2,7)' '7';
 
-call x_assert 'xsh:max(3,9,7)=9';
+assert2 'xsh:max(3,9,7)' '9';
 
-call x_assert 'xsh:max(-4,-9,0)=0';
+assert2 'xsh:max(-4,-9,0)' '0';
 
 #function xsh:min
 $doc3 := create '<a><b>4</b><b>-3</b><b>2</b></a>';
 
-call x_assert 'xsh:min(//b)=-3';
+assert2 'xsh:min(//b)' '-3';
 
-call x_assert 'xsh:min(//b/text())=-3';
+assert2 'xsh:min(//b/text())' '-3';
 
-call x_assert 'xsh:min(//a/text())=0';
+assert2 'xsh:min(//a/text())' '0';
 
-call x_assert 'xsh:min(//b[1],//b[2])=-3';
+assert2 'xsh:min(//b[1],//b[2])' '-3';
 
 count string(//b[1]);
 
@@ -137,149 +148,150 @@ count string(//b[3]);
 
 count (xsh:min(//b[1],//b[3]));
 
-call x_assert 'xsh:min(//b[1],//b[3])=2';
+assert2 'xsh:min(//b[1],//b[3])' '2';
 
-call x_assert 'xsh:min(-4,2,7)=-4';
+assert2 'xsh:min(-4,2,7)' '-4';
 
-call x_assert 'xsh:min(3,9,7)=3';
+assert2 'xsh:min(3,9,7)' '3';
 
-call x_assert 'xsh:min(3,9,0)=0';
+assert2 'xsh:min(3,9,0)' '0';
 
 #function xsh:sum
-call x_assert 'xsh:sum(//node())=4+4-3+2+4-3+2';
+assert2 'xsh:sum(//node())' '4+4-3+2+4-3+2';
 
-call x_assert 'xsh:sum(//b)=3';
+assert2 'xsh:sum(//b)' '3';
 
-call x_assert 'xsh:sum(//b/text())=3';
+assert2 'xsh:sum(//b/text())' '3';
 
-call x_assert 'xsh:sum(//b[1],//b[3])=6';
+assert2 'xsh:sum(//b[1],//b[3])' '6';
 
 rm //b[2];
 
-call x_assert 'xsh:sum(//b)=6';
+assert2 'xsh:sum(//b)' '6';
 
-call x_assert 'xsh:sum(//node())=42+4+2+4+2';
+assert2 'xsh:sum(//node())' '42+4+2+4+2';
 
-call x_assert 'xsh:sum(0)=0';
+assert2 'xsh:sum(0)' '0';
 
-call x_assert 'xsh:sum(3,4,5)=12';
+assert2 'xsh:sum(3,4,5)' '12';
 
-call x_assert 'xsh:sum(-3,4,-5)=-4';
+assert2 'xsh:sum(-3,4,-5)' '-4';
 
 #function xsh:strmax
 $doc3 := create '<a><b>abc</b><b>bde</b><b>bbc</b></a>';
 
-call x_assert 'xsh:strmax(//a)="abcbdebbc"';
+assert2 'xsh:strmax(//a)' '"abcbdebbc"';
 
-call x_assert 'xsh:strmax(//b)="bde"';
+assert2 'xsh:strmax(//b)' '"bde"';
 
-call x_assert 'xsh:strmax(//b/text())="bde"';
+assert2 'xsh:strmax(//b/text())' '"bde"';
 
-call x_assert 'xsh:strmax(//b[1],//b[3])="bbc"';
+assert2 'xsh:strmax(//b[1],//b[3])' '"bbc"';
 
 #function xsh:strmin
 $doc3 := create '<a><b>abc</b><b>bde</b><b>bbc</b></a>';
 
-call x_assert 'xsh:strmin(//a)="abcbdebbc"';
+assert2 'xsh:strmin(//a)' '"abcbdebbc"';
 
-call x_assert 'xsh:strmin(//b)="abc"';
+assert2 'xsh:strmin(//b)' '"abc"';
 
-call x_assert 'xsh:strmin(//b/text())="abc"';
+assert2 'xsh:strmin(//b/text())' '"abc"';
 
-call x_assert 'xsh:strmin(//b[2],//b[3])="bbc"';
+assert2 'xsh:strmin(//b[2],//b[3])' '"bbc"';
 
 #function xsh:join
-call x_assert 'xsh:join("",//b)="abcbdebbc"';
+assert2 'xsh:join("",//b)' '"abcbdebbc"';
 
-call x_assert 'xsh:join(":",//b)="abc:bde:bbc"';
+assert2 'xsh:join(":",//b)' '"abc:bde:bbc"';
 
-call x_assert 'xsh:join(//b,//b)="abcabcbdebbcbdeabcbdebbcbbc"';
+assert2 'xsh:join(//b,//b)' '"abcabcbdebbcbdeabcbdebbcbbc"';
 
-call x_assert 'xsh:join(";;",//b[1],//b,//b[3])="abc;;abc;;bde;;bbc;;bbc"';
+assert2 'xsh:join(";;",//b[1],//b,//b[3])' '"abc;;abc;;bde;;bbc;;bbc"';
 
 #function xsh:serialize
 $xml = '<a>abc<!--foo--><?bar bug?> <dig/></a>';
 
 $doc3 := create $xml;
 
-call x_assert 'xsh:serialize(//dig)="<dig/>"';
+assert2 'xsh:serialize(//dig)' '"<dig/>"';
 
-call x_assert 'xsh:serialize(//a/text()[1])="abc"';
+assert2 'xsh:serialize(//a/text()[1])' '"abc"';
 
-call x_assert 'xsh:serialize(//a/comment())="<!--foo-->"';
+assert2 'xsh:serialize(//a/comment())' '"<!--foo-->"';
 
-call x_assert 'xsh:serialize(//a/processing-instruction())="<?bar bug?>"';
+assert2 'xsh:serialize(//a/processing-instruction())' '"<?bar bug?>"';
 
-call x_assert 'xsh:serialize(/a)="${xml}"';
+assert2 'xsh:serialize(/a)' "$xml";
 
-call x_assert 'xsh:serialize(//*)="${xml}<dig/>"';
+assert2 'xsh:serialize(//*)' '"${xml}<dig/>"';
 
-call x_assert 'xsh:serialize(//node())="${xml}abc<!--foo--><?bar bug?> <dig/>"';
-call x_assert 'xsh:serialize(/a,//dig,//text())="${xml}<dig/>abc "';
+assert2 'xsh:serialize(//node())' '"${xml}abc<!--foo--><?bar bug?> <dig/>"';
+
+assert2 'xsh:serialize(/a,//dig,//text())' '"${xml}<dig/>abc "';
 
 #function xsh:subst
 $doc4 := create '<a>abcb</a>';
 
-call x_assert 'xsh:subst("foo","fo",12)="12o"';
+assert2 'xsh:subst("foo","fo",12)' '"12o"';
 
-call x_assert 'xsh:subst("foo","o","XY")="fXYo"';
+assert2 'xsh:subst("foo","o","XY")' '"fXYo"';
 
 count (xsh:subst("foo","O","XY"));
 
-call x_assert 'xsh:subst("foo","O","XY")="foo"';
+assert2 'xsh:subst("foo","O","XY")' '"foo"';
 
-call x_assert 'xsh:subst("foo","O","XY","i")="fXYo"';
+assert2 'xsh:subst("foo","O","XY","i")' '"fXYo"';
 
-call x_assert 'xsh:subst("foo","O","XY","ig")="fXYXY"';
+assert2 'xsh:subst("foo","O","XY","ig")' '"fXYXY"';
 
-call x_assert 'xsh:subst("foobar","f(.*b)a(.+)","$1-$2")="oob-r"';
+assert2 'xsh:subst("foobar","f(.*b)a(.+)","$1-$2")' '"oob-r"';
 
-call x_assert 'xsh:subst("foobar","(.{2}b)","uc($1)","e")="fOOBar"';
+assert2 'xsh:subst("foobar","(.{2}b)","uc($1)","e")' '"fOOBar"';
 
-call x_assert 'xsh:subst("foobar","o","/","g")="f//bar"';
+assert2 'xsh:subst("foobar","o","/","g")' '"f//bar"';
 
-call x_assert 'xsh:subst("foobar","o","[\\]","g")="f[\][\]bar"';
+assert2 'xsh:subst("foobar","o","[\\]","g")' '"f[\][\]bar"';
 
-call x_assert 'xsh:subst(/a,"b","X","g")="aXcX"';
+assert2 'xsh:subst(/a,"b","X","g")' '"aXcX"';
 
 #function xsh:sprintf
-call x_assert 'xsh:sprintf("%%")="%"';
+assert2 'xsh:sprintf("%%")' '"%"';
 
-call x_assert 'xsh:sprintf("%d",123.3)="123"';
+assert2 'xsh:sprintf("%d",123.3)' '"123"';
 
-call x_assert 'xsh:sprintf("%04d",13.3)="0013"';
+assert2 'xsh:sprintf("%04d",13.3)' '"0013"';
 
 count (xsh:sprintf("%03.4d",13.123)) |cat 2>&1;
 
-call x_assert 'xsh:sprintf("%09.4f",13.123)="0013.1230"';
+assert2 'xsh:sprintf("%09.4f",13.123)' '"0013.1230"';
 
 $sp={sprintf("%e",13.123)};
-call x_assert 'xsh:sprintf("%e",13.123)=$sp';
+assert2 'xsh:sprintf("%e",13.123)' $sp;
 
-call x_assert 'xsh:sprintf("%s-%e-%s-%s","foo",13.123,"bar",/a)="foo-${sp}-bar-abcb"';
+assert2 'xsh:sprintf("%s-%e-%s-%s","foo",13.123,"bar",/a)' '"foo-${sp}-bar-abcb"';
 
 $doc4 := create '<a><b>abc</b><c>efg</c></a>';
 
-call x_assert '(xsh:map(/a/*,"string(text())")/self::xsh:string[1] = "abc")';
+assert2 '(xsh:map(/a/*,"string(text())")/self::xsh:string[1] = "abc")' $t;
 
-call x_assert '(xsh:map(/a/*,"string(text())")/self::xsh:string)[2] = "efg"';
+assert2 '(xsh:map(/a/*,"string(text())")/self::xsh:string)[2]' '"efg"';
 
-call x_assert '(xsh:map(/a,"count(*)")/self::xsh:number[1] = 2)';
+assert2 '(xsh:map(/a,"count(*)")/self::xsh:number[1] = 2)' $t;
 
-call x_assert '(xsh:map(/a,"*")/self::b)';
+assert2 '(xsh:map(/a,"*")/self::b)' $t;
 
-call x_assert '(xsh:map(/a,"*")/self::c)';
+assert2 '(xsh:map(/a,"*")/self::c)' $t;
 
-call x_assert '(xsh:same(xsh:map(/a,"*")/self::b,/a/b))';
+assert2 '(xsh:same(xsh:map(/a,"*")/self::b,/a/b))' $t;
 
-call x_assert '(xsh:same(xsh:map(/a,"*")/self::c,/a/c))';
+assert2 '(xsh:same(xsh:map(/a,"*")/self::c,/a/c))' $t;
 
 foreach //node() {
-  call x_assert '(xsh:same(xsh:current(),.))';
+  assert2 '(xsh:same(xsh:current(),.))' $t;
 }
 
 foreach //b {
-  call x_assert '//c[xsh:current()="abc"]';
+  assert2 '//c[xsh:current()="abc"]' $t;
 }
 
 local $pwd;
@@ -288,7 +300,7 @@ foreach //node() {
   count $pwd;
   perl { chomp $pwd; chomp $pwd };
   count $pwd;
-  call x_assert 'xsh:path(.)="${pwd}"';
+  assert2 'xsh:path(.)' '"${pwd}"';
 }
 
 EOF
