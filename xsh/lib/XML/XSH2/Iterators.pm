@@ -2,7 +2,7 @@
 
 package XML::XSH2::Iterators;
 
-  $VERSION='2.1.12'; # VERSION TEMPLATE
+  $VERSION='2.1.13'; # VERSION TEMPLATE
 
 #namespace ???
 #attribute ??
