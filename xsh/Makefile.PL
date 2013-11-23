@@ -67,12 +67,12 @@ xml:
 	$(PERL) tools/gen_help.pl src/xsh_grammar.xml > lib/XML/XSH2/Help.pm
 	$(PERL) tools/gen_pod.pl src/xsh_grammar.xml > XSH2.pod
 	$(PERL) tools/gen_completions.pl src/xsh_grammar.xml > lib/XML/XSH2/CompletionList.pm
-	cd lib/XML/XSH2; env LC_ALL=C LANG=C $(PERL) -MGrammar -e XML::XSH2::Grammar::compile
+	$(PERL) -e "chdir q(lib/XML/XSH2); require Grammar; XML::XSH2::Grammar::compile()"
 	make hide
 	$(PERL) -c lib/XML/XSH2/Parser.pm
 
 grammar:
-	cd lib/XML/XSH2; env LC_ALL=C LANG=C $(PERL) -MGrammar -e XML::XSH2::Grammar::compile
+	$(PERL) -e "chdir q(lib/XML/XSH2); require Grammar; XML::XSH2::Grammar::compile()"
 	$(PERL) -c lib/XML/XSH2/Parser.pm
 
 docs: all
