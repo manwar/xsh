@@ -7,7 +7,9 @@ BEGIN {
   autoflush STDOUT 1;
   autoflush STDERR 1;
 
-  $XML::XSH2::Map::t = 'true()';
+  {   no warnings 'once';
+      $XML::XSH2::Map::t = 'true()';
+  }
   @xsh_test=split /\n\n/, <<'EOF';
 quiet;
 def assert2 $exp1 $exp2 {
