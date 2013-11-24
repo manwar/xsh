@@ -57,7 +57,7 @@ cvs:    xml
 	@echo
 
 hide:
-	$(PERL) tools/hide_packages.pl lib/XML/XSH2/Parser.pm XML::XSH2::
+	$(PERL) tools/hide_packages.pl lib/XML/XSH2/Parser.pm "XML::XSH2::"
 
 XSH2.pod: xml
 
