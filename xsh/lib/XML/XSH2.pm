@@ -6,7 +6,7 @@ use strict;
 use vars qw(@EXPORT_OK @EXPORT @ISA $VERSION);
 
 BEGIN {
-  $VERSION='2.1.14'; # VERSION TEMPLATE
+  $VERSION='2.1.15'; # VERSION TEMPLATE
   @ISA       = qw(Exporter);
   @EXPORT = qw(&xsh);
   @EXPORT_OK = @XML::XSH2::Functions::EXPORT_OK;
