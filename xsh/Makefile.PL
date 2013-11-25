@@ -68,7 +68,7 @@ xml:
 	$(PERL) tools/gen_pod.pl src/xsh_grammar.xml > XSH2.pod
 	$(PERL) tools/gen_completions.pl src/xsh_grammar.xml > lib/XML/XSH2/CompletionList.pm
 	$(PERL) -e "chdir q(lib/XML/XSH2); require Grammar; XML::XSH2::Grammar::compile()"
-	make hide
+	$(MAKE) hide
 	$(PERL) -c lib/XML/XSH2/Parser.pm
 
 grammar:
