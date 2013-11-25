@@ -28,4 +28,5 @@ while (<$IN>) {
     print {$OUT} $_;
 }
 close $OUT or die $!;
+close $IN  or die $!; # MSWin
 rename "$file.new", $file or die $!;
