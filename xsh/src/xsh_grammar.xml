@@ -6035,15 +6035,16 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	<shortdesc>immediately exit an enclosing loop</shortdesc>
 	<description>
 	  <para>
-	    The last command is like the break statement in C (as used
-	    in loops); it immediately exits an enclosing loop.  The
-	    optional <xref linkend="exp"/> argument may
-	    evaluate to a positive integer number that indicates which
-	    level of the nested loops to quit.  If this argument is
-	    omitted, it defaults to 1, i.e. the innermost loop.
+	    The <literal>last</literal> command is like the break
+	    statement in C (as used in loops); it immediately exits an
+	    enclosing loop. The optional <xref linkend="exp"/>
+	    argument may evaluate to a positive integer number that
+	    indicates which level of the nested loops to quit. If this
+	    argument is omitted, it defaults to 1, i.e. the innermost
+	    loop.
 	  </para>
 	  <para>
-	    Using this command outside a subroutine causes an
+	    Using this command outside a loop causes an
 	    immediate run-time error.
 	  </para>
 	</description>
