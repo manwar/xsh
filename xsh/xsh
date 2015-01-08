@@ -328,7 +328,9 @@ if ($opt_i) {
     print STDERR "Using terminal type: ",$term->ReadLine,"\n";
       print STDERR "Hint: Type `help' or `help | less' to get more help.\n";
   }
-  while (defined ($l=get_line($term,prompt(),''))) {
+  while () {
+    $l = get_line($term,prompt(),'');
+    $l = 'exit' unless defined $l;
     while ($l=~/\\+\s*$/) {
       $l=~s/\\+(\s*)$/\n/;
       my $a=get_line($term,'> ',undef);
