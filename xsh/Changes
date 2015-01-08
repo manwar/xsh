@@ -1,3 +1,6 @@
+Release 2.1.19:
+No pax headers in the tar.
+
 Release 2.1.18:
 History saved on EOF in interactive mode, too.
 

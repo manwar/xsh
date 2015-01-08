@@ -43,6 +43,9 @@ WriteMakefile(
 	 CI        => 'cvs ci',
 	 RCS_LABEL => 'cvs admin -Nv$(VERSION_SYM):',
     },
+    macro => {
+         TARFLAGS => '--format=ustar -cvf'
+    },
 );
 
 sub MY::postamble {
