@@ -46,7 +46,7 @@ perl { 1+1; };
 
 exec ls -l;
 
-! echo -n " sh test: "; echo " (success)";
+! echo -n " sh test: " ##SEPARATOR## echo " (success)";
 
 $t := clone $scratch;
 
@@ -196,7 +196,10 @@ ok ( XML::XSH2::Functions::create_doc("scratch","scratch") );
 print STDERR "\n" if $verbose;
 ok ( XML::XSH2::Functions::set_local_xpath('/') );
 
+my $separator = ('MSWin32' eq $^O) ? '&'
+                                   : ';';
 foreach (@xsh_test) {
+  s/##SEPARATOR##/$separator/;
   print STDERR "\n\n[[ $_ ]]\n" if $verbose;
   eval { xsh($_) };
   print STDERR $@ if $@;
