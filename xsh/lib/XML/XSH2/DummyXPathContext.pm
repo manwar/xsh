@@ -1,6 +1,6 @@
 package XML::XSH2::DummyXPathContext;
 
-  $VERSION='2.1.19'; # VERSION TEMPLATE
+  $VERSION='2.1.20'; # VERSION TEMPLATE
 
 sub new {
   my ($class,$node)=@_;
