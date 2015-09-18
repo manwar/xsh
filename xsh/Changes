@@ -1,3 +1,6 @@
+Release 2.1.20: 2015/09/18
+Fixing tests on MSWin.
+
 Release 2.1.19:
 No pax headers in the tar.
 
