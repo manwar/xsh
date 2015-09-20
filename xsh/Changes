@@ -1,5 +1,8 @@
+Release 2.1.21: 2015/09/20
+Fixing test on MSWin, again (RT-105541).
+
 Release 2.1.20: 2015/09/18
-Fixing tests on MSWin.
+Unsuccessfully fixing tests on MSWin.
 
 Release 2.1.19:
 No pax headers in the tar.
