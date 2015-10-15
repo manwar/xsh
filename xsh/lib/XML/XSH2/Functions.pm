@@ -2119,7 +2119,7 @@ sub _get_var_ref {
   } elsif ($name=~/^\$((?:::)?[a-zA-Z_][a-zA-Z0-9_]*)*$/) {
     my $lex = lex_var($1);
     return $lex if ($lex);
-    return $${"XML::XSH2::Map::$1"};
+    return \${"XML::XSH2::Map::$1"};
   } else {
     die "Invalid variable name $name\n"
   }
