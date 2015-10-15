@@ -1,3 +1,6 @@
+Release 2.1.22: 2015/10/16
+--output-string parameter for stream fixed.
+
 Release 2.1.21: 2015/09/20
 Fixing test on MSWin, again (RT-105541).
 
