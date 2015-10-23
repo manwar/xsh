@@ -32,6 +32,8 @@ t/05misc.t
 t/06wrap.t
 t/07functions.t
 t/08more_functions.t
+t/09fix.t
+t/host.xml
 TODO
 tools/chunk.xsl
 tools/fo.xsl
