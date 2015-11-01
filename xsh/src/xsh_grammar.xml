@@ -6349,6 +6349,7 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	  <param name="output-encoding" short="E" type="string" argument="enc_string"/>
 	  <param name="output-pipe" short="P" type="string" argument="filename"/>
 	  <param name="output-string" short="S" type="varname" argument="exp"/>
+          <param name="no-output" short="N"/>
 	</paramlist>
         <ruleref ref="stream_select" rep="s" arguments=""/>
 	<action>[<lineinfo/>,'stream_process',$item[3],$item[4]]</action>

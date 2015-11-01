@@ -5688,6 +5688,9 @@ sub stream_process {
   if (grep {/^output-/} grep { !/^output-encoding/ } keys %$opts>1) {
     die "Only one --output-xxxx parameter can be specified\n";
   }
+  if ($opts->{'no-output'} && grep /^output-/, keys %$opts) {
+      die "Can't combine --no-output with --output-xxxx\n";
+  }
 
   my $out;
   my $termout;
@@ -5729,12 +5732,12 @@ sub stream_process {
   my $parser=XML::LibXML::SAX
     ->new( Handler =>
 	   XML::Filter::DOMFilter::LibXML
-	   ->new(Handler =>
-		 XML::SAX::Writer::XML
-		 ->new(
-		       Output => $out,
-		       Writer => 'XML::SAX::Writer::XMLEnc'
-		      ),
+	   ->new($opts->{'no-output'} ? ()
+                                      : (Handler => XML::SAX::Writer::XML
+		                        ->new(
+                                              Output => $out,
+                                              Writer => 'XML::SAX::Writer::XMLEnc'
+                                             )),
 		 XPathContext => $_xpc,
 		 Process => [
 			     map {
