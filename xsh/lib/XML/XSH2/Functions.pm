@@ -5748,22 +5748,27 @@ sub stream_process {
 		)
 	 );
   my $old_context = _save_context();
-  if (exists $opts->{'input-pipe'}) {
-    open my $F,"$input|";
-    $F || die "Cannot open pipe to $input: $!\n";
-    $parser->parse_fh($F);
-    close $F;
-  } elsif (exists $opts->{'input-string'}) {
-    $parser->parse_string($input);
-  } else  { #file
-    $parser->parse_uri($input);
-  }
-  if (exists $opts->{'output-pipe'}) {
-    close($out);
-  }
-  if ($termout) { out("\n"); }
+  my $error;
+  eval {
+      if (exists $opts->{'input-pipe'}) {
+        open my $F,"$input|";
+        $F || die "Cannot open pipe to $input: $!\n";
+        $parser->parse_fh($F);
+        close $F;
+      } elsif (exists $opts->{'input-string'}) {
+        $parser->parse_string($input);
+      } else  { #file
+        $parser->parse_uri($input);
+      }
+      if (exists $opts->{'output-pipe'}) {
+        close($out);
+      }
+      if ($termout) { out("\n"); }
+  1 } or $error = $@;
   _set_context($old_context);
-  return 1;
+  die $error if $error;
+
+  return 1
 }
 
 sub iterate {
