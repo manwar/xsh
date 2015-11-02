@@ -6361,7 +6361,8 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
            --input-string|:s <xref linkend="exp"/>]
 	 [ --output-file|:F <xref linkend="filename"/> |
            --output-pipe|:P <xref linkend="filename"/> |
-           --output-string|:S <xref linkend="varname"/> ]
+           --output-string|:S <xref linkend="varname"/> |
+           --no-output|:N ]
            select <xref linkend="xpath"/> <xref linkend="block"/>
          [ select <xref linkend="xpath"/> <xref linkend="block"/> ... ]
                    </usage>
@@ -6446,6 +6447,9 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	  <para><literal>--output-string</literal> or <literal>:S</literal>
 	    followed by a variable name instructs the processor to 
 	    store the result in the given variable.
+	  </para>
+	  <para><literal>--no-output</literal> or <literal>:N</literal>
+            instructs the processor to throw the result away.
 	  </para>
 	</description>
       </documentation>
