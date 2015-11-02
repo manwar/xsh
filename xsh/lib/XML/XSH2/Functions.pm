@@ -5747,6 +5747,7 @@ sub stream_process {
 			    ]
 		)
 	 );
+  my $old_context = _save_context();
   if (exists $opts->{'input-pipe'}) {
     open my $F,"$input|";
     $F || die "Cannot open pipe to $input: $!\n";
@@ -5761,6 +5762,7 @@ sub stream_process {
     close($out);
   }
   if ($termout) { out("\n"); }
+  _set_context($old_context);
   return 1;
 }
 
