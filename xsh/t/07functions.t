@@ -304,6 +304,9 @@ foreach //node() {
   assert2 'xsh:path(.)' '"${pwd}"';
 }
 
+$c = 0 ;
+stream :N :s '<r><a/><b/><a/><c/></r>' select a { $c = $c + 1 } ;
+assert2 $c 2 ;
 EOF
 
   plan tests => 4+@xsh_test;
