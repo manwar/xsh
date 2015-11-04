@@ -21,7 +21,7 @@ WriteMakefile(
 		    'XML::XUpdate::LibXML' => "0.6.0",
 		    'XML::LibXML::XPathContext' => "0.07",
 		    'XML::SAX::Writer' => "0.44",
-		    'XML::Filter::DOMFilter::LibXML' => "0.02",
+		    'XML::Filter::DOMFilter::LibXML' => "0.03",
 		    'Term::ReadLine' => 0,
 		    'Term::ReadLine::Perl' => 0,
 		   },

@@ -1,3 +1,9 @@
+Release 2.1.25: 2015/11/02
+stream fixed and enhanced:
+  - added the --no-output option
+  - context restored after stream finishes
+  - min version of DOMFilter now 0.03 (bugfix there)
+
 Release 2.1.24: 2015/10/30
 MYMETA not included in the dist
 
