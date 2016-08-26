@@ -2093,7 +2093,7 @@ sub _expand {
       $k.=perl_eval($1);
     } elsif ($l=~/\G\$\{\((.+?)\)\}/gsco) {
       $k.=_ev_literal($1);
-    } elsif ($l=~/\G(\$(?!\{)|\\(?!\${)|[^\\\$]+)/gsco) {
+    } elsif ($l=~/\G(\$(?!\{)|\\(?!\$\{)|[^\\\$]+)/gsco) {
       # skip to the next \ or $
       $k.=$1;
     }
