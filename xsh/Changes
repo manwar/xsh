@@ -1,3 +1,7 @@
+
+Release 2.1.26: 2016/08/26
+regex fixed: 5.25.x complained about an unescaped {
+
 Release 2.1.25: 2015/11/02
 stream fixed and enhanced:
   - added the --no-output option
