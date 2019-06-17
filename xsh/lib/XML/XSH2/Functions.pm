@@ -5753,7 +5753,7 @@ sub stream_process {
       if (exists $opts->{'input-pipe'}) {
         open my $F,"$input|";
         $F || die "Cannot open pipe to $input: $!\n";
-        $parser->parse_fh($F);
+        $parser->parse_file($F);
         close $F;
       } elsif (exists $opts->{'input-string'}) {
         $parser->parse_string($input);
