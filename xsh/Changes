@@ -1,4 +1,8 @@
-Release 2.2.01: 19/06/18
+Release 2.2.2: 19/06/18
+Bug fix: stream output went to ./- instead of STDOUT since
+XML::SAX::Writer 0.57.
+
+Release 2.2.1: 19/06/18
 Bug fix: the --input-pipe option of the stream command didn't work.
 
 Release 2.2.0: 19/06/11
