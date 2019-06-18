@@ -5697,7 +5697,7 @@ sub stream_process {
   $opts->{'input-file'} = _tilde_expand($opts->{'input-file'}) if exists($opts->{'input-file'});
   $opts->{'output-file'} = _tilde_expand($opts->{'output-file'}) if exists($opts->{'output-file'});
   my $output = $opts->{'output-string'} || $opts->{'output-pipe'} ||
-               $opts->{'output-file'} || '-';
+               $opts->{'output-file'} || undef;
   my $input = $opts->{'input-string'} || $opts->{'input-pipe'} ||
               $opts->{'input-file'} || '-';
 
