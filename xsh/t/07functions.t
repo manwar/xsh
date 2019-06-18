@@ -309,7 +309,7 @@ stream :N :s '<r><a/><b/><a/><c/></r>' select a { $c = $c + 1 } ;
 assert2 $c 2 ;
 
 $c = 0 ;
-stream :p 'perl -e"print q(<r><n/><n/></r>)"' select n { $c = $c + 1 } ;
+stream :N :p 'perl -e"print q(<r><n/><n/></r>)"' select n { $c = $c + 1 } ;
 assert2 $c 2 ;
 EOF
 
