@@ -1,4 +1,7 @@
-Release 2.2.2: 19/06/18
+Release 2.2.4:
+Fix deprecated "Unescaped left brace".
+
+Release 2.2.3: 19/06/18
 Bug fix: stream output went to ./- instead of STDOUT since
 XML::SAX::Writer 0.57.
 
