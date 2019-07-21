@@ -5771,6 +5771,28 @@ sub stream_process {
   return 1
 }
 
+sub pull_process {
+    my ($opts, $process) = @_;
+    $opts = _ev_opts($opts);
+
+    require XML::LibXML::Reader;
+    my $reader = 'XML::LibXML::Reader'->new(
+                     location => $opts->{'input-file'}) or die;
+    $_->[0] = 'XML::LibXML::Pattern'->new($_->[0]) for @$process;
+
+    while ($reader->read) {
+        for my $step (@$process) {
+            if ($reader->nodeType != 15
+             && $reader->nodeType != 16
+             && $reader->matchesPattern($step->[0])
+               ) {
+                stream_process_node($reader->copyCurrentNode(1), $step->[1]);
+                last
+            }
+        }
+    }
+}
+
 sub iterate {
   my ($code,$axis,$nodefilter,$filter)=@_;
 

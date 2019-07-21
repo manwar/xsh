@@ -1315,6 +1315,7 @@ sub new {
       <ruleref ref="test_mode" arguments=""/>
       <ruleref ref="run_mode" arguments=""/>
       <!-- ADD NEW COMMANDS HERE -->
+      <ruleref ref="pull_command" arguments=""/>
       <production>
 	<regexp>(?!(?:iterate|try|def|define)\b)</regexp>
 	<regexp>\.|[a-zA-Z_][-a-zA-Z0-9_]*</regexp>
@@ -6453,6 +6454,34 @@ xsh&gt; <userinput>save</userinput> # saves the file in UTF-8 encoding
 	  </para>
 	</description>
       </documentation>
+    </rule>
+    <rule id="pull_read" inline="no">
+      <production>
+	<regexp>read\s</regexp>
+	<ruleref ref="xpath" arguments=""/>
+	<ruleref ref="block" arguments=""/>
+        <action>[$item[2],$item[3]]</action>
+      </production>
+    </rule>
+    <rule id="pull_command" type="command" name="pull" inline="yes">
+      <production>
+        <selfref sep="yes"/>
+	<directive type="commit"/>
+	<paramlist>
+	  <param name="input-file" short="f" type="string" argument="filename"/>
+	  <param name="input-pipe" short="p" type="string" argument="filename"/>
+	  <param name="input-string" short="s" type="exp" argument="exp"/>
+	  <param name="output-file" short="F" type="string"
+	    argument="filename"/>
+	  <param name="output-encoding" short="E" type="string" argument="enc_string"/>
+	  <param name="output-pipe" short="P" type="string" argument="filename"/>
+	  <param name="output-string" short="S" type="varname" argument="exp"/>
+	</paramlist>
+        <ruleref ref="pull_read" rep="s" arguments=""/>
+	<action>[<lineinfo/>,'pull_process',$item[3],$item[4]]</action>
+      </production>
+      <documentation>
+      <usage>TODO</usage></documentation>
     </rule>
     <rule id="namespaces_command" type="command" name="namespaces" inline="yes">
       <command maxargs="1" func="list_namespaces">
