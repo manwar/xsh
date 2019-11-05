@@ -2864,7 +2864,7 @@ sub save_doc {
 	}
 	$F->print("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n")
 	  unless ($_xml_module->has_dtd($doc));
-	$F->print(fromUTF8($enc, toUTF8($_xml_module->doc_encoding($doc),
+	$F->print(fromUTF8($enc, toUTF8($_xml_module->doc_encoding($doc) || 'utf-8',
 					$doc->toStringHTML())));
 
 	$F->close() unless $target eq 'print';
