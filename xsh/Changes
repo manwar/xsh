@@ -1,5 +1,7 @@
 Release 2.2.4:
 Fix deprecated "Unescaped left brace".
+Fix error message reporting wrong command.
+Don't warn when saving html with backup.
 
 Release 2.2.3: 19/06/18
 Bug fix: stream output went to ./- instead of STDOUT since
