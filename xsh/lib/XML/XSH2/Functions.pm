@@ -2465,7 +2465,7 @@ sub open_doc {
 
   if (exists($opts->{file})+exists($opts->{pipe})+
       exists($opts->{string})>1) {
-    die "'save' may have only one output flag: --file | ".
+    die "'open' may have only one input flag: --file | ".
         "--pipe | --string\n";
   }
   my $format= $opts->{format} || $DEFAULT_FORMAT;
