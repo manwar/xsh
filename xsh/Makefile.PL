@@ -85,7 +85,7 @@ XSH2.pod: tools/gen_pod.pl src/xsh_grammar.xml
 lib/XML/XSH2/CompletionList.pm: tools/gen_completions.pl src/xsh_grammar.xml
 	$(PERL) tools/gen_completions.pl src/xsh_grammar.xml > lib/XML/XSH2/CompletionList.pm
 
-xml: lib/XML/XSH2/Grammar.pm lib/XML/XSH2/Commands.pm lib/XML/XSH2/Help.pm XSH2.pod lib/XML/XSH2/CompletionList.pm
+xml: lib/XML/XSH2/Parser.pm lib/XML/XSH2/Commands.pm lib/XML/XSH2/Help.pm XSH2.pod lib/XML/XSH2/CompletionList.pm
 	$(MAKE) hide
 	$(PERL) -c lib/XML/XSH2/Parser.pm
 

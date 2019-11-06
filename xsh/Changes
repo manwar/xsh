@@ -1,4 +1,7 @@
-Release 2.2.4:
+Release 2.2.5: 19/11/06
+Fix Makefile dependency.
+
+Release 2.2.4: 19/11/05
 Fix deprecated "Unescaped left brace".
 Fix error message reporting wrong command.
 Don't warn when saving html with backup.
