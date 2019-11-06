@@ -34,9 +34,16 @@ WriteMakefile(
                        'lib/XML/XSH2/Inline.pm' => 'blib/man3/XML::XSH2::Inline.3',
                        'lib/XML/XSH2/Compile.pm' => 'blib/man3/XML::XSH2::Compile.3'
 		     },
+    PM => { 'lib/XML/XSH2.pm' => '$(INST_LIB)/XML/XSH2.pm',
+            map +( "lib/XML/XSH2/$_.pm" => '$(INST_LIB)/XML/XSH2/' . "$_.pm" ),
+            qw( Help Functions Iterators Commands
+                Completion CompletionList LibXMLCompat XPathToXML
+                Grammar Parser )
+    },
     depend => {
                 distdir => 'hide',
-              },
+    },
+
     'dist' => {
          COMPRESS  => 'gzip',
          SUFFIX    => 'gz',
