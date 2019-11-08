@@ -1,0 +1,12 @@
+/MYMETA.json
+/MYMETA.yml
+/Makefile
+/Parser.pm
+/XSH2.pod
+/blib/
+/lib/XML/XSH2/Commands.pm
+/lib/XML/XSH2/CompletionList.pm
+/lib/XML/XSH2/Grammar.pm
+/lib/XML/XSH2/Help.pm
+/lib/XML/XSH2/Parser.pm
+/pm_to_blib
