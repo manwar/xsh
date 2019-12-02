@@ -9,6 +9,7 @@ $| = 1;
 WriteMakefile(
     'NAME'      => 'XML::XSH2',
     'VERSION_FROM' => 'lib/XML/XSH2.pm',
+    'LICENSE'   => 'gpl_2',
     'EXE_FILES' => ['xsh'],
     'PREREQ_PM' => {
                     'URI' => 0,
